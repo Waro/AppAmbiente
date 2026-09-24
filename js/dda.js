@@ -244,7 +244,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
     <div class="sec-h"><h3>Archivio</h3></div>
     <div class="stack">
       <button class="btn pri block" onClick=${() => sendToOneDrive(r, settings)}><${Icon} n="share" s=${18} /> Invia PDF e foto a OneDrive</button>
-      <button class="btn block" onClick=${() => exportRecords([r], settings)}><${Icon} n="archive" s=${18} /> Esporta ZIP dell'indagine</button>
+      <button class="btn block" onClick=${() => exportRecords([r], settings)}><${Icon} n="archive" s=${18} /> Salva tutto in un file ZIP</button>
       <button class="btn danger block" onClick=${() => onDelete(r)}><${Icon} n="trash" s=${18} /> Elimina indagine</button>
     </div>
   </div>`;

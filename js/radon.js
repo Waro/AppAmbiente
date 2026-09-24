@@ -316,7 +316,7 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header }) {
     <div class="stack">
       <button class="btn outline block" disabled=${busy} onClick=${pdf}>${busy ? html`<div class="spin" />` : html`<${Icon} n="file" s=${18} />`} Scheda raccolta dati radon (PDF)</button>
       <button class="btn pri block" onClick=${() => sendToOneDrive(r, settings)}><${Icon} n="share" s=${18} /> Invia PDF e foto a OneDrive</button>
-      <button class="btn block" onClick=${() => exportRecords([r], settings)}><${Icon} n="archive" s=${18} /> Esporta ZIP della campagna</button>
+      <button class="btn block" onClick=${() => exportRecords([r], settings)}><${Icon} n="archive" s=${18} /> Salva tutto in un file ZIP</button>
       <button class="btn danger block" onClick=${() => onDelete(r)}><${Icon} n="trash" s=${18} /> Elimina campagna</button>
     </div>
 

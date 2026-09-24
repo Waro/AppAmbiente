@@ -110,14 +110,30 @@ async function sendToOneDrive(r, settings) {
   toast('File inviati');
 }
 
+// Finestra "Salva con nome" di Android/PC (Chrome 132+ su Android): lì si può scegliere OneDrive.
+// Va aperta subito dopo il tocco, prima di preparare lo ZIP.
+async function pickSaveHandle(name) {
+  if (!('showSaveFilePicker' in window)) return null;
+  try { return await window.showSaveFilePicker({ suggestedName: name, types: [{ description: 'Archivio ZIP', accept: { 'application/zip': ['.zip'] } }] }); }
+  catch (e) { if (e.name === 'AbortError') return 'cancel'; console.warn('save picker', e); return null; }
+}
+
 async function exportRecords(records, settings, full) {
+  const stamp = new Date().toISOString().slice(0, 10);
+  const name = full ? `AppVerbali_backup_${stamp}.zip` : `${recordLabel(records[0])}_${stamp}.zip`;
+  const handle = await pickSaveHandle(name);
+  if (handle === 'cancel') return 'cancel';
   toast('Preparo lo ZIP…');
   try {
     const blob = await buildZip(records, settings || _settings, full);
-    const stamp = new Date().toISOString().slice(0, 10);
-    const name = full ? `AppVerbali_backup_${stamp}.zip` : `${recordLabel(records[0])}_${stamp}.zip`;
-    const res = await shareFiles([{ blob, name }], name);
-    if (res === 'downloaded') toast('ZIP salvato in Download: caricalo su OneDrive dall\'app OneDrive');
+    let res;
+    if (handle) {
+      const w = await handle.createWritable(); await w.write(blob); await w.close();
+      res = 'saved'; toast(`ZIP salvato (${(blob.size / 1048576).toFixed(1)} MB)`);
+    } else {
+      res = await shareFiles([{ blob, name }], name);
+      if (res === 'downloaded') toast('ZIP salvato in Download: caricalo su OneDrive dall\'app OneDrive');
+    }
     if (full && res !== 'cancel') await DB.set('lastBackup', Date.now());
     return res;
   } catch (e) { toast('Esportazione non riuscita: ' + e.message); console.error(e); }
@@ -277,7 +293,7 @@ function Backup({ records, settings, reload, lastBackup }) {
   return html`<div class="content form">
     <div class="card">
       <h2 style="font-size:16px">Backup su OneDrive</h2>
-      <p class="lead" style="margin:6px 0 12px">Crea un unico ZIP con tutte le indagini e campagne: foto, allegati, PDF già generati e i dati per il ripristino. Condividilo sull'app OneDrive, oppure caricalo da Download.</p>
+      <p class="lead" style="margin:6px 0 12px">Un unico file ZIP con tutte le indagini e campagne, anche con centinaia di foto: cartelle con foto, allegati e PDF, più i dati in manifest.json per il ripristino. Nella finestra di salvataggio scegli OneDrive; se non compare, il file va in Download e lo carichi dall'app OneDrive.</p>
       <button class="btn pri block" disabled=${busy || !records.length} onClick=${doExport}>${busy ? html`<div class="spin" />` : html`<${Icon} n="archive" s=${18} />`} Crea backup completo</button>
       <div class="lock" style="margin-top:8px">${lastBackup ? 'Ultimo backup: ' + new Date(lastBackup).toLocaleString('it-IT', { dateStyle: 'medium', timeStyle: 'short' }) : 'Nessun backup ancora'}</div>
     </div>
