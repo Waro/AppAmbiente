@@ -239,7 +239,7 @@ function Settings({ settings, setSettings, onTemplates }) {
         <button class="btn" style="flex:1" onClick=${() => cfgInp.current.click()}>Carica .json</button>
         <button class="btn" style="flex:1" onClick=${() => exportConfig(s)}>Esporta .json</button>
       </div>
-      <input ref=${cfgInp} type="file" hidden onChange=${loadCfg} />
+      <input ref=${cfgInp} type="file" accept="application/json,text/plain,application/octet-stream,.json" hidden onChange=${loadCfg} />
     </div>
     <div class="sec-h" style="margin-top:4px"><h3>Modelli PDF</h3></div>
     <div class="card tight"><p class="lead" style="margin:2px 0 6px">I moduli aziendali non sono nell'app pubblicata: caricali qui dal telefono o da OneDrive. Restano solo su questo dispositivo e finiscono nel backup.</p>
@@ -313,7 +313,7 @@ function Backup({ records, settings, reload, lastBackup }) {
       <h2 style="font-size:16px">Ripristina da backup</h2>
       <p class="lead" style="margin:6px 0 12px">Scegli lo ZIP da OneDrive o dal telefono. I record già presenti vengono sostituiti solo se quelli del backup sono più recenti.</p>
       <button class="btn block" disabled=${busy} onClick=${() => inp.current.click()}>Scegli file ZIP</button>
-      <input ref=${inp} type="file" hidden onChange=${doImport} />
+      <input ref=${inp} type="file" accept="application/zip,application/x-zip-compressed,application/octet-stream,.zip" hidden onChange=${doImport} />
     </div>
     <div class="card tight">
       <div class="lock">${persist === true ? 'Archivio protetto: Chrome non cancella i dati da solo.' : persist === false ? 'Archivio non protetto: installa l\'app nella schermata Home per proteggerlo.' : ''}</div>
