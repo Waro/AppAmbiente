@@ -165,13 +165,24 @@ async function importZip(file) {
 /* ---------------- file di configurazione ---------------- */
 async function exportConfig(settings) {
   const { firmaTecnico, ...rest } = settings; // la firma resta personale
+  const name = `AppVerbali_config_${slug(settings.tecnicoCognome || 'modello')}.json`;
+  // finestra "Salva con nome" subito dopo il tocco: si può scegliere OneDrive
+  let handle = null;
+  if ('showSaveFilePicker' in window) {
+    try { handle = await window.showSaveFilePicker({ suggestedName: name, types: [{ description: 'Configurazione JSON', accept: { 'application/json': ['.json'] } }] }); }
+    catch (e) { if (e.name === 'AbortError') return; handle = null; }
+  }
   const cfg = { app: 'appverbali-ambiente', type: 'config', version: 1, createdAt: new Date().toISOString(), settings: rest, templates: {} };
   for (const t of Object.values(TEMPLATES)) { const b = await DB.get(t.key); if (b) cfg.templates[t.key] = bufToB64(b); }
-  const name = `AppVerbali_config_${slug(settings.tecnicoCognome || 'modello')}.json`;
-  downloadBlob(new Blob([JSON.stringify(cfg, null, 1)], { type: 'application/json' }), name);
-  toast('Configurazione salvata in Download');
+  const blob = new Blob([JSON.stringify(cfg, null, 1)], { type: 'application/json' });
+  if (handle) {
+    if (!/\.json$/i.test(handle.name)) toast('Attenzione: il file salvato non ha estensione .json');
+    const w = await handle.createWritable(); await w.write(blob); await w.close();
+    toast('Configurazione salvata: ' + handle.name);
+  } else { downloadBlob(blob, name); toast('Configurazione salvata in Download'); }
 }
 async function importConfig(file, current) {
+  if (!/\.json$/i.test(file.name || '')) throw new Error('seleziona un file .json (hai scelto "' + (file.name || 'file senza nome') + '")');
   let cfg;
   try { cfg = JSON.parse(await file.text()); } catch (e) { throw new Error('il file non è una configurazione valida'); }
   if (cfg.app !== 'appverbali-ambiente' || cfg.type !== 'config') throw new Error('il file non è una configurazione di questa app');
@@ -212,6 +223,7 @@ function Settings({ settings, setSettings, onTemplates }) {
   const s = settings; const set = patch => setSettings({ ...s, ...patch });
   const loadCfg = async e => {
     const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    if (!/\.json$/i.test(f.name || '')) { toast('Seleziona un file .json (hai scelto "' + (f.name || 'file senza nome') + '")'); return; }
     if (!confirm('Caricare la configurazione? Sostituisce le impostazioni e i modelli presenti (la firma salvata resta).')) return;
     try {
       const res = await importConfig(f, s);
@@ -222,10 +234,10 @@ function Settings({ settings, setSettings, onTemplates }) {
   return html`<div class="content form" key=${k}>
     <div class="card tight">
       <h2 style="font-size:16px;margin-top:2px">File di configurazione</h2>
-      <p class="lead" style="margin:6px 0 10px">Un unico file con impostazioni e modelli PDF, da tenere su OneDrive o inviare a un collega. Non pubblicarlo mai sul sito.</p>
+      <p class="lead" style="margin:6px 0 10px">Un unico file .json con impostazioni e modelli PDF, da tenere su OneDrive o inviare a un collega. Non pubblicarlo mai sul sito.</p>
       <div class="row">
-        <button class="btn" style="flex:1" onClick=${() => cfgInp.current.click()}>Carica configurazione</button>
-        <button class="btn" style="flex:1" onClick=${() => exportConfig(s)}>Esporta</button>
+        <button class="btn" style="flex:1" onClick=${() => cfgInp.current.click()}>Carica .json</button>
+        <button class="btn" style="flex:1" onClick=${() => exportConfig(s)}>Esporta .json</button>
       </div>
       <input ref=${cfgInp} type="file" hidden onChange=${loadCfg} />
     </div>
