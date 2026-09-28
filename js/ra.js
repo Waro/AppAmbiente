@@ -65,7 +65,7 @@ function importRa(text, rec) {
 }
 
 /* ---------------- elenco ---------------- */
-function RaList({ records, open, create }) {
+function RaList({ records, open, create, activeId }) {
   const all = records.filter(r => r.type === 'ra').sort((a, b) => (b.data || '').localeCompare(a.data || ''));
   const groups = {};
   all.forEach(r => { const c = r.cliente || 'Senza cliente', s = r.sito || 'Sito da indicare'; ((groups[c] = groups[c] || {})[s] = groups[c][s] || []).push(r); });
@@ -76,7 +76,7 @@ function RaList({ records, open, create }) {
       ${Object.entries(sites).map(([s, rs]) => html`<div key=${s}><div class="grp-site">${s}<span class="count">${rs.length}</span></div><div class="list">
         ${rs.map(r => {
           const tot = r.manufatti.length, fatti = r.manufatti.filter(m => m.stato).length, dann = r.manufatti.filter(m => m.stato === 'danneggiato').length;
-          return html`<button class="rcard" key=${r.id} onClick=${() => open(r.id)}>
+          return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '')} key=${r.id} onClick=${() => open(r.id)}>
             <div class="r1"><span class="id">${r.codice}</span>
               <span class=${'badge ' + (tot && fatti === tot ? 'b-ok' : 'b-f2')}>${tot ? `${fatti}/${tot} verificati` : 'Da impostare'}</span><span class="dt">${fmtD(r.data)}</span></div>
             ${r.commessa && html`<div class="ttl">${r.commessa}</div>`}
@@ -119,12 +119,12 @@ function ManufattoCard({ m, open, toggle, onUpd, onDel }) {
 }
 
 /* ---------------- form ---------------- */
-function RaForm({ rec: initial, records, settings, onSave, onDelete, header }) {
+function RaForm({ rec: initial, records, settings, onSave, onDelete, header, embedded, onClose }) {
   const [r, up, saved] = useAutosave(initial, onSave);
   const [openM, setOpenM] = useState({});
   const [f, setF] = useState('tutti');
   const imp = useRef();
-  useEffect(() => header(r.codice, saved ? 'Salvato' : 'Salvataggio…'), [r.codice, saved]);
+  useEffect(() => { if (!embedded) header(r.codice, saved ? 'Salvato' : 'Salvataggio…'); }, [r.codice, saved, embedded]);
 
   const clienti = [...new Set(records.filter(x => x.cliente).map(x => x.cliente))];
   const updM = (id, patch) => up(p => ({ ...p, manufatti: p.manufatti.map(x => x.id === id ? { ...x, ...patch } : x) }));
@@ -149,6 +149,7 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header }) {
   const labels = r.manufatti.map(m => { const st = raStato(m.stato); return { ref: m.id, text: m.codice || 'M', color: st ? st.c : '#52555b' }; });
 
   return html`<div class="content form">
+    ${embedded && html`<div class="embed-hdr"><div><div class="tb-title">${r.codice}</div><div class="tb-sub">${saved ? 'Salvato' : 'Salvataggio…'}</div></div><button class="x" aria-label="Chiudi" onClick=${onClose}>×</button></div>`}
     <div class="card"><div class="grid2">
       <${Inp} cls="full" label="Commessa" value=${r.commessa} set=${v => up({ commessa: v })} />
       <${Inp} label="Cliente" req list="dl-cli-ra" value=${r.cliente} set=${v => up({ cliente: v })} />

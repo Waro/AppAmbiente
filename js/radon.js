@@ -56,7 +56,7 @@ function dueLine(c) {
 }
 
 /* ---------------- elenco ---------------- */
-function RadonList({ records, open, create }) {
+function RadonList({ records, open, create, activeId }) {
   const all = records.filter(r => r.type === 'radon');
   const [f, setF] = useState('attive');
   const match = (r, k) => k === 'attive' ? radonStato(r) !== 'terminata' : k === 'tutte' || radonStato(r) === k;
@@ -72,7 +72,7 @@ function RadonList({ records, open, create }) {
     ${!list.length && html`<div class="empty"><b>Nessuna campagna qui</b>Tocca + per registrare una nuova campagna.</div>`}
     <div class="list">${list.map(r => {
       const s = radonStato(r);
-      return html`<button class="rcard" key=${r.id} onClick=${() => open(r.id)}>
+      return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '')} key=${r.id} onClick=${() => open(r.id)}>
         <div class="r1"><span class="id">${r.commessa || 'Commessa da indicare'}</span><span class=${'badge ' + STATI[s][1]}>${STATI[s][0]}</span><span class="dt">${r.punti.length} punti</span></div>
         <div class="ttl">${[r.cliente, r.insegna].filter(Boolean).join(' · ') || 'Cliente da indicare'}</div>
         <div class="sum">${[r.citta && r.citta + (r.provincia ? ' (' + r.provincia + ')' : ''), r.indirizzo].filter(Boolean).join(', ')}</div>
@@ -112,7 +112,7 @@ function PuntoCard({ p, n, open, toggle, lockPos, lockF2, onUpd, onDel, onScan }
 }
 
 /* ---------------- form campagna ---------------- */
-function RadonForm({ rec: initial, settings, onSave, onDelete, header }) {
+function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded, onClose }) {
   const [r, up, saved] = useAutosave(initial, onSave);
   const recRef = useRef(r); recRef.current = r;
   const [openP, setOpenP] = useState(() => initial.punti.length ? {} : {});
@@ -120,7 +120,7 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header }) {
   const [sig, setSig] = useState(null);
   const [busy, setBusy] = useState(false);
   const stato = radonStato(r);
-  useEffect(() => header((r.commessa || 'Nuova campagna'), saved ? 'Salvato' : 'Salvataggio…'), [r.commessa, saved]);
+  useEffect(() => { if (!embedded) header((r.commessa || 'Nuova campagna'), saved ? 'Salvato' : 'Salvataggio…'); }, [r.commessa, saved, embedded]);
 
   const m = r.momenti;
   const lockPos = m[0].confermato, lockF2 = m[1].confermato;
@@ -231,6 +231,7 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header }) {
   const over = r.punti.filter(p => { const v = mediaPunto(r, p); return v != null && v > settings.livelloRif; }).length;
 
   return html`<div class="content form">
+    ${embedded && html`<div class="embed-hdr"><div><div class="tb-title">${r.commessa || 'Nuova campagna'}</div><div class="tb-sub">${saved ? 'Salvato' : 'Salvataggio…'}</div></div><button class="x" aria-label="Chiudi" onClick=${onClose}>×</button></div>`}
     <div class="row wrap" style="margin-bottom:10px;gap:8px"><span class=${'badge ' + STATI[stato][1]} style="font-size:12px;padding:4px 10px">${STATI[stato][0]}</span>
       ${scad && html`<span class="lock">Ritiro previsto ${fmtD(scad)}</span>`}</div>
 

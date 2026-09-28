@@ -81,6 +81,20 @@ ID applicazione e ID tenant stanno nel file di configurazione, non nel codice.
 
 **Senza collegamento**: "Invia PDF e foto a OneDrive" usa la condivisione di Android (a gruppi di 10), oppure "Salva tutto in un file ZIP".
 
+## Tablet
+
+Su schermi larghi la app si adatta in due modi, in base alla larghezza (non all'orientamento in sé, così vale anche
+ridimensionando una finestra su PC):
+- **Sotto i 1000px** (telefono, tablet in verticale): stessa navigazione a schermo singolo di sempre, solo con una
+  colonna un po' più larga tra 600 e 999px.
+- **Da 1000px in su** (tablet in orizzontale, PC): elenco e scheda stanno affiancati nello stesso schermo — si tocca
+  una pratica nell'elenco e si apre subito a destra, senza cambiare schermata. Ruotando il tablet si passa dall'uno
+  all'altro senza perdere la pratica aperta.
+
+Su tablet Android con Chrome vero (es. Galaxy Tab, Redmi Pad) tutte le funzioni restano invariate, scanner barcode
+e salvataggio incluso. Su iPad, come su iPhone, Safari/WebKit non supporta lo scanner barcode né la scelta della
+cartella nel salvataggio (resta il download semplice).
+
 ## Aggiornare l'app
 
 Modifica i file, poi in `sw.js` aumenta `VERSION` (es. `nembo-v2`) e ricarica su GitHub.

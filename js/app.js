@@ -338,8 +338,25 @@ function Backup({ records, settings, reload, lastBackup }) {
   </div>`;
 }
 
+/* Sopra questa larghezza CSS, elenco e scheda stanno affiancati (tablet in orizzontale, PC).
+   Sotto, restano due schermate separate come su telefono e tablet in verticale. */
+const WIDE_MQ = '(min-width: 1000px)';
+function useWide() {
+  const [w, setW] = useState(() => matchMedia(WIDE_MQ).matches);
+  useEffect(() => {
+    const mq = matchMedia(WIDE_MQ);
+    const f = e => setW(e.matches);
+    mq.addEventListener ? mq.addEventListener('change', f) : mq.addListener(f);
+    return () => (mq.removeEventListener ? mq.removeEventListener('change', f) : mq.removeListener(f));
+  }, []);
+  return w;
+}
+const LIST_OF = { dda: 'ddaList', radon: 'radonList', ra: 'raList' };
+const DETAIL_OF = { ddaList: 'dda', radonList: 'radon', raList: 'ra' };
+
 /* ---------------- app ---------------- */
 function App() {
+  const wide = useWide();
   const [ready, setReady] = useState(false);
   const [records, setRecords] = useState([]);
   const [settings, setSettingsState] = useState(DEFAULT_SETTINGS);
@@ -370,6 +387,19 @@ function App() {
   const setSettings = s => { setSettingsState(s); _settings = s; DB.set('settings', s); };
   const go = next => { const prev = route; setRoute(next); Back.push(() => setRoute(prev)); };
   const goBack = () => history.back();
+  // nel doppio pannello, scegliere una pratica dall'elenco non è una "navigazione": niente storico,
+  // il tasto Indietro del telefono/browser deve uscire dall'area, non scorrere tra le pratiche aperte
+  const select = id => setRoute(r => ({ ...r, id }));
+  const [splitHdr, setSplitHdr] = useState(['', '']);
+
+  // ruotando il tablet, passa dalla schermata piena al doppio pannello (e viceversa) senza perdere la pratica aperta
+  useEffect(() => {
+    setRoute(r => {
+      if (wide && DETAIL_OF[LIST_OF[r.v]] === r.v) return { v: LIST_OF[r.v], id: r.id };
+      if (!wide && DETAIL_OF[r.v] && r.id) { const list = r.v; Back.push(() => setRoute({ v: list })); return { v: DETAIL_OF[r.v], id: r.id }; }
+      return r;
+    });
+  }, [wide]);
 
   const saveRec = useCallback(async rec => {
     await DB.put(rec);
@@ -390,9 +420,9 @@ function App() {
     if (empties.length) setRecords(rs => rs.filter(r => !empties.includes(r)));
   }, [route.v]);
 
-  const createDda = () => { const r = { ...newDda(records, settings), _new: true }; saveRec(r); go({ v: 'dda', id: r.id }); };
-  const createRadon = () => { const r = { ...newRadon(settings), _new: true }; saveRec(r); go({ v: 'radon', id: r.id }); };
-  const createRa = () => { const r = { ...newRa(records, settings), _new: true }; saveRec(r); go({ v: 'ra', id: r.id }); };
+  const createDda = () => { const r = { ...newDda(records, settings), _new: true }; saveRec(r); wide ? select(r.id) : go({ v: 'dda', id: r.id }); };
+  const createRadon = () => { const r = { ...newRadon(settings), _new: true }; saveRec(r); wide ? select(r.id) : go({ v: 'radon', id: r.id }); };
+  const createRa = () => { const r = { ...newRa(records, settings), _new: true }; saveRec(r); wide ? select(r.id) : go({ v: 'ra', id: r.id }); };
 
   const header = useCallback((t, s) => setHdr([t, s]), []);
   if (!ready) return html`<div class="shell"></div>`;
@@ -426,14 +456,44 @@ function App() {
       </div>
     </div>`;
   } else if (route.v === 'ddaList') {
-    title = 'Ambiente · DDA'; body = html`<${DdaList} records=${records} open=${id => go({ v: 'dda', id })} create=${createDda} />`;
+    title = 'Ambiente · DDA';
+    const list = html`<${DdaList} records=${records} open=${id => wide ? select(id) : go({ v: 'dda', id })} create=${createDda} />`;
+    if (wide) {
+      const dRec = route.id && records.find(x => x.id === route.id);
+      body = html`<div class="split-body">
+        <div class="split-list">${list}</div>
+        <div class="split-detail">${dRec
+          ? html`<${DdaForm} key=${dRec.id} embedded onClose=${() => select(null)} rec=${dRec} records=${records} settings=${settings} onSave=${r => saveRec({ ...r, _new: r._new && ddaIsEmpty(r) })} onDelete=${delRec} onSettings=${() => go({ v: 'settings' })} header=${header} />`
+          : html`<div class="split-empty"><b>Nessuna pratica selezionata</b>Toccane una dall'elenco per aprirla qui.</div>`}</div>
+      </div>`;
+    } else body = list;
   } else if (route.v === 'raList') {
-    title = 'Sopralluogo RA'; body = html`<${RaList} records=${records} open=${id => go({ v: 'ra', id })} create=${createRa} />`;
+    title = 'Sopralluogo RA';
+    const list = html`<${RaList} records=${records} open=${id => wide ? select(id) : go({ v: 'ra', id })} create=${createRa} />`;
+    if (wide) {
+      const dRec = route.id && records.find(x => x.id === route.id);
+      body = html`<div class="split-body">
+        <div class="split-list">${list}</div>
+        <div class="split-detail">${dRec
+          ? html`<${RaForm} key=${dRec.id} embedded onClose=${() => select(null)} rec=${dRec} records=${records} settings=${settings} onSave=${r => saveRec({ ...r, _new: r._new && raIsEmpty(r) })} onDelete=${delRec} header=${header} />`
+          : html`<div class="split-empty"><b>Nessun sopralluogo selezionato</b>Toccane uno dall'elenco per aprirlo qui.</div>`}</div>
+      </div>`;
+    } else body = list;
   } else if (route.v === 'ra' && rec) {
     [title, sub] = hdr;
     body = html`<${RaForm} key=${rec.id} rec=${rec} records=${records} settings=${settings} onSave=${r => saveRec({ ...r, _new: r._new && raIsEmpty(r) })} onDelete=${delRec} header=${header} />`;
   } else if (route.v === 'radonList') {
-    title = 'Campagne radon'; body = html`<${RadonList} records=${records} open=${id => go({ v: 'radon', id })} create=${createRadon} />`;
+    title = 'Campagne radon';
+    const list = html`<${RadonList} records=${records} open=${id => wide ? select(id) : go({ v: 'radon', id })} create=${createRadon} />`;
+    if (wide) {
+      const dRec = route.id && records.find(x => x.id === route.id);
+      body = html`<div class="split-body">
+        <div class="split-list">${list}</div>
+        <div class="split-detail">${dRec
+          ? html`<${RadonForm} key=${dRec.id} embedded onClose=${() => select(null)} rec=${dRec} settings=${settings} onSave=${r => saveRec({ ...r, _new: r._new && radonIsEmpty(r) })} onDelete=${delRec} header=${header} />`
+          : html`<div class="split-empty"><b>Nessuna campagna selezionata</b>Toccane una dall'elenco per aprirla qui.</div>`}</div>
+      </div>`;
+    } else body = list;
   } else if (route.v === 'dda' && rec) {
     [title, sub] = hdr;
     body = html`<${DdaForm} key=${rec.id} rec=${rec} records=${records} settings=${settings} onSave=${r => saveRec({ ...r, _new: r._new && ddaIsEmpty(r) })} onDelete=${delRec} onSettings=${() => go({ v: 'settings' })} header=${header} />`;
@@ -448,7 +508,8 @@ function App() {
     body = html`<div class="content"><div class="empty"><b>Elemento non trovato</b>Potrebbe essere stato eliminato.</div></div>`;
   }
 
-  return html`<div class="shell">
+  const splitActive = wide && (route.v === 'ddaList' || route.v === 'radonList' || route.v === 'raList');
+  return html`<div class=${'shell' + (splitActive ? ' split' : '')}>
     <header class="topbar">
       ${route.v === 'home' ? html`<span class="logo">N</span>` : html`<button class="back" aria-label="Indietro" onClick=${goBack}><${Icon} n="back" s=${18} /></button>`}
       <div class="tb-grow"><div class="tb-title">${title}</div>${sub && html`<div class="tb-sub">${sub}</div>`}</div>

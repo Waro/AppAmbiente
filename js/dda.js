@@ -90,7 +90,7 @@ function superamenti(r) {
 }
 
 /* ---------------- elenco ---------------- */
-function DdaList({ records, open, create }) {
+function DdaList({ records, open, create, activeId }) {
   const [f, setF] = useState('tutte');
   const all = records.filter(r => r.type === 'dda');
   const list = all.filter(r => f === 'tutte' || String(r.fase) === f).sort((a, b) => (b.data || '').localeCompare(a.data || ''));
@@ -116,7 +116,7 @@ function DdaList({ records, open, create }) {
       const sch = Object.entries(r.schede || {}).map(([k, t]) => k.toUpperCase() + ' ' + new Date(t).toLocaleDateString('it-IT'));
       if (sch.length) lines.push(html`<div class="l" style="color:var(--ok)"><span class="dot" style="background:var(--ok)"></span><span>Scheda campioni: ${sch.join(', ')}</span></div>`);
     }
-    return html`<button class="rcard" key=${r.id} onClick=${() => open(r.id)}>
+    return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '')} key=${r.id} onClick=${() => open(r.id)}>
       <div class="r1"><span class="id">${r.codice}</span><span class=${'badge ' + (r.fase === 1 ? 'b-f1' : 'b-f2')}>Fase ${r.fase}</span><span class="dt">${fmtD(r.data)}</span></div>
       ${r.commessa && html`<div class="ttl">${r.commessa}</div>`}
       <div class="sum">${r.tecnico ? r.tecnico + ' · ' : ''}${sum}</div>${lines}</button>`;
@@ -133,7 +133,7 @@ function DdaList({ records, open, create }) {
 }
 
 /* ---------------- form ---------------- */
-function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings, header }) {
+function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings, header, embedded, onClose }) {
   const [r, up, saved] = useAutosave(initial, onSave);
   const [openC, setOpenC] = useState({});
   const [tab, setTab] = useState(() => (MATS.find(m => initial.campioni[m.k].length) || MATS[0]).k);
@@ -149,7 +149,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
       onAdd=${p => up(q => ({ ...q, planimetrie: [...(q.planimetrie || []), p] }))}
       onUpdate=${(id, patch) => up(q => ({ ...q, planimetrie: (q.planimetrie || []).map(x => x.id === id ? { ...x, ...patch } : x) }))}
       onRemove=${async p => { for (const b of blobIds(p)) await removeBlob(b); up(q => ({ ...q, planimetrie: (q.planimetrie || []).filter(x => x.id !== p.id) })); }} /></div>`;
-  useEffect(() => header(r.codice, saved ? 'Salvato' : 'Salvataggio…'), [r.codice, saved]);
+  useEffect(() => { if (!embedded) header(r.codice, saved ? 'Salvato' : 'Salvataggio…'); }, [r.codice, saved, embedded]);
 
   const clienti = [...new Set(records.filter(x => x.cliente).map(x => x.cliente))];
   const siti = [...new Set(records.filter(x => x.sito && (!r.cliente || x.cliente === r.cliente)).map(x => x.sito))];
@@ -238,6 +238,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
   const sup = superamenti(r);
 
   return html`<div class="content form">
+    ${embedded && html`<div class="embed-hdr"><div><div class="tb-title">${r.codice}</div><div class="tb-sub">${saved ? 'Salvato' : 'Salvataggio…'}</div></div><button class="x" aria-label="Chiudi" onClick=${onClose}>×</button></div>`}
     <div class="card"><div class="grid2">
       <${Inp} cls="full" label="Commessa - progetto" value=${r.commessa} set=${v => up({ commessa: v })} placeholder="es. 171/26" />
       <${Inp} label="Cliente" req list="dl-cli" value=${r.cliente} set=${v => up({ cliente: v })} />
