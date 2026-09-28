@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self' https://login.microsoftonline.com https://graph.microsoft.com https://*.sharepoint.com; frame-src https://login.microsoftonline.com; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<title>Nembo</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="styles.css">
+<style>
+  #splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:#04173a url('splash/bg.webp') center/cover no-repeat;transition:opacity .5s ease;}
+  #splash .w{font:700 15vw/1 Arial,sans-serif;color:#fff;letter-spacing:1px;text-align:center;}
+  #splash .t{margin-top:3vw;font:400 3.6vw/1 Arial,sans-serif;color:#cfe6ff;letter-spacing:6px;text-align:center;}
+  #splash.hide{opacity:0;pointer-events:none;}
+</style>
+</head>
+<body>
+<div id="splash"><div class="w">NEMBO</div><div class="t">AMBIENTE · RADON · AMIANTO</div></div>
+<div id="root"></div>
+<script src="vendor/preact.min.umd.js"></script>
+<script src="vendor/hooks.umd.js"></script>
+<script src="vendor/htm.umd.js"></script>
+<script src="vendor/pdf-lib.min.js"></script>
+<script src="vendor/jszip.min.js"></script>
+<script src="vendor/signature_pad.umd.min.js"></script>
+<script src="vendor/msal-browser.min.js"></script>
+<script src="vendor/pdfjs.min.js"></script>
+<script src="vendor/exceljs.min.js"></script>
+<script src="vendor/docx.umd.min.js"></script>
+<script src="pdfgen.js"></script>
+<script src="js/core.js"></script>
+<script src="js/capture.js"></script>
+<script src="js/plan.js"></script>
+<script src="js/office.js"></script>
+<script src="js/dda.js"></script>
+<script src="js/radon.js"></script>
+<script src="js/ra.js"></script>
+<script src="js/onedrive.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
