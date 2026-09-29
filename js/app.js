@@ -3,7 +3,7 @@
 let _settings = { ...DEFAULT_SETTINGS };
 
 function recordLabel(r) {
-  return r.type === 'dda' || r.type === 'ra' ? slug([r.codice, r.cliente, r.sito].filter(Boolean).join('_'))
+  return r.type === 'dda' || r.type === 'mappatura' || r.type === 'ra' ? slug([r.codice, r.cliente, r.sito].filter(Boolean).join('_'))
     : slug(['Radon', r.commessa, r.cliente, r.citta].filter(Boolean).join('_')) || r.id;
 }
 
@@ -73,7 +73,7 @@ async function buildZip(records, settings, withSettings) {
 // Tutti i PDF, le foto e gli allegati (PDF/immagini) di un record, con nomi leggibili
 async function recordFiles(r, settings) {
   const s = settings || _settings;
-  const pre = r.type === 'dda' ? slug([r.codice, r.commessa].filter(Boolean).join('_')) : slug(['Radon', r.commessa || r.cliente].filter(Boolean).join('_'));
+  const pre = (r.type === 'dda' || r.type === 'mappatura') ? slug([r.codice, r.commessa].filter(Boolean).join('_')) : slug(['Radon', r.commessa || r.cliente].filter(Boolean).join('_'));
   const out = [];
   const pdf = (bytes, name) => out.push({ blob: new Blob([bytes], { type: 'application/pdf' }), name: `${pre}_${name}.pdf` });
   const add = async (id, name) => {
@@ -363,8 +363,8 @@ function useWide() {
   }, []);
   return w;
 }
-const LIST_OF = { dda: 'ddaList', radon: 'radonList', ra: 'raList' };
-const DETAIL_OF = { ddaList: 'dda', radonList: 'radon', raList: 'ra' };
+const LIST_OF = { dda: 'ddaList', mappatura: 'mappaturaList', radon: 'radonList', ra: 'raList' };
+const DETAIL_OF = { ddaList: 'dda', mappaturaList: 'mappatura', radonList: 'radon', raList: 'ra' };
 
 /* ---------------- app ---------------- */
 function App() {
@@ -426,13 +426,14 @@ function App() {
   };
   // uscendo da un record nuovo rimasto vuoto, lo scarto
   useEffect(() => {
-    if (route.v === 'dda' || route.v === 'radon' || route.v === 'ra') return;
-    const empties = records.filter(r => r._new && (r.type === 'dda' ? ddaIsEmpty(r) : r.type === 'ra' ? raIsEmpty(r) : radonIsEmpty(r)));
+    if (route.v === 'dda' || route.v === 'mappatura' || route.v === 'radon' || route.v === 'ra') return;
+    const empties = records.filter(r => r._new && (r.type === 'dda' ? ddaIsEmpty(r) : r.type === 'mappatura' ? mappaturaIsEmpty(r) : r.type === 'ra' ? raIsEmpty(r) : radonIsEmpty(r)));
     empties.forEach(r => DB.del(r.id));
     if (empties.length) setRecords(rs => rs.filter(r => !empties.includes(r)));
   }, [route.v]);
 
   const createDda = () => { const r = { ...newDda(records, settings), _new: true }; saveRec(r); wide ? select(r.id) : go({ v: 'dda', id: r.id }); };
+  const createMappatura = () => { const r = { ...newMappatura(records, settings), _new: true }; saveRec(r); wide ? select(r.id) : go({ v: 'mappatura', id: r.id }); };
   const createRadon = () => { const r = { ...newRadon(settings), _new: true }; saveRec(r); wide ? select(r.id) : go({ v: 'radon', id: r.id }); };
   const createRa = () => { const r = { ...newRa(records, settings), _new: true }; saveRec(r); wide ? select(r.id) : go({ v: 'ra', id: r.id }); };
 
@@ -443,6 +444,7 @@ function App() {
   let title = 'Nembo', sub = settings.tecnicoNome ? `${settings.tecnicoNome} ${settings.tecnicoCognome}` : '', body;
   if (route.v === 'home') {
     const nDda = records.filter(r => r.type === 'dda').length;
+    const nMap = records.filter(r => r.type === 'mappatura').length;
     const act = records.filter(r => r.type === 'radon' && radonStato(r) !== 'terminata');
     const late = act.filter(r => { const d = radonScadenza(r); return d && daysBetween(today(), d) <= 30; });
     const stale = records.length > 0 && (!lastBackup || Date.now() - lastBackup > 7 * 86400000);
@@ -453,10 +455,12 @@ function App() {
       <div class="tiles">
         <button class="tile" onClick=${() => go({ v: 'ddaList' })}><span class="ic" style="background:linear-gradient(135deg,#7ad4e6,#32add7)"><${Icon} n="leaf" s=${24} /></span>
           <div><b>Ambiente · DDA</b><small>Sopralluogo Fase 1, campionamento Fase 2 e scheda campioni · ${nDda} ${nDda === 1 ? 'indagine' : 'indagini'}</small></div><span class="chev"><${Icon} n="right" s=${18} /></span></button>
-        <button class="tile" onClick=${() => go({ v: 'radonList' })}><span class="ic" style="background:linear-gradient(135deg,#3cbbe1,#0091d3)"><${Icon} n="radon" s=${24} /></span>
-          <div><b>Campagne radon</b><small>Posa e ritiro dosimetri, firme e scheda raccolta dati · ${act.length} in corso</small></div><span class="chev"><${Icon} n="right" s=${18} /></span></button>
+        <button class="tile" onClick=${() => go({ v: 'mappaturaList' })}><span class="ic" style="background:linear-gradient(135deg,#a21f8f,#a45f00)"><${Icon} n="pin" s=${24} /></span>
+          <div><b>Mappatura MCA e FAV</b><small>Censimento e campionamento indipendente da una DDA · ${nMap} ${nMap === 1 ? 'censimento' : 'censimenti'}</small></div><span class="chev"><${Icon} n="right" s=${18} /></span></button>
         <button class="tile" onClick=${() => go({ v: 'raList' })}><span class="ic" style="background:linear-gradient(135deg,#b58cff,#6a3de8)"><${Icon} n="shield" s=${24} /></span>
           <div><b>Sopralluogo RA</b><small>Verifica dei manufatti in amianto da mappatura o PMC · ${records.filter(r => r.type === 'ra').length} sopralluoghi</small></div><span class="chev"><${Icon} n="right" s=${18} /></span></button>
+        <button class="tile" onClick=${() => go({ v: 'radonList' })}><span class="ic" style="background:linear-gradient(135deg,#3cbbe1,#0091d3)"><${Icon} n="radon" s=${24} /></span>
+          <div><b>Campagne radon</b><small>Posa e ritiro dosimetri, firme e scheda raccolta dati · ${act.length} in corso</small></div><span class="chev"><${Icon} n="right" s=${18} /></span></button>
       </div>
       ${(!tplOk || !settings.tecnicoCognome) && html`<div class="notice">Prima di iniziare: in Impostazioni inserisci i tuoi dati e carica i due modelli PDF.</div>`}
       ${late.length > 0 && html`<div class="notice">${late.length === 1 ? '1 campagna radon ha' : late.length + ' campagne radon hanno'} il ritiro entro 30 giorni o già scaduto.</div>`}
@@ -479,6 +483,21 @@ function App() {
           : html`<div class="split-empty"><b>Nessuna pratica selezionata</b>Toccane una dall'elenco per aprirla qui.</div>`}</div>
       </div>`;
     } else body = list;
+  } else if (route.v === 'mappaturaList') {
+    title = 'Mappatura MCA e FAV';
+    const list = html`<${MappaturaList} records=${records} open=${id => wide ? select(id) : go({ v: 'mappatura', id })} create=${createMappatura} />`;
+    if (wide) {
+      const dRec = route.id && records.find(x => x.id === route.id);
+      body = html`<div class="split-body">
+        <div class="split-list">${list}</div>
+        <div class="split-detail">${dRec
+          ? html`<${MappaturaForm} key=${dRec.id} embedded onClose=${() => select(null)} rec=${dRec} records=${records} settings=${settings} onSave=${r => saveRec({ ...r, _new: r._new && mappaturaIsEmpty(r) })} onDelete=${delRec} onSettings=${() => go({ v: 'settings' })} header=${header} />`
+          : html`<div class="split-empty"><b>Nessuna mappatura selezionata</b>Toccane una dall'elenco per aprirla qui.</div>`}</div>
+      </div>`;
+    } else body = list;
+  } else if (route.v === 'mappatura' && rec) {
+    [title, sub] = hdr;
+    body = html`<${MappaturaForm} key=${rec.id} rec=${rec} records=${records} settings=${settings} onSave=${r => saveRec({ ...r, _new: r._new && mappaturaIsEmpty(r) })} onDelete=${delRec} onSettings=${() => go({ v: 'settings' })} header=${header} />`;
   } else if (route.v === 'raList') {
     title = 'Sopralluogo RA';
     const list = html`<${RaList} records=${records} open=${id => wide ? select(id) : go({ v: 'ra', id })} create=${createRa} />`;
@@ -520,7 +539,7 @@ function App() {
     body = html`<div class="content"><div class="empty"><b>Elemento non trovato</b>Potrebbe essere stato eliminato.</div></div>`;
   }
 
-  const splitActive = wide && (route.v === 'ddaList' || route.v === 'radonList' || route.v === 'raList');
+  const splitActive = wide && (route.v === 'ddaList' || route.v === 'mappaturaList' || route.v === 'radonList' || route.v === 'raList');
   return html`<div class=${'shell' + (splitActive ? ' split' : '')}>
     <header class="topbar">
       ${route.v === 'home' ? html`<span class="logo">N</span>` : html`<button class="back" aria-label="Indietro" onClick=${goBack}><${Icon} n="back" s=${18} /></button>`}

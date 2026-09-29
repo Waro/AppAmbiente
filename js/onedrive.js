@@ -172,7 +172,7 @@ async function odRecordItems(r, settings) {
         prelevatoDa: s.prelevatoDa, verificatoDa: s.verificatoDa }) });
     });
   }
-  if (r.type === 'dda' && allCamp(r).length) items.push({ kind: 'office', type: DOCX_MIME, segs: ['Riepilogo_campioni'], make: () => riepilogoCampioniDocx(r, s) });
+  if ((r.type === 'dda' || r.type === 'mappatura') && allCamp(r).length) items.push({ kind: 'office', type: DOCX_MIME, segs: ['Riepilogo_campioni'], make: () => riepilogoCampioniDocx(r, s) });
   // planimetrie: la versione annotata viene rigenerata a ogni modifica, quindi va sostituita (non è nel registro "una volta sola")
   for (const p of (r.planimetrie || [])) {
     const id = p.mergedBlobId || p.blobId;

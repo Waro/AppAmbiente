@@ -21,17 +21,19 @@ async function schedaCampioniXlsx(r, k, s) {
   const an = k === 'mca' ? { codice: s.mcaCodice, desc: s.mcaDesc } : { codice: s.favCodice, desc: s.favDesc };
   const wb = new ExcelJS.Workbook(); wb.creator = 'Nembo'; wb.created = new Date();
   const ws = wb.addWorksheet('Scheda campioni ' + k.toUpperCase(), { pageSetup: { paperSize: 9, orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0, margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } } });
-  ws.columns = [{ width: 8 }, { width: 16 }, { width: 56 }, { width: 30 }];
+  const hasQ = (k === 'mca' || k === 'fav') && list.some(c => c.quantita);
+  ws.columns = hasQ ? [{ width: 8 }, { width: 14 }, { width: 46 }, { width: 14 }, { width: 28 }] : [{ width: 8 }, { width: 16 }, { width: 56 }, { width: 30 }];
+  const lastCol = hasQ ? 5 : 4;
   const thin = { style: 'thin', color: { argb: 'FF000000' } };
   const box = { top: thin, left: thin, bottom: thin, right: thin };
   const grey = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
   const row = (vals, opt = {}) => { const x = ws.addRow(vals); x.height = opt.h || 18; return x; };
 
-  let x = row(['SCHEDA DI PRELIEVO: CAMPIONI MASSIVI'], { h: 26 }); ws.mergeCells(x.number, 1, x.number, 4);
+  let x = row(['SCHEDA DI PRELIEVO: CAMPIONI MASSIVI'], { h: 26 }); ws.mergeCells(x.number, 1, x.number, lastCol);
   x.getCell(1).font = { bold: true, size: 14 }; x.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
   row([]);
   const head = (label, value) => {
-    const y = row([label, '', value], { h: 22 }); ws.mergeCells(y.number, 1, y.number, 2); ws.mergeCells(y.number, 3, y.number, 4);
+    const y = row([label, '', value], { h: 22 }); ws.mergeCells(y.number, 1, y.number, 2); ws.mergeCells(y.number, 3, y.number, lastCol);
     y.getCell(1).font = { bold: true, size: 10 }; y.getCell(1).fill = grey; y.getCell(3).font = { bold: true, size: 11 };
     [1, 3].forEach(c => { y.getCell(c).border = box; y.getCell(c).alignment = { vertical: 'middle', wrapText: true }; });
   };
@@ -41,17 +43,20 @@ async function schedaCampioniXlsx(r, k, s) {
   head('LABORATORIO', [s.labNome, s.labR1, s.labR2].filter(Boolean).join(', '));
   head('OFFERTA', [s.offerta, s.offertaRev].filter(Boolean).join(' - '));
   row([]);
-  x = row(['#', 'Data prelievo', 'Descrizione campione', 'Tipologia analisi richiesta'], { h: 30 });
+  const headers = hasQ ? ['#', 'Data prelievo', 'Descrizione campione', 'Quantità', 'Tipologia analisi richiesta'] : ['#', 'Data prelievo', 'Descrizione campione', 'Tipologia analisi richiesta'];
+  x = row(headers, { h: 30 });
   x.eachCell(c => { c.font = { bold: true, italic: true, size: 10 }; c.fill = grey; c.border = box; c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }; });
   for (const c of list) {
     const d = c.data ? new Date(c.data + 'T12:00:00') : null;
-    x = row([c.codice || '', d, c.descrizione || '', `${an.codice || ''}${an.desc ? ' (' + an.desc + ')' : ''}`], { h: 30 });
+    const vals = hasQ ? [c.codice || '', d, c.descrizione || '', c.quantita || '', `${an.codice || ''}${an.desc ? ' (' + an.desc + ')' : ''}`]
+      : [c.codice || '', d, c.descrizione || '', `${an.codice || ''}${an.desc ? ' (' + an.desc + ')' : ''}`];
+    x = row(vals, { h: 30 });
     x.getCell(1).font = { bold: true }; x.getCell(2).numFmt = 'dd/mm/yyyy';
     x.eachCell({ includeEmpty: true }, (cell, n) => { cell.border = box; cell.alignment = { vertical: 'middle', wrapText: true, horizontal: n <= 2 ? 'center' : 'left' }; });
   }
   row([]);
-  x = row(['PRELEVATO DA: ' + (s.prelevatoDa || '')]); ws.mergeCells(x.number, 1, x.number, 4); x.getCell(1).font = { bold: true, size: 10 };
-  x = row(['VERIFICATO DA: ' + (s.verificatoDa || '')]); ws.mergeCells(x.number, 1, x.number, 4); x.getCell(1).font = { bold: true, size: 10 };
+  x = row(['PRELEVATO DA: ' + (s.prelevatoDa || '')]); ws.mergeCells(x.number, 1, x.number, lastCol); x.getCell(1).font = { bold: true, size: 10 };
+  x = row(['VERIFICATO DA: ' + (s.verificatoDa || '')]); ws.mergeCells(x.number, 1, x.number, lastCol); x.getCell(1).font = { bold: true, size: 10 };
   const buf = await wb.xlsx.writeBuffer();
   return new Blob([buf], { type: XLSX_MIME });
 }
@@ -104,8 +109,9 @@ async function riepilogoCampioniDocx(r, s) {
       const idCell = new TableCell({ width: { size: colId, type: WidthType.DXA }, verticalAlign: VerticalAlign.CENTER, borders: { top: line, bottom: line, left: line, right: line }, margins: { top: 100, bottom: 100, left: 100, right: 100 },
         children: [p(txt(c.codice || '—', { bold: true }), { after: c.data ? 40 : 0 }), ...(c.data ? [p(txt(fmtD(c.data), { size: 16, color: '595959' }), { after: 0 })] : [])] });
       const descRuns = [txt(c.descrizione || 'Descrizione non indicata')];
+      const extra = [c.tipo ? 'Tipo: ' + c.tipo : '', c.quantita ? 'Quantità: ' + c.quantita : ''].filter(Boolean).join('  ·  ');
       const descCell = new TableCell({ width: { size: colDesc, type: WidthType.DXA }, verticalAlign: VerticalAlign.CENTER, borders: { top: line, bottom: line, left: line, right: line }, margins: { top: 100, bottom: 100, left: 100, right: 100 },
-        children: [p(descRuns, { after: c.tipo ? 40 : 0 }), ...(c.tipo ? [p(txt('Tipo: ' + c.tipo, { italics: true, size: 18, color: '595959' }), { after: 0 })] : [])] });
+        children: [p(descRuns, { after: extra ? 40 : 0 }), ...(extra ? [p(txt(extra, { italics: true, size: 18, color: '595959' }), { after: 0 })] : [])] });
       // più foto per lo stesso campione: impilate nella stessa cella, larghezza fissa (~3,5 cm)
       const imgW = 200;
       const fotoCell = new TableCell({ width: { size: colFoto, type: WidthType.DXA }, verticalAlign: VerticalAlign.CENTER, borders: { top: line, bottom: line, left: line, right: line }, margins: { top: 60, bottom: 60, left: 60, right: 60 },

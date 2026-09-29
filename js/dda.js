@@ -166,7 +166,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
   const nextCode = k => { const m = MATS.find(x => x.k === k); if (!m.auto) return ''; const l = r.campioni[k]; if (!r.congelati[k]) return m.auto + (l.length + 1); return m.auto + (l.map(c => +c.codice.slice(1) || 0).reduce((a, b) => Math.max(a, b), 0) + 1); };
   const setCamp = (k, fn) => up(p => ({ ...p, campioni: { ...p.campioni, [k]: fn(p.campioni[k]) } }));
   const updCamp = (id, patch) => setCamp(tab, l => l.map(c => c.id === id ? { ...c, ...patch } : c));
-  const addCamp = () => setCamp(tab, l => [...l, { id: uid('c'), codice: nextCode(tab), descrizione: '', tipo: '', data: r.data, foto: [] }]);
+  const addCamp = () => setCamp(tab, l => [...l, { id: uid('c'), codice: nextCode(tab), descrizione: '', tipo: '', quantita: '', data: r.data, foto: [] }]);
   const delCamp = async c => {
     if (!confirm('Eliminare il campione ' + (c.codice || '') + '?')) return;
     for (const b of blobIds(c)) await removeBlob(b);
@@ -186,7 +186,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
     setTab(it.matrice); addCamp2(it.matrice, it.descrizione, it.ubicazione);
     updCk(it.id, { fatto: true });
   };
-  const addCamp2 = (k, descrizione, ubicazione) => setCamp(k, l => [...l, { id: uid('c'), codice: nextCode2(k), descrizione: [descrizione, ubicazione].filter(Boolean).join(' – '), tipo: '', data: r.data, foto: [] }]);
+  const addCamp2 = (k, descrizione, ubicazione) => setCamp(k, l => [...l, { id: uid('c'), codice: nextCode2(k), descrizione: [descrizione, ubicazione].filter(Boolean).join(' – '), tipo: '', quantita: '', data: r.data, foto: [] }]);
   const nextCode2 = k => { const m = MATS.find(x => x.k === k); if (!m.auto) return ''; const l = r.campioni[k]; if (!r.congelati[k]) return m.auto + (l.length + 1); return m.auto + (l.map(c => +c.codice.slice(1) || 0).reduce((a, b) => Math.max(a, b), 0) + 1); };
 
   const doImport1 = e => {
@@ -345,7 +345,10 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
           <div class="stack">
             ${tab === 'altro' && html`<input class="inp" style="background:rgba(0,118,211,.07)" placeholder="Tipo di campione (es. rifiuto, aria, sedimento)" value=${c.tipo} onInput=${e => updCamp(c.id, { tipo: e.target.value })} />`}
             <textarea class="inp" rows="2" placeholder="Descrizione campione" value=${c.descrizione} onInput=${e => updCamp(c.id, { descrizione: e.target.value })}></textarea>
-            <div class="row"><input class="inp" type="date" style="max-width:170px" value=${c.data || ''} onInput=${e => updCamp(c.id, { data: e.target.value })} aria-label="Data prelievo" /></div>
+            <div class="row">
+              <input class="inp" type="date" style="max-width:170px" value=${c.data || ''} onInput=${e => updCamp(c.id, { data: e.target.value })} aria-label="Data prelievo" />
+              ${(tab === 'mca' || tab === 'fav') && html`<input class="inp" style="max-width:150px" placeholder="Quantità (es. 180 mq)" value=${c.quantita || ''} onInput=${e => updCamp(c.id, { quantita: e.target.value })} aria-label="Quantità" />`}
+            </div>
             <${PhotoStrip} ids=${c.foto || []} max=${4} onAdd=${ids => updCamp(c.id, { foto: [...(c.foto || []), ...ids] })}
               onRemove=${async id => { await removeBlob(id); updCamp(c.id, { foto: c.foto.filter(f => f !== id) }); }} />
           </div>

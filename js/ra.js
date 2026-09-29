@@ -21,7 +21,7 @@ function newRa(records, settings) {
   };
 }
 const raIsEmpty = r => !r.commessa && !r.cliente && !r.sito && !r.manufatti.length && !r.appunti && !(r.planimetrie || []).length;
-const newManufatto = (x = {}) => ({ id: uid('m'), codice: '', ubicazione: '', descrizione: '', tipologia: '', quantita: '', statoPrec: '', notePrec: '', stato: '', note: '', foto: [], ...x });
+const newManufatto = (x = {}) => ({ id: uid('m'), codice: '', ubicazione: '', descrizione: '', tipologia: '', quantita: '', statoPrec: '', notePrec: '', stato: '', note: '', foto: [], fotoPrec: [], ...x });
 
 /* ---------------- import mappatura / PMC ----------------
    {
@@ -75,7 +75,7 @@ async function importRa(text, rec) {
       }
     }
     add.push(newManufatto({ codice, ubicazione: s(x.ubicazione), descrizione: s(x.descrizione), tipologia: s(x.tipologia), quantita: s(x.quantita),
-      statoPrec: s(x.statoPrecedente || x.stato), notePrec: s(x.notePrecedenti || x.note), foto: ids }));
+      statoPrec: s(x.statoPrecedente || x.stato), notePrec: s(x.notePrecedenti || x.note), fotoPrec: ids }));
   }
   if (add.length) patch.manufatti = [...rec.manufatti, ...add];
   if (!add.length && !head) throw new Error('nessun manufatto nuovo: i codici del file sono già tutti in elenco');
@@ -124,8 +124,10 @@ function ManufattoCard({ m, open, toggle, onUpd, onDel }) {
         <${Area} cls="full" label="Descrizione" rows=${2} value=${m.descrizione} set=${v => set({ descrizione: v })} />
         ${m.quantita && html`<${Inp} label="Quantità" value=${m.quantita} set=${v => set({ quantita: v })} />`}
       </div>
-      ${(m.statoPrec || m.notePrec) && html`<div class="notice" style="margin:0;background:#eef4fb;border-color:#cfe0f2;color:#23405f">
-        <b>Sopralluogo precedente:</b> ${[m.statoPrec, m.notePrec].filter(Boolean).join(' · ')}</div>`}
+      ${(m.statoPrec || m.notePrec || m.fotoPrec?.length > 0) && html`<div class="notice" style="margin:0;background:#eef4fb;border-color:#cfe0f2;color:#23405f">
+        ${(m.statoPrec || m.notePrec) && html`<div><b>Sopralluogo precedente:</b> ${[m.statoPrec, m.notePrec].filter(Boolean).join(' · ')}</div>`}
+        ${m.fotoPrec?.length > 0 && html`<div style="margin-top:${(m.statoPrec || m.notePrec) ? '8px' : '0'}">
+          <${PhotoStrip} ids=${m.fotoPrec} readonly /></div>`}</div>`}
       <div class="fld"><span>Stato di conservazione</span></div>
       <div class="stati">${RA_STATI.map(s => html`<button class=${m.stato === s.k ? 'on' : ''} style=${'--sc:' + s.c} title=${s.l} onClick=${() => set({ stato: m.stato === s.k ? '' : s.k })}>${s.l}</button>`)}</div>
       <${Area} label="Note" rows=${3} value=${m.note} set=${v => set({ note: v })} placeholder="Condizioni rilevate, interventi consigliati…" />
