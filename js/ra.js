@@ -38,9 +38,20 @@ const newManufatto = (x = {}) => ({ id: uid('m'), codice: '', ubicazione: '', de
 const RA_TEMPLATE = {
   app: 'nembo', type: 'ra-mappatura', fonte: '',
   commessa: '', cliente: '', sito: '', indirizzo: '',
-  manufatti: [{ codice: 'M1', ubicazione: '', descrizione: '', tipologia: '', quantita: '', statoPrecedente: '', notePrecedenti: '' }],
+  manufatti: [{ codice: 'M1', ubicazione: '', descrizione: '', tipologia: '', quantita: '', statoPrecedente: '', notePrecedenti: '',
+    foto: ['data:image/jpeg;base64,...'] }],
 };
-function importRa(text, rec) {
+// converte una data URI (o una stringa base64 pura, assunta JPEG) in Blob, per salvarla con saveImage
+function dataUriToBlob(s) {
+  const m = /^data:([^;]+);base64,(.+)$/s.exec(s.trim());
+  const mime = m ? m[1] : 'image/jpeg';
+  const b64 = m ? m[2] : s.trim();
+  const bin = atob(b64.replace(/\s/g, ''));
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+}
+async function importRa(text, rec) {
   let d;
   try { d = JSON.parse(text); } catch (e) { throw new Error('il file non è un JSON valido'); }
   if (d.type && d.type !== 'ra-mappatura') throw new Error('il file non è una mappatura per il sopralluogo RA');
@@ -49,19 +60,26 @@ function importRa(text, rec) {
   const patch = {}; let head = 0;
   if (!Array.isArray(d)) for (const k of ['fonte', 'commessa', 'cliente', 'sito', 'indirizzo']) if (d[k] && !rec[k]) { patch[k] = String(d[k]); head++; }
   const known = new Set(rec.manufatti.map(m => (m.codice || '').trim().toLowerCase()).filter(Boolean));
-  const add = [];
-  list.forEach((x, i) => {
-    if (!x || typeof x !== 'object') return;
+  const add = []; let foto = 0;
+  for (const x of list) {
+    if (!x || typeof x !== 'object') continue;
     const codice = String(x.codice || x.id || '').trim() || 'M' + (rec.manufatti.length + add.length + 1);
-    if (known.has(codice.toLowerCase())) return;
+    if (known.has(codice.toLowerCase())) continue;
     known.add(codice.toLowerCase());
     const s = v => (v == null ? '' : String(v));
+    const ids = [];
+    if (Array.isArray(x.foto)) {
+      for (const ph of x.foto.slice(0, 3)) {
+        if (typeof ph !== 'string' || !ph.trim()) continue;
+        try { ids.push(await saveImage(dataUriToBlob(ph))); foto++; } catch (e) { /* immagine non valida: la salto */ }
+      }
+    }
     add.push(newManufatto({ codice, ubicazione: s(x.ubicazione), descrizione: s(x.descrizione), tipologia: s(x.tipologia), quantita: s(x.quantita),
-      statoPrec: s(x.statoPrecedente || x.stato), notePrec: s(x.notePrecedenti || x.note) }));
-  });
+      statoPrec: s(x.statoPrecedente || x.stato), notePrec: s(x.notePrecedenti || x.note), foto: ids }));
+  }
   if (add.length) patch.manufatti = [...rec.manufatti, ...add];
   if (!add.length && !head) throw new Error('nessun manufatto nuovo: i codici del file sono già tutti in elenco');
-  return { patch, nuovi: add.length, head };
+  return { patch, nuovi: add.length, head, foto };
 }
 
 /* ---------------- elenco ---------------- */
@@ -137,9 +155,12 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
   const doImport = e => {
     const file = e.target.files[0]; e.target.value = ''; if (!file) return;
     const rd = new FileReader();
-    rd.onload = () => {
-      try { const { patch, nuovi, head } = importRa(rd.result, r); up(patch); toast(`Importati ${nuovi} manufatti${head ? ' e ' + head + ' dati del sito' : ''}`); }
-      catch (err) { toast('Import non riuscito: ' + err.message); }
+    rd.onload = async () => {
+      try {
+        const { patch, nuovi, head, foto } = await importRa(rd.result, r);
+        up(patch);
+        toast(`Importati ${nuovi} manufatti${foto ? ' con ' + foto + ' foto' : ''}${head ? ' e ' + head + ' dati del sito' : ''}`);
+      } catch (err) { toast('Import non riuscito: ' + err.message); }
     };
     rd.readAsText(file);
   };

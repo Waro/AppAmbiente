@@ -1,5 +1,5 @@
 // Cache dell'app per l'uso offline. Aumenta VERSION a ogni aggiornamento dei file.
-const VERSION = 'nembo-v2';
+const VERSION = 'nembo-v3';
 const FILES = [
   './', 'index.html', 'styles.css', 'manifest.webmanifest', 'pdfgen.js',
   'js/core.js', 'js/capture.js', 'js/plan.js', 'js/office.js', 'js/dda.js', 'js/radon.js', 'js/ra.js', 'js/onedrive.js', 'js/app.js',
