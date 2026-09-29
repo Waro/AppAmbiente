@@ -1,4 +1,8 @@
 /* Nembo — utilità, archivio locale, componenti condivisi */
+// Stessa stringa di VERSION in sw.js: aumentala insieme a quella ad ogni aggiornamento.
+// Essendo dentro un file JS servito dalla cache, se l'aggiornamento automatico fallisce
+// questa scritta mostra ancora la versione vecchia — è il modo per accorgersene.
+const APP_VERSION = 'nembo-v4';
 const { h, render } = preact;
 const { useState, useEffect, useRef, useMemo, useCallback } = preactHooks;
 const html = htm.bind(h);

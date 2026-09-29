@@ -232,6 +232,8 @@ function TemplateRow({ name, t, onChange }) {
 function Settings({ settings, setSettings, onTemplates }) {
   const [sig, setSig] = useState(false);
   const [k, setK] = useState(0);
+  const [cacheVer, setCacheVer] = useState(null);
+  useEffect(() => { if (window.caches) caches.keys().then(ks => setCacheVer(ks[0] || '—')); }, []);
   const cfgInp = useRef();
   const s = settings; const set = patch => setSettings({ ...s, ...patch });
   const loadCfg = async e => {
@@ -289,6 +291,16 @@ function Settings({ settings, setSettings, onTemplates }) {
     <div class="card"><${Inp} label="Livello di riferimento (Bq/m³)" type="number" inputmode="numeric" value=${s.livelloRif} set=${v => set({ livelloRif: num(v) || 300 })} /></div>
     <p class="lead" style="margin:14px 2px">Le impostazioni si salvano da sole e restano su questo telefono.</p>
     ${sig && html`<${SignaturePadOverlay} title="La tua firma" onClose=${() => setSig(false)} onDone=${url => set({ firmaTecnico: url })} />`}
+
+    <div class="sec-h"><h3>Info app</h3></div>
+    <div class="card tight" style="font-size:12.5px;color:var(--text2)">
+      <div style="display:flex;justify-content:space-between;padding:9px 2px"><span>Versione app</span><b style="color:var(--text)">${APP_VERSION}</b></div>
+      <div style="display:flex;justify-content:space-between;padding:9px 2px;border-top:1px solid var(--border)">
+        <span>Cache offline attiva</span>
+        <b style="color:${cacheVer && cacheVer !== APP_VERSION ? 'var(--warn, #9a5a00)' : 'var(--text)'}">${cacheVer || '…'}</b>
+      </div>
+      ${cacheVer && cacheVer !== APP_VERSION && html`<p style="margin:8px 2px 2px;color:var(--warn, #9a5a00)">Diverse dalla versione app: l'aggiornamento è a metà, chiudi e riapri l'app (o svuota la cache del sito) per completarlo.</p>`}
+    </div>
   </div>`;
 }
 
