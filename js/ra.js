@@ -16,11 +16,14 @@ function newRa(records, settings) {
   const n = records.filter(r => r.type === 'ra' && (r.codice || '').startsWith('RA-' + y)).map(r => +r.codice.slice(-3)).reduce((a, b) => Math.max(a, b), 0) + 1;
   return {
     id: uid('ra'), type: 'ra', codice: `RA-${y}-${String(n).padStart(3, '0')}`, createdAt: Date.now(), updatedAt: Date.now(),
-    commessa: '', cliente: '', sito: '', indirizzo: '', data: today(), tecnico: `${settings.tecnicoNome} ${settings.tecnicoCognome}`.trim(),
+    commessa: '', cliente: '', citta: '', sito: '', indirizzo: '', data: today(), tecnico: `${settings.tecnicoNome} ${settings.tecnicoCognome}`.trim(),
     fonte: '', manufatti: [], appunti: '', planimetrie: [],
   };
 }
-const raIsEmpty = r => !r.commessa && !r.cliente && !r.sito && !r.manufatti.length && !r.appunti && !(r.planimetrie || []).length;
+const raIsEmpty = r => !r.commessa && !r.cliente && !r.sito && !r.citta && !r.indirizzo && !(r.fotoAppunti || []).length && !r.manufatti.length && !r.appunti && !(r.planimetrie || []).length;
+// foto da scorrere nel visualizzatore: prima quelle del sopralluogo precedente, poi le nuove
+const gal = m => [...(m.fotoPrec || []), ...(m.foto || [])];
+const lab = m => id => (m.fotoPrec || []).includes(id) ? 'Sopralluogo precedente' : 'Nuova foto';
 const newManufatto = (x = {}) => ({ id: uid('m'), codice: '', ubicazione: '', descrizione: '', tipologia: '', quantita: '', statoPrec: '', notePrec: '', stato: '', note: '', foto: [], fotoPrec: [], ...x });
 
 /* ---------------- import mappatura / PMC ----------------
@@ -37,7 +40,7 @@ const newManufatto = (x = {}) => ({ id: uid('m'), codice: '', ubicazione: '', de
    I manufatti con un codice già presente non vengono toccati: si aggiungono solo i nuovi. */
 const RA_TEMPLATE = {
   app: 'nembo', type: 'ra-mappatura', fonte: '',
-  commessa: '', cliente: '', sito: '', indirizzo: '',
+  commessa: '', cliente: '', citta: '', indirizzo: '', sito: '',
   manufatti: [{ codice: 'M1', ubicazione: '', descrizione: '', tipologia: '', quantita: '', statoPrecedente: '', notePrecedenti: '',
     foto: ['data:image/jpeg;base64,...'] }],
 };
@@ -58,7 +61,7 @@ async function importRa(text, rec) {
   const list = Array.isArray(d) ? d : d.manufatti;
   if (!Array.isArray(list)) throw new Error('nel file manca l\'elenco "manufatti"');
   const patch = {}; let head = 0;
-  if (!Array.isArray(d)) for (const k of ['fonte', 'commessa', 'cliente', 'sito', 'indirizzo']) if (d[k] && !rec[k]) { patch[k] = String(d[k]); head++; }
+  if (!Array.isArray(d)) for (const k of ['fonte', 'commessa', 'cliente', 'citta', 'indirizzo', 'sito']) if (d[k] && !rec[k]) { patch[k] = String(d[k]); head++; }
   const known = new Set(rec.manufatti.map(m => (m.codice || '').trim().toLowerCase()).filter(Boolean));
   const add = []; let foto = 0;
   for (const x of list) {
@@ -84,9 +87,10 @@ async function importRa(text, rec) {
 
 /* ---------------- elenco ---------------- */
 function RaList({ records, open, create, activeId }) {
+  const od = useOdSynced();
   const all = records.filter(r => r.type === 'ra').sort((a, b) => (b.data || '').localeCompare(a.data || ''));
   const groups = {};
-  all.forEach(r => { const c = r.cliente || 'Senza cliente', s = r.sito || 'Sito da indicare'; ((groups[c] = groups[c] || {})[s] = groups[c][s] || []).push(r); });
+  all.forEach(r => { const c = r.cliente || 'Senza cliente', s = placeLabel(r); ((groups[c] = groups[c] || {})[s] = groups[c][s] || []).push(r); });
   return html`<div class="content">
     <h2>Sopralluoghi RA</h2><p class="lead">Verifica periodica dei manufatti contenenti amianto</p>
     ${!all.length && html`<div class="empty"><b>Nessun sopralluogo</b>Tocca + e carica la mappatura o il PMC del sito.</div>`}
@@ -94,12 +98,13 @@ function RaList({ records, open, create, activeId }) {
       ${Object.entries(sites).map(([s, rs]) => html`<div key=${s}><div class="grp-site">${s}<span class="count">${rs.length}</span></div><div class="list">
         ${rs.map(r => {
           const tot = r.manufatti.length, fatti = r.manufatti.filter(m => m.stato).length, dann = r.manufatti.filter(m => m.stato === 'danneggiato').length;
-          return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '')} key=${r.id} onClick=${() => open(r.id)}>
+          return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r)} key=${r.id} onClick=${() => open(r.id)}>
             <div class="r1"><span class="id">${r.codice}</span>
               <span class=${'badge ' + (tot && fatti === tot ? 'b-ok' : 'b-f2')}>${tot ? `${fatti}/${tot} verificati` : 'Da impostare'}</span><span class="dt">${fmtD(r.data)}</span></div>
             ${r.commessa && html`<div class="ttl">${r.commessa}</div>`}
             <div class="sum">${r.tecnico ? r.tecnico + ' · ' : ''}${tot} manufatti${r.fonte ? ' · ' + r.fonte : ''}</div>
             ${dann > 0 && html`<div class="due late">${dann} ${dann === 1 ? 'manufatto danneggiato' : 'manufatti danneggiati'}</div>`}
+            <${OdBadge} map=${od} r=${r} />
           </button>`;
         })}</div></div>`)}</div>`)}
     <div class="fbar"><button class="fab" aria-label="Nuovo sopralluogo RA" onClick=${create}><${Icon} n="plus" s=${21} w=${2.4} /></button></div>
@@ -124,15 +129,15 @@ function ManufattoCard({ m, open, toggle, onUpd, onDel }) {
         <${Area} cls="full" label="Descrizione" rows=${2} value=${m.descrizione} set=${v => set({ descrizione: v })} />
         ${m.quantita && html`<${Inp} label="Quantità" value=${m.quantita} set=${v => set({ quantita: v })} />`}
       </div>
-      ${(m.statoPrec || m.notePrec || m.fotoPrec?.length > 0) && html`<div class="notice" style="margin:0;background:#eef4fb;border-color:#cfe0f2;color:#23405f">
+      ${(m.statoPrec || m.notePrec || m.fotoPrec?.length > 0) && html`<div class="notice" style="margin:0;background:#f3e7e4;border-color:#e0cbc6;color:#4a3236">
         ${(m.statoPrec || m.notePrec) && html`<div><b>Sopralluogo precedente:</b> ${[m.statoPrec, m.notePrec].filter(Boolean).join(' · ')}</div>`}
         ${m.fotoPrec?.length > 0 && html`<div style="margin-top:${(m.statoPrec || m.notePrec) ? '8px' : '0'}">
-          <${PhotoStrip} ids=${m.fotoPrec} readonly /></div>`}</div>`}
+          <${PhotoStrip} ids=${m.fotoPrec} readonly gallery=${gal(m)} labelOf=${lab(m)} /></div>`}</div>`}
       <div class="fld"><span>Stato di conservazione</span></div>
       <div class="stati">${RA_STATI.map(s => html`<button class=${m.stato === s.k ? 'on' : ''} style=${'--sc:' + s.c} title=${s.l} onClick=${() => set({ stato: m.stato === s.k ? '' : s.k })}>${s.l}</button>`)}</div>
       <${Area} label="Note" rows=${3} value=${m.note} set=${v => set({ note: v })} placeholder="Condizioni rilevate, interventi consigliati…" />
       <div><div class="fld"><span>Foto (fino a 3)</span></div>
-        <${PhotoStrip} ids=${m.foto} max=${3} onAdd=${ids => set({ foto: [...m.foto, ...ids] })} onRemove=${async id => { await removeBlob(id); set({ foto: m.foto.filter(f => f !== id) }); }} /></div>
+        <${PhotoStrip} ids=${m.foto} max=${3} gallery=${gal(m)} labelOf=${lab(m)} onAdd=${ids => set({ foto: [...m.foto, ...ids] })} onRemove=${async id => { await removeBlob(id); set({ foto: m.foto.filter(f => f !== id) }); }} /></div>
       <button class="btn sm danger" style="justify-self:start" onClick=${() => onDel(m)}>Elimina manufatto</button>
     </div>`}
   </div>`;
@@ -162,7 +167,7 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
         const { patch, nuovi, head, foto } = await importRa(rd.result, r);
         up(patch);
         toast(`Importati ${nuovi} manufatti${foto ? ' con ' + foto + ' foto' : ''}${head ? ' e ' + head + ' dati del sito' : ''}`);
-      } catch (err) { toast('Import non riuscito: ' + err.message); }
+      } catch (err) { fail('Import non riuscito', err); }
     };
     rd.readAsText(file);
   };
@@ -176,8 +181,9 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
     <div class="card"><div class="grid2">
       <${Inp} cls="full" label="Commessa" value=${r.commessa} set=${v => up({ commessa: v })} />
       <${Inp} label="Cliente" req list="dl-cli-ra" value=${r.cliente} set=${v => up({ cliente: v })} />
-      <${Inp} label="Sito" req value=${r.sito} set=${v => up({ sito: v })} />
-      <${Inp} cls="full" label="Indirizzo" value=${r.indirizzo} set=${v => up({ indirizzo: v })} />
+      <${Inp} label="Città" value=${r.citta} set=${v => up({ citta: v })} />
+      <${Inp} cls="full" label="Indirizzo" value=${r.indirizzo} set=${v => up({ indirizzo: v })} placeholder="Via e numero civico" />
+      <${Inp} label="Sito / codice immobile" value=${r.sito} set=${v => up({ sito: v })} placeholder="Facoltativo" />
       <${Inp} label="Data" type="date" value=${r.data} set=${v => up({ data: v })} />
       <${Inp} label="Tecnico" value=${r.tecnico} set=${v => up({ tecnico: v })} />
       ${r.fonte && html`<${Inp} cls="full" label="Fonte dei dati" value=${r.fonte} set=${v => up({ fonte: v })} />`}
@@ -205,7 +211,8 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
       onRemove=${async p => { for (const b of blobIds(p)) await removeBlob(b); up(q => ({ ...q, planimetrie: (q.planimetrie || []).filter(x => x.id !== p.id) })); }} /></div>
 
     <div class="sec-h"><h3>Appunti</h3><span class="hint">Testo libero</span></div>
-    <div class="card"><textarea class="inp" rows="4" placeholder="Note generali del sopralluogo" value=${r.appunti} onInput=${e => up({ appunti: e.target.value })} aria-label="Appunti"></textarea></div>
+    <div class="card"><textarea class="inp" rows="4" placeholder="Note generali del sopralluogo" value=${r.appunti} onInput=${e => up({ appunti: e.target.value })} aria-label="Appunti"></textarea>
+      <${NotePhotos} rec=${r} up=${up} /></div>
 
     <div class="sec-h"><h3>Archivio</h3></div>
     <div class="stack">

@@ -193,7 +193,7 @@ function PlanViewer({ plan, labels, onChange, onClose }) {
         }
         onChange({ annot: annotRef.current, mergedBlobId, mergedAt: hasAny ? Date.now() : null });
         toast(hasAny ? 'Planimetria annotata salvata' : 'Annotazioni rimosse');
-      } catch (e) { toast('PDF annotato non creato: ' + e.message); console.error(e); }
+      } catch (e) { fail('PDF annotato non creato', e); }
       setSaving(false);
     }
     if (doc) doc.destroy();

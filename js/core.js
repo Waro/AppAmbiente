@@ -2,7 +2,7 @@
 // Stessa stringa di VERSION in sw.js: aumentala insieme a quella ad ogni aggiornamento.
 // Essendo dentro un file JS servito dalla cache, se l'aggiornamento automatico fallisce
 // questa scritta mostra ancora la versione vecchia — è il modo per accorgersene.
-const APP_VERSION = 'nembo-v6';
+const APP_VERSION = 'nembo-v13';
 const { h, render } = preact;
 const { useState, useEffect, useRef, useMemo, useCallback } = preactHooks;
 const html = htm.bind(h);
@@ -74,14 +74,26 @@ function blobIds(obj, out = []) {
 }
 
 // foto ridimensionata (lato lungo 1600 px, JPEG)
-async function saveImage(file, maxSide = 1600) {
-  let bmp;
+// Riduce la foto a maxSide px sul lato lungo e libera subito la memoria dell'originale
+// (su Android, con molte foto di fila, la memoria trattenuta rallenta tutto il browser).
+async function shrinkImage(file, maxSide) {
+  let bmp = null, fallbackUrl = null;
   try { bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }); }
-  catch (e) { bmp = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = URL.createObjectURL(file); }); }
-  const w = bmp.width, h0 = bmp.height, k = Math.min(1, maxSide / Math.max(w, h0));
-  const c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h0 * k);
-  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
-  const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.82));
+  catch (e) { fallbackUrl = URL.createObjectURL(file); bmp = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = fallbackUrl; }); }
+  try {
+    const w = bmp.width, h = bmp.height, k = Math.min(1, maxSide / Math.max(w, h));
+    const c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h * k);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    const out = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.82));
+    c.width = c.height = 0;
+    return out;
+  } finally {
+    if (bmp && bmp.close) bmp.close();
+    if (fallbackUrl) URL.revokeObjectURL(fallbackUrl);
+  }
+}
+async function saveImage(file, maxSide = 1600) {
+  const blob = await shrinkImage(file, maxSide);
   const id = uid('b');
   await DB.putBlob({ id, blob, type: 'image/jpeg', name: (file.name || 'foto').replace(/\.[^.]+$/, '') + '.jpg' });
   return id;
@@ -188,6 +200,8 @@ const P = {
   share: 'M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13',
   gear: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z',
   archive: 'M21 8v13H3V8M1 3h22v5H1zM10 12h4',
+  collapse: 'M11 17l-5-5 5-5M18 17l-5-5 5-5', expand: 'M13 17l5-5-5-5M6 17l5-5-5-5',
+  bell: 'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0',
   shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM9 12l2 2 4-4',
   lock: 'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4', sign: 'M3 17c3-4 5-9 7-9s-1 9 2 9 3-5 5-5 2 3 4 3M3 21h18',
   torch: 'M9 2h6v4l-2 3v13h-2V9L9 6z', trash: 'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6', paper: 'M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5',
@@ -208,29 +222,68 @@ function Area({ label, value, set, rows = 3, disabled, placeholder, cls = '' }) 
 /* ---------------- foto ---------------- */
 function Thumb({ id, onRemove, onOpen }) {
   const u = useBlobUrl(id);
-  return html`<div class="ph">${u && html`<img src=${u} alt="Foto" onClick=${() => onOpen && onOpen(u)} />`}
+  return html`<div class="ph">${u && html`<img src=${u} alt="Foto" onClick=${() => onOpen && onOpen()} />`}
     ${onRemove && html`<button class="x" aria-label="Elimina foto" onClick=${onRemove}>×</button>`}</div>`;
 }
-function PhotoStrip({ ids = [], max = 10, onAdd, onRemove, readonly }) {
+function PhotoStrip({ ids = [], max = 10, onAdd, onRemove, readonly, gallery, labelOf }) {
   const inp = useRef(); const [busy, setBusy] = useState(false); const [view, setView] = useState(null);
+  const gal = gallery && gallery.length ? gallery : ids;
   const pick = async e => {
     const files = [...e.target.files]; e.target.value = ''; if (!files.length) return;
     setBusy(true);
-    try { const out = []; for (const f of files.slice(0, max - ids.length)) out.push(await saveImage(f)); if (out.length) await onAdd(out); }
-    catch (err) { toast('Foto non salvata: ' + err.message); }
+    try { const list = files.slice(0, max - ids.length), out = []; for (const [i, f] of list.entries()) { if (list.length > 1) setBusy(`${i + 1}/${list.length}`); out.push(await saveImage(f)); } if (out.length) await onAdd(out); }
+    catch (err) { fail('Foto non salvata', err); }
     setBusy(false);
   };
   return html`<div class="photos">
-    ${ids.map(id => html`<${Thumb} key=${id} id=${id} onOpen=${setView} onRemove=${readonly ? null : () => { if (confirm('Eliminare la foto?')) onRemove(id); }} />`)}
+    ${ids.map(id => html`<${Thumb} key=${id} id=${id} onOpen=${() => setView(Math.max(0, gal.indexOf(id)))} onRemove=${readonly ? null : () => { if (confirm('Eliminare la foto?')) onRemove(id); }} />`)}
     ${!readonly && ids.length < max && html`<button class="addph" aria-label="Aggiungi foto" onClick=${() => inp.current.click()}>
-      ${busy ? html`<div class="spin" />` : html`<${Icon} n="camera" s=${22} />`}</button>`}
+      ${busy ? html`<div style="display:grid;place-items:center;gap:3px"><div class="spin" />${typeof busy === 'string' && html`<small style="font-size:10.5px;font-weight:700">${busy}</small>`}</div>` : html`<${Icon} n="camera" s=${22} />`}</button>`}
     <input ref=${inp} type="file" accept="image/*" capture="environment" multiple hidden onChange=${pick} />
-    ${view && html`<${Viewer} url=${view} onClose=${() => setView(null)} />`}
+    ${view !== null && html`<${Viewer} ids=${gal} index=${view} labelOf=${labelOf} onClose=${() => setView(null)} />`}
   </div>`;
 }
-function Viewer({ url, onClose }) {
+// Visualizzatore a schermo intero: scorri a destra/sinistra (o usa frecce e tastiera) per le altre foto
+function Viewer({ ids, index = 0, onClose, labelOf }) {
   useBackClose(onClose);
-  return html`<div class="viewer" onClick=${onClose}><img src=${url} alt="Foto ingrandita" /></div>`;
+  const n = ids.length;
+  const [i, setI] = useState(Math.min(Math.max(index, 0), n - 1));
+  const [dx, setDx] = useState(0);
+  const [drag, setDrag] = useState(false);
+  const t = useRef(null);
+  const go = d => setI(x => Math.min(n - 1, Math.max(0, x + d)));
+  useBlobUrl(ids[i]);                       // fa ridisegnare il componente quando l'immagine è pronta
+  const src = urlCache.get(ids[i]) || null; // letta direttamente: niente foto "vecchia" che resta a schermo
+  useEffect(() => { blobUrl(ids[i - 1]); blobUrl(ids[i + 1]); }, [i]); // precarica le vicine
+  useEffect(() => {
+    const k = e => { if (e.key === 'ArrowLeft') go(-1); else if (e.key === 'ArrowRight') go(1); else if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k);
+  }, [n]);
+  const ts = e => { const p = e.touches[0]; t.current = { x: p.clientX, y: p.clientY, lock: null }; setDrag(true); };
+  const tm = e => {
+    const s = t.current; if (!s) return;
+    const p = e.touches[0], ddx = p.clientX - s.x, ddy = p.clientY - s.y;
+    if (s.lock === null && (Math.abs(ddx) > 8 || Math.abs(ddy) > 8)) s.lock = Math.abs(ddx) > Math.abs(ddy) ? 'x' : 'y';
+    if (s.lock === 'x') setDx((ddx > 0 && i === 0) || (ddx < 0 && i === n - 1) ? ddx / 3 : ddx); // resistenza ai bordi
+  };
+  const te = () => {
+    const s = t.current; t.current = null; setDrag(false);
+    if (s && s.lock === 'x') { if (dx < -60) go(1); else if (dx > 60) go(-1); }
+    setDx(0);
+  };
+  const label = labelOf && labelOf(ids[i]);
+  const stop = e => e.stopPropagation();
+  return html`<div class="viewer" onClick=${onClose} onTouchStart=${ts} onTouchMove=${tm} onTouchEnd=${te} onTouchCancel=${te}>
+    <div class="vw-top" onClick=${stop}>
+      ${n > 1 && html`<span class="vw-pill">${i + 1} / ${n}</span>`}
+      ${label && html`<span class="vw-pill vw-lbl">${label}</span>`}
+      <button class="vw-x" aria-label="Chiudi" onClick=${onClose}>×</button>
+    </div>
+    ${src && html`<img key=${ids[i]} src=${src} alt="Foto ingrandita" draggable="false" onClick=${stop}
+      style=${`transform:translateX(${dx}px);transition:${drag ? 'none' : 'transform .2s ease'}`} />`}
+    ${n > 1 && html`<button class="vw-nav l" aria-label="Foto precedente" disabled=${i === 0} onClick=${e => { stop(e); go(-1); }}><${Icon} n="back" s=${24} /></button>
+      <button class="vw-nav r" aria-label="Foto successiva" disabled=${i === n - 1} onClick=${e => { stop(e); go(1); }}><${Icon} n="right" s=${24} /></button>`}
+  </div>`;
 }
 
 /* ---------------- allegati (documenti) ---------------- */
@@ -302,4 +355,66 @@ async function checkTemplate(name, bytes) {
     if (doc.getPageCount() !== 2 || !names.includes('Commessa') || !names.includes('Fase 1_20'))
       throw new Error('non è il modulo radon compilabile atteso (2 pagine con i campi R1–R20)');
   } else if (doc.getPageCount() !== 1) throw new Error('la scheda campioni deve essere di una sola pagina');
+}
+
+/* ---------------- luoghi: città e indirizzo prima del codice sito ---------------- */
+// Solo città + indirizzo (stringa vuota se mancano entrambi)
+function placeAddr(r) {
+  const ind = (r.indirizzo || '').trim(), cit = (r.citta || '').trim();
+  if (ind && cit && !ind.toLowerCase().includes(cit.toLowerCase())) return `${cit} · ${ind}`;
+  return ind || cit;
+}
+// Etichetta per gli elenchi: indirizzo, poi il sito come ripiego
+function placeLabel(r) { return placeAddr(r) || (r.sito || '').trim() || 'Indirizzo da indicare'; }
+// Per i documenti (PDF, Excel, Word): sito e indirizzo, quelli presenti
+function placeDoc(r) { return [(r.sito || '').trim(), placeAddr(r)].filter(Boolean).join(' – '); }
+
+/* ---------------- notifiche: storico di esiti ed errori ---------------- */
+const NOTIF_MAX = 200;
+const notifSubs = new Set();
+// codice errore leggibile: quello esplicito, un codice Microsoft (AADSTS…) o lo stato HTTP
+function errCode(e) {
+  if (!e) return '';
+  if (e.code) return String(e.code);
+  if (e.errorCode) return String(e.errorCode);
+  const msg = String(e.message || e);
+  const a = /\b(AADSTS\d+)\b/.exec(msg); if (a) return a[1];
+  const h = /^(\d{3})\b/.exec(msg); if (h) return 'HTTP ' + h[1];
+  return e.name && e.name !== 'Error' ? e.name : '';
+}
+// level: 'ok' | 'warn' | 'err'
+async function notify(level, title, opt = {}) {
+  try {
+    const list = (await DB.get('notifiche')) || [];
+    list.unshift({ id: uid('n'), t: Date.now(), level, title, detail: opt.detail || '', code: opt.code || '', record: opt.record || '', items: (opt.items || []).slice(0, 100), read: false });
+    await DB.set('notifiche', list.slice(0, NOTIF_MAX));
+    notifSubs.forEach(f => f());
+  } catch (e) { console.warn('notifica non salvata', e); }
+}
+// errore mostrato a schermo e registrato nelle notifiche
+function fail(title, e, record) {
+  toast(title + ': ' + (e && e.message || e));
+  notify('err', title, { detail: String(e && e.message || e), code: errCode(e), record });
+  if (e) console.error(e);
+}
+function useNotifiche() {
+  const [list, setList] = useState([]);
+  useEffect(() => {
+    const load = () => DB.get('notifiche').then(l => setList(l || []));
+    load(); notifSubs.add(load); return () => notifSubs.delete(load);
+  }, []);
+  return list;
+}
+async function notifMarkRead() {
+  const l = (await DB.get('notifiche')) || [];
+  if (l.some(n => !n.read)) { await DB.set('notifiche', l.map(n => ({ ...n, read: true }))); notifSubs.forEach(f => f()); }
+}
+async function notifClear() { await DB.set('notifiche', []); notifSubs.forEach(f => f()); }
+
+/* ---------------- foto negli appunti ---------------- */
+function NotePhotos({ rec, field = 'fotoAppunti', up }) {
+  const ids = rec[field] || [];
+  return html`<div style="margin-top:10px"><${PhotoStrip} ids=${ids} max=${10}
+    onAdd=${add => up(p => ({ ...p, [field]: [...(p[field] || []), ...add] }))}
+    onRemove=${async id => { await removeBlob(id); up(p => ({ ...p, [field]: (p[field] || []).filter(f => f !== id) })); }} /></div>`;
 }

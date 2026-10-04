@@ -53,11 +53,17 @@ const OD = (() => {
     if (!account) throw new Error('non sei collegato a OneDrive (Impostazioni → OneDrive → Accedi)');
     try { return (await pca.acquireTokenSilent({ scopes: SCOPES, account })).accessToken; }
     catch (e) {
-      if (window.msal && e instanceof msal.InteractionRequiredAuthError) {
-        toast('Sessione scaduta: accedi di nuovo');
+      // Oltre a "serve interazione", su Chrome Android il rinnovo silenzioso avviene in un iframe nascosto
+      // che spesso va in timeout o viene bloccato: anche in quei casi serve un nuovo accesso.
+      const code = (e && (e.errorCode || e.code)) || '';
+      const needLogin = (window.msal && e instanceof msal.InteractionRequiredAuthError)
+        || /monitor_window_timeout|timed_out|iframe|no_tokens_found|login_required|consent_required|interaction_required/i.test(code + ' ' + (e && e.message));
+      if (needLogin) {
+        toast('Sessione Microsoft scaduta: ti riporto alla pagina di accesso, poi ripeti il caricamento');
         await pca.acquireTokenRedirect({ scopes: SCOPES, account });
       }
-      throw new Error(describe(e));
+      const err = new Error(describe(e)); err.code = code || (e && e.name) || '';
+      throw err;
     }
   }
 
@@ -87,11 +93,12 @@ const OD = (() => {
   }
 
   async function gErr(r) {
-    let msg = r.status + ' ' + r.statusText;
-    try { const j = await r.json(); if (j.error) msg = (j.error.code || '') + ': ' + (j.error.message || ''); } catch (e) {}
+    let msg = r.status + ' ' + r.statusText, gcode = '';
+    try { const j = await r.json(); if (j.error) { gcode = j.error.code || ''; msg = (j.error.message || msg); } } catch (e) {}
     if (r.status === 401) msg = 'autorizzazione scaduta, accedi di nuovo';
     if (r.status === 403) msg = 'accesso negato alla cartella dell\'app (' + msg + ')';
-    return new Error(msg);
+    const err = new Error(msg); err.code = 'HTTP ' + r.status + (gcode ? ' · ' + gcode : '');
+    return err;
   }
 
   // Unico punto di scrittura: sempre sotto la cartella dell'app
@@ -166,12 +173,14 @@ async function odRecordItems(r, settings) {
       if (!r.campioni[k].length) return;
       items.push({ kind: 'office', type: XLSX_MIME, segs: ['Scheda_campioni_' + k.toUpperCase()], make: () => schedaCampioniXlsx(r, k, s) });
       items.push({ kind: 'pdf', segs: ['Scheda_campioni_' + k.toUpperCase()], make: async () => PdfGen.schedaCampioniPdf(await loadTemplate('scheda_campioni.pdf'), {
-        commessa: r.commessa, sito: r.sito, campioni: r.campioni[k],
+        commessa: r.commessa, sito: placeDoc(r), campioni: r.campioni[k],
         analisi: k === 'mca' ? { codice: s.mcaCodice, desc: s.mcaDesc } : { codice: s.favCodice, desc: s.favDesc },
         lab: { nome: s.labNome, r1: s.labR1, r2: s.labR2 }, offerta: s.offerta, offertaRev: s.offertaRev, email: s.emailReferti,
         prelevatoDa: s.prelevatoDa, verificatoDa: s.verificatoDa }) });
     });
   }
+  (r.fotoAppunti || []).forEach((f, k) => photo(f, 'foto', `Appunti_${k + 1}`));
+  (r.fotoAppunti2 || []).forEach((f, k) => photo(f, 'foto', `Appunti_Fase2_${k + 1}`));
   if ((r.type === 'dda' || r.type === 'mappatura') && allCamp(r).length) items.push({ kind: 'office', type: DOCX_MIME, segs: ['Riepilogo_campioni'], make: () => riepilogoCampioniDocx(r, s) });
   // planimetrie: la versione annotata viene rigenerata a ogni modifica, quindi va sostituita (non è nel registro "una volta sola")
   for (const p of (r.planimetrie || [])) {
@@ -202,10 +211,33 @@ async function odLog(entry) {
   log.unshift({ t: Date.now(), ...entry }); await DB.set('od_log', log.slice(0, 300));
 }
 
+/* stato di invio per pratica: { [id]: { t, ok } } — t = momento dell'invio */
+const odSyncSubs = new Set();
+function useOdSynced() {
+  const [m, setM] = useState({});
+  useEffect(() => { const load = () => DB.get('od_synced').then(x => setM(x || {})); load(); odSyncSubs.add(load); return () => odSyncSubs.delete(load); }, []);
+  return m;
+}
+// 'ok' (caricata e non più modificata) | 'stale' (modificata dopo l'invio) | 'err' (ultimo invio incompleto) | ''
+function odStatus(map, r) {
+  const e = map[r.id]; if (!e) return '';
+  if (!e.ok) return 'err';
+  return (r.updatedAt || 0) <= e.t ? 'ok' : 'stale';
+}
+const odCls = (map, r) => { const s = odStatus(map, r); return s ? ' od-' + s : ''; };
+function OdBadge({ map, r }) {
+  const s = odStatus(map, r); if (!s) return null;
+  const d = new Date(map[r.id].t).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' });
+  if (s === 'ok') return html`<div class="od-tag ok">✓ Su OneDrive · ${d}</div>`;
+  if (s === 'stale') return html`<div class="od-tag stale">Modificata dopo l'invio del ${d}: da ricaricare</div>`;
+  return html`<div class="od-tag err">Invio del ${d} incompleto: vedi Notifiche</div>`;
+}
+
 async function odSync(records, settings) {
   if (!OD.account) { toast('Collega prima OneDrive in Impostazioni'); return; }
   if (!navigator.onLine) { toast('Sei offline: riprova quando c\'è rete'); return; }
   let stop = false, wake = null;
+  const t0 = Date.now();
   try { if (navigator.wakeLock) wake = await navigator.wakeLock.request('screen'); } catch (e) {}
   const sent = (await DB.get('od_sent')) || {};
   const folders = (await DB.get('od_folders')) || {};
@@ -214,10 +246,18 @@ async function odSync(records, settings) {
     if (!folders[r.id]) folders[r.id] = recordLabel(r) || r.id;
     for (const it of await odRecordItems(r, settings)) {
       if (it.kind === 'blob' && sent[it.blobId]) continue;
-      plan.push({ ...it, folder: folders[r.id] });
+      plan.push({ ...it, folder: folders[r.id], recId: r.id });
     }
   }
   await DB.set('od_folders', folders);
+  // Verifico l'accesso una volta sola prima di iniziare: se va rinnovato, meglio fermarsi subito
+  // che far fallire ogni file con lo stesso errore.
+  try { await OD.token(); }
+  catch (e) {
+    if (wake) try { wake.release(); } catch (_) {}
+    fail('OneDrive, accesso non riuscito', e, records.map(recordTitle).join(', '));
+    return { done: 0, errors: [] };
+  }
   let done = 0, errors = [];
   const show = text => _progress({ title: 'Caricamento su OneDrive', text, done, total: plan.length, onStop: () => { stop = true; } });
   for (const it of plan) {
@@ -226,12 +266,12 @@ async function odSync(records, settings) {
     try {
       let blob, type, replace;
       if (it.kind === 'blob') {
-        const b = await DB.getBlob(it.blobId); if (!b) { done++; continue; }
+        const b = await DB.getBlob(it.blobId); if (!b) { it._ok = true; done++; continue; }
         type = await OD.sniff(b.blob);
-        if (!type) { errors.push(it.segs.join('/') + ': tipo non ammesso, saltato'); done++; continue; }
+        if (!type) { errors.push({ path: it.folder + '/' + it.segs.join('/'), msg: 'tipo di file non ammesso, saltato', code: 'TIPO' }); done++; continue; }
         blob = b.blob; replace = false;
       } else if (it.kind === 'pdfblob') {
-        const b = await DB.getBlob(it.blobId); if (!b) { done++; continue; }
+        const b = await DB.getBlob(it.blobId); if (!b) { it._ok = true; done++; continue; }
         blob = b.blob; type = 'application/pdf'; replace = true;
       } else if (it.kind === 'office') {
         blob = await it.make(); type = it.type; replace = true;
@@ -240,16 +280,34 @@ async function odSync(records, settings) {
       const res = await OD.upload([it.folder, ...it.segs], blob, { type, replace });
       if (it.kind === 'blob') { sent[it.blobId] = res.path; await DB.set('od_sent', sent); }
       await odLog({ path: res.path, size: blob.size });
+      it._ok = true;
     } catch (e) {
-      errors.push(it.segs.join('/') + ': ' + e.message);
+      errors.push({ path: it.folder + '/' + it.segs.join('/'), msg: e.message, code: errCode(e) });
       if (/autorizzazione|accedi|negato/i.test(e.message)) break;
     }
     done++;
   }
   _progress(null);
   try { if (wake) wake.release(); } catch (e) {}
-  if (errors.length) { console.warn(errors); toast(`Caricati ${done - errors.length} file, ${errors.length} con errori: ${errors[0]}`); }
-  else toast(stop ? `Interrotto: caricati ${done} file` : `OneDrive aggiornato: ${done} file`);
+  // esito per pratica: caricata solo se tutti i suoi file sono andati a buon fine
+  const synced = (await DB.get('od_synced')) || {};
+  for (const r of records) synced[r.id] = { t: t0, ok: plan.filter(i => i.recId === r.id).every(i => i._ok) };
+  await DB.set('od_synced', synced); odSyncSubs.forEach(f => f());
+  const rec = records.map(recordTitle).join(', ');
+  const ok = done - errors.length;
+  if (errors.length) {
+    console.warn(errors);
+    toast(`Caricati ${ok} file, ${errors.length} con errori: dettagli in Notifiche`);
+    const codes = [...new Set(errors.map(x => x.code).filter(Boolean))];
+    notify('err', `OneDrive: ${errors.length} file non caricati`, {
+      record: rec, code: codes.join(', '),
+      detail: `Caricati ${ok} file su ${plan.length}. Primo errore: ${errors[0].msg}`,
+      items: errors.map(x => `${x.path} — ${x.msg}${x.code ? ' [' + x.code + ']' : ''}`) });
+  } else {
+    const msg = stop ? `Interrotto: caricati ${done} file` : (plan.length ? `OneDrive aggiornato: ${done} file` : 'OneDrive già aggiornato: nessun file nuovo');
+    toast(msg);
+    notify(stop ? 'warn' : 'ok', msg, { record: rec });
+  }
   return { done, errors };
 }
 

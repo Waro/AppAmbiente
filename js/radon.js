@@ -16,7 +16,7 @@ function newRadon(settings) {
     momenti: [emptyMomento(settings), emptyMomento(settings), emptyMomento(settings)], punti: [], rapporti: [], planimetrie: [],
   };
 }
-const radonIsEmpty = r => !r.commessa && !r.cliente && !r.citta && !r.punti.length && !(r.planimetrie || []).length && !r.note && !(r.momenti || []).some(m => m.appunti);
+const radonIsEmpty = r => !r.commessa && !r.cliente && !r.citta && !(r.fotoAppunti || []).length && !r.punti.length && !(r.planimetrie || []).length && !r.note && !(r.momenti || []).some(m => m.appunti);
 
 function radonStato(c) {
   const m = c.momenti;
@@ -57,6 +57,7 @@ function dueLine(c) {
 
 /* ---------------- elenco ---------------- */
 function RadonList({ records, open, create, activeId }) {
+  const od = useOdSynced();
   const all = records.filter(r => r.type === 'radon');
   const [f, setF] = useState('attive');
   const match = (r, k) => k === 'attive' ? radonStato(r) !== 'terminata' : k === 'tutte' || radonStato(r) === k;
@@ -72,11 +73,11 @@ function RadonList({ records, open, create, activeId }) {
     ${!list.length && html`<div class="empty"><b>Nessuna campagna qui</b>Tocca + per registrare una nuova campagna.</div>`}
     <div class="list">${list.map(r => {
       const s = radonStato(r);
-      return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '')} key=${r.id} onClick=${() => open(r.id)}>
+      return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r)} key=${r.id} onClick=${() => open(r.id)}>
         <div class="r1"><span class="id">${r.commessa || 'Commessa da indicare'}</span><span class=${'badge ' + STATI[s][1]}>${STATI[s][0]}</span><span class="dt">${r.punti.length} punti</span></div>
         <div class="ttl">${[r.cliente, r.insegna].filter(Boolean).join(' · ') || 'Cliente da indicare'}</div>
         <div class="sum">${[r.citta && r.citta + (r.provincia ? ' (' + r.provincia + ')' : ''), r.indirizzo].filter(Boolean).join(', ')}</div>
-        ${dueLine(r)}</button>`;
+        ${dueLine(r)}<${OdBadge} map=${od} r=${r} /></button>`;
     })}</div>
     <div class="fbar"><button class="fab" aria-label="Nuova campagna" onClick=${create}><${Icon} n="plus" s=${21} w=${2.4} /></button></div>
   </div>`;
@@ -222,7 +223,7 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
       const bytes = await PdfGen.radonPdf(await loadTemplate('radon.pdf'), r);
       const name = `Scheda_radon_${slug(r.commessa || r.cliente || 'campagna')}.pdf`;
       await shareFiles([{ blob: new Blob([bytes], { type: 'application/pdf' }), name }], name);
-    } catch (e) { toast('PDF non creato: ' + e.message); console.error(e); }
+    } catch (e) { fail('PDF non creato', e); }
     setBusy(false);
   };
 
@@ -319,7 +320,8 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
       onRemove=${async p => { for (const b of blobIds(p)) await removeBlob(b); up(q => ({ ...q, planimetrie: (q.planimetrie || []).filter(x => x.id !== p.id) })); }} /></div>
 
     <div class="sec-h"><h3>Appunti generali</h3></div>
-    <div class="card"><textarea class="inp" rows="3" value=${r.note} onInput=${e => up({ note: e.target.value })} aria-label="Note"></textarea></div>
+    <div class="card"><textarea class="inp" rows="3" value=${r.note} onInput=${e => up({ note: e.target.value })} aria-label="Note"></textarea>
+      <${NotePhotos} rec=${r} up=${up} /></div>
 
     <div class="sec-h"><h3>Documenti</h3></div>
     <div class="stack">

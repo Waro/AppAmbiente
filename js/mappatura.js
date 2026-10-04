@@ -8,20 +8,21 @@ function newMappatura(records, settings) {
   const n = records.filter(r => r.type === 'mappatura' && (r.codice || '').startsWith('MAP-' + y)).map(r => +r.codice.slice(-3)).reduce((a, b) => Math.max(a, b), 0) + 1;
   return {
     id: uid('map'), type: 'mappatura', codice: `MAP-${y}-${String(n).padStart(3, '0')}`, createdAt: Date.now(), updatedAt: Date.now(),
-    commessa: '', cliente: '', sito: '', data: today(), tecnico: `${settings.tecnicoNome} ${settings.tecnicoCognome}`.trim(), tab: 'mca',
+    commessa: '', cliente: '', citta: '', indirizzo: '', sito: '', data: today(), tecnico: `${settings.tecnicoNome} ${settings.tecnicoCognome}`.trim(), tab: 'mca',
     campioni: emptyCampioni(), congelati: {}, schede: {}, planimetrie: [], appunti: '',
     recs: [], documenti: [], // vuoti: servono solo perché ZIP/OneDrive riusano lo stesso codice della DDA
   };
 }
-const mappaturaIsEmpty = r => !r.commessa && !r.cliente && !r.sito && !MAP_MATS.some(m => (r.campioni[m.k] || []).length) && !(r.planimetrie || []).length && !r.appunti;
+const mappaturaIsEmpty = r => !r.commessa && !r.cliente && !r.sito && !r.citta && !r.indirizzo && !(r.fotoAppunti || []).length && !MAP_MATS.some(m => (r.campioni[m.k] || []).length) && !(r.planimetrie || []).length && !r.appunti;
 const allCampMap = r => MAP_MATS.flatMap(m => (r.campioni[m.k] || []).map(c => ({ ...c, k: m.k })));
 
 /* ---------------- elenco ---------------- */
 function MappaturaList({ records, open, create, activeId }) {
+  const od = useOdSynced();
   const all = records.filter(r => r.type === 'mappatura');
   const list = all.slice().sort((a, b) => (b.data || '').localeCompare(a.data || ''));
   const groups = {};
-  list.forEach(r => { const c = r.cliente || 'Senza cliente', s = r.sito || 'Sito da indicare'; ((groups[c] = groups[c] || {})[s] = groups[c][s] || []).push(r); });
+  list.forEach(r => { const c = r.cliente || 'Senza cliente', s = placeLabel(r); ((groups[c] = groups[c] || {})[s] = groups[c][s] || []).push(r); });
   const card = r => {
     const cs = allCampMap(r);
     const byM = MAP_MATS.filter(m => (r.campioni[m.k] || []).length).map(m => (r.campioni[m.k] || []).length + ' ' + m.l).join(', ');
@@ -31,10 +32,10 @@ function MappaturaList({ records, open, create, activeId }) {
     });
     const sch = Object.entries(r.schede || {}).map(([k, t]) => k.toUpperCase() + ' ' + new Date(t).toLocaleDateString('it-IT'));
     if (sch.length) lines.push(html`<div class="l" style="color:var(--ok)"><span class="dot" style="background:var(--ok)"></span><span>Scheda campioni: ${sch.join(', ')}</span></div>`);
-    return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '')} key=${r.id} onClick=${() => open(r.id)}>
+    return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r)} key=${r.id} onClick=${() => open(r.id)}>
       <div class="r1"><span class="id">${r.codice}</span><span class="dt">${fmtD(r.data)}</span></div>
       ${r.commessa && html`<div class="ttl">${r.commessa}</div>`}
-      <div class="sum">${r.tecnico ? r.tecnico + ' · ' : ''}${cs.length} campioni${byM ? ' (' + byM + ')' : ''}</div>${lines}</button>`;
+      <div class="sum">${r.tecnico ? r.tecnico + ' · ' : ''}${cs.length} campioni${byM ? ' (' + byM + ')' : ''}</div>${lines}<${OdBadge} map=${od} r=${r} /></button>`;
   };
   return html`<div class="content">
     <h2>Mappatura MCA e FAV</h2><p class="lead">${all.length} ${all.length === 1 ? 'censimento' : 'censimenti'}</p>
@@ -84,7 +85,7 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
     try {
       const s = settings;
       const bytes = await PdfGen.schedaCampioniPdf(await loadTemplate('scheda_campioni.pdf'), {
-        commessa: r.commessa, sito: r.sito, campioni: list,
+        commessa: r.commessa, sito: placeDoc(r), campioni: list,
         analisi: k === 'mca' ? { codice: s.mcaCodice, desc: s.mcaDesc } : { codice: s.favCodice, desc: s.favDesc },
         lab: { nome: s.labNome, r1: s.labR1, r2: s.labR2 }, offerta: s.offerta, offertaRev: s.offertaRev, email: s.emailReferti,
         prelevatoDa: s.prelevatoDa, verificatoDa: s.verificatoDa,
@@ -92,21 +93,21 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
       up(p => ({ ...p, congelati: { ...p.congelati, [k]: true }, schede: { ...p.schede, [k]: Date.now() } }));
       const name = `Scheda_campioni_${k.toUpperCase()}_${slug(r.commessa || r.codice)}.pdf`;
       await shareFiles([{ blob: new Blob([bytes], { type: 'application/pdf' }), name }], name);
-    } catch (e) { toast('PDF non creato: ' + e.message); console.error(e); }
+    } catch (e) { fail('PDF non creato', e); }
     setBusy(null);
   };
   const xlsx = async k => {
     const name = `Scheda_campioni_${k.toUpperCase()}_${slug(r.commessa || r.codice)}.xlsx`;
     const h = await pickSave(name, 'Cartella di lavoro Excel', XLSX_MIME, '.xlsx'); if (h === 'cancel') return;
     setBusy('x' + k);
-    try { await saveOffice(h, await schedaCampioniXlsx(r, k, settings), name); } catch (e) { toast('Excel non creato: ' + e.message); console.error(e); }
+    try { await saveOffice(h, await schedaCampioniXlsx(r, k, settings), name); } catch (e) { fail('Excel non creato', e); }
     setBusy(null);
   };
   const riepilogo = async () => {
     const name = `Riepilogo_campioni_${slug(r.commessa || r.codice)}.docx`;
     const h = await pickSave(name, 'Documento Word', DOCX_MIME, '.docx'); if (h === 'cancel') return;
     setBusy('docx'); toast('Preparo il riepilogo con le foto…');
-    try { await saveOffice(h, await riepilogoCampioniDocx(r, settings), name); } catch (e) { toast('Word non creato: ' + e.message); console.error(e); }
+    try { await saveOffice(h, await riepilogoCampioniDocx(r, settings), name); } catch (e) { fail('Word non creato', e); }
     setBusy(null);
   };
 
@@ -115,7 +116,9 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
     <div class="card"><div class="grid2">
       <${Inp} cls="full" label="Commessa - progetto" value=${r.commessa} set=${v => up({ commessa: v })} placeholder="es. 171/26" />
       <${Inp} label="Cliente" req list="dl-cli-map" value=${r.cliente} set=${v => up({ cliente: v })} />
-      <${Inp} label="Sito" req list="dl-siti-map" value=${r.sito} set=${v => up({ sito: v })} placeholder="Nome o indirizzo" />
+      <${Inp} label="Città" value=${r.citta} set=${v => up({ citta: v })} />
+      <${Inp} cls="full" label="Indirizzo" value=${r.indirizzo} set=${v => up({ indirizzo: v })} placeholder="Via e numero civico" />
+      <${Inp} label="Sito / codice immobile" list="dl-siti-map" value=${r.sito} set=${v => up({ sito: v })} placeholder="Facoltativo" />
       <${Inp} label="Data" type="date" value=${r.data} set=${v => up({ data: v })} />
       <${Inp} label="Tecnico" value=${r.tecnico} set=${v => up({ tecnico: v })} />
     </div>
@@ -157,7 +160,8 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
     <div style="margin-top:6px"><button class="btn sm" onClick=${onSettings}><${Icon} n="gear" s=${15} /> Laboratorio, offerta, codici analisi</button></div>
 
     <div class="sec-h"><h3>Appunti</h3></div>
-    <div class="card"><${Area} rows=${4} value=${r.appunti} set=${v => up({ appunti: v })} placeholder="Note generali del censimento" /></div>
+    <div class="card"><${Area} rows=${4} value=${r.appunti} set=${v => up({ appunti: v })} placeholder="Note generali del censimento" />
+      <${NotePhotos} rec=${r} up=${up} /></div>
 
     <div class="sec-h"><h3>Archivio</h3></div>
     <div class="stack">

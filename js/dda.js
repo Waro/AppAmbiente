@@ -38,7 +38,7 @@ const emptyCampioni = () => ({ terreni: [], acque: [], mca: [], fav: [], altro: 
    Compila solo i campi vuoti del record corrente: non sovrascrive mai un dato già inserito. */
 const DDA1_TEMPLATE = {
   app: 'nembo', type: 'dda-fase1',
-  commessa: '', cliente: '', sito: '', usoAttuale: '', usoStorico: '',
+  commessa: '', cliente: '', citta: '', indirizzo: '', sito: '', usoAttuale: '', usoStorico: '',
   check: Object.fromEntries(DDA_CHECK.map(([k]) => [k, ''])), checkNote: {}, recs: [{ nome: 'REC-1', descrizione: '' }],
   interviste: '', appunti: '',
 };
@@ -48,7 +48,7 @@ function importDda1(json, rec) {
   if (data.type && data.type !== 'dda-fase1') throw new Error('il file non è un\'importazione Fase 1');
   const patch = {}; let n = 0;
   const str = k => { if (data[k] && !rec[k]) { patch[k] = String(data[k]); n++; } };
-  ['commessa', 'cliente', 'sito', 'usoAttuale', 'usoStorico', 'interviste', 'appunti'].forEach(str);
+  ['commessa', 'cliente', 'citta', 'indirizzo', 'sito', 'usoAttuale', 'usoStorico', 'interviste', 'appunti'].forEach(str);
   if (data.check && typeof data.check === 'object') {
     const valid = new Set(['presente', 'assente', 'nv']); const chk = { ...rec.check }; const nt = { ...rec.checkNote };
     for (const [k, v] of Object.entries(data.check)) {
@@ -74,12 +74,12 @@ function newDda(records, settings) {
   const n = records.filter(r => r.type === 'dda' && (r.codice || '').startsWith('DDA-' + y)).map(r => +r.codice.slice(-3)).reduce((a, b) => Math.max(a, b), 0) + 1;
   return {
     id: uid('dda'), type: 'dda', codice: `DDA-${y}-${String(n).padStart(3, '0')}`, createdAt: Date.now(), updatedAt: Date.now(),
-    commessa: '', cliente: '', sito: '', data: today(), tecnico: `${settings.tecnicoNome} ${settings.tecnicoCognome}`.trim(), fase: 1,
+    commessa: '', cliente: '', citta: '', indirizzo: '', sito: '', data: today(), tecnico: `${settings.tecnicoNome} ${settings.tecnicoCognome}`.trim(), fase: 1,
     usoAttuale: '', usoStorico: '', check: {}, checkNote: {}, recs: [], interviste: '', documenti: [], appunti: '', appunti2: '', planimetrie: [],
     campioni: emptyCampioni(), congelati: {}, schede: {}, risultati: [], colonna: 'B', checklist: [],
   };
 }
-const ddaIsEmpty = r => !r.commessa && !r.cliente && !r.sito && !r.recs.length && !Object.keys(r.check).length && !MATS.some(m => r.campioni[m.k].length) && !r.usoAttuale && !r.interviste && !r.appunti && !r.appunti2 && !(r.checklist && r.checklist.length) && !(r.planimetrie && r.planimetrie.length);
+const ddaIsEmpty = r => !r.commessa && !r.cliente && !r.sito && !r.citta && !r.indirizzo && !(r.fotoAppunti || []).length && !(r.fotoAppunti2 || []).length && !r.recs.length && !Object.keys(r.check).length && !MATS.some(m => r.campioni[m.k].length) && !r.usoAttuale && !r.interviste && !r.appunti && !r.appunti2 && !(r.checklist && r.checklist.length) && !(r.planimetrie && r.planimetrie.length);
 const allCamp = r => MATS.flatMap(m => (r.campioni[m.k] || []).map(c => ({ ...c, k: m.k })));
 
 function superamenti(r) {
@@ -91,11 +91,12 @@ function superamenti(r) {
 
 /* ---------------- elenco ---------------- */
 function DdaList({ records, open, create, activeId }) {
+  const od = useOdSynced();
   const [f, setF] = useState('tutte');
   const all = records.filter(r => r.type === 'dda');
   const list = all.filter(r => f === 'tutte' || String(r.fase) === f).sort((a, b) => (b.data || '').localeCompare(a.data || ''));
   const groups = {};
-  list.forEach(r => { const c = r.cliente || 'Senza cliente', s = r.sito || 'Sito da indicare'; ((groups[c] = groups[c] || {})[s] = groups[c][s] || []).push(r); });
+  list.forEach(r => { const c = r.cliente || 'Senza cliente', s = placeLabel(r); ((groups[c] = groups[c] || {})[s] = groups[c][s] || []).push(r); });
   const card = r => {
     let sum, lines = [];
     if (r.fase === 1) {
@@ -116,10 +117,10 @@ function DdaList({ records, open, create, activeId }) {
       const sch = Object.entries(r.schede || {}).map(([k, t]) => k.toUpperCase() + ' ' + new Date(t).toLocaleDateString('it-IT'));
       if (sch.length) lines.push(html`<div class="l" style="color:var(--ok)"><span class="dot" style="background:var(--ok)"></span><span>Scheda campioni: ${sch.join(', ')}</span></div>`);
     }
-    return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '')} key=${r.id} onClick=${() => open(r.id)}>
+    return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r)} key=${r.id} onClick=${() => open(r.id)}>
       <div class="r1"><span class="id">${r.codice}</span><span class=${'badge ' + (r.fase === 1 ? 'b-f1' : 'b-f2')}>Fase ${r.fase}</span><span class="dt">${fmtD(r.data)}</span></div>
       ${r.commessa && html`<div class="ttl">${r.commessa}</div>`}
-      <div class="sum">${r.tecnico ? r.tecnico + ' · ' : ''}${sum}</div>${lines}</button>`;
+      <div class="sum">${r.tecnico ? r.tecnico + ' · ' : ''}${sum}</div>${lines}<${OdBadge} map=${od} r=${r} /></button>`;
   };
   const cnt = k => all.filter(r => k === 'tutte' || String(r.fase) === k).length;
   return html`<div class="content">
@@ -194,7 +195,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
     const rd = new FileReader();
     rd.onload = () => {
       try { const { patch, n } = importDda1(rd.result, r); up(patch); toast(`Importati ${n} campi`); }
-      catch (err) { toast('Import non riuscito: ' + err.message); }
+      catch (err) { fail('Import non riuscito', err); }
     };
     rd.readAsText(f);
   };
@@ -205,7 +206,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
     try {
       const s = settings;
       const bytes = await PdfGen.schedaCampioniPdf(await loadTemplate('scheda_campioni.pdf'), {
-        commessa: r.commessa, sito: r.sito, campioni: list,
+        commessa: r.commessa, sito: placeDoc(r), campioni: list,
         analisi: k === 'mca' ? { codice: s.mcaCodice, desc: s.mcaDesc } : { codice: s.favCodice, desc: s.favDesc },
         lab: { nome: s.labNome, r1: s.labR1, r2: s.labR2 }, offerta: s.offerta, offertaRev: s.offertaRev, email: s.emailReferti,
         prelevatoDa: s.prelevatoDa, verificatoDa: s.verificatoDa,
@@ -213,7 +214,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
       up(p => ({ ...p, congelati: { ...p.congelati, [k]: true }, schede: { ...p.schede, [k]: Date.now() } }));
       const name = `Scheda_campioni_${k.toUpperCase()}_${slug(r.commessa || r.codice)}.pdf`;
       await shareFiles([{ blob: new Blob([bytes], { type: 'application/pdf' }), name }], name);
-    } catch (e) { toast('PDF non creato: ' + e.message); console.error(e); }
+    } catch (e) { fail('PDF non creato', e); }
     setBusy(null);
   };
 
@@ -221,14 +222,14 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
     const name = `Scheda_campioni_${k.toUpperCase()}_${slug(r.commessa || r.codice)}.xlsx`;
     const h = await pickSave(name, 'Cartella di lavoro Excel', XLSX_MIME, '.xlsx'); if (h === 'cancel') return;
     setBusy('x' + k);
-    try { await saveOffice(h, await schedaCampioniXlsx(r, k, settings), name); } catch (e) { toast('Excel non creato: ' + e.message); console.error(e); }
+    try { await saveOffice(h, await schedaCampioniXlsx(r, k, settings), name); } catch (e) { fail('Excel non creato', e); }
     setBusy(null);
   };
   const riepilogo = async () => {
     const name = `Riepilogo_campioni_${slug(r.commessa || r.codice)}.docx`;
     const h = await pickSave(name, 'Documento Word', DOCX_MIME, '.docx'); if (h === 'cancel') return;
     setBusy('docx'); toast('Preparo il riepilogo con le foto…');
-    try { await saveOffice(h, await riepilogoCampioniDocx(r, settings), name); } catch (e) { toast('Word non creato: ' + e.message); console.error(e); }
+    try { await saveOffice(h, await riepilogoCampioniDocx(r, settings), name); } catch (e) { fail('Word non creato', e); }
     setBusy(null);
   };
 
@@ -242,7 +243,9 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
     <div class="card"><div class="grid2">
       <${Inp} cls="full" label="Commessa - progetto" value=${r.commessa} set=${v => up({ commessa: v })} placeholder="es. 171/26" />
       <${Inp} label="Cliente" req list="dl-cli" value=${r.cliente} set=${v => up({ cliente: v })} />
-      <${Inp} label="Sito" req list="dl-siti" value=${r.sito} set=${v => up({ sito: v })} placeholder="Nome o indirizzo" />
+      <${Inp} label="Città" value=${r.citta} set=${v => up({ citta: v })} />
+      <${Inp} cls="full" label="Indirizzo" value=${r.indirizzo} set=${v => up({ indirizzo: v })} placeholder="Via e numero civico" />
+      <${Inp} label="Sito / codice immobile" list="dl-siti" value=${r.sito} set=${v => up({ sito: v })} placeholder="Facoltativo" />
       <${Inp} label="Data" type="date" value=${r.data} set=${v => up({ data: v })} />
       <${Inp} label="Tecnico" value=${r.tecnico} set=${v => up({ tecnico: v })} />
     </div>
@@ -291,7 +294,8 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
       <div class="card"><textarea class="inp" rows="4" value=${r.interviste} onInput=${e => up({ interviste: e.target.value })} aria-label="Interviste e note"></textarea></div>
 
       <div class="sec-h"><h3>Appunti Fase 1</h3><span class="hint">Testo libero</span></div>
-      <div class="card"><textarea class="inp" rows="4" placeholder="Note sparse, promemoria…" value=${r.appunti || ''} onInput=${e => up({ appunti: e.target.value })} aria-label="Appunti Fase 1"></textarea></div>
+      <div class="card"><textarea class="inp" rows="4" placeholder="Note sparse, promemoria…" value=${r.appunti || ''} onInput=${e => up({ appunti: e.target.value })} aria-label="Appunti Fase 1"></textarea>
+        <${NotePhotos} rec=${r} field="fotoAppunti" up=${up} /></div>
 
       <div class="sec-h"><h3>Importa da un DDA precedente</h3></div>
       <div class="card tight">
@@ -331,7 +335,8 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
       </div>
 
       <div class="sec-h"><h3>Appunti Fase 2</h3><span class="hint">Testo libero</span></div>
-      <div class="card"><textarea class="inp" rows="3" placeholder="Note sparse, promemoria…" value=${r.appunti2 || ''} onInput=${e => up({ appunti2: e.target.value })} aria-label="Appunti Fase 2"></textarea></div>
+      <div class="card"><textarea class="inp" rows="3" placeholder="Note sparse, promemoria…" value=${r.appunti2 || ''} onInput=${e => up({ appunti2: e.target.value })} aria-label="Appunti Fase 2"></textarea>
+        <${NotePhotos} rec=${r} field="fotoAppunti2" up=${up} /></div>
 
       ${planSection}
 
@@ -343,7 +348,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
           ${mat.auto ? html`<div class="code-auto" style=${'color:' + mat.c + ';background:color-mix(in srgb,' + mat.c + ' 14%, white)'}>${c.codice}</div>`
             : html`<input class="inp code-free" value=${c.codice} placeholder="Codice" onInput=${e => updCamp(c.id, { codice: e.target.value })} aria-label="Codice campione" />`}
           <div class="stack">
-            ${tab === 'altro' && html`<input class="inp" style="background:rgba(0,118,211,.07)" placeholder="Tipo di campione (es. rifiuto, aria, sedimento)" value=${c.tipo} onInput=${e => updCamp(c.id, { tipo: e.target.value })} />`}
+            ${tab === 'altro' && html`<input class="inp" style="background:rgba(31,126,157,.08)" placeholder="Tipo di campione (es. rifiuto, aria, sedimento)" value=${c.tipo} onInput=${e => updCamp(c.id, { tipo: e.target.value })} />`}
             <textarea class="inp" rows="2" placeholder="Descrizione campione" value=${c.descrizione} onInput=${e => updCamp(c.id, { descrizione: e.target.value })}></textarea>
             <div class="row">
               <input class="inp" type="date" style="max-width:170px" value=${c.data || ''} onInput=${e => updCamp(c.id, { data: e.target.value })} aria-label="Data prelievo" />

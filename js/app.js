@@ -2,8 +2,13 @@
 
 let _settings = { ...DEFAULT_SETTINGS };
 
+// nome leggibile della pratica (notifiche, messaggi): codice · cliente · indirizzo
+function recordTitle(r) {
+  const id = r.codice || (r.type === 'radon' ? ['Radon', r.commessa].filter(Boolean).join(' ') : r.commessa);
+  return [id, r.cliente, placeLabel(r)].filter(Boolean).join(' · ');
+}
 function recordLabel(r) {
-  return r.type === 'dda' || r.type === 'mappatura' || r.type === 'ra' ? slug([r.codice, r.cliente, r.sito].filter(Boolean).join('_'))
+  return r.type === 'dda' || r.type === 'mappatura' || r.type === 'ra' ? slug([r.codice, r.cliente, r.sito || placeAddr(r)].filter(Boolean).join('_'))
     : slug(['Radon', r.commessa, r.cliente, r.citta].filter(Boolean).join('_')) || r.id;
 }
 
@@ -43,7 +48,7 @@ async function buildZip(records, settings, withSettings) {
         try {
           const s = settings;
           const bytes = await PdfGen.schedaCampioniPdf(await loadTemplate('scheda_campioni.pdf'), {
-            commessa: r.commessa, sito: r.sito, campioni: r.campioni[k],
+            commessa: r.commessa, sito: placeDoc(r), campioni: r.campioni[k],
             analisi: k === 'mca' ? { codice: s.mcaCodice, desc: s.mcaDesc } : { codice: s.favCodice, desc: s.favDesc },
             lab: { nome: s.labNome, r1: s.labR1, r2: s.labR2 }, offerta: s.offerta, offertaRev: s.offertaRev, email: s.emailReferti,
             prelevatoDa: s.prelevatoDa, verificatoDa: s.verificatoDa });
@@ -56,6 +61,8 @@ async function buildZip(records, settings, withSettings) {
       if (p.mergedBlobId) await addBlob(p.mergedBlobId, `${dir}planimetrie/${slug(p.nome)}_annotata.pdf`);
     }
     // eventuali file non ancora inclusi
+    for (const [k, f] of (r.fotoAppunti || []).entries()) await addBlob(f, `${dir}foto/Appunti_${k + 1}.jpg`);
+    for (const [k, f] of (r.fotoAppunti2 || []).entries()) await addBlob(f, `${dir}foto/Appunti_Fase2_${k + 1}.jpg`);
     for (const id of blobIds(r)) await addBlob(id, `${dir}altri/${id}`);
   }
   const manifest = { app: 'nembo', version: 1, exportedAt: new Date().toISOString(), records, files };
@@ -90,7 +97,7 @@ async function recordFiles(r, settings) {
     for (const d of r.rapporti) await add(d.blobId, d.nome.replace(/\.[^.]+$/, ''));
   } else {
     for (const k of ['mca', 'fav']) if (r.campioni[k].length) pdf(await PdfGen.schedaCampioniPdf(await loadTemplate('scheda_campioni.pdf'), {
-      commessa: r.commessa, sito: r.sito, campioni: r.campioni[k],
+      commessa: r.commessa, sito: placeDoc(r), campioni: r.campioni[k],
       analisi: k === 'mca' ? { codice: s.mcaCodice, desc: s.mcaDesc } : { codice: s.favCodice, desc: s.favDesc },
       lab: { nome: s.labNome, r1: s.labR1, r2: s.labR2 }, offerta: s.offerta, offertaRev: s.offertaRev, email: s.emailReferti,
       prelevatoDa: s.prelevatoDa, verificatoDa: s.verificatoDa }), 'Scheda_campioni_' + k.toUpperCase());
@@ -98,6 +105,8 @@ async function recordFiles(r, settings) {
     for (const m of MATS) for (const c of r.campioni[m.k]) for (const [k, f] of (c.foto || []).entries()) await add(f, `${m.l}_${c.codice || 'campione'}_${k + 1}`);
     for (const d of r.documenti) await add(d.blobId, d.nome.replace(/\.[^.]+$/, ''));
   }
+  for (const [k, f] of (r.fotoAppunti || []).entries()) await add(f, `Appunti_${k + 1}`);
+  for (const [k, f] of (r.fotoAppunti2 || []).entries()) await add(f, `Appunti_Fase2_${k + 1}`);
   for (const p of (r.planimetrie || [])) await add(p.mergedBlobId || p.blobId, 'Planimetria_' + p.nome + (p.mergedBlobId ? '_annotata' : ''));
   return out;
 }
@@ -106,7 +115,7 @@ async function recordFiles(r, settings) {
 async function sendToOneDrive(r, settings) {
   toast('Preparo i file…');
   let files;
-  try { files = await recordFiles(r, settings); } catch (e) { toast('Non riesco a preparare i file: ' + e.message); return; }
+  try { files = await recordFiles(r, settings); } catch (e) { fail('Non riesco a preparare i file', e); return; }
   if (!files.length) { toast('Nessun file da inviare'); return; }
   const groups = []; let g = [], size = 0;
   for (const f of files) {
@@ -149,7 +158,7 @@ async function exportRecords(records, settings, full) {
     }
     if (full && res !== 'cancel') await DB.set('lastBackup', Date.now());
     return res;
-  } catch (e) { toast('Esportazione non riuscita: ' + e.message); console.error(e); }
+  } catch (e) { fail('Esportazione non riuscita', e); }
 }
 
 async function importZip(file) {
@@ -220,7 +229,7 @@ function TemplateRow({ name, t, onChange }) {
       const bytes = await f.arrayBuffer();
       await checkTemplate(name, bytes);
       await DB.set(t.key, bytes); setHas(true); toast('Modello salvato'); onChange && onChange();
-    } catch (err) { toast('Modello non valido: ' + err.message); }
+    } catch (err) { fail('Modello non valido', err); }
   };
   return html`<div class="row" style="padding:8px 0;border-top:1px solid var(--border)">
     <div class="tb-grow"><div style="font-size:13.5px;font-weight:600;white-space:normal">${t.label}</div>
@@ -244,7 +253,7 @@ function Settings({ settings, setSettings, onTemplates }) {
       const res = await importConfig(f, s);
       setSettings(res.settings); setK(x => x + 1); onTemplates && onTemplates();
       toast(`Configurazione caricata${res.nTpl ? ' con ' + res.nTpl + ' modelli' : ''}`);
-    } catch (err) { toast('Configurazione non caricata: ' + err.message); }
+    } catch (err) { fail('Configurazione non caricata', err); }
   };
   return html`<div class="content form" key=${k}>
     <div class="card tight">
@@ -304,6 +313,45 @@ function Settings({ settings, setSettings, onTemplates }) {
   </div>`;
 }
 
+/* ---------------- notifiche ---------------- */
+function Notifiche() {
+  const list = useNotifiche();
+  const [open, setOpen] = useState({});
+  const [f, setF] = useState('tutte');
+  useEffect(() => { const t = setTimeout(notifMarkRead, 400); return () => clearTimeout(t); }, [list.length]);
+  const shown = list.filter(n => f === 'tutte' || (f === 'err' ? n.level === 'err' : n.level !== 'err'));
+  const nErr = list.filter(n => n.level === 'err').length;
+  const COL = { ok: 'var(--ok)', warn: '#b26b00', err: 'var(--nc)' };
+  const LBL = { ok: 'Completato', warn: 'Interrotto', err: 'Errore' };
+  const copy = async n => {
+    const txt = [new Date(n.t).toLocaleString('it-IT'), n.title, n.record && 'Pratica: ' + n.record, n.code && 'Codice: ' + n.code, n.detail, ...(n.items || [])].filter(Boolean).join('\n');
+    try { await navigator.clipboard.writeText(txt); toast('Dettagli copiati'); } catch (e) { toast('Copia non riuscita'); }
+  };
+  return html`<div class="content">
+    <h2>Notifiche</h2><p class="lead">Esiti dei caricamenti su OneDrive ed errori dell'app, con il relativo codice. Restano su questo dispositivo (ultime ${NOTIF_MAX}).</p>
+    ${list.length > 0 && html`<div class="row" style="margin:6px 0 12px">
+      <div class="seg" style="flex:1">
+        <button class=${f === 'tutte' ? 'on' : ''} onClick=${() => setF('tutte')}>Tutte · ${list.length}</button>
+        <button class=${f === 'err' ? 'on' : ''} onClick=${() => setF('err')}>Errori · ${nErr}</button>
+        <button class=${f === 'ok' ? 'on' : ''} onClick=${() => setF('ok')}>Esiti · ${list.length - nErr}</button>
+      </div></div>`}
+    ${!shown.length && html`<div class="empty"><b>Nessuna notifica</b>${list.length ? 'Niente in questa categoria.' : 'Qui compariranno gli esiti dei caricamenti e gli eventuali errori.'}</div>`}
+    <div class="list">${shown.map(n => html`<div class="card tight" key=${n.id} style=${'border-left:4px solid ' + COL[n.level] + ';padding:12px 14px'}>
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline">
+        <b style=${'font-size:12px;color:' + COL[n.level]}>${LBL[n.level]}</b>
+        <span style="font-size:12px;color:var(--muted)">${new Date(n.t).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}</span></div>
+      <div style="font-weight:700;margin-top:3px">${n.title}</div>
+      ${n.record && html`<div style="font-size:12.5px;color:var(--text2);margin-top:2px">${n.record}</div>`}
+      ${n.detail && html`<div style="font-size:13px;margin-top:6px;word-break:break-word">${n.detail}</div>`}
+      ${n.code && html`<div style="margin-top:8px"><span style="font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#f1f4f8;border:1px solid var(--border);border-radius:6px;padding:2px 7px">Codice: ${n.code}</span></div>`}
+      ${(n.items || []).length > 0 && html`<button class="btn sm" style="margin-top:8px" onClick=${() => setOpen(o => ({ ...o, [n.id]: !o[n.id] }))}>${open[n.id] ? 'Nascondi' : 'Mostra'} dettaglio file (${n.items.length})</button>
+        ${open[n.id] && html`<div style="margin-top:8px;font-size:12px;font-family:ui-monospace,Menlo,monospace;background:#f7f9fc;border-radius:8px;padding:8px;max-height:260px;overflow:auto;word-break:break-word">${n.items.map(x => html`<div style="padding:3px 0;border-bottom:1px dashed var(--border)">${x}</div>`)}</div>`}`}
+      ${n.level !== 'ok' && html`<div style="margin-top:8px"><button class="btn sm" onClick=${() => copy(n)}>Copia dettagli</button></div>`}
+    </div>`)}</div>
+    ${list.length > 0 && html`<button class="btn danger block" style="margin-top:16px" onClick=${() => { if (confirm('Cancellare tutte le notifiche?')) notifClear(); }}><${Icon} n="trash" s=${17} /> Svuota notifiche</button>`}
+  </div>`;
+}
+
 /* ---------------- backup ---------------- */
 function Backup({ records, settings, reload, lastBackup }) {
   const inp = useRef(); const [busy, setBusy] = useState(false);
@@ -326,7 +374,7 @@ function Backup({ records, settings, reload, lastBackup }) {
       }
       toast(`Importati: ${res.added} nuovi, ${res.updated} aggiornati, ${res.kept} già presenti`);
       reload();
-    } catch (err) { toast('Import non riuscito: ' + err.message); }
+    } catch (err) { fail('Import non riuscito', err); }
     setBusy(false);
   };
   return html`<div class="content form">
@@ -367,12 +415,53 @@ const LIST_OF = { dda: 'ddaList', mappatura: 'mappaturaList', radon: 'radonList'
 const DETAIL_OF = { ddaList: 'dda', mappaturaList: 'mappatura', radonList: 'radon', raList: 'ra' };
 
 /* ---------------- app ---------------- */
+/* ---------------- menu laterale (tablet in orizzontale e PC) ---------------- */
+const NAV_AREAS = [
+  { v: 'ddaList', d: 'dda', ic: 'leaf', l: 'Ambiente · DDA' },
+  { v: 'mappaturaList', d: 'mappatura', ic: 'pin', l: 'Mappatura MCA e FAV' },
+  { v: 'raList', d: 'ra', ic: 'shield', l: 'Sopralluogo RA' },
+  { v: 'radonList', d: 'radon', ic: 'radon', l: 'Campagne radon' },
+];
+const NAV_TOOLS = [{ v: 'backup', ic: 'archive', l: 'Backup' }, { v: 'settings', ic: 'gear', l: 'Impostazioni' }];
+// menu ridotto o esteso: la scelta dell'utente resta; altrimenti ridotto sotto i 1300 px
+function useNavMin() {
+  const [min, setMin] = useState(() => {
+    try { const v = localStorage.getItem('nembo_nav'); if (v) return v === 'min'; } catch (e) {}
+    return !matchMedia('(min-width: 1300px)').matches;
+  });
+  const toggle = () => setMin(m => { try { localStorage.setItem('nembo_nav', m ? 'full' : 'min'); } catch (e) {} return !m; });
+  return [min, toggle];
+}
+function SideNav({ route, go, counts, settings, min, toggle }) {
+  const nav = v => { if (route.v !== v) go({ v }); };
+  const item = (x, n) => {
+    const on = route.v === x.v || route.v === x.d;
+    return html`<button class=${'sn-it' + (on ? ' on' : '')} title=${min ? x.l : null} aria-current=${on ? 'page' : null} onClick=${() => nav(x.v)}>
+      <${Icon} n=${x.ic} s=${21} /><span class="l">${x.l}</span>${n > 0 && html`<span class="n">${n}</span>`}</button>`;
+  };
+  const name = `${settings.tecnicoNome || ''} ${settings.tecnicoCognome || ''}`.trim();
+  return html`<aside class=${'sidenav' + (min ? ' min' : '')} aria-label="Aree di lavoro">
+    <button class="sn-brand" title="Home" onClick=${() => nav('home')}><span class="logo">N</span><div><b>Nembo</b>${name && html`<small>${name}</small>`}</div></button>
+    <div class="sn-sec">Aree di lavoro</div>
+    ${NAV_AREAS.map(x => item(x, counts[x.d]))}
+    <div class="sn-sec">Strumenti</div><div class="sn-div"></div>
+    ${NAV_TOOLS.map(x => item(x, 0))}
+    <div class="sn-grow"></div>
+    <button class="sn-toggle" title=${min ? 'Espandi il menu' : 'Riduci il menu'} aria-expanded=${!min} onClick=${toggle}>
+      <${Icon} n=${min ? 'expand' : 'collapse'} s=${19} /><span class="l">Riduci menu</span></button>
+    <div class="sn-ver">${APP_VERSION}</div>
+  </aside>`;
+}
+
 function App() {
   const wide = useWide();
   const [ready, setReady] = useState(false);
   const [records, setRecords] = useState([]);
   const [settings, setSettingsState] = useState(DEFAULT_SETTINGS);
   const [route, setRoute] = useState({ v: 'home' });
+  const notifs = useNotifiche();
+  const unreadErr = notifs.filter(n => !n.read && n.level === 'err').length;
+  const [navMin, toggleNav] = useNavMin();
   const [hdr, setHdr] = useState(['', '']);
   const [lastBackup, setLastBackup] = useState(null);
   const [installEvt, setInstallEvt] = useState(null);
@@ -453,13 +542,13 @@ function App() {
       <h1>${hour < 13 ? 'Buongiorno' : hour < 18 ? 'Buon pomeriggio' : 'Buonasera'}${settings.tecnicoNome ? ', ' + settings.tecnicoNome : ''}</h1>
       <p class="lead">Scegli l'area di lavoro</p>
       <div class="tiles">
-        <button class="tile" onClick=${() => go({ v: 'ddaList' })}><span class="ic" style="background:linear-gradient(135deg,#7ad4e6,#32add7)"><${Icon} n="leaf" s=${24} /></span>
+        <button class="tile" onClick=${() => go({ v: 'ddaList' })}><span class="ic" style="background:linear-gradient(135deg,#2b97b8,#1b6e8c)"><${Icon} n="leaf" s=${24} /></span>
           <div><b>Ambiente · DDA</b><small>Sopralluogo Fase 1, campionamento Fase 2 e scheda campioni · ${nDda} ${nDda === 1 ? 'indagine' : 'indagini'}</small></div><span class="chev"><${Icon} n="right" s=${18} /></span></button>
-        <button class="tile" onClick=${() => go({ v: 'mappaturaList' })}><span class="ic" style="background:linear-gradient(135deg,#a21f8f,#a45f00)"><${Icon} n="pin" s=${24} /></span>
+        <button class="tile" onClick=${() => go({ v: 'mappaturaList' })}><span class="ic" style="background:linear-gradient(135deg,#c9b1ab,#977a74)"><${Icon} n="pin" s=${24} /></span>
           <div><b>Mappatura MCA e FAV</b><small>Censimento e campionamento indipendente da una DDA · ${nMap} ${nMap === 1 ? 'censimento' : 'censimenti'}</small></div><span class="chev"><${Icon} n="right" s=${18} /></span></button>
-        <button class="tile" onClick=${() => go({ v: 'raList' })}><span class="ic" style="background:linear-gradient(135deg,#b58cff,#6a3de8)"><${Icon} n="shield" s=${24} /></span>
+        <button class="tile" onClick=${() => go({ v: 'raList' })}><span class="ic" style="background:linear-gradient(135deg,#3b4d80,#243257)"><${Icon} n="shield" s=${24} /></span>
           <div><b>Sopralluogo RA</b><small>Verifica dei manufatti in amianto da mappatura o PMC · ${records.filter(r => r.type === 'ra').length} sopralluoghi</small></div><span class="chev"><${Icon} n="right" s=${18} /></span></button>
-        <button class="tile" onClick=${() => go({ v: 'radonList' })}><span class="ic" style="background:linear-gradient(135deg,#3cbbe1,#0091d3)"><${Icon} n="radon" s=${24} /></span>
+        <button class="tile" onClick=${() => go({ v: 'radonList' })}><span class="ic" style="background:linear-gradient(135deg,#1f7e9d,#243257)"><${Icon} n="radon" s=${24} /></span>
           <div><b>Campagne radon</b><small>Posa e ritiro dosimetri, firme e scheda raccolta dati · ${act.length} in corso</small></div><span class="chev"><${Icon} n="right" s=${18} /></span></button>
       </div>
       ${(!tplOk || !settings.tecnicoCognome) && html`<div class="notice">Prima di iniziare: in Impostazioni inserisci i tuoi dati e carica i due modelli PDF.</div>`}
@@ -473,7 +562,7 @@ function App() {
     </div>`;
   } else if (route.v === 'ddaList') {
     title = 'Ambiente · DDA';
-    const list = html`<${DdaList} records=${records} open=${id => wide ? select(id) : go({ v: 'dda', id })} create=${createDda} />`;
+    const list = html`<${DdaList} records=${records} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'dda', id })} create=${createDda} />`;
     if (wide) {
       const dRec = route.id && records.find(x => x.id === route.id);
       body = html`<div class="split-body">
@@ -485,7 +574,7 @@ function App() {
     } else body = list;
   } else if (route.v === 'mappaturaList') {
     title = 'Mappatura MCA e FAV';
-    const list = html`<${MappaturaList} records=${records} open=${id => wide ? select(id) : go({ v: 'mappatura', id })} create=${createMappatura} />`;
+    const list = html`<${MappaturaList} records=${records} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'mappatura', id })} create=${createMappatura} />`;
     if (wide) {
       const dRec = route.id && records.find(x => x.id === route.id);
       body = html`<div class="split-body">
@@ -500,7 +589,7 @@ function App() {
     body = html`<${MappaturaForm} key=${rec.id} rec=${rec} records=${records} settings=${settings} onSave=${r => saveRec({ ...r, _new: r._new && mappaturaIsEmpty(r) })} onDelete=${delRec} onSettings=${() => go({ v: 'settings' })} header=${header} />`;
   } else if (route.v === 'raList') {
     title = 'Sopralluogo RA';
-    const list = html`<${RaList} records=${records} open=${id => wide ? select(id) : go({ v: 'ra', id })} create=${createRa} />`;
+    const list = html`<${RaList} records=${records} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'ra', id })} create=${createRa} />`;
     if (wide) {
       const dRec = route.id && records.find(x => x.id === route.id);
       body = html`<div class="split-body">
@@ -515,7 +604,7 @@ function App() {
     body = html`<${RaForm} key=${rec.id} rec=${rec} records=${records} settings=${settings} onSave=${r => saveRec({ ...r, _new: r._new && raIsEmpty(r) })} onDelete=${delRec} header=${header} />`;
   } else if (route.v === 'radonList') {
     title = 'Campagne radon';
-    const list = html`<${RadonList} records=${records} open=${id => wide ? select(id) : go({ v: 'radon', id })} create=${createRadon} />`;
+    const list = html`<${RadonList} records=${records} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'radon', id })} create=${createRadon} />`;
     if (wide) {
       const dRec = route.id && records.find(x => x.id === route.id);
       body = html`<div class="split-body">
@@ -533,6 +622,8 @@ function App() {
     body = html`<${RadonForm} key=${rec.id} rec=${rec} settings=${settings} onSave=${r => saveRec({ ...r, _new: r._new && radonIsEmpty(r) })} onDelete=${delRec} header=${header} />`;
   } else if (route.v === 'settings') {
     title = 'Impostazioni'; sub = ''; body = html`<${Settings} settings=${settings} setSettings=${setSettings} onTemplates=${reload} />`;
+  } else if (route.v === 'notifiche') {
+    title = 'Notifiche'; sub = ''; body = html`<${Notifiche} />`;
   } else if (route.v === 'backup') {
     title = 'Backup'; sub = ''; body = html`<${Backup} records=${records} settings=${settings} reload=${reload} lastBackup=${lastBackup} />`;
   } else {
@@ -540,15 +631,22 @@ function App() {
   }
 
   const splitActive = wide && (route.v === 'ddaList' || route.v === 'mappaturaList' || route.v === 'radonList' || route.v === 'raList');
-  return html`<div class=${'shell' + (splitActive ? ' split' : '')}>
+  const counts = { dda: records.filter(r => r.type === 'dda').length, mappatura: records.filter(r => r.type === 'mappatura').length,
+    ra: records.filter(r => r.type === 'ra').length, radon: records.filter(r => r.type === 'radon' && radonStato(r) !== 'terminata').length };
+  return html`<div class=${'frame' + (wide ? ' wide' : '')}>
+    ${wide && html`<${SideNav} route=${route} go=${go} counts=${counts} settings=${settings} min=${navMin} toggle=${toggleNav} />`}
+    <div class=${'shell' + (splitActive ? ' split' : '')}>
     <header class="topbar">
-      ${route.v === 'home' ? html`<span class="logo">N</span>` : html`<button class="back" aria-label="Indietro" onClick=${goBack}><${Icon} n="back" s=${18} /></button>`}
+      ${wide ? null : route.v === 'home' ? html`<span class="logo">N</span>` : html`<button class="back" aria-label="Indietro" onClick=${goBack}><${Icon} n="back" s=${18} /></button>`}
       <div class="tb-grow"><div class="tb-title">${title}</div>${sub && html`<div class="tb-sub">${sub}</div>`}</div>
+      <button class=${'tb-bell' + (route.v === 'notifiche' ? ' on' : '')} aria-label=${unreadErr ? `Notifiche, ${unreadErr} errori non letti` : 'Notifiche'}
+        onClick=${() => route.v !== 'notifiche' && go({ v: 'notifiche' })}><${Icon} n="bell" s=${20} />${unreadErr > 0 && html`<span class="dot">${unreadErr}</span>`}</button>
     </header>
     ${body}
     <${ShareAsk} />
     <${Progress} />
     <${Toast} />
+    </div>
   </div>`;
 }
 

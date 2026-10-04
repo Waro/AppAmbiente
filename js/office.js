@@ -38,7 +38,7 @@ async function schedaCampioniXlsx(r, k, s) {
     [1, 3].forEach(c => { y.getCell(c).border = box; y.getCell(c).alignment = { vertical: 'middle', wrapText: true }; });
   };
   head('COMMESSA - PROGETTO', r.commessa || '');
-  head('SITO', r.sito || '');
+  head('SITO', placeDoc(r));
   head('REFERTI A', s.emailReferti || '');
   head('LABORATORIO', [s.labNome, s.labR1, s.labR2].filter(Boolean).join(', '));
   head('OFFERTA', [s.offerta, s.offertaRev].filter(Boolean).join(' - '));
@@ -81,7 +81,7 @@ async function riepilogoCampioniDocx(r, s) {
   const line = { style: BorderStyle.SINGLE, size: 4, color: 'BFBFBF' };
   const W = 9638; // larghezza utile A4 con margini 2 cm, in twip
 
-  const info = [['Commessa', r.commessa], ['Cliente', r.cliente], ['Sito', r.sito], ['Data sopralluogo', fmtD(r.data)], ['Tecnico', r.tecnico]].filter(([, v]) => v);
+  const info = [['Commessa', r.commessa], ['Cliente', r.cliente], ['Sito', placeDoc(r)], ['Data sopralluogo', fmtD(r.data)], ['Tecnico', r.tecnico]].filter(([, v]) => v);
   const infoTable = new Table({
     width: { size: W, type: WidthType.DXA }, columnWidths: [2400, W - 2400],
     rows: info.map(([a, b]) => new TableRow({ children: [
