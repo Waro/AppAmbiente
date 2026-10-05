@@ -161,6 +161,9 @@ async function odRecordItems(r, settings) {
   const photo = (id, dir, name) => id && items.push({ blobId: id, segs: [dir, name], kind: 'blob' });
   if (r.type === 'ra') {
     r.manufatti.forEach(m => m.foto.forEach((f, k) => photo(f, 'foto', `${m.codice || 'manufatto'}_${k + 1}`)));
+  } else if (r.type === 'hs') {
+    hsPhotoNames(r).forEach(([n, f]) => photo(f, 'foto', n));
+    items.push({ kind: 'office', type: DOCX_MIME, segs: ['Report_sopralluogo_HS'], make: () => hsReportDocx(r, s) });
   } else if (r.type === 'radon') {
     r.punti.forEach((p, i) => p.foto.forEach((f, k) => photo(f, 'foto', `R${i + 1}_${k + 1}`)));
     r.rapporti.forEach(d => photo(d.blobId, 'rapporti', d.nome));

@@ -1,8 +1,8 @@
 // Cache dell'app per l'uso offline. Aumenta VERSION a ogni aggiornamento dei file.
-const VERSION = 'nembo-v13';
+const VERSION = 'nembo-v14';
 const FILES = [
   './', 'index.html', 'styles.css', 'manifest.webmanifest', 'pdfgen.js',
-  'js/core.js', 'js/capture.js', 'js/plan.js', 'js/office.js', 'js/dda.js', 'js/mappatura.js', 'js/radon.js', 'js/ra.js', 'js/onedrive.js', 'js/app.js',
+  'js/core.js', 'js/capture.js', 'js/plan.js', 'js/office.js', 'js/dda.js', 'js/mappatura.js', 'js/radon.js', 'js/ra.js', 'js/hs.js', 'js/onedrive.js', 'js/app.js',
   'vendor/preact.min.umd.js', 'vendor/hooks.umd.js', 'vendor/htm.umd.js', 'vendor/pdf-lib.min.js',
   'vendor/jszip.min.js', 'vendor/signature_pad.umd.min.js', 'vendor/msal-browser.min.js', 'vendor/pdfjs.min.js', 'vendor/pdfjs.worker.min.js', 'vendor/exceljs.min.js', 'vendor/docx.umd.min.js',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'splash/bg.webp', 'README.md',

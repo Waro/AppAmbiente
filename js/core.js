@@ -2,7 +2,7 @@
 // Stessa stringa di VERSION in sw.js: aumentala insieme a quella ad ogni aggiornamento.
 // Essendo dentro un file JS servito dalla cache, se l'aggiornamento automatico fallisce
 // questa scritta mostra ancora la versione vecchia — è il modo per accorgersene.
-const APP_VERSION = 'nembo-v13';
+const APP_VERSION = 'nembo-v14';
 const { h, render } = preact;
 const { useState, useEffect, useRef, useMemo, useCallback } = preactHooks;
 const html = htm.bind(h);
@@ -204,7 +204,8 @@ const P = {
   bell: 'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0',
   shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM9 12l2 2 4-4',
   lock: 'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4', sign: 'M3 17c3-4 5-9 7-9s-1 9 2 9 3-5 5-5 2 3 4 3M3 21h18',
-  torch: 'M9 2h6v4l-2 3v13h-2V9L9 6z', trash: 'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6', paper: 'M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5',
+  torch: 'M9 2h6v4l-2 3v13h-2V9L9 6z',
+  hs: 'M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v2zM10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5M4 15v-3a6 6 0 0 1 6-6M14 6a6 6 0 0 1 6 6v3', trash: 'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6', paper: 'M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5',
 };
 const Icon = ({ n, s = 20, w = 2 }) => html`<svg width=${s} height=${s} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width=${w} stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d=${P[n]} /></svg>`;
 
