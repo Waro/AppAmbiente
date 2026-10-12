@@ -2,7 +2,18 @@
 // Stessa stringa di VERSION in sw.js: aumentala insieme a quella ad ogni aggiornamento.
 // Essendo dentro un file JS servito dalla cache, se l'aggiornamento automatico fallisce
 // questa scritta mostra ancora la versione vecchia — è il modo per accorgersene.
-const APP_VERSION = 'nembo-v14';
+const APP_VERSION = 'nembo-v15';
+
+/* ---------------- tema grafico: "essenziale" (predefinito) o "originale" ----------------
+   Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno. */
+const THEMES = { essenziale: { l: 'Essenziale', bar: '#f2f2f7' }, originale: { l: 'Originale', bar: '#f7f2f0' } };
+function getTheme() { try { const t = localStorage.getItem('nembo_theme'); if (THEMES[t]) return t; } catch (e) {} return 'essenziale'; }
+function applyTheme(t) {
+  if (t === 'originale') document.documentElement.dataset.theme = 'originale'; else delete document.documentElement.dataset.theme;
+  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', THEMES[t].bar);
+}
+function setTheme(t) { try { localStorage.setItem('nembo_theme', t); } catch (e) {} applyTheme(t); }
+applyTheme(getTheme());
 const { h, render } = preact;
 const { useState, useEffect, useRef, useMemo, useCallback } = preactHooks;
 const html = htm.bind(h);
@@ -201,11 +212,13 @@ const P = {
   gear: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z',
   archive: 'M21 8v13H3V8M1 3h22v5H1zM10 12h4',
   collapse: 'M11 17l-5-5 5-5M18 17l-5-5 5-5', expand: 'M13 17l5-5-5-5M6 17l5-5-5-5',
-  bell: 'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0',
+  today: 'M3 5h18v16H3zM3 10h18M8 3v4M16 3v4M8 14h3v3H8z',
+  building: 'M4 21V5l8-3v19M12 9h8v12M7 8h2M7 12h2M7 16h2M15 13h2M15 17h2M2 21h20',
+  nav: 'M3 11l18-8-8 18-2-8-8-2z', check: 'M5 12l5 5 9-10', map: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14',
+  more: 'M5 12h.01M12 12h.01M19 12h.01', x: 'M6 6l12 12M18 6 6 18', bell: 'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0',
   shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM9 12l2 2 4-4',
   lock: 'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4', sign: 'M3 17c3-4 5-9 7-9s-1 9 2 9 3-5 5-5 2 3 4 3M3 21h18',
-  torch: 'M9 2h6v4l-2 3v13h-2V9L9 6z',
-  hs: 'M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v2zM10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5M4 15v-3a6 6 0 0 1 6-6M14 6a6 6 0 0 1 6 6v3', trash: 'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6', paper: 'M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5',
+  torch: 'M9 2h6v4l-2 3v13h-2V9L9 6z', trash: 'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6', paper: 'M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5',
 };
 const Icon = ({ n, s = 20, w = 2 }) => html`<svg width=${s} height=${s} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width=${w} stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d=${P[n]} /></svg>`;
 
@@ -334,7 +347,7 @@ const DEFAULT_SETTINGS = {
   prelevatoDa: '', verificatoDa: '', emailReferti: '',
   labNome: '', labR1: '', labR2: '', offerta: '', offertaRev: '',
   mcaCodice: '', mcaDesc: '', favCodice: '', favDesc: '',
-  livelloRif: 300,
+  livelloRif: 300, buDefault: 'ambiente',
   msClientId: '', msTenantId: '',
 };
 
@@ -418,4 +431,51 @@ function NotePhotos({ rec, field = 'fotoAppunti', up }) {
   return html`<div style="margin-top:10px"><${PhotoStrip} ids=${ids} max=${10}
     onAdd=${add => up(p => ({ ...p, [field]: [...(p[field] || []), ...add] }))}
     onRemove=${async id => { await removeBlob(id); up(p => ({ ...p, [field]: (p[field] || []).filter(f => f !== id) })); }} /></div>`;
+}
+
+/* ---------------- componenti dello stile "Essenziale" ---------------- */
+// Titolo grande: occhiello, titolo, sottotitolo e pulsanti a destra. cls "top" = nascosto su tablet in orizzontale (c'è la barra superiore)
+function LargeTitle({ eye, title, sub, acts, top }) {
+  return html`<div class=${'lt' + (top ? ' top' : '')}><div class="lt-row"><div>
+    ${eye && html`<div class="lt-eye">${eye}</div>`}<div class="lt-title">${title}</div>${sub && html`<div class="lt-sub">${sub}</div>`}</div>
+    ${acts && html`<div class="lt-acts">${acts}</div>`}</div></div>`;
+}
+// Intestazione delle schede di dettaglio (stessa sul telefono e nel pannello affiancato)
+function DetailHead({ eye, title, sub, saved, onClose }) {
+  return html`<div class="dh"><div>
+      <div class="lt-eye">${eye}${saved !== undefined && html` · <span class="saved">${saved ? 'Salvato' : 'Salvataggio…'}</span>`}</div>
+      <div class="dh-title">${title}</div>${sub && html`<div class="dh-sub">${sub}</div>`}</div>
+    ${onClose && html`<button class="btn-icon" aria-label="Chiudi" onClick=${onClose}><${Icon} n="x" s=${18} /></button>`}</div>`;
+}
+// Anello di avanzamento in SVG (p da 0 a 1)
+function Ring({ p = 0, size = 96, w = 9, color = 'var(--blue)', track, children }) {
+  const r = (size - w) / 2, c = 2 * Math.PI * r, v = Math.max(0, Math.min(1, p || 0));
+  return html`<svg width=${size} height=${size} viewBox=${`0 0 ${size} ${size}`} style="transform:rotate(-90deg);display:block" aria-hidden="true">
+    <circle cx=${size / 2} cy=${size / 2} r=${r} fill="none" stroke=${track || `color-mix(in srgb, ${color} 14%, transparent)`} stroke-width=${w} />
+    ${v > 0 && html`<circle cx=${size / 2} cy=${size / 2} r=${r} fill="none" stroke=${color} stroke-width=${w} stroke-linecap="round" stroke-dasharray=${`${c * v} ${c}`} />`}${children}</svg>`;
+}
+function Toggle({ on, set, label }) {
+  return html`<button class=${'tgl' + (on ? ' on' : '')} role="switch" aria-checked=${!!on} aria-label=${label} onClick=${() => set(!on)}></button>`;
+}
+function Stepper({ n, dec, inc, label, min = 0 }) {
+  return html`<div class="stp" role="group" aria-label=${label}>
+    <button aria-label="Togli" disabled=${n <= min} onClick=${dec}>−</button><b>${n}</b><button aria-label="Aggiungi" onClick=${inc}>+</button></div>`;
+}
+// Barra azioni in fondo alla scheda: 1 secondario + 1 primario
+function ActionBar({ children }) { return html`<div class="abar">${children}</div>`; }
+const scrollToId = id => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+// Foto rapida dalla riga dell'elenco (segnaposto rosso "manca la foto")
+function QuickPhoto({ onAdd, label = 'Scatta la foto' }) {
+  const inp = useRef(); const [busy, setBusy] = useState(false);
+  const pick = async e => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    setBusy(true); try { await onAdd([await saveImage(f)]); } catch (err) { fail('Foto non salvata', err); } setBusy(false);
+  };
+  return html`<button class="ph-miss" aria-label=${label} onClick=${e => { e.stopPropagation(); inp.current.click(); }}>
+    ${busy ? html`<div class="spin" style="border-color:var(--sep);border-top-color:var(--danger)" />` : html`<${Icon} n="camera" s=${20} />`}
+    <input ref=${inp} type="file" accept="image/*" capture="environment" hidden onClick=${e => e.stopPropagation()} onChange=${pick} /></button>`;
+}
+function Thumb44({ id, dot }) {
+  const u = useBlobUrl(id);
+  return html`<span class="thumb44">${u && html`<img src=${u} alt="" />`}${dot && html`<i class="md" style=${'background:' + dot}></i>`}</span>`;
 }

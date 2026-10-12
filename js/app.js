@@ -8,7 +8,7 @@ function recordTitle(r) {
   return [id, r.cliente, placeLabel(r)].filter(Boolean).join(' · ');
 }
 function recordLabel(r) {
-  return r.type === 'dda' || r.type === 'mappatura' || r.type === 'ra' || r.type === 'hs' ? slug([r.codice, r.cliente, r.sito || placeAddr(r)].filter(Boolean).join('_'))
+  return r.type === 'dda' || r.type === 'mappatura' || r.type === 'ra' ? slug([r.codice, r.cliente, r.sito || placeAddr(r)].filter(Boolean).join('_'))
     : slug(['Radon', r.commessa, r.cliente, r.citta].filter(Boolean).join('_')) || r.id;
 }
 
@@ -29,9 +29,6 @@ async function buildZip(records, settings, withSettings) {
     const dir = recordLabel(r) + '/';
     if (r.type === 'ra') {
       for (const m of r.manufatti) for (const [k, f] of m.foto.entries()) await addBlob(f, `${dir}foto/${slug(m.codice) || 'manufatto'}_${k + 1}.jpg`);
-    } else if (r.type === 'hs') {
-      for (const [n, f] of hsPhotoNames(r)) await addBlob(f, `${dir}foto/${slug(n)}.jpg`);
-      try { zip.file(uniq(`${dir}Report_sopralluogo_HS.docx`), await hsReportDocx(r, settings)); } catch (e) { console.warn('hs docx', e); }
     } else if (r.type === 'radon') {
       for (const [i, p] of r.punti.entries()) for (const [k, f] of p.foto.entries()) await addBlob(f, `${dir}foto/R${i + 1}_${k + 1}.jpg`);
       for (const d of r.rapporti) await addBlob(d.blobId, `${dir}rapporti/${d.nome}`);
@@ -83,7 +80,7 @@ async function buildZip(records, settings, withSettings) {
 // Tutti i PDF, le foto e gli allegati (PDF/immagini) di un record, con nomi leggibili
 async function recordFiles(r, settings) {
   const s = settings || _settings;
-  const pre = (r.type === 'dda' || r.type === 'mappatura' || r.type === 'hs') ? slug([r.codice, r.commessa].filter(Boolean).join('_')) : slug(['Radon', r.commessa || r.cliente].filter(Boolean).join('_'));
+  const pre = (r.type === 'dda' || r.type === 'mappatura') ? slug([r.codice, r.commessa].filter(Boolean).join('_')) : slug(['Radon', r.commessa || r.cliente].filter(Boolean).join('_'));
   const out = [];
   const pdf = (bytes, name) => out.push({ blob: new Blob([bytes], { type: 'application/pdf' }), name: `${pre}_${name}.pdf` });
   const add = async (id, name) => {
@@ -94,9 +91,6 @@ async function recordFiles(r, settings) {
   };
   if (r.type === 'ra') {
     for (const m of r.manufatti) for (const [k, f] of m.foto.entries()) await add(f, `${m.codice || 'manufatto'}_${k + 1}`);
-  } else if (r.type === 'hs') {
-    out.push({ blob: await hsReportDocx(r, s), name: `${pre}_Report_sopralluogo_HS.docx` });
-    for (const [n, f] of hsPhotoNames(r)) await add(f, n);
   } else if (r.type === 'radon') {
     pdf(await PdfGen.radonPdf(await loadTemplate('radon.pdf'), r), 'Scheda_radon');
     for (const [i, p] of r.punti.entries()) for (const [k, f] of p.foto.entries()) await add(f, `R${i + 1}_${k + 1}`);
@@ -226,6 +220,7 @@ async function importConfig(file, current) {
 }
 
 /* ---------------- impostazioni ---------------- */
+const BUS = [['ambiente', 'Ambiente'], ['hs', 'H&S'], ['sicurezza', 'Sicurezza']];
 function TemplateRow({ name, t, onChange }) {
   const [has, setHas] = useState(null); const inp = useRef();
   useEffect(() => { DB.get(t.key).then(b => setHas(!!b)); }, []);
@@ -237,8 +232,8 @@ function TemplateRow({ name, t, onChange }) {
       await DB.set(t.key, bytes); setHas(true); toast('Modello salvato'); onChange && onChange();
     } catch (err) { fail('Modello non valido', err); }
   };
-  return html`<div class="row" style="padding:8px 0;border-top:1px solid var(--border)">
-    <div class="tb-grow"><div style="font-size:13.5px;font-weight:600;white-space:normal">${t.label}</div>
+  return html`<div class="row" style="padding:10px 0;border-top:.5px solid var(--sep)">
+    <div class="tb-grow"><div style="font-size:15px;font-weight:600;white-space:normal">${t.label}</div>
       <div class=${'lock'} style=${has ? 'color:var(--ok)' : 'color:var(--nc)'}>${has === null ? '' : has ? 'Caricato su questo dispositivo' : 'Da caricare'}</div></div>
     <button class="btn sm" onClick=${() => inp.current.click()}>${has ? 'Sostituisci' : 'Carica'}</button>
     <input ref=${inp} type="file" accept="application/pdf" hidden onChange=${pick} /></div>`;
@@ -248,6 +243,7 @@ function Settings({ settings, setSettings, onTemplates }) {
   const [sig, setSig] = useState(false);
   const [k, setK] = useState(0);
   const [cacheVer, setCacheVer] = useState(null);
+  const [theme, setThemeSt] = useState(getTheme());
   useEffect(() => { if (window.caches) caches.keys().then(ks => setCacheVer(ks[0] || '—')); }, []);
   const cfgInp = useRef();
   const s = settings; const set = patch => setSettings({ ...s, ...patch });
@@ -262,8 +258,16 @@ function Settings({ settings, setSettings, onTemplates }) {
     } catch (err) { fail('Configurazione non caricata', err); }
   };
   return html`<div class="content form" key=${k}>
+    <${LargeTitle} top title="Impostazioni" />
+    <div class="sec-h" style="margin-top:6px"><h3>Aspetto e avvio</h3></div>
+    <div class="card">
+      <div class="fld"><span>Tema grafico (solo su questo dispositivo)</span></div>
+      <div class="seg" style="margin-top:6px">${Object.entries(THEMES).map(([t, x]) => html`<button class=${theme === t ? 'on' : ''} onClick=${() => { setTheme(t); setThemeSt(t); }}>${x.l}</button>`)}</div>
+      <div class="fld" style="margin-top:14px"><span>Business unit mostrata in Oggi</span></div>
+      <div class="seg" style="margin-top:6px">${BUS.map(([k2, l]) => html`<button class=${(s.buDefault || 'ambiente') === k2 ? 'on' : ''} onClick=${() => set({ buDefault: k2 })}>${l}</button>`)}</div>
+    </div>
+    <div class="sec-h"><h3>File di configurazione</h3></div>
     <div class="card tight">
-      <h2 style="font-size:16px;margin-top:2px">File di configurazione</h2>
       <p class="lead" style="margin:6px 0 10px">Un unico file .json con impostazioni e modelli PDF, da tenere su OneDrive o inviare a un collega. Non pubblicarlo mai sul sito.</p>
       <div class="row">
         <button class="btn" style="flex:1" onClick=${() => cfgInp.current.click()}>Carica .json</button>
@@ -308,9 +312,9 @@ function Settings({ settings, setSettings, onTemplates }) {
     ${sig && html`<${SignaturePadOverlay} title="La tua firma" onClose=${() => setSig(false)} onDone=${url => set({ firmaTecnico: url })} />`}
 
     <div class="sec-h"><h3>Info app</h3></div>
-    <div class="card tight" style="font-size:12.5px;color:var(--text2)">
-      <div style="display:flex;justify-content:space-between;padding:9px 2px"><span>Versione app</span><b style="color:var(--text)">${APP_VERSION}</b></div>
-      <div style="display:flex;justify-content:space-between;padding:9px 2px;border-top:1px solid var(--border)">
+    <div class="card tight" style="font-size:14.5px;color:var(--text2)">
+      <div style="display:flex;justify-content:space-between;padding:9px 2px"><span>Versione app</span><b class="mono" style="color:var(--text)">${APP_VERSION}</b></div>
+      <div style="display:flex;justify-content:space-between;padding:9px 2px;border-top:.5px solid var(--sep)">
         <span>Cache offline attiva</span>
         <b style="color:${cacheVer && cacheVer !== APP_VERSION ? 'var(--warn, #9a5a00)' : 'var(--text)'}">${cacheVer || '…'}</b>
       </div>
@@ -327,14 +331,15 @@ function Notifiche() {
   useEffect(() => { const t = setTimeout(notifMarkRead, 400); return () => clearTimeout(t); }, [list.length]);
   const shown = list.filter(n => f === 'tutte' || (f === 'err' ? n.level === 'err' : n.level !== 'err'));
   const nErr = list.filter(n => n.level === 'err').length;
-  const COL = { ok: 'var(--ok)', warn: '#b26b00', err: 'var(--nc)' };
-  const LBL = { ok: 'Completato', warn: 'Interrotto', err: 'Errore' };
+  const COL = { ok: 'var(--ok)', warn: 'var(--warn)', err: 'var(--danger)', info: 'var(--blue)' };
+  const LBL = { ok: 'Completato', warn: 'Interrotto', err: 'Errore', info: 'Promemoria' };
   const copy = async n => {
     const txt = [new Date(n.t).toLocaleString('it-IT'), n.title, n.record && 'Pratica: ' + n.record, n.code && 'Codice: ' + n.code, n.detail, ...(n.items || [])].filter(Boolean).join('\n');
     try { await navigator.clipboard.writeText(txt); toast('Dettagli copiati'); } catch (e) { toast('Copia non riuscita'); }
   };
   return html`<div class="content">
-    <h2>Notifiche</h2><p class="lead">Esiti dei caricamenti su OneDrive ed errori dell'app, con il relativo codice. Restano su questo dispositivo (ultime ${NOTIF_MAX}).</p>
+    <${LargeTitle} top title="Notifiche" />
+    <p class="lead">Esiti dei caricamenti su OneDrive, promemoria ed errori dell'app, con il relativo codice. Restano su questo dispositivo (ultime ${NOTIF_MAX}).</p>
     ${list.length > 0 && html`<div class="row" style="margin:6px 0 12px">
       <div class="seg" style="flex:1">
         <button class=${f === 'tutte' ? 'on' : ''} onClick=${() => setF('tutte')}>Tutte · ${list.length}</button>
@@ -342,17 +347,17 @@ function Notifiche() {
         <button class=${f === 'ok' ? 'on' : ''} onClick=${() => setF('ok')}>Esiti · ${list.length - nErr}</button>
       </div></div>`}
     ${!shown.length && html`<div class="empty"><b>Nessuna notifica</b>${list.length ? 'Niente in questa categoria.' : 'Qui compariranno gli esiti dei caricamenti e gli eventuali errori.'}</div>`}
-    <div class="list">${shown.map(n => html`<div class="card tight" key=${n.id} style=${'border-left:4px solid ' + COL[n.level] + ';padding:12px 14px'}>
+    <div>${shown.map(n => html`<div class="card tight" key=${n.id} style=${'box-shadow:inset 4px 0 0 ' + COL[n.level] + ';padding:12px 14px 12px 18px'}>
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline">
-        <b style=${'font-size:12px;color:' + COL[n.level]}>${LBL[n.level]}</b>
+        <b style=${'font-size:13px;font-weight:600;color:' + COL[n.level]}>${LBL[n.level]}</b>
         <span style="font-size:12px;color:var(--muted)">${new Date(n.t).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}</span></div>
       <div style="font-weight:700;margin-top:3px">${n.title}</div>
       ${n.record && html`<div style="font-size:12.5px;color:var(--text2);margin-top:2px">${n.record}</div>`}
       ${n.detail && html`<div style="font-size:13px;margin-top:6px;word-break:break-word">${n.detail}</div>`}
-      ${n.code && html`<div style="margin-top:8px"><span style="font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#f1f4f8;border:1px solid var(--border);border-radius:6px;padding:2px 7px">Codice: ${n.code}</span></div>`}
+      ${n.code && html`<div style="margin-top:8px"><span class="mono" style="font-size:13px;background:var(--fill-soft);border-radius:6px;padding:2px 8px">Codice: ${n.code}</span></div>`}
       ${(n.items || []).length > 0 && html`<button class="btn sm" style="margin-top:8px" onClick=${() => setOpen(o => ({ ...o, [n.id]: !o[n.id] }))}>${open[n.id] ? 'Nascondi' : 'Mostra'} dettaglio file (${n.items.length})</button>
-        ${open[n.id] && html`<div style="margin-top:8px;font-size:12px;font-family:ui-monospace,Menlo,monospace;background:#f7f9fc;border-radius:8px;padding:8px;max-height:260px;overflow:auto;word-break:break-word">${n.items.map(x => html`<div style="padding:3px 0;border-bottom:1px dashed var(--border)">${x}</div>`)}</div>`}`}
-      ${n.level !== 'ok' && html`<div style="margin-top:8px"><button class="btn sm" onClick=${() => copy(n)}>Copia dettagli</button></div>`}
+        ${open[n.id] && html`<div class="mono" style="margin-top:8px;font-size:12.5px;font-weight:500;background:var(--fill-soft);border-radius:8px;padding:8px;max-height:260px;overflow:auto;word-break:break-word">${n.items.map(x => html`<div style="padding:3px 0;border-bottom:1px dashed var(--border)">${x}</div>`)}</div>`}`}
+      ${(n.level === 'err' || n.level === 'warn') && html`<div style="margin-top:8px"><button class="btn sm" onClick=${() => copy(n)}>Copia dettagli</button></div>`}
     </div>`)}</div>
     ${list.length > 0 && html`<button class="btn danger block" style="margin-top:16px" onClick=${() => { if (confirm('Cancellare tutte le notifiche?')) notifClear(); }}><${Icon} n="trash" s=${17} /> Svuota notifiche</button>`}
   </div>`;
@@ -384,15 +389,16 @@ function Backup({ records, settings, reload, lastBackup }) {
     setBusy(false);
   };
   return html`<div class="content form">
+    <${LargeTitle} top title="Backup" />
     <div class="card">
-      <h2 style="font-size:16px">Backup su OneDrive</h2>
+      <h2 style="font-size:17px;font-weight:600">Backup su OneDrive</h2>
       <p class="lead" style="margin:6px 0 12px">Un unico file ZIP con tutte le indagini e campagne, anche con centinaia di foto: cartelle con foto, allegati e PDF, più i dati in manifest.json per il ripristino. Nella finestra di salvataggio scegli OneDrive; se non compare, il file va in Download e lo carichi dall'app OneDrive.</p>
       <button class="btn pri block" disabled=${busy || !records.length} onClick=${doExport}>${busy ? html`<div class="spin" />` : html`<${Icon} n="archive" s=${18} />`} Crea backup completo</button>
       ${OD.account && html`<button class="btn outline block" style="margin-top:8px" disabled=${busy || !records.length} onClick=${async () => { setBusy(true); await odSync(records.filter(r => !r._new), settings); setBusy(false); }}><${Icon} n="share" s=${18} /> Carica tutto su OneDrive</button>`}
       <div class="lock" style="margin-top:8px">${lastBackup ? 'Ultimo backup: ' + new Date(lastBackup).toLocaleString('it-IT', { dateStyle: 'medium', timeStyle: 'short' }) : 'Nessun backup ancora'}</div>
     </div>
     <div class="card">
-      <h2 style="font-size:16px">Ripristina da backup</h2>
+      <h2 style="font-size:17px;font-weight:600">Ripristina da backup</h2>
       <p class="lead" style="margin:6px 0 12px">Scegli lo ZIP da OneDrive o dal telefono. I record già presenti vengono sostituiti solo se quelli del backup sono più recenti.</p>
       <button class="btn block" disabled=${busy} onClick=${() => inp.current.click()}>Scegli file ZIP</button>
       <input ref=${inp} type="file" accept="application/zip,application/x-zip-compressed,application/octet-stream,.zip" hidden onChange=${doImport} />
@@ -417,19 +423,23 @@ function useWide() {
   }, []);
   return w;
 }
-const LIST_OF = { dda: 'ddaList', mappatura: 'mappaturaList', radon: 'radonList', ra: 'raList', hs: 'hsList' };
-const DETAIL_OF = { ddaList: 'dda', mappaturaList: 'mappatura', radonList: 'radon', raList: 'ra', hsList: 'hs' };
+const LIST_OF = { dda: 'ddaList', mappatura: 'mappaturaList', radon: 'radonList', ra: 'raList' };
+const DETAIL_OF = { ddaList: 'dda', mappaturaList: 'mappatura', radonList: 'radon', raList: 'ra' };
+const TOP_ROUTES = ['home', 'ddaList', 'mappaturaList', 'raList', 'radonList'];
+const ROUTE_TITLE = { home: 'Oggi', ddaList: 'Ambiente · DDA', mappaturaList: 'Mappatura MCA e FAV', raList: 'Sopralluogo RA', radonList: 'Campagne radon',
+  settings: 'Impostazioni', backup: 'Backup', notifiche: 'Notifiche', dda: 'DDA', mappatura: 'Mappatura', ra: 'Sopralluogo RA', radon: 'Campagna radon' };
 
-/* ---------------- app ---------------- */
 /* ---------------- menu laterale (tablet in orizzontale e PC) ---------------- */
 const NAV_AREAS = [
   { v: 'ddaList', d: 'dda', ic: 'leaf', l: 'Ambiente · DDA' },
   { v: 'mappaturaList', d: 'mappatura', ic: 'pin', l: 'Mappatura MCA e FAV' },
   { v: 'raList', d: 'ra', ic: 'shield', l: 'Sopralluogo RA' },
   { v: 'radonList', d: 'radon', ic: 'radon', l: 'Campagne radon' },
-  { v: 'hsList', d: 'hs', ic: 'hs', l: 'Sopralluogo H&S' },
 ];
 const NAV_TOOLS = [{ v: 'backup', ic: 'archive', l: 'Backup' }, { v: 'settings', ic: 'gear', l: 'Impostazioni' }];
+// tab bar del telefono: Oggi + le quattro aree
+const TABS = [{ v: 'home', ic: 'today', l: 'Oggi' }, { v: 'ddaList', ic: 'leaf', l: 'DDA' }, { v: 'mappaturaList', ic: 'pin', l: 'Mappature' },
+  { v: 'raList', ic: 'shield', l: 'RA' }, { v: 'radonList', ic: 'radon', l: 'Radon' }];
 // menu ridotto o esteso: la scelta dell'utente resta; altrimenti ridotto sotto i 1300 px
 function useNavMin() {
   const [min, setMin] = useState(() => {
@@ -448,7 +458,9 @@ function SideNav({ route, go, counts, settings, min, toggle }) {
   };
   const name = `${settings.tecnicoNome || ''} ${settings.tecnicoCognome || ''}`.trim();
   return html`<aside class=${'sidenav' + (min ? ' min' : '')} aria-label="Aree di lavoro">
-    <button class="sn-brand" title="Home" onClick=${() => nav('home')}><span class="logo">N</span><div><b>Nembo</b>${name && html`<small>${name}</small>`}</div></button>
+    <button class="sn-brand" title="Oggi" onClick=${() => nav('home')}><span class="logo">N</span><div><b>Nembo</b>${name && html`<small>${name}</small>`}</div></button>
+    <div class="sn-sec">Oggi</div><div class="sn-div"></div>
+    ${item({ v: 'home', ic: 'today', l: 'Oggi' }, 0)}
     <div class="sn-sec">Aree di lavoro</div>
     ${NAV_AREAS.map(x => item(x, counts[x.d]))}
     <div class="sn-sec">Strumenti</div><div class="sn-div"></div>
@@ -458,6 +470,10 @@ function SideNav({ route, go, counts, settings, min, toggle }) {
       <${Icon} n=${min ? 'expand' : 'collapse'} s=${19} /><span class="l">Riduci menu</span></button>
     <div class="sn-ver">${APP_VERSION}</div>
   </aside>`;
+}
+function TabBar({ route, tab }) {
+  return html`<nav class="tabbar" aria-label="Sezioni">${TABS.map(t => html`<button class=${route.v === t.v ? 'on' : ''} aria-current=${route.v === t.v ? 'page' : null} onClick=${() => tab(t.v)}>
+    <${Icon} n=${t.ic} s=${24} /><span>${t.l}</span></button>`)}</nav>`;
 }
 
 function App() {
@@ -469,10 +485,10 @@ function App() {
   const notifs = useNotifiche();
   const unreadErr = notifs.filter(n => !n.read && n.level === 'err').length;
   const [navMin, toggleNav] = useNavMin();
-  const [hdr, setHdr] = useState(['', '']);
   const [lastBackup, setLastBackup] = useState(null);
   const [installEvt, setInstallEvt] = useState(null);
   const [tplOk, setTplOk] = useState(true);
+  const [sheet, setSheet] = useState(false);
   const [, odTick] = useState(0);
   useEffect(() => OD.subscribe(() => odTick(x => x + 1)), []);
 
@@ -483,9 +499,10 @@ function App() {
     const t = await Promise.all(Object.values(TEMPLATES).map(x => DB.get(x.key)));
     setTplOk(t.every(Boolean));
     OD.init(st).catch(e => console.warn('OneDrive', e));
+    return rs;
   };
   useEffect(() => {
-    reload().then(() => setReady(true));
+    reload().then(rs => { setReady(true); radonReminders(rs).then(n => n && DB.all().then(setRecords)); });
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
     const bip = e => { e.preventDefault(); setInstallEvt(e); };
     window.addEventListener('beforeinstallprompt', bip);
@@ -493,18 +510,23 @@ function App() {
   }, []);
 
   const setSettings = s => { setSettingsState(s); _settings = s; DB.set('settings', s); };
-  const go = next => { const prev = route; setRoute(next); Back.push(() => setRoute(prev)); };
+  const go = next => { const prev = route; setRoute({ ...next, from: ROUTE_TITLE[prev.v] }); Back.push(() => setRoute(prev)); };
   const goBack = () => history.back();
-  // nel doppio pannello, scegliere una pratica dall'elenco non è una "navigazione": niente storico,
-  // il tasto Indietro del telefono/browser deve uscire dall'area, non scorrere tra le pratiche aperte
+  // tab bar: dalla Home si entra in un'area (Indietro torna a Oggi); tra un'area e l'altra si sostituisce la schermata
+  const tab = v => {
+    if (v === route.v) return;
+    if (route.v === 'home') go({ v });
+    else if (v === 'home') goBack();
+    else setRoute({ v, from: 'Oggi' });
+  };
+  // nel doppio pannello, scegliere una pratica dall'elenco non è una "navigazione": niente storico
   const select = id => setRoute(r => ({ ...r, id }));
-  const [splitHdr, setSplitHdr] = useState(['', '']);
 
   // ruotando il tablet, passa dalla schermata piena al doppio pannello (e viceversa) senza perdere la pratica aperta
   useEffect(() => {
     setRoute(r => {
       if (wide && DETAIL_OF[LIST_OF[r.v]] === r.v) return { v: LIST_OF[r.v], id: r.id };
-      if (!wide && DETAIL_OF[r.v] && r.id) { const list = r.v; Back.push(() => setRoute({ v: list })); return { v: DETAIL_OF[r.v], id: r.id }; }
+      if (!wide && DETAIL_OF[r.v] && r.id) { const list = r.v; Back.push(() => setRoute({ v: list })); return { v: DETAIL_OF[r.v], id: r.id, from: ROUTE_TITLE[list] }; }
       return r;
     });
   }, [wide]);
@@ -518,162 +540,115 @@ function App() {
     for (const b of blobIds(rec)) await removeBlob(b);
     await DB.del(rec.id);
     setRecords(rs => rs.filter(x => x.id !== rec.id));
-    toast('Eliminato'); goBack();
+    toast('Eliminato');
+    if (wide) select(null); else goBack();
   };
   // uscendo da un record nuovo rimasto vuoto, lo scarto
   useEffect(() => {
-    if (route.v === 'dda' || route.v === 'mappatura' || route.v === 'radon' || route.v === 'ra' || route.v === 'hs') return;
-    const empties = records.filter(r => r._new && (r.type === 'dda' ? ddaIsEmpty(r) : r.type === 'mappatura' ? mappaturaIsEmpty(r) : r.type === 'ra' ? raIsEmpty(r) : r.type === 'hs' ? hsIsEmpty(r) : radonIsEmpty(r)));
+    if (route.v === 'dda' || route.v === 'mappatura' || route.v === 'radon' || route.v === 'ra') return;
+    const keep = route.id;
+    const empties = records.filter(r => r._new && r.id !== keep && (r.type === 'dda' ? ddaIsEmpty(r) : r.type === 'mappatura' ? mappaturaIsEmpty(r) : r.type === 'ra' ? raIsEmpty(r) : radonIsEmpty(r)));
     empties.forEach(r => DB.del(r.id));
     if (empties.length) setRecords(rs => rs.filter(r => !empties.includes(r)));
-  }, [route.v]);
+  }, [route.v, route.id]);
 
-  const createDda = () => { const r = { ...newDda(records, settings), _new: true }; saveRec(r); wide ? select(r.id) : go({ v: 'dda', id: r.id }); };
-  const createMappatura = () => { const r = { ...newMappatura(records, settings), _new: true }; saveRec(r); wide ? select(r.id) : go({ v: 'mappatura', id: r.id }); };
-  const createRadon = () => { const r = { ...newRadon(settings), _new: true }; saveRec(r); wide ? select(r.id) : go({ v: 'radon', id: r.id }); };
-  const createRa = () => { const r = { ...newRa(records, settings), _new: true }; saveRec(r); wide ? select(r.id) : go({ v: 'ra', id: r.id }); };
-  const createHs = () => { const r = { ...newHs(records, settings), _new: true }; saveRec(r); wide ? select(r.id) : go({ v: 'hs', id: r.id }); };
+  // apre una pratica: nel doppio pannello dentro l'area, altrimenti a schermo pieno
+  const openRec = r => {
+    if (wide) { if (route.v === LIST_OF[r.type]) select(r.id); else go({ v: LIST_OF[r.type], id: r.id }); }
+    else go({ v: r.type, id: r.id });
+  };
+  const create = (type, patch = {}) => {
+    const base = type === 'dda' ? newDda(records, settings) : type === 'mappatura' ? newMappatura(records, settings) : type === 'ra' ? newRa(records, settings) : newRadon(settings);
+    const r = { ...base, ...patch, _new: true };
+    saveRec(r); openRec(r);
+  };
+  const createDda = () => create('dda');
+  const createMappatura = () => create('mappatura');
+  const createRadon = () => create('radon');
+  const createRa = () => create('ra');
 
-  const header = useCallback((t, s) => setHdr([t, s]), []);
+  const header = useCallback(() => {}, []); // le schede disegnano da sole la propria intestazione
   if (!ready) return html`<div class="shell"></div>`;
   const rec = route.id && records.find(r => r.id === route.id);
 
-  let title = 'Nembo', sub = settings.tecnicoNome ? `${settings.tecnicoNome} ${settings.tecnicoCognome}` : '', body;
+  const initials = ((settings.tecnicoNome || '')[0] || '') + ((settings.tecnicoCognome || '')[0] || '');
+  const bell = html`<button class=${'btn-icon' + (route.v === 'notifiche' ? ' on' : '')} aria-label=${unreadErr ? `Notifiche, ${unreadErr} errori non letti` : 'Notifiche'}
+    onClick=${() => route.v !== 'notifiche' && go({ v: 'notifiche' })}><${Icon} n="bell" s=${21} />${unreadErr > 0 && html`<span class="dot">${unreadErr}</span>`}</button>`;
+  const plus = (fn, label) => html`<button class="btn-icon pri" aria-label=${label} onClick=${fn}><${Icon} n="plus" s=${22} w=${2.4} /></button>`;
+  const listActs = (fn, label) => html`${plus(fn, label)}${bell}`;
+
+  const split = (list, detail, emptyTxt) => wide ? html`<div class="split-body">
+      <div class="split-list">${list}</div>
+      <div class="split-detail">${detail || html`<div class="split-empty"><b>${emptyTxt[0]}</b>${emptyTxt[1]}</div>`}</div></div>` : list;
+  const dRec = wide && route.id && records.find(x => x.id === route.id);
+  const formProps = r => ({ key: r.id, rec: r, records, settings, onDelete: delRec, onSettings: () => go({ v: 'settings' }), header, embedded: wide, onClose: wide ? () => select(null) : null });
+
+  let body, wideCreate = null;
   if (route.v === 'home') {
-    const nDda = records.filter(r => r.type === 'dda').length;
-    const nMap = records.filter(r => r.type === 'mappatura').length;
-    const act = records.filter(r => r.type === 'radon' && radonStato(r) !== 'terminata');
-    const late = act.filter(r => { const d = radonScadenza(r); return d && daysBetween(today(), d) <= 30; });
-    const stale = records.length > 0 && (!lastBackup || Date.now() - lastBackup > 7 * 86400000);
-    const hour = new Date().getHours();
-    body = html`<div class="content">
-      <h1>${hour < 13 ? 'Buongiorno' : hour < 18 ? 'Buon pomeriggio' : 'Buonasera'}${settings.tecnicoNome ? ', ' + settings.tecnicoNome : ''}</h1>
-      <p class="lead">Scegli l'area di lavoro</p>
-      <div class="tiles">
-        <button class="tile" onClick=${() => go({ v: 'ddaList' })}><span class="ic" style="background:linear-gradient(135deg,#2b97b8,#1b6e8c)"><${Icon} n="leaf" s=${24} /></span>
-          <div><b>Ambiente · DDA</b><small>Sopralluogo Fase 1, campionamento Fase 2 e scheda campioni · ${nDda} ${nDda === 1 ? 'indagine' : 'indagini'}</small></div><span class="chev"><${Icon} n="right" s=${18} /></span></button>
-        <button class="tile" onClick=${() => go({ v: 'mappaturaList' })}><span class="ic" style="background:linear-gradient(135deg,#c9b1ab,#977a74)"><${Icon} n="pin" s=${24} /></span>
-          <div><b>Mappatura MCA e FAV</b><small>Censimento e campionamento indipendente da una DDA · ${nMap} ${nMap === 1 ? 'censimento' : 'censimenti'}</small></div><span class="chev"><${Icon} n="right" s=${18} /></span></button>
-        <button class="tile" onClick=${() => go({ v: 'raList' })}><span class="ic" style="background:linear-gradient(135deg,#3b4d80,#243257)"><${Icon} n="shield" s=${24} /></span>
-          <div><b>Sopralluogo RA</b><small>Verifica dei manufatti in amianto da mappatura o PMC · ${records.filter(r => r.type === 'ra').length} sopralluoghi</small></div><span class="chev"><${Icon} n="right" s=${18} /></span></button>
-        <button class="tile" onClick=${() => go({ v: 'radonList' })}><span class="ic" style="background:linear-gradient(135deg,#1f7e9d,#243257)"><${Icon} n="radon" s=${24} /></span>
-          <div><b>Campagne radon</b><small>Posa e ritiro dosimetri, firme e scheda raccolta dati · ${act.length} in corso</small></div><span class="chev"><${Icon} n="right" s=${18} /></span></button>
-        <button class="tile" onClick=${() => go({ v: 'hsList' })}><span class="ic" style="background:linear-gradient(135deg,#d08a2e,#9a5b14)"><${Icon} n="hs" s=${24} /></span>
-          <div><b>Sopralluogo H&S</b><small>Schede, checklist e criticità di salute e sicurezza · ${records.filter(r => r.type === 'hs').length} sopralluoghi</small></div><span class="chev"><${Icon} n="right" s=${18} /></span></button>
-      </div>
-      ${(!tplOk || !settings.tecnicoCognome) && html`<div class="notice">Prima di iniziare: in Impostazioni inserisci i tuoi dati e carica i due modelli PDF.</div>`}
-      ${late.length > 0 && html`<div class="notice">${late.length === 1 ? '1 campagna radon ha' : late.length + ' campagne radon hanno'} il ritiro entro 30 giorni o già scaduto.</div>`}
-      ${stale && html`<div class="notice">${lastBackup ? 'L\'ultimo backup ha più di una settimana.' : 'Non hai ancora fatto un backup.'} I dati stanno solo su questo telefono: salvane una copia su OneDrive.</div>`}
-      <div class="home-links">
-        <button class="linkbtn" onClick=${() => go({ v: 'backup' })}><${Icon} n="archive" s=${17} /> Backup</button>
-        <button class="linkbtn" onClick=${() => go({ v: 'settings' })}><${Icon} n="gear" s=${17} /> Impostazioni</button>
-        ${installEvt && html`<button class="linkbtn" onClick=${async () => { installEvt.prompt(); await installEvt.userChoice; setInstallEvt(null); }}><${Icon} n="plus" s=${17} /> Installa app</button>`}
-      </div>
-    </div>`;
+    body = html`<${Home} records=${records} settings=${settings} open=${openRec} newAct=${() => setSheet(true)} bell=${bell}
+      avatar=${html`<button class="ava" aria-label="Impostazioni" onClick=${() => go({ v: 'settings' })}>${initials.toUpperCase() || html`<${Icon} n="gear" s=${20} />`}</button>`}
+      tplOk=${tplOk} lastBackup=${lastBackup} goList=${v => go({ v })} goSettings=${() => go({ v: 'settings' })} goBackup=${() => go({ v: 'backup' })}
+      installEvt=${installEvt} onInstall=${async () => { installEvt.prompt(); await installEvt.userChoice; setInstallEvt(null); }} />`;
   } else if (route.v === 'ddaList') {
-    title = 'Ambiente · DDA';
-    const list = html`<${DdaList} records=${records} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'dda', id })} create=${createDda} />`;
-    if (wide) {
-      const dRec = route.id && records.find(x => x.id === route.id);
-      body = html`<div class="split-body">
-        <div class="split-list">${list}</div>
-        <div class="split-detail">${dRec
-          ? html`<${DdaForm} key=${dRec.id} embedded onClose=${() => select(null)} rec=${dRec} records=${records} settings=${settings} onSave=${r => saveRec({ ...r, _new: r._new && ddaIsEmpty(r) })} onDelete=${delRec} onSettings=${() => go({ v: 'settings' })} header=${header} />`
-          : html`<div class="split-empty"><b>Nessuna pratica selezionata</b>Toccane una dall'elenco per aprirla qui.</div>`}</div>
-      </div>`;
-    } else body = list;
+    wideCreate = createDda;
+    body = split(html`<${DdaList} records=${records} acts=${listActs(createDda, 'Nuova indagine')} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'dda', id })} create=${createDda} />`,
+      dRec && html`<${DdaForm} ...${formProps(dRec)} onSave=${r => saveRec({ ...r, _new: r._new && ddaIsEmpty(r) })} />`,
+      ['Nessuna pratica selezionata', 'Toccane una dall\'elenco per aprirla qui.']);
   } else if (route.v === 'mappaturaList') {
-    title = 'Mappatura MCA e FAV';
-    const list = html`<${MappaturaList} records=${records} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'mappatura', id })} create=${createMappatura} />`;
-    if (wide) {
-      const dRec = route.id && records.find(x => x.id === route.id);
-      body = html`<div class="split-body">
-        <div class="split-list">${list}</div>
-        <div class="split-detail">${dRec
-          ? html`<${MappaturaForm} key=${dRec.id} embedded onClose=${() => select(null)} rec=${dRec} records=${records} settings=${settings} onSave=${r => saveRec({ ...r, _new: r._new && mappaturaIsEmpty(r) })} onDelete=${delRec} onSettings=${() => go({ v: 'settings' })} header=${header} />`
-          : html`<div class="split-empty"><b>Nessuna mappatura selezionata</b>Toccane una dall'elenco per aprirla qui.</div>`}</div>
-      </div>`;
-    } else body = list;
-  } else if (route.v === 'mappatura' && rec) {
-    [title, sub] = hdr;
-    body = html`<${MappaturaForm} key=${rec.id} rec=${rec} records=${records} settings=${settings} onSave=${r => saveRec({ ...r, _new: r._new && mappaturaIsEmpty(r) })} onDelete=${delRec} onSettings=${() => go({ v: 'settings' })} header=${header} />`;
+    wideCreate = createMappatura;
+    body = split(html`<${MappaturaList} records=${records} acts=${listActs(createMappatura, 'Nuova mappatura')} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'mappatura', id })} create=${createMappatura} />`,
+      dRec && html`<${MappaturaForm} ...${formProps(dRec)} onSave=${r => saveRec({ ...r, _new: r._new && mappaturaIsEmpty(r) })} />`,
+      ['Nessuna mappatura selezionata', 'Toccane una dall\'elenco per aprirla qui.']);
   } else if (route.v === 'raList') {
-    title = 'Sopralluogo RA';
-    const list = html`<${RaList} records=${records} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'ra', id })} create=${createRa} />`;
-    if (wide) {
-      const dRec = route.id && records.find(x => x.id === route.id);
-      body = html`<div class="split-body">
-        <div class="split-list">${list}</div>
-        <div class="split-detail">${dRec
-          ? html`<${RaForm} key=${dRec.id} embedded onClose=${() => select(null)} rec=${dRec} records=${records} settings=${settings} onSave=${r => saveRec({ ...r, _new: r._new && raIsEmpty(r) })} onDelete=${delRec} header=${header} />`
-          : html`<div class="split-empty"><b>Nessun sopralluogo selezionato</b>Toccane uno dall'elenco per aprirlo qui.</div>`}</div>
-      </div>`;
-    } else body = list;
-  } else if (route.v === 'ra' && rec) {
-    [title, sub] = hdr;
-    body = html`<${RaForm} key=${rec.id} rec=${rec} records=${records} settings=${settings} onSave=${r => saveRec({ ...r, _new: r._new && raIsEmpty(r) })} onDelete=${delRec} header=${header} />`;
-  } else if (route.v === 'hsList') {
-    title = 'Sopralluogo H&S';
-    const list = html`<${HsList} records=${records} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'hs', id })} create=${createHs} />`;
-    if (wide) {
-      const dRec = route.id && records.find(x => x.id === route.id);
-      body = html`<div class="split-body">
-        <div class="split-list">${list}</div>
-        <div class="split-detail">${dRec
-          ? html`<${HsForm} key=${dRec.id} embedded onClose=${() => select(null)} rec=${dRec} records=${records} settings=${settings} onSave=${r => saveRec({ ...r, _new: r._new && hsIsEmpty(r) })} onDelete=${delRec} header=${header} />`
-          : html`<div class="split-empty"><b>Nessun sopralluogo selezionato</b>Toccane uno dall'elenco per aprirlo qui.</div>`}</div>
-      </div>`;
-    } else body = list;
-  } else if (route.v === 'hs' && rec) {
-    [title, sub] = hdr;
-    body = html`<${HsForm} key=${rec.id} rec=${rec} records=${records} settings=${settings} onSave=${r => saveRec({ ...r, _new: r._new && hsIsEmpty(r) })} onDelete=${delRec} header=${header} />`;
+    wideCreate = createRa;
+    body = split(html`<${RaList} records=${records} acts=${listActs(createRa, 'Nuovo sopralluogo RA')} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'ra', id })} create=${createRa} />`,
+      dRec && html`<${RaForm} ...${formProps(dRec)} onSave=${r => saveRec({ ...r, _new: r._new && raIsEmpty(r) })} />`,
+      ['Nessun sopralluogo selezionato', 'Toccane uno dall\'elenco per aprirlo qui.']);
   } else if (route.v === 'radonList') {
-    title = 'Campagne radon';
-    const list = html`<${RadonList} records=${records} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'radon', id })} create=${createRadon} />`;
-    if (wide) {
-      const dRec = route.id && records.find(x => x.id === route.id);
-      body = html`<div class="split-body">
-        <div class="split-list">${list}</div>
-        <div class="split-detail">${dRec
-          ? html`<${RadonForm} key=${dRec.id} embedded onClose=${() => select(null)} rec=${dRec} settings=${settings} onSave=${r => saveRec({ ...r, _new: r._new && radonIsEmpty(r) })} onDelete=${delRec} header=${header} />`
-          : html`<div class="split-empty"><b>Nessuna campagna selezionata</b>Toccane una dall'elenco per aprirla qui.</div>`}</div>
-      </div>`;
-    } else body = list;
+    wideCreate = createRadon;
+    body = split(html`<${RadonList} records=${records} acts=${listActs(createRadon, 'Nuova campagna')} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'radon', id })} create=${createRadon} />`,
+      dRec && html`<${RadonForm} ...${formProps(dRec)} onSave=${r => saveRec({ ...r, _new: r._new && radonIsEmpty(r) })} />`,
+      ['Nessuna campagna selezionata', 'Toccane una dall\'elenco per aprirla qui.']);
   } else if (route.v === 'dda' && rec) {
-    [title, sub] = hdr;
-    body = html`<${DdaForm} key=${rec.id} rec=${rec} records=${records} settings=${settings} onSave=${r => saveRec({ ...r, _new: r._new && ddaIsEmpty(r) })} onDelete=${delRec} onSettings=${() => go({ v: 'settings' })} header=${header} />`;
+    body = html`<${DdaForm} ...${formProps(rec)} embedded=${false} onClose=${null} onSave=${r => saveRec({ ...r, _new: r._new && ddaIsEmpty(r) })} />`;
+  } else if (route.v === 'mappatura' && rec) {
+    body = html`<${MappaturaForm} ...${formProps(rec)} embedded=${false} onClose=${null} onSave=${r => saveRec({ ...r, _new: r._new && mappaturaIsEmpty(r) })} />`;
+  } else if (route.v === 'ra' && rec) {
+    body = html`<${RaForm} ...${formProps(rec)} embedded=${false} onClose=${null} onSave=${r => saveRec({ ...r, _new: r._new && raIsEmpty(r) })} />`;
   } else if (route.v === 'radon' && rec) {
-    [title, sub] = hdr;
-    body = html`<${RadonForm} key=${rec.id} rec=${rec} settings=${settings} onSave=${r => saveRec({ ...r, _new: r._new && radonIsEmpty(r) })} onDelete=${delRec} header=${header} />`;
+    body = html`<${RadonForm} ...${formProps(rec)} embedded=${false} onClose=${null} onSave=${r => saveRec({ ...r, _new: r._new && radonIsEmpty(r) })} />`;
   } else if (route.v === 'settings') {
-    title = 'Impostazioni'; sub = ''; body = html`<${Settings} settings=${settings} setSettings=${setSettings} onTemplates=${reload} />`;
+    body = html`<${Settings} settings=${settings} setSettings=${setSettings} onTemplates=${reload} />`;
   } else if (route.v === 'notifiche') {
-    title = 'Notifiche'; sub = ''; body = html`<${Notifiche} />`;
+    body = html`<${Notifiche} />`;
   } else if (route.v === 'backup') {
-    title = 'Backup'; sub = ''; body = html`<${Backup} records=${records} settings=${settings} reload=${reload} lastBackup=${lastBackup} />`;
+    body = html`<${Backup} records=${records} settings=${settings} reload=${reload} lastBackup=${lastBackup} />`;
   } else {
     body = html`<div class="content"><div class="empty"><b>Elemento non trovato</b>Potrebbe essere stato eliminato.</div></div>`;
   }
 
-  const splitActive = wide && (route.v === 'ddaList' || route.v === 'mappaturaList' || route.v === 'radonList' || route.v === 'raList' || route.v === 'hsList');
+  const isTop = TOP_ROUTES.includes(route.v);
+  const splitActive = wide && !!DETAIL_OF[route.v];
   const counts = { dda: records.filter(r => r.type === 'dda').length, mappatura: records.filter(r => r.type === 'mappatura').length,
-    ra: records.filter(r => r.type === 'ra').length, hs: records.filter(r => r.type === 'hs').length, radon: records.filter(r => r.type === 'radon' && radonStato(r) !== 'terminata').length };
+    ra: records.filter(r => r.type === 'ra').length, radon: records.filter(r => r.type === 'radon' && radonStato(r) !== 'terminata').length };
   return html`<div class=${'frame' + (wide ? ' wide' : '')}>
     ${wide && html`<${SideNav} route=${route} go=${go} counts=${counts} settings=${settings} min=${navMin} toggle=${toggleNav} />`}
-    <div class=${'shell' + (splitActive ? ' split' : '')}>
-    <header class="topbar">
-      ${wide ? null : route.v === 'home' ? html`<span class="logo">N</span>` : html`<button class="back" aria-label="Indietro" onClick=${goBack}><${Icon} n="back" s=${18} /></button>`}
-      <div class="tb-grow"><div class="tb-title">${title}</div>${sub && html`<div class="tb-sub">${sub}</div>`}</div>
-      <button class=${'tb-bell' + (route.v === 'notifiche' ? ' on' : '')} aria-label=${unreadErr ? `Notifiche, ${unreadErr} errori non letti` : 'Notifiche'}
-        onClick=${() => route.v !== 'notifiche' && go({ v: 'notifiche' })}><${Icon} n="bell" s=${20} />${unreadErr > 0 && html`<span class="dot">${unreadErr}</span>`}</button>
-    </header>
+    <div class=${'shell' + (splitActive ? ' split' : '') + (!wide && isTop ? ' has-tabs' : '')}>
+    ${wide && route.v !== 'home' && html`<header class="wbar"><div class="tb-grow"><h1>${ROUTE_TITLE[route.v] || 'Nembo'}</h1></div>
+      ${wideCreate && plus(wideCreate, 'Nuova')}${bell}</header>`}
+    ${!wide && !isTop && html`<header class="navbar">
+      <button class="nb-back" onClick=${goBack}><${Icon} n="back" s=${22} /> ${route.from || 'Indietro'}</button>
+      <div class="nb-grow"></div>${route.v !== 'notifiche' && bell}</header>`}
     ${body}
+    ${!wide && isTop && html`<${TabBar} route=${route} tab=${tab} />`}
+    ${sheet && html`<${NewActivity} records=${records} onClose=${() => setSheet(false)} onCreate=${(t, patch) => { window.addEventListener('popstate', () => setTimeout(() => create(t, patch), 0), { once: true }); setSheet(false); }} />`}
     <${ShareAsk} />
     <${Progress} />
     <${Toast} />
     </div>
   </div>`;
 }
+
 
 render(html`<${App} />`, document.getElementById('root'));
 const splash = document.getElementById('splash');

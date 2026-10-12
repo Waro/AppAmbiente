@@ -1,6 +1,6 @@
 # Nembo
 
-App web (PWA) per Android: DDA ambientali (Fase 1 e Fase 2), campagne radon, sopralluoghi RA amianto e sopralluoghi H&S.
+App web (PWA) per Android: DDA ambientali (Fase 1 e Fase 2), campagne radon e sopralluoghi RA amianto.
 I dati restano sul telefono (IndexedDB), senza server, senza login e senza SharePoint.
 
 ## Pubblicazione su GitHub Pages (una volta sola)
@@ -49,30 +49,6 @@ Per ogni manufatto: stato di conservazione (classi del DM 06/09/1994 più "Non i
 note e fino a 3 foto. Se il file riporta lo stato del sopralluogo precedente, compare come riferimento.
 Barra di avanzamento e filtro "Da verificare". Le planimetrie usano come etichette i codici dei manufatti, colorati per stato.
 
-## Sopralluogo H&S
-
-Modello unico per i sopralluoghi di salute e sicurezza sugli immobili, valido per qualunque committente
-(nel codice non c'è nessun nome di cliente). Unisce:
-- **16 schede tematiche** (agibilità, prevenzione incendi, aree esterne, copertura, strutture, interni, autorimessa,
-  locali tecnici, impianti, sollevamento, ambienti pericolosi, aspetti ambientali, emergenze, presidio del sito), ciascuna con
-  situazione rilevata (anche per sotto-area), attività di miglioramento e valutazione: natura del rischio, costo indicativo,
-  priorità 1-2-3, competenza proprietà/conduttore, termine. Ogni scheda si può segnare "Non applicabile".
-- **Checklist a codici** (3.1 … 7.9, 94 voci) con Sì / No / N.A. e note. Ogni voce sa qual è la risposta attesa:
-  l'esito negativo si colora di rosso e propone "+ Criticità" già compilata.
-- **Criticità**: codice, situazione rilevata, rischio evidenziato, gravità (1 alta, 2 media, 3 bassa), azioni consigliate e
-  fino a 3 foto. "Riformula in linguaggio tecnico" trasforma la nota scritta in sito nella formulazione standard (offline,
-  con regole fisse: se nessuna regola corrisponde il testo resta com'è). La priorità della scheda, se vuota, viene suggerita
-  dalla criticità più grave.
-- Frasi rapide sotto i campi di testo, anagrafica dell'immobile con dati catastali, planimetrie con le criticità come etichette.
-
-**Report precedente:** "Scarica modello" dà lo schema JSON; si fa compilare a Claude dal report dell'anno prima e si carica con
-"Carica .json". Riempie solo i campi vuoti e aggiunge le criticità nuove. Il testo importato diventa il riferimento: nel report Word
-le righe nuove o modificate escono in rosso e, nella checklist, sotto la voce compare la risposta precedente se è cambiata.
-
-**Report sopralluogo (Word):** documento .docx neutro (senza loghi né intestazioni di cliente) con dati generali, anagrafica, schede con
-checklist e valutazione, tabella criticità con legenda, riepilogo schede e foto. Finisce anche nello ZIP e nel caricamento su OneDrive.
-I modelli Word dei singoli committenti non sono nel codice: i dati restano compatibili (stessi codici e campi) per riportarli lì.
-
 ## Excel e Word
 
 - **Scheda campioni in Excel** (Fase 2, schede MCA e FAV): stessi dati della scheda PDF in un foglio .xlsx modificabile, con date in formato Excel.
@@ -119,6 +95,17 @@ Su tablet Android con Chrome vero (es. Galaxy Tab, Redmi Pad) tutte le funzioni 
 e salvataggio incluso. Su iPad, come su iPhone, Safari/WebKit non supporta lo scanner barcode né la scelta della
 cartella nel salvataggio (resta il download semplice).
 
+## Aspetto (dalla v14, stile "Essenziale")
+
+- **Due temi**: *Essenziale* (grigio freddo, predefinito) e *Originale* (rosa-grigio e petrolio). Si sceglie in
+  Impostazioni → Aspetto e avvio; la scelta resta solo su quel dispositivo.
+- **Font IBM Plex** inclusi in `fonts/` (woff2, licenza OFL in `fonts/OFL.txt`): funzionano anche offline.
+- **Telefono e tablet in verticale**: tab bar flottante in basso, in stile segmented control (Oggi, DDA, Mappature, RA, Radon); nelle schede la barra
+  azioni in basso con l'azione principale. **Tablet in orizzontale e PC**: menu laterale comprimibile + elenco e scheda.
+- **Oggi**: prossimo sopralluogo, anelli della giornata, andamento dei caricamenti, ritiri radon e scadenze RA
+  (calcolate sulla fine dell'anno di incarico indicata nel sopralluogo RA).
+- **Campioni** raggruppati per piano, con segnaposto rosso e foto rapida per quelli ancora senza foto.
+
 ## Aggiornare l'app
 
 Modifica i file, poi in `sw.js` aumenta `VERSION` (es. `nembo-v2`) e ricarica su GitHub.
@@ -133,8 +120,12 @@ Al secondo avvio dopo l'aggiornamento il telefono usa la nuova versione. I dati 
 | `js/capture.js` | scanner codici a barre (BarcodeDetector di Chrome) e firma a schermo intero |
 | `js/dda.js` | modulo DDA: checklist, aree REC con GPS, campioni per matrice, risultati CSC, scheda campioni |
 | `js/radon.js` | modulo radon: punti R1…Rn, tre momenti con firme, esiti e media pesata |
-| `js/hs.js` | modulo sopralluogo H&S: schede, checklist a codici, criticità, import JSON e report Word |
+| `js/mappatura.js` | modulo Mappatura MCA e FAV |
+| `js/ra.js` | sopralluogo RA: manufatti, stato di conservazione, anno di incarico |
+| `js/home.js` | schermata Oggi e foglio Nuova attività |
+| `js/onedrive.js` | caricamento su OneDrive e stato di invio |
 | `js/app.js` | navigazione, impostazioni, backup ZIP e ripristino |
+| `fonts/` | IBM Plex Sans e Mono (woff2) |
 | `pdfgen.js` | compilazione PDF (pdf-lib) |
 | `vendor/` | librerie (Preact, htm, pdf-lib, JSZip, signature_pad), incluse per l'uso offline |
 
