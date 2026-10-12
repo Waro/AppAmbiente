@@ -161,6 +161,12 @@ async function odRecordItems(r, settings) {
   const photo = (id, dir, name) => id && items.push({ blobId: id, segs: [dir, name], kind: 'blob' });
   if (r.type === 'ra') {
     r.manufatti.forEach(m => m.foto.forEach((f, k) => photo(f, 'foto', `${m.codice || 'manufatto'}_${k + 1}`)));
+  } else if (r.type === 'hs') {
+    hsFotoOrd(r).forEach((p, k) => photo(p.id, 'foto', `${String(k + 1).padStart(3, '0')}${p.g === 'prev' ? '_prec' : ''}${p.cap ? '_' + p.cap.slice(0, 40) : ''}`));
+    Object.entries(r.img || {}).forEach(([k, v]) => photo(v, 'immagini', k));
+    (r.documenti || []).forEach(d => photo(d.blobId, 'documenti', d.nome));
+    const tk = TEMPLATES[r.formato === 'sintetico' ? 'hs_sintetico.docx' : 'hs_esteso.docx'].key;
+    if (await DB.get(tk)) items.push({ kind: 'office', type: DOCX_MIME, segs: [hsFileBase(r)], make: () => hsBuildDocx(r, s, {}) });
   } else if (r.type === 'radon') {
     r.punti.forEach((p, i) => p.foto.forEach((f, k) => photo(f, 'foto', `R${i + 1}_${k + 1}`)));
     r.rapporti.forEach(d => photo(d.blobId, 'rapporti', d.nome));

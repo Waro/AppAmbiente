@@ -1,6 +1,6 @@
 # Nembo
 
-App web (PWA) per Android: DDA ambientali (Fase 1 e Fase 2), campagne radon e sopralluoghi RA amianto.
+App web (PWA) per Android: DDA ambientali (Fase 1 e Fase 2), mappature, campagne radon, sopralluoghi RA amianto e sopralluoghi H&S.
 I dati restano sul telefono (IndexedDB), senza server, senza login e senza SharePoint.
 
 ## Pubblicazione su GitHub Pages (una volta sola)
@@ -20,7 +20,7 @@ Da installata funziona anche offline e Chrome protegge i dati dalla pulizia auto
 ## Primo avvio su ogni dispositivo
 
 Impostazioni → **Carica configurazione** e scegli il file `.json` ricevuto (da OneDrive, email o Teams).
-Contiene impostazioni (tecnico, laboratorio, offerta, codici analisi) e i due modelli PDF. Resta solo su quel dispositivo.
+Contiene impostazioni (tecnico, laboratorio, offerta, codici analisi, valori proposti H&S), i due modelli PDF e, se caricati, i due modelli Word H&S. Resta solo su quel dispositivo.
 In alternativa si caricano i modelli e si compilano i campi a mano.
 
 **Preparare la configurazione per un collega:** compila le impostazioni sul tuo dispositivo, tocca **Esporta**,
@@ -48,6 +48,23 @@ Ricaricando un file si aggiungono solo i codici nuovi; quelli già presenti non 
 Per ogni manufatto: stato di conservazione (classi del DM 06/09/1994 più "Non ispezionabile" e "Rimosso o bonificato"),
 note e fino a 3 foto. Se il file riporta lo stato del sopralluogo precedente, compare come riferimento.
 Barra di avanzamento e filtro "Da verificare". Le planimetrie usano come etichette i codici dei manufatti, colorati per stato.
+
+## Sopralluogo H&S
+
+Due formati, scelti in Nuova attività: **Esteso** (schede per sistema con situazione rilevata, attività di miglioramento,
+priorità, natura del rischio, costo, competenza e termine; anagrafica, visite, catasto, inquadramento) e **Sintetico**
+(checklist SI / NO / N.A. con note per voce, descrizione generale, azioni con gravità).
+
+- **Modelli Word**: si caricano in Impostazioni → Modelli (o arrivano con la configurazione). Contengono i testi fissi e
+  i segnaposto `@@…@@` che l'app compila. Restano sul dispositivo: **non vanno mai nel repository**.
+- **Anno precedente**: "Parti dal report precedente" importa il Word dell'anno scorso o il .json della vecchia app.
+  Nel Word nuovo il testo rimasto uguale è **grigio**, quello nuovo o modificato è **nero** (si può disattivare).
+  Dall'archivio di un report, "Nuovo report per il prossimo sopralluogo" fa lo stesso partendo da Nembo.
+  Dall'import arriva solo testo semplice: grassetti e immagini nel testo non vengono ripresi (le immagini vanno tra le foto precedenti).
+- **Scrittura**: Detta (riconoscimento vocale di Chrome, serve rete), Frasi tipo e personali, Riformula (regole locali).
+- **Foto**: salvate come nel resto dell'app; due gruppi (sopralluogo precedente e attuale), scelta di quelle da includere, didascalie,
+  collegamento alla voce della checklist nel Sintetico. Massimo 250 nel report.
+- Con la BU H&S scelta in Impostazioni la tab bar diventa Oggi · H&S · DDA · RA e la home mostra criticità urgenti e report da caricare.
 
 ## Excel e Word
 
@@ -100,7 +117,7 @@ cartella nel salvataggio (resta il download semplice).
 - **Due temi**: *Essenziale* (grigio freddo, predefinito) e *Originale* (rosa-grigio e petrolio). Si sceglie in
   Impostazioni → Aspetto e avvio; la scelta resta solo su quel dispositivo.
 - **Font IBM Plex** inclusi in `fonts/` (woff2, licenza OFL in `fonts/OFL.txt`): funzionano anche offline.
-- **Telefono e tablet in verticale**: tab bar flottante in basso, in stile segmented control (Oggi, DDA, Mappature, RA, Radon); nelle schede la barra
+- **Telefono e tablet in verticale**: tab bar flottante in basso, in stile segmented control (Oggi, DDA, Mappature, RA, Radon; con BU H&S: Oggi, H&S, DDA, RA); nelle schede la barra
   azioni in basso con l'azione principale. **Tablet in orizzontale e PC**: menu laterale comprimibile + elenco e scheda.
 - **Oggi**: prossimo sopralluogo, anelli della giornata, andamento dei caricamenti, ritiri radon e scadenze RA
   (calcolate sulla fine dell'anno di incarico indicata nel sopralluogo RA).
@@ -121,7 +138,10 @@ Al secondo avvio dopo l'aggiornamento il telefono usa la nuova versione. I dati 
 | `js/dda.js` | modulo DDA: checklist, aree REC con GPS, campioni per matrice, risultati CSC, scheda campioni |
 | `js/radon.js` | modulo radon: punti R1…Rn, tre momenti con firme, esiti e media pesata |
 | `js/mappatura.js` | modulo Mappatura MCA e FAV |
+| `js/plan.js` | planimetrie: visualizzatore, disegno, etichette, PDF annotato |
+| `js/office.js` | scheda campioni Excel e riepilogo Word |
 | `js/ra.js` | sopralluogo RA: manufatti, stato di conservazione, anno di incarico |
+| `js/hs-data.js`, `js/hs-word.js`, `js/hs.js` | sopralluogo H&S: dati fissi, motore Word (modelli .docx con JSZip) e import, interfaccia |
 | `js/home.js` | schermata Oggi e foglio Nuova attività |
 | `js/onedrive.js` | caricamento su OneDrive e stato di invio |
 | `js/app.js` | navigazione, impostazioni, backup ZIP e ripristino |
@@ -130,7 +150,7 @@ Al secondo avvio dopo l'aggiornamento il telefono usa la nuova versione. I dati 
 | `vendor/` | librerie (Preact, htm, pdf-lib, JSZip, signature_pad), incluse per l'uso offline |
 
 Se cambia il modulo radon, i nomi dei campi del nuovo PDF vanno rimappati in `RADON_ROWS` (pdfgen.js).
-Non aggiungere mai al repository file con dati reali (moduli, offerte, backup ZIP).
+Non aggiungere mai al repository file con dati reali (moduli, modelli Word, offerte, backup ZIP, configurazione).
 Se cambia la scheda campioni, vanno ricontrollate le coordinate `SC_LINES` / `SC_COLS`.
 
 ## Da sapere

@@ -2,7 +2,7 @@
 // Stessa stringa di VERSION in sw.js: aumentala insieme a quella ad ogni aggiornamento.
 // Essendo dentro un file JS servito dalla cache, se l'aggiornamento automatico fallisce
 // questa scritta mostra ancora la versione vecchia — è il modo per accorgersene.
-const APP_VERSION = 'nembo-v15';
+const APP_VERSION = 'nembo-v16';
 
 /* ---------------- tema grafico: "essenziale" (predefinito) o "originale" ----------------
    Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno. */
@@ -215,7 +215,10 @@ const P = {
   today: 'M3 5h18v16H3zM3 10h18M8 3v4M16 3v4M8 14h3v3H8z',
   building: 'M4 21V5l8-3v19M12 9h8v12M7 8h2M7 12h2M7 16h2M15 13h2M15 17h2M2 21h20',
   nav: 'M3 11l18-8-8 18-2-8-8-2z', check: 'M5 12l5 5 9-10', map: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14',
-  more: 'M5 12h.01M12 12h.01M19 12h.01', x: 'M6 6l12 12M18 6 6 18', bell: 'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0',
+  more: 'M5 12h.01M12 12h.01M19 12h.01',
+  mic: 'M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zM19 10v2a7 7 0 0 1-14 0v-2M12 19v3', stop: 'M6 6h12v12H6z',
+  list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01', spark: 'M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z',
+  helmet: 'M2 18h20v2H2zM4 18v-2a8 8 0 0 1 16 0v2M10 6.3V11M14 6.3V11M12 8v-3', x: 'M6 6l12 12M18 6 6 18', bell: 'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0',
   shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM9 12l2 2 4-4',
   lock: 'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4', sign: 'M3 17c3-4 5-9 7-9s-1 9 2 9 3-5 5-5 2 3 4 3M3 21h18',
   torch: 'M9 2h6v4l-2 3v13h-2V9L9 6z', trash: 'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6', paper: 'M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5',
@@ -348,13 +351,17 @@ const DEFAULT_SETTINGS = {
   labNome: '', labR1: '', labR2: '', offerta: '', offertaRev: '',
   mcaCodice: '', mcaDesc: '', favCodice: '', favDesc: '',
   livelloRif: 300, buDefault: 'ambiente',
+  // valori proposti nei nuovi sopralluoghi H&S (restano nel file di configurazione, mai nel codice)
+  hsCommEsteso: '', hsCommSint: '', hsVerificato: '', hsApprovato: '', hsFirma: '', hsDeveloper: '', hsPropertyManager: '', hsProcuratore: '', hsTecnici: '',
   msClientId: '', msTenantId: '',
 };
 
 // I modelli PDF non sono nel codice pubblicato: si caricano una volta dalle Impostazioni
 const TEMPLATES = {
-  'radon.pdf': { key: 'tpl_radon', label: 'Scheda raccolta dati radon (PDF compilabile)' },
-  'scheda_campioni.pdf': { key: 'tpl_scheda', label: 'Scheda di prelievo campioni massivi' },
+  'radon.pdf': { key: 'tpl_radon', label: 'Scheda raccolta dati radon (PDF compilabile)', bu: 'ambiente' },
+  'scheda_campioni.pdf': { key: 'tpl_scheda', label: 'Scheda di prelievo campioni massivi', bu: 'ambiente' },
+  'hs_esteso.docx': { key: 'tpl_hs_esteso', label: 'Modello Word H&S Esteso', bu: 'hs', docx: true },
+  'hs_sintetico.docx': { key: 'tpl_hs_sintetico', label: 'Modello Word H&S Sintetico', bu: 'hs', docx: true },
 };
 async function loadTemplate(name) {
   const t = TEMPLATES[name];
@@ -363,6 +370,7 @@ async function loadTemplate(name) {
   return new Uint8Array(bytes);
 }
 async function checkTemplate(name, bytes) {
+  if (/\.docx$/.test(name)) return hsCheckTemplate(name, bytes);
   const doc = await PDFLib.PDFDocument.load(bytes);
   if (name === 'radon.pdf') {
     const names = doc.getForm().getFields().map(f => f.getName());

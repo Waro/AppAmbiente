@@ -10,6 +10,7 @@ function recDone(r) {
   if (r.type === 'mappatura') return allCampMap(r).length > 0;
   if (r.type === 'ra') return r.manufatti.length > 0 && r.manufatti.every(m => m.stato);
   if (r.type === 'radon') return (r.momenti || []).some(m => m.data === today() && m.confermato);
+  if (r.type === 'hs') return r.formato === 'sintetico' ? Object.keys(r.risp || {}).length > 0 : HS_SCHEDE.some(s => hsSchedaFatta(r.schede[s.k] || {}));
   return false;
 }
 // elementi con foto (campioni, aree REC, manufatti, punti radon) di una pratica
@@ -19,6 +20,7 @@ function photoItems(r) {
   else if (r.type === 'mappatura') items = allCampMap(r);
   else if (r.type === 'ra') items = r.manufatti;
   else if (r.type === 'radon') items = r.punti;
+  else if (r.type === 'hs') return { tot: 1, ok: (r.foto || []).some(p => p.g !== 'prev') ? 1 : 0 };
   return { tot: items.length, ok: items.filter(x => (x.foto || []).length > 0).length };
 }
 // scadenza della verifica RA: fine dell'anno di incarico, non la data del sopralluogo precedente
@@ -32,6 +34,7 @@ function recLine(r) {
   }
   if (r.type === 'mappatura') { const n = allCampMap(r).length; return `Mappatura MCA e FAV · ${n} ${n === 1 ? 'campione' : 'campioni'}`; }
   if (r.type === 'ra') return `Verifica RA · ${r.manufatti.filter(m => m.stato).length}/${r.manufatti.length} manufatti`;
+  if (r.type === 'hs') return `H&S ${HS_FMT[r.formato]} · ${hsProgress(r)}`;
   const s = radonStato(r);
   const m = s === 'da_iniziare' ? 0 : s === 'fase1' ? 1 : 2;
   return `Radon · ${MOMENTI[m]} · ${r.punti.length} dosimetri`;
@@ -57,11 +60,13 @@ function whenLabel(d) {
   return { l: g < 7 ? new Date(d + 'T12:00:00').toLocaleDateString('it-IT', { weekday: 'long' }) : fmtD(d) };
 }
 
-function Home({ records, settings, open, newAct, bell, avatar, tplOk, lastBackup, goList, goSettings, goBackup, installEvt, onInstall }) {
+function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk, lastBackup, goList, goSettings, goBackup, installEvt, onInstall }) {
   const od = useOdSynced();
   const [bu, setBu] = useState(settings.buDefault || 'ambiente');
   const [per, setPer] = useState('w');
   useEffect(() => setBu(settings.buDefault || 'ambiente'), [settings.buDefault]);
+  // ogni business unit vede le proprie pratiche
+  const records = allRecords.filter(r => bu === 'hs' ? r.type === 'hs' : bu === 'ambiente' ? r.type !== 'hs' : false);
   const t = today();
   const eye = new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -112,6 +117,11 @@ function Home({ records, settings, open, newAct, bell, avatar, tplOk, lastBackup
   const raRest = Math.max(0, raYear.length - raDoneY - raCrit.length);
 
   const nx = nextVisit(records, od);
+  const hsAll = records.filter(r => r.type === 'hs').map(hsCriticita);
+  const hsP1 = hsAll.reduce((a, c) => a + c.filter(x => x.p === 1).length, 0), hsCrit = hsAll.reduce((a, c) => a + c.length, 0);
+  const hsDaCaricare = records.filter(r => r.type === 'hs' && odStatus(od, r) !== 'ok').length;
+  const [hsTplOk, setHsTplOk] = useState(null);
+  useEffect(() => { Promise.all(['tpl_hs_esteso', 'tpl_hs_sintetico'].map(k => DB.get(k))).then(x => setHsTplOk(x.every(Boolean))); }, []);
   const nxAddr = nx && (placeAddr(nx.r) || (nx.r.sito || '').trim());
   const when = nx && whenLabel(nx.d);
   const stale = records.length > 0 && (!lastBackup || Date.now() - lastBackup > 7 * 86400000);
@@ -120,7 +130,7 @@ function Home({ records, settings, open, newAct, bell, avatar, tplOk, lastBackup
     <${LargeTitle} eye=${eye} title="Oggi" acts=${html`<button class="btn-icon pri" aria-label="Nuova attività" onClick=${newAct}><${Icon} n="plus" s=${22} w=${2.4} /></button>${bell}${avatar}`} />
     <div class="seg" style="margin-bottom:var(--gap)">${BUS.map(([k, l]) => html`<button class=${bu === k ? 'on' : ''} onClick=${() => setBu(k)}>${l}</button>`)}</div>
 
-    ${bu !== 'ambiente' ? html`<div class="card"><div class="empty" style="padding:28px 10px"><b>Nessuna attività ${bu === 'hs' ? 'H&S' : 'Sicurezza'} in Nembo</b>Per ora l'app gestisce solo le attività Ambiente. Puoi scegliere la business unit predefinita in Impostazioni.</div></div>` : html`
+    ${bu === 'sicurezza' ? html`<div class="card"><div class="empty" style="padding:28px 10px"><b>Nessuna attività Sicurezza in Nembo</b>Per ora l'app gestisce le attività Ambiente e H&S. Puoi scegliere la business unit predefinita in Impostazioni.</div></div>` : html`
     <div class="card-navy">
       ${nx ? html`
         <div class="row" style="justify-content:space-between"><span class="nv-eye">Prossimo sopralluogo</span>
@@ -158,7 +168,20 @@ function Home({ records, settings, open, newAct, bell, avatar, tplOk, lastBackup
       </div>
     </div>
 
-    <div class="widgets">
+    ${bu === 'hs' ? html`<div class="widgets">
+      <button class="card" onClick=${() => goList('hsList')}>
+        <span class="wg-ic" style="background:var(--danger-soft);color:var(--danger)"><${Icon} n="shield" s=${20} /></span>
+        <div class="wg-num" style=${hsP1 ? 'color:var(--danger)' : ''}>${hsP1}</div>
+        <div class="wg-lbl">criticità urgenti (priorità 1 o gravità alta)</div>
+        <div class="wg-sub">${hsCrit} criticità aperte in tutto</div>
+      </button>
+      <button class="card" onClick=${() => goList('hsList')}>
+        <span class="wg-ic" style="background:var(--blue-soft);color:var(--blue)"><${Icon} n="helmet" s=${20} /></span>
+        <div class="wg-num">${hsDaCaricare}</div>
+        <div class="wg-lbl">report da caricare su OneDrive</div>
+        <div class="wg-sub">${records.length} report H&S in archivio</div>
+      </button>
+    </div>` : html`<div class="widgets">
       <button class="card" onClick=${() => goList('radonList')}>
         <span class="wg-ic" style="background:var(--warn-soft);color:var(--warn)"><${Icon} n="radon" s=${20} /></span>
         <div class="wg-num" style=${rDays != null && rDays <= 7 ? 'color:var(--danger)' : ''}>${rDays == null ? '–' : rDays < 0 ? -rDays : rDays}<small>gg</small></div>
@@ -176,9 +199,10 @@ function Home({ records, settings, open, newAct, bell, avatar, tplOk, lastBackup
           <i style=${'background:var(--chev);width:' + (raRest / Math.max(1, raYear.length + raCrit.length) * 100) + '%'}></i>`}</div>
         <div class="wg-sub">${raDoneY} di ${raYear.length} fatte nell'anno</div>
       </button>
-    </div>`}
+    </div>`}`}
 
-    ${(!tplOk || !settings.tecnicoCognome) && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goSettings}>Prima di iniziare: in Impostazioni inserisci i tuoi dati e carica i due modelli PDF.</button>`}
+    ${bu === 'hs' && hsTplOk === false && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goSettings}>Per generare i report carica i modelli Word H&S (Esteso e Sintetico) in Impostazioni → Modelli.</button>`}
+    ${bu === 'ambiente' && (!tplOk || !settings.tecnicoCognome) && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goSettings}>Prima di iniziare: in Impostazioni inserisci i tuoi dati e carica i due modelli PDF.</button>`}
     ${stale && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goBackup}>${lastBackup ? 'L\'ultimo backup ha più di una settimana.' : 'Non hai ancora fatto un backup.'} I dati stanno solo su questo dispositivo: salvane una copia su OneDrive.</button>`}
     ${installEvt && html`<button class="btn block" style="margin-top:12px" onClick=${onInstall}><${Icon} n="plus" s=${18} /> Installa l'app</button>`}
   </div>`;
@@ -191,10 +215,14 @@ const NEW_OPTS = [
   { k: 'map', t: 'mappatura', patch: {}, l: 'Mappatura MCA e FAV', s: 'Censimento e campioni', ic: 'pin', bg: 'color-mix(in srgb, var(--mca) 12%, white)', fg: 'var(--mca)' },
   { k: 'ra', t: 'ra', patch: {}, l: 'RA · verifica annuale', s: 'Manufatti da mappatura o PMC', ic: 'shield', bg: 'color-mix(in srgb, var(--mca) 12%, white)', fg: 'var(--mca)' },
   { k: 'radon', t: 'radon', patch: {}, l: 'Campagna radon', s: 'Posa e ritiro dosimetri', ic: 'radon', bg: 'var(--ok-soft)', fg: 'var(--ok)' },
+  { k: 'hsE', t: 'hs', bu: 'hs', patch: { formato: 'esteso' }, l: 'H&S · Esteso', s: '13 schede, rischio e priorità, documentazione fotografica', ic: 'helmet', bg: 'var(--blue-soft)', fg: 'var(--blue)' },
+  { k: 'hsS', t: 'hs', bu: 'hs', patch: { formato: 'sintetico' }, l: 'H&S · Sintetico', s: 'Checklist Sì/No/N.A., azioni consigliate, rilievo fotografico', ic: 'helmet', bg: 'var(--fill-soft)', fg: 'var(--navy)' },
 ];
-function NewActivity({ records, onClose, onCreate }) {
+function NewActivity({ records, onClose, onCreate, bu }) {
   useBackClose(onClose);
-  const [k, setK] = useState('dda1');
+  const [k, setK] = useState(bu === 'hs' ? 'hsE' : 'dda1');
+  const gruppi = [['Ambiente', NEW_OPTS.filter(o => !o.bu)], ['H&S', NEW_OPTS.filter(o => o.bu === 'hs')]];
+  if (bu === 'hs') gruppi.reverse();
   const [commessa, setCommessa] = useState('');
   const [citta, setCitta] = useState('');
   const [indirizzo, setIndirizzo] = useState('');
@@ -208,11 +236,11 @@ function NewActivity({ records, onClose, onCreate }) {
       <div class="sheet-grab"></div>
       <div class="sheet-nav"><button class="btn link" onClick=${onClose}>Annulla</button><b>Nuova attività</b><span></span></div>
       <div class="sheet-body">
-        <div class="sec-h" style="margin-top:6px"><h3>Tipo di attività</h3></div>
-        ${NEW_OPTS.map(o => html`<button class=${'opt' + (k === o.k ? ' on' : '') + (o.k === 'ra' && raSoft && k !== 'ra' ? ' alert-soft' : '')} onClick=${() => setK(o.k)} aria-pressed=${k === o.k}>
+        ${gruppi.map(([gl, opts], gi) => html`<div class="sec-h" style=${gi ? '' : 'margin-top:6px'}><h3>${gl}</h3></div>
+        ${opts.map(o => html`<button class=${'opt' + (k === o.k ? ' on' : '') + (o.k === 'ra' && raSoft && k !== 'ra' ? ' alert-soft' : '')} onClick=${() => setK(o.k)} aria-pressed=${k === o.k}>
           <span class="oi" style=${`background:${o.bg};color:${o.fg}`}><${Icon} n=${o.ic} s=${21} /></span>
           <span class="ot"><b>${o.l}</b><small>${o.k === 'ra' && raNext ? html`${o.s} · <span style=${k === 'ra' ? '' : 'color:var(--blue)'}>prossima scadenza ${new Date(raNext + 'T12:00:00').toLocaleDateString('it-IT', { month: 'short', year: 'numeric' })}</span>` : o.s}</small></span>
-          <span class="ck"><${Icon} n="check" s=${15} w=${3} /></span></button>`)}
+          <span class="ck"><${Icon} n="check" s=${15} w=${3} /></span></button>`)}`)}
         <div class="sec-h"><h3>Dati di partenza</h3><span class="hint">facoltativi</span></div>
         <div class="card tight">
           <label class="fld"><span>Commessa</span><input class="mono" value=${commessa} onInput=${e => setCommessa(e.target.value)} placeholder="es. 000/26" /></label>

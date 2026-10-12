@@ -539,3 +539,29 @@ input[type=checkbox] { accent-color: var(--blue); }
 .sidenav.min .sn-toggle { width: 54px; justify-content: center; padding: 0; }
 
 @media (prefers-reduced-motion: reduce) { .tabbar button, .chev, .sidenav, .tgl, .tgl::after { transition: none; } .spin { animation-duration: 2s; } .sheet { animation: none; } }
+
+/* ---------------- H&S ---------------- */
+.hs-text { margin-bottom: 12px; }
+.hs-text textarea { min-height: 72px; }
+.hs-tools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.chip-btn { display: inline-flex; align-items: center; gap: 5px; border: 0; background: var(--fill-soft); color: var(--text2); border-radius: 999px; padding: 6px 12px; min-height: 32px; font-size: 13.5px; font-weight: 500; }
+.chip-btn.rec { background: var(--danger-soft); color: var(--danger); }
+.hs-base { font-size: 12.5px; color: var(--muted); }
+.img-slot { width: 44px; height: 44px; border: 0; padding: 0; background: none; border-radius: 10px; flex-shrink: 0; }
+.img-slot.empty { display: grid; place-items: center; background: var(--fill-soft); color: var(--faint); }
+.hsg { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 12px; margin-bottom: 8px; }
+.hsg-card { background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-card); padding: 10px; display: grid; gap: 8px; }
+.hsg-card.excl .hsg-img img { opacity: .4; }
+.hsg-img { position: relative; border: 0; padding: 0; background: var(--fill-soft); border-radius: 12px; overflow: hidden; aspect-ratio: 4 / 3; width: 100%; }
+.hsg-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hsg-n { position: absolute; left: 8px; top: 8px; background: rgba(16,22,42,.7); color: #fff; font-size: 12.5px; font-weight: 600; border-radius: 999px; padding: 2px 9px; }
+.hsg-ref { position: absolute; right: 8px; top: 8px; background: var(--blue); color: #fff; font-size: 12px; border-radius: 999px; padding: 2px 8px; }
+.hsg-inc { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text2); min-height: 32px; }
+.hsg-inc input { width: 18px; height: 18px; }
+.hs-item { padding: 12px 14px; }
+.hs-ref { font-size: 13px; color: var(--blue-dk); background: var(--blue-soft); border-radius: 6px; padding: 2px 6px; flex-shrink: 0; margin-top: 1px; }
+.rcard.hs-sec { min-height: 52px; }
+.btn.link.sm { min-height: 30px; padding: 2px 6px; font-size: 13.5px; }
+.seg.tall button { flex-direction: column; gap: 1px; min-height: 52px; white-space: normal; }
+.seg.tall button b { font-size: 16px; display: inline-flex; align-items: center; gap: 6px; }
+.seg.tall button small { font-size: 12.5px; color: var(--muted); font-weight: 500; }
