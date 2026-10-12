@@ -194,6 +194,39 @@ function HsCam({ up, r, refId, big, label = 'Scatta una foto' }) {
     <input ref=${inp} type="file" accept="image/*" capture="environment" hidden onClick=${e => e.stopPropagation()} onChange=${e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) hsAddPhotos(fs, 'new', refId, up, (r.foto || []).length).then(() => toast('Foto aggiunta' + (refId ? ' e collegata alla voce' : ''))); }} /></button>`;
 }
 
+// voce della checklist sintetica: codice, testo e SI/NO/N.A. su una riga (sotto se non ci stanno), foto e note a icone
+function HsCheck({ it, r, up, base }) {
+  const nota = r.note[it.id] || '';
+  const [open, setOpen] = useState(false);
+  const [view, setView] = useState(null);
+  const ta = useRef();
+  const setNota = v => up(p => ({ ...p, note: { ...p.note, [it.id]: v } }));
+  const [rec, toggleRec] = useDictation(() => r.note[it.id] || '', setNota);
+  const linked = (r.foto || []).filter(p => p.ref === it.id);
+  useEffect(() => { if (open && ta.current) ta.current.focus(); }, [open]);
+  const risp = k => up(p => { const rr = { ...p.risp }; if (rr[it.id] === k) delete rr[it.id]; else rr[it.id] = k; return { ...p, risp: rr }; });
+  return html`<div class=${'ck' + (r.risp[it.id] ? ' done' : '')}>
+    <span class="mono hs-ref ck-ref">${it.ref}</span>
+    <div class="ck-txt">${it.txt}</div>
+    <div class="seg sm ck-seg">${HS_RISP.map(([k, l]) => html`<button class=${r.risp[it.id] === k ? 'on' : ''} aria-pressed=${r.risp[it.id] === k} onClick=${() => risp(k)}>${l}</button>`)}</div>
+    <div class="ck-act">
+      <span class="ck-cam"><${HsCam} up=${up} r=${r} refId=${it.id} label=${'Foto per la voce ' + it.ref} />${linked.length > 0 && html`<i class="ck-badge">${linked.length}</i>`}</span>
+      <button class=${'btn-icon' + (nota || open ? ' on' : '')} aria-label="Note" title="Note" aria-expanded=${open} onClick=${() => setOpen(!open)}><${Icon} n="note" s=${18} /></button>
+    </div>
+    ${(linked.length > 0 || (!open && nota)) ? html`<div class="ck-extra">
+      ${linked.map((p, i) => html`<button key=${p.id} class="ck-th" aria-label=${'Foto ' + (i + 1)} onClick=${() => setView(i)}><${Thumb44} id=${p.id} /></button>`)}
+      ${!open && nota ? html`<button class="ck-nota" onClick=${() => setOpen(true)}>${nota}</button>` : null}</div>` : null}
+    ${open && html`<div class="ck-ed">
+      <textarea ref=${ta} class="inp" rows="2" placeholder="Annotazioni" value=${nota} onInput=${e => setNota(e.target.value)}></textarea>
+      <div class="hs-tools">
+        ${SR_API && html`<button class=${'chip-btn' + (rec ? ' rec' : '')} onClick=${toggleRec}><${Icon} n=${rec ? 'stop' : 'mic'} s=${15} /> ${rec ? 'Stop' : 'Detta'}</button>`}
+        ${base ? html`<span class="hs-base">${nota === base ? 'Dal report precedente (grigio nel Word)' : 'Modificato: le righe nuove escono in nero'}</span>` : null}
+        <button class="btn link sm" style="margin-left:auto" onClick=${() => setOpen(false)}>Fatto</button>
+      </div></div>`}
+    ${view !== null && html`<${Viewer} ids=${linked.map(p => p.id)} index=${view} labelOf=${id => { const p = linked.find(x => x.id === id); return p && p.cap ? p.cap.slice(0, 40) : null; }} onClose=${() => setView(null)} />`}
+  </div>`;
+}
+
 /* ---------------- sezioni ---------------- */
 function hsSections(r) {
   if (r.formato === 'sintetico') return [
@@ -412,17 +445,12 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
   }
   else if (S && S.cap) {
     let grp = null;
-    body = html`<div>${S.cap.items.map(it => {
-      const head = it.grp !== grp ? (grp = it.grp, html`<div class="sec-h" style="margin-top:16px"><h3>${it.grp}</h3></div>`) : null;
-      const linked = (r.foto || []).filter(p => p.ref === it.id);
-      return html`${head}<div class="card hs-item" key=${it.id}>
-        <div class="row" style="align-items:flex-start"><span class="mono hs-ref">${it.ref}</span><div class="tb-grow" style="font-size:15.5px;line-height:1.35">${it.txt}</div><${HsCam} up=${up} r=${r} refId=${it.id} label=${'Foto per la voce ' + it.ref} /></div>
-        <div class="seg sm" style="margin-top:10px">${HS_RISP.map(([k, l]) => html`<button class=${r.risp[it.id] === k ? 'on' : ''} onClick=${() => up(p => { const rr = { ...p.risp }; if (rr[it.id] === k) delete rr[it.id]; else rr[it.id] = k; return { ...p, risp: rr }; })}>${l}</button>`)}</div>
-        <textarea class="inp" style="margin-top:8px" rows="2" placeholder="Annotazioni" value=${r.note[it.id] || ''} onInput=${e => { const v = e.target.value; up(p => ({ ...p, note: { ...p.note, [it.id]: v } })); }}></textarea>
-        ${B['nt.' + it.id] ? html`<div class="hs-base" style="margin-top:4px">${(r.note[it.id] || '') === B['nt.' + it.id] ? 'Dal report precedente (grigio nel Word)' : 'Modificato: le righe nuove escono in nero'}</div>` : null}
-        ${linked.length > 0 && html`<div class="photos" style="margin-top:8px">${linked.map(p => html`<${Thumb} key=${p.id} id=${p.id} />`)}<span class="lock">${linked.length} foto collegate</span></div>`}
-      </div>`;
-    })}</div>`;
+    const groups = [];
+    S.cap.items.forEach(it => { if (it.grp !== grp) { grp = it.grp; groups.push({ grp, items: [] }); } groups[groups.length - 1].items.push(it); });
+    body = html`<div>${groups.map(g => html`<div key=${g.grp}>
+      <div class="sec-h" style="margin-top:16px"><h3>${g.grp}</h3><span class="hint">${g.items.filter(it => r.risp[it.id]).length}/${g.items.length}</span></div>
+      <div class="card ck-list">${g.items.map(it => html`<${HsCheck} key=${it.id} it=${it} r=${r} up=${up} base=${B['nt.' + it.id]} />`)}</div>
+    </div>`)}</div>`;
   }
   else if (S && S.k === 'descr') body = html`<div class="card"><${HsText} label="Condizioni generali dell'immobile" rows=${10} value=${r.descr} base=${B.descr} set=${v => up({ descr: v })} /></div>`;
   else if (S && S.k === 'azioni') body = html`<div>
