@@ -1,4 +1,4 @@
-/* Fogli firme: presenze, informative, consegne. Uno strumento unico, usato dentro le pratiche (DDA, Mappatura, RA)
+/* Fogli firme: presenze, informative, consegne. Uno strumento unico, usato dentro le attività (DDA, Mappatura, RA)
    o come attività a sé. I testi stanno nei modelli (Impostazioni / file di configurazione); il PDF lo impagina Nembo. */
 
 // Modelli di partenza: testi generici, senza nomi. {committente} {immobile} {indirizzo} {citta} {commessa} {data} {relatore} si compilano da soli.
@@ -38,7 +38,7 @@ async function foglioPdf(r, f, s) {
 }
 const foglioNome = f => ['Firme', slug(f.titolo || 'foglio').slice(0, 30), f.data || ''].filter(Boolean).join('_');
 
-/* ---------------- sezione nelle pratiche ---------------- */
+/* ---------------- sezione nelle attività ---------------- */
 function FogliFirme({ r, up, settings }) {
   const [pick, setPick] = useState(false);
   const [open, setOpen] = useState(null);
@@ -136,7 +136,7 @@ function FoglioSheet({ r, f, settings, set, onDelete, onClose }) {
 
       ${man.length > 0 && html`<div class="sec-h"><h3>Manufatti nel PDF</h3><span class="hint">${f.inclMan ? man.filter(m => sel(m.id)).length + ' di ' + man.length : 'non inclusi'}</span></div>
         <div class="card tight">
-          <label class="fg-sw"><span>Allega l'elenco dei manufatti della pratica</span><${Toggle} on=${f.inclMan} label="Allega i manufatti" set=${v => !ro && set({ inclMan: v })} /></label>
+          <label class="fg-sw"><span>Allega l'elenco dei manufatti dell’attività</span><${Toggle} on=${f.inclMan} label="Allega i manufatti" set=${v => !ro && set({ inclMan: v })} /></label>
           ${f.inclMan && html`<button class="btn link sm" onClick=${() => setShowMan(!showMan)}>${showMan ? 'Nascondi' : 'Scegli quali'}</button>
             ${showMan && man.map(m => html`<label class="fg-man" key=${m.id}><input type="checkbox" checked=${sel(m.id)} disabled=${ro} onChange=${() => toggleMan(m.id)} />
               <span class="mono">${m.codice}</span><span>${[m.descrizione, m.ubicazione].filter(Boolean).join(' · ')}</span></label>`)}`}
@@ -236,7 +236,7 @@ function FirmeList({ records, open, activeId, acts }) {
   const groups = {};
   all.forEach(r => { const c = r.cliente || 'Senza cliente'; (groups[c] = groups[c] || []).push(r); });
   return html`<div class="content">
-    <${LargeTitle} top eye="Strumenti" title="Fogli firme" sub="Presenze, informative e consegne fuori da una pratica" acts=${acts} />
+    <${LargeTitle} top eye="Strumenti" title="Fogli firme" sub="Presenze, informative e consegne fuori da un’attività" acts=${acts} />
     ${!all.length && html`<div class="empty"><b>Nessun foglio firme</b>Tocca + e scegli “Foglio firme”. Dentro DDA, Mappature e RA c'è anche la sezione Firme.</div>`}
     ${Object.entries(groups).map(([c, rs]) => html`<div key=${c}><div class="grp-client">${c}</div><div class="list">
       ${rs.map(r => { const fg = r.fogli || [], n = fg.reduce((a, f) => a + foglioFirme(f), 0); return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r)} key=${r.id} onClick=${() => open(r.id)}>

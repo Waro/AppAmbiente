@@ -4,7 +4,7 @@ const TYPE_LABEL = { dda: 'DDA', mappatura: 'Mappatura MCA e FAV', ra: 'Soprallu
 const WEEKDAYS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven'];
 const isoDay = d => { const z = new Date(d); z.setMinutes(z.getMinutes() - z.getTimezoneOffset()); return z.toISOString().slice(0, 10); };
 
-// la pratica ha già dati raccolti sul campo?
+// l’attività ha già dati raccolti sul campo?
 function recDone(r) {
   if (r.type === 'dda') return r.fase === 1 ? (r.recs.length > 0 || Object.keys(r.check || {}).length > 0) : allCamp(r).length > 0;
   if (r.type === 'mappatura') return allCampMap(r).length > 0;
@@ -13,7 +13,7 @@ function recDone(r) {
   if (r.type === 'hs') return r.formato === 'sintetico' ? Object.keys(r.risp || {}).length > 0 : HS_SCHEDE.some(s => hsSchedaFatta(r.schede[s.k] || {}));
   return false;
 }
-// elementi con foto (campioni, aree REC, manufatti, punti radon) di una pratica
+// elementi con foto (campioni, aree REC, manufatti, punti radon) di un’attività
 function photoItems(r) {
   let items = [];
   if (r.type === 'dda') items = r.fase === 1 ? r.recs : allCamp(r);
@@ -40,7 +40,7 @@ function recLine(r) {
   return `Radon · ${MOMENTI[m]} · ${r.punti.length} dosimetri`;
 }
 
-// prossimo sopralluogo: pratiche con data da oggi in poi non ancora concluse, e ritiri radon (anche scaduti)
+// prossimo sopralluogo: attività con data da oggi in poi non ancora concluse, e ritiri radon (anche scaduti)
 function nextVisit(records, od) {
   const t = today(), c = [];
   for (const r of records) {
@@ -65,7 +65,7 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
   const [bu, setBu] = useState(settings.buDefault || 'ambiente');
   const [per, setPer] = useState('w');
   useEffect(() => setBu(settings.buDefault || 'ambiente'), [settings.buDefault]);
-  // ogni business unit vede le proprie pratiche
+  // ogni business unit vede le proprie attività
   const records = allRecords.filter(r => bu === 'hs' ? r.type === 'hs' : bu === 'ambiente' ? r.type !== 'hs' && r.type !== 'firme' : false);
   const t = today();
   const eye = new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -81,7 +81,7 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
     { l: 'Elementi con foto', a: ph.ok, b: ph.tot, c: 'var(--blue-sky)' },
   ];
 
-  // ---- andamento: pratiche caricate su OneDrive
+  // ---- andamento: attività caricate su OneDrive
   const now = new Date(); const mon = new Date(now); mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
   const upDays = Object.entries(od).filter(([id, e]) => e.ok && records.some(r => r.id === id)).map(([, e]) => isoDay(e.t));
   let bars;
@@ -143,12 +143,12 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
         </div>` : html`
         <span class="nv-eye">Prossimo sopralluogo</span>
         <div class="next-addr">Nessun sopralluogo in programma</div>
-        <div class="next-line">Le pratiche con data da oggi in poi e i ritiri radon compaiono qui.</div>
+        <div class="next-line">Le attività con data da oggi in poi e i ritiri radon compaiono qui.</div>
         <div class="next-acts"><button class="btn pri" onClick=${newAct}>Nuova attività</button></div>`}
     </div>
 
     <div class="card">
-      <div class="card-h"><h4>Attività di oggi</h4>${!todays.length && html`<span class="wg-lbl">nessuna pratica con data di oggi</span>`}</div>
+      <div class="card-h"><h4>Attività di oggi</h4>${!todays.length && html`<span class="wg-lbl">nessuna attività con data di oggi</span>`}</div>
       <div class="rings">
         <div class="ring-wrap" style="width:96px;height:96px">
           <${Ring} p=${rings[0].b ? rings[0].a / rings[0].b : 0} size=${96} w=${9} color=${rings[0].c} />
@@ -164,7 +164,7 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
         <div class="seg sm" style="width:170px"><button class=${per === 'w' ? 'on' : ''} onClick=${() => setPer('w')}>Settimana</button><button class=${per === 'm' ? 'on' : ''} onClick=${() => setPer('m')}>Mese</button></div></div>
       <div class="trend">
         <div class="bars">${bars.map(b => html`<div class=${b.cur ? 'cur' : ''} title=${b.n + ' caricate'}><i style=${'height:' + Math.round(b.n / maxB * 50 + 3) + 'px'}></i><small>${b.l}</small></div>`)}</div>
-        <div class="tot" style="text-align:right"><b>${totP}</b><span>pratiche caricate</span></div>
+        <div class="tot" style="text-align:right"><b>${totP}</b><span>attività caricate</span></div>
       </div>
     </div>
 
@@ -204,7 +204,7 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
     ${bu === 'hs' && hsTplOk === false && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goSettings}>Per generare i report carica i modelli Word H&S (Esteso e Sintetico) in Impostazioni → Modelli.</button>`}
     ${bu === 'ambiente' && (!tplOk || !settings.tecnicoCognome) && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goSettings}>Prima di iniziare: in Impostazioni inserisci i tuoi dati e carica i due modelli PDF.</button>`}
     ${allRecords.some(r => r.type === 'firme') && html`<div class="card" style="margin-top:12px;padding:0"><button class="prow" style="width:100%;border:0;background:none;text-align:left" onClick=${() => goList('firmeList')}>
-      <span class="sq"><${Icon} n="sign" s=${20} /></span><span class="t"><b>Fogli firme</b><small>${allRecords.filter(r => r.type === 'firme').length} fuori dalle pratiche</small></span><${Icon} n="right" s=${18} /></button></div>`}
+      <span class="sq"><${Icon} n="sign" s=${20} /></span><span class="t"><b>Fogli firme</b><small>${allRecords.filter(r => r.type === 'firme').length} fuori dalle attività</small></span><${Icon} n="right" s=${18} /></button></div>`}
     ${stale && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goBackup}>${lastBackup ? 'L\'ultimo backup ha più di una settimana.' : 'Non hai ancora fatto un backup.'} I dati stanno solo su questo dispositivo: salvane una copia su OneDrive.</button>`}
     ${installEvt && html`<button class="btn block" style="margin-top:12px" onClick=${onInstall}><${Icon} n="plus" s=${18} /> Installa l'app</button>`}
   </div>`;
@@ -218,7 +218,7 @@ const NEW_OPTS = [
   { k: 'ra', t: 'ra', patch: {}, l: 'RA · verifica annuale', s: 'Manufatti da mappatura o PMC', ic: 'shield', bg: 'color-mix(in srgb, var(--mca) 12%, white)', fg: 'var(--mca)' },
   { k: 'radon', t: 'radon', patch: {}, l: 'Campagna radon', s: 'Posa e ritiro dosimetri', ic: 'radon', bg: 'var(--ok-soft)', fg: 'var(--ok)' },
   { k: 'hsE', t: 'hs', bu: 'hs', patch: { formato: 'esteso' }, l: 'H&S · Esteso', s: '13 schede, rischio e priorità, documentazione fotografica', ic: 'helmet', bg: 'var(--blue-soft)', fg: 'var(--blue)' },
-  { k: 'firme', t: 'firme', bu: 'altro', patch: {}, l: 'Foglio firme', s: 'Presenze, informative, consegne fuori da una pratica', ic: 'sign', bg: 'var(--fill-soft)', fg: 'var(--blue)' },
+  { k: 'firme', t: 'firme', bu: 'altro', patch: {}, l: 'Foglio firme', s: 'Presenze, informative, consegne fuori da un’attività', ic: 'sign', bg: 'var(--fill-soft)', fg: 'var(--blue)' },
   { k: 'hsS', t: 'hs', bu: 'hs', patch: { formato: 'sintetico' }, l: 'H&S · Sintetico', s: 'Checklist Sì/No/N.A., azioni consigliate, rilievo fotografico', ic: 'helmet', bg: 'var(--fill-soft)', fg: 'var(--navy)' },
 ];
 function NewActivity({ records, onClose, onCreate, bu }) {

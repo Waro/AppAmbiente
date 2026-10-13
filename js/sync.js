@@ -1,10 +1,10 @@
 /* Sincronizzazione tra dispositivi tramite la cartella dell'app su OneDrive (_nembo/).
    - _nembo/records/<id>.json : { app, kind: 'sync', version, record, blobs: {id: {type, name}}, savedAt }
-                                 oppure, per una pratica eliminata, { app, kind: 'sync', deleted: true, id, deletedAt }
+                                 oppure, per un’attività eliminata, { app, kind: 'sync', deleted: true, id, deletedAt }
    - _nembo/blobs/<id>         : foto e allegati, uno per id (caricati una volta sola)
-   Regole: vince la modifica più recente; se una pratica è cambiata su due dispositivi, l'altra versione
-   diventa una copia. Una pratica eliminata sparisce ovunque, i suoi file restano su OneDrive.
-   La pratica aperta sullo schermo non viene sovrascritta: si aggiorna al giro successivo. */
+   Regole: vince la modifica più recente; se un’attività è cambiata su due dispositivi, l'altra versione
+   diventa una copia. Un’attività eliminata sparisce ovunque, i suoi file restano su OneDrive.
+   L’attività aperta sullo schermo non viene sovrascritta: si aggiorna al giro successivo. */
 
 const Sync = (() => {
   const REC = '_nembo/records/', BLOB = '_nembo/blobs/';
@@ -16,13 +16,13 @@ const Sync = (() => {
   const enabled = () => !!(OD.account && (_settings.odSync !== false));
   const kv = async (k, d) => (await DB.get(k)) || d;
 
-  // pratica eliminata qui: la segno, la lapide parte al prossimo giro
+  // attività eliminata qui: la segno, la lapide parte al prossimo giro
   async function markDeleted(id) {
     const del = await kv('sync_del', {}); del[id] = Date.now(); await DB.set('sync_del', del);
     schedule(3000);
   }
 
-  // copia di una pratica con file propri (così eliminare l'una non tocca le foto dell'altra)
+  // copia di un’attività con file propri (così eliminare l'una non tocca le foto dell'altra)
   async function copia(rec, nota) {
     const map = {};
     for (const id of [...new Set(blobIds(rec))]) {
@@ -51,7 +51,7 @@ const Sync = (() => {
   }
   async function pushRecord(rec, st, sent, prog) {
     const { metas, ok } = await pushBlobs(rec, sent, prog);
-    if (!ok) return false; // la pratica va su solo quando tutti i suoi file sono su
+    if (!ok) return false; // l’attività va su solo quando tutti i suoi file sono su
     const { _new, ...record } = rec;
     const item = await OD.putRaw(REC + rec.id + '.json', new Blob([JSON.stringify({ app: 'nembo', kind: 'sync', version: 1, record, blobs: metas, savedAt: Date.now() })], { type: 'application/json' }), 'application/json');
     st[rec.id] = { v: rec.updatedAt || 0, m: item && item.lastModifiedDateTime };
@@ -153,9 +153,9 @@ const Sync = (() => {
         const last = Date.now(); await DB.set('sync_last', last);
         const parts = [esito.giu && `${esito.giu} ricevute`, esito.su && `${esito.su} inviate`, esito.tolte && `${esito.tolte} eliminate`, esito.tolteSu && (esito.tolteSu === 1 ? '1 eliminazione inviata' : `${esito.tolteSu} eliminazioni inviate`)].filter(Boolean);
         set({ phase: 'ok', last, text: parts.length ? parts.join(', ') : 'Tutto aggiornato', done: 0, total: 0 });
-        if (esito.copie.length) notify('warn', 'Sincronizzazione: ' + (esito.copie.length === 1 ? 'una pratica era cambiata su due dispositivi' : esito.copie.length + ' pratiche erano cambiate su due dispositivi'), {
+        if (esito.copie.length) notify('warn', 'Sincronizzazione: ' + (esito.copie.length === 1 ? 'un’attività era cambiata su due dispositivi' : esito.copie.length + ' attività erano cambiate su due dispositivi'), {
           detail: 'È rimasta la modifica più recente; l\'altra versione è stata salvata come copia. Controllale e cancella quella che non serve.', items: esito.copie });
-        if (esito.mancanti) notify('warn', `Sincronizzazione: ${esito.mancanti} file non trovati su OneDrive`, { detail: 'Le pratiche sono arrivate, ma alcune foto o allegati non erano ancora stati caricati dall\'altro dispositivo. Riapri Nembo su quel dispositivo con la rete attiva.' });
+        if (esito.mancanti) notify('warn', `Sincronizzazione: ${esito.mancanti} file non trovati su OneDrive`, { detail: 'Le attività sono arrivate, ma alcune foto o allegati non erano ancora stati caricati dall\'altro dispositivo. Riapri Nembo su quel dispositivo con la rete attiva.' });
         if (opts.manual) toast(parts.length ? 'Sincronizzato: ' + parts.join(', ') : 'Tutto già sincronizzato');
       } catch (e) {
         const login = e.code === 'LOGIN';
@@ -219,6 +219,6 @@ function SyncCard({ settings, set }) {
         ${s.error && html`<div class="notice err">${s.error}</div>`}
         <button class="btn block" style="margin-top:10px" disabled=${s.phase === 'run'} onClick=${() => Sync.run({ manual: true })}>${s.phase === 'run' ? html`<div class="spin" />` : html`<${Icon} n="share" s=${18} />`} Sincronizza ora</button>`
       : html`<p class="lead" style="margin:8px 0 0">Accedi con Microsoft 365 qui sopra per attivarla.</p>`}
-    <p class="lead" style="margin:10px 0 0">Su un dispositivo nuovo basta accedere: le pratiche arrivano da sole. Vince la modifica più recente; se una pratica è cambiata su due dispositivi, l'altra versione resta come copia. Le pratiche eliminate spariscono ovunque, i file restano nella cartella dell'app su OneDrive.</p>
+    <p class="lead" style="margin:10px 0 0">Su un dispositivo nuovo basta accedere: le attività arrivano da sole. Vince la modifica più recente; se un’attività è cambiata su due dispositivi, l'altra versione resta come copia. Le attività eliminate spariscono ovunque, i file restano nella cartella dell'app su OneDrive.</p>
   </div>`;
 }

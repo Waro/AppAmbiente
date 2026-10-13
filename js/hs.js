@@ -301,8 +301,8 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
       if (/\.json$/i.test(f.name)) d = await hsReadOldJson(JSON.parse(await f.text()));
       else if (/\.docx$/i.test(f.name)) d = await hsReadDocx(await f.arrayBuffer());
       else throw new Error('scegli un file .docx (non .doc o PDF) oppure il .json della vecchia app');
-      if (d.formato !== r.formato && !confirm(`Il file è un report ${HS_FMT[d.formato]}: la pratica passa al formato ${HS_FMT[d.formato]}. Continuare?`)) { setBusy(null); return; }
-      if (!hsIsEmpty(r) && !confirm('I testi della pratica vengono sostituiti da quelli del file. Continuare?')) { setBusy(null); return; }
+      if (d.formato !== r.formato && !confirm(`Il file è un report ${HS_FMT[d.formato]}: l’attività passa al formato ${HS_FMT[d.formato]}. Continuare?`)) { setBusy(null); return; }
+      if (!hsIsEmpty(r) && !confirm('I testi dell’attività vengono sostituiti da quelli del file. Continuare?')) { setBusy(null); return; }
       const n = await hsApplyImport(r, d, (k, t) => _progress({ title: 'Importo il report', text: `Immagini ${k} di ${t}`, done: k, total: t }));
       _progress(null);
       up(() => n);

@@ -509,7 +509,7 @@ async function hsCheckTemplate(name, buf) {
 }
 
 /* ================= lettura del report dell'anno precedente =================
-   Restituisce un oggetto con i campi della pratica; le immagini come Blob (le salva il chiamante).
+   Restituisce un oggetto con i campi dell’attività; le immagini come Blob (le salva il chiamante).
    Tutto il testo letto diventa "base": nel nuovo Word esce in grigio finché non lo modifichi. */
 const hsNorm = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[’'`´]/g, '').replace(/[^A-Z0-9]+/g, ' ').replace(/\s+/g, ' ').trim();
 const kidsW = (n, name) => [...(n.childNodes || [])].filter(c => c.nodeType === 1 && (!name || c.localName === name));
@@ -759,7 +759,7 @@ function hsReadSintetico(files, doc, body) {
   }));
   return out;
 }
-// applica quanto letto (Word o JSON) a una pratica: i testi diventano la base grigia, le foto vanno in "precedente sopralluogo"
+// applica quanto letto (Word o JSON) a un’attività: i testi diventano la base grigia, le foto vanno in "precedente sopralluogo"
 async function hsApplyImport(rec, d, onStep) {
   const save = async (blob, k, n) => { onStep && onStep(k, n); try { return await saveImage(blob); } catch (e) { return null; } };
   const r = JSON.parse(JSON.stringify(rec));

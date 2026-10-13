@@ -112,7 +112,7 @@ function CampSummary({ r, mats, todo = 0 }) {
       <div><b>${inP}<small>/${all.length}</small></b><span>in pianta</span></div></div></div>
     ${all.length > 0 && html`<div class="card">
       <div class="card-h"><h4>Per matrice</h4><div class="seg sm" style="width:150px">
-        <button class=${per === 'oggi' ? 'on' : ''} onClick=${() => setPer('oggi')}>Oggi</button><button class=${per === 'pratica' ? 'on' : ''} onClick=${() => setPer('pratica')}>Pratica</button></div></div>
+        <button class=${per === 'oggi' ? 'on' : ''} onClick=${() => setPer('oggi')}>Oggi</button><button class=${per === 'pratica' ? 'on' : ''} onClick=${() => setPer('pratica')}>Attività</button></div></div>
       ${rows.map(x => html`<div class="mbar"><span class="nm"><i class="mdot" style=${'background:' + x.m.c}></i>${x.m.l}</span>
         <div class="track"><i style=${'width:' + Math.round(x.n / max * 100) + '%'}></i></div><b>${x.n}</b></div>`)}</div>`}`;
 }

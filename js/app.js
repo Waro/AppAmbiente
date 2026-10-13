@@ -2,7 +2,7 @@
 
 let _settings = { ...DEFAULT_SETTINGS };
 
-// nome leggibile della pratica (notifiche, messaggi): codice · cliente · indirizzo
+// nome leggibile dell’attività (notifiche, messaggi): codice · cliente · indirizzo
 function recordTitle(r) {
   const id = r.codice || (r.type === 'radon' ? ['Radon', r.commessa].filter(Boolean).join(' ') : r.commessa);
   return [id, r.cliente, placeLabel(r)].filter(Boolean).join(' · ');
@@ -366,7 +366,7 @@ function Notifiche() {
   const COL = { ok: 'var(--ok)', warn: 'var(--warn)', err: 'var(--danger)', info: 'var(--blue)' };
   const LBL = { ok: 'Completato', warn: 'Interrotto', err: 'Errore', info: 'Promemoria' };
   const copy = async n => {
-    const txt = [new Date(n.t).toLocaleString('it-IT'), n.title, n.record && 'Pratica: ' + n.record, n.code && 'Codice: ' + n.code, n.detail, ...(n.items || [])].filter(Boolean).join('\n');
+    const txt = [new Date(n.t).toLocaleString('it-IT'), n.title, n.record && 'Attività: ' + n.record, n.code && 'Codice: ' + n.code, n.detail, ...(n.items || [])].filter(Boolean).join('\n');
     try { await navigator.clipboard.writeText(txt); toast('Dettagli copiati'); } catch (e) { toast('Copia non riuscita'); }
   };
   return html`<div class="content">
@@ -558,10 +558,10 @@ function App() {
     else if (v === 'home') goBack();
     else setRoute({ v, from: 'Oggi' });
   };
-  // nel doppio pannello, scegliere una pratica dall'elenco non è una "navigazione": niente storico
+  // nel doppio pannello, scegliere un’attività dall'elenco non è una "navigazione": niente storico
   const select = id => setRoute(r => ({ ...r, id }));
 
-  // ruotando il tablet, passa dalla schermata piena al doppio pannello (e viceversa) senza perdere la pratica aperta
+  // ruotando il tablet, passa dalla schermata piena al doppio pannello (e viceversa) senza perdere l’attività aperta
   useEffect(() => {
     setRoute(r => {
       if (wide && DETAIL_OF[LIST_OF[r.v]] === r.v) return { v: LIST_OF[r.v], id: r.id };
@@ -584,7 +584,7 @@ function App() {
     toast('Eliminato');
     if (wide) select(null); else goBack();
   };
-  // la pratica aperta non viene sovrascritta dalla sincronizzazione
+  // l’attività aperta non viene sovrascritta dalla sincronizzazione
   useEffect(() => { Sync.busy = route.id || null; }, [route.id]);
   // uscendo da un record nuovo rimasto vuoto, lo scarto
   useEffect(() => {
@@ -595,7 +595,7 @@ function App() {
     if (empties.length) setRecords(rs => rs.filter(r => !empties.includes(r)));
   }, [route.v, route.id]);
 
-  // apre una pratica: nel doppio pannello dentro l'area, altrimenti a schermo pieno
+  // apre un’attività: nel doppio pannello dentro l'area, altrimenti a schermo pieno
   const openRec = r => {
     if (wide) { if (route.v === LIST_OF[r.type]) select(r.id); else go({ v: LIST_OF[r.type], id: r.id }); }
     else go({ v: r.type, id: r.id });
@@ -640,7 +640,7 @@ function App() {
     wideCreate = createDda;
     body = split(html`<${DdaList} records=${records} acts=${listActs(createDda, 'Nuova indagine')} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'dda', id })} create=${createDda} />`,
       dRec && html`<${DdaForm} ...${formProps(dRec)} onSave=${r => saveRec({ ...r, _new: r._new && ddaIsEmpty(r) })} />`,
-      ['Nessuna pratica selezionata', 'Toccane una dall\'elenco per aprirla qui.']);
+      ['Nessuna attività selezionata', 'Toccane una dall\'elenco per aprirla qui.']);
   } else if (route.v === 'mappaturaList') {
     wideCreate = createMappatura;
     body = split(html`<${MappaturaList} records=${records} acts=${listActs(createMappatura, 'Nuova mappatura')} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'mappatura', id })} create=${createMappatura} />`,

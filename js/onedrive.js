@@ -1,7 +1,7 @@
 /* OneDrive tramite Microsoft Graph.
    Permesso delegato Files.ReadWrite.AppFolder: l'app legge e scrive solo nella propria cartella
    (OneDrive › App › nome registrato in Entra ID per questa app). Non vede il resto del OneDrive e non cancella nulla.
-   - cartelle leggibili per pratica: "Carica su OneDrive" (foto, PDF, dati.json)
+   - cartelle leggibili per attività: "Carica su OneDrive" (foto, PDF, dati.json)
    - cartella _nembo/: copia per la sincronizzazione tra dispositivi (vedi sync.js) */
 
 const OD = (() => {
@@ -282,7 +282,7 @@ async function odLog(entry) {
   log.unshift({ t: Date.now(), ...entry }); await DB.set('od_log', log.slice(0, 300));
 }
 
-/* stato di invio per pratica: { [id]: { t, ok } } — t = momento dell'invio */
+/* stato di invio per attività: { [id]: { t, ok } } — t = momento dell'invio */
 const odSyncSubs = new Set();
 function useOdSynced() {
   const [m, setM] = useState({});
@@ -360,7 +360,7 @@ async function odSync(records, settings) {
   }
   _progress(null);
   try { if (wake) wake.release(); } catch (e) {}
-  // esito per pratica: caricata solo se tutti i suoi file sono andati a buon fine
+  // esito per attività: caricata solo se tutti i suoi file sono andati a buon fine
   const synced = (await DB.get('od_synced')) || {};
   for (const r of records) synced[r.id] = { t: t0, ok: plan.filter(i => i.recId === r.id).every(i => i._ok) };
   await DB.set('od_synced', synced); odSyncSubs.forEach(f => f());

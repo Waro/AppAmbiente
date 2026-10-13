@@ -69,13 +69,13 @@ priorità, natura del rischio, costo, competenza e termine; anagrafica, visite, 
 ## Fogli firme
 
 Per sostituire i fogli di carta con le firme (informativa amianto, presenze, consegna documenti). Si usano in due modi:
-- **dentro una pratica** (DDA, Mappatura, RA): sezione **Firme**, anche più fogli per pratica;
+- **dentro un'attività** (DDA, Mappatura, RA): sezione **Firme**, anche più fogli per attività;
 - **da soli**: Nuova attività → *Foglio firme* (menu laterale → Fogli firme; sul telefono il collegamento è in Oggi).
 
 Ogni foglio parte da un **modello** (titolo, testo dell'oggetto, documenti consegnati, note) con campi che si compilano da soli:
 `{committente}`, `{immobile}`, `{indirizzo}`, `{citta}`, `{commessa}`, `{data}`, `{relatore}`. I testi restano modificabili sul foglio.
 I modelli si cambiano in Impostazioni → Fogli firme e viaggiano nel file di configurazione, insieme all'intestazione del PDF (chi conduce).
-Nel sopralluogo RA il foglio può allegare l'elenco dei manufatti della pratica (tutti o scelti).
+Nel sopralluogo RA il foglio può allegare l'elenco dei manufatti dell'attività (tutti o scelti).
 
 **Passa il telefono**: una persona alla volta scrive nome, società e ruolo e firma; non vede le righe degli altri.
 **Chiudi il foglio** blocca dati e firme; riaprire cancella le firme. Il PDF lo impagina Nembo (nessun modello da caricare)
@@ -110,12 +110,12 @@ Foto e allegati si caricano una volta sola; PDF e dati.json vengono sostituiti a
 Permesso usato: `Files.ReadWrite.AppFolder` (delegato): l'app legge e scrive solo nella propria cartella, non vede il resto del OneDrive e non cancella nulla.
 
 **Sincronizzazione tra dispositivi** (dalla v20, Impostazioni → OneDrive → *Sincronizza tra i dispositivi*, attiva di default):
-con lo stesso account Microsoft, telefono, tablet e PC vedono le stesse pratiche. Parte da sola all'apertura dell'app, quando torna
-la rete e poco dopo ogni modifica; c'è anche il tasto *Sincronizza ora*. Su un dispositivo nuovo basta accedere: le pratiche arrivano da sole.
-- Usa la sottocartella `_nembo/` della cartella dell'app (una scheda per pratica e i file per id), separata dalle cartelle leggibili di "Carica su OneDrive".
-- Vince la modifica più recente; se una pratica è cambiata su due dispositivi, l'altra versione diventa una copia ("· copia") con le sue foto, e lo dice nelle Notifiche.
-- Una pratica eliminata sparisce anche dagli altri dispositivi; i suoi file restano su OneDrive.
-- La pratica aperta sullo schermo non viene sovrascritta: si aggiorna quando la chiudi.
+con lo stesso account Microsoft, telefono, tablet e PC vedono le stesse attività. Parte da sola all'apertura dell'app, quando torna
+la rete e poco dopo ogni modifica; c'è anche il tasto *Sincronizza ora*. Su un dispositivo nuovo basta accedere: le attività arrivano da sole.
+- Usa la sottocartella `_nembo/` della cartella dell'app (una scheda per attività e i file per id), separata dalle cartelle leggibili di "Carica su OneDrive".
+- Vince la modifica più recente; se un'attività è cambiata su due dispositivi, l'altra versione diventa una copia ("· copia") con le sue foto, e lo dice nelle Notifiche.
+- Un'attività eliminata sparisce anche dagli altri dispositivi; i suoi file restano su OneDrive.
+- L'attività aperta sullo schermo non viene sovrascritta: si aggiorna quando la chiudi.
 - Non chiede mai l'accesso a Microsoft da sola: se la sessione è scaduta lo segnala in Impostazioni.
 - Modelli, configurazione e firma del tecnico non vengono sincronizzati (restano nel file di configurazione).
 Controlli: solo PDF, JPEG, PNG verificati sul contenuto, massimo 60 MB, nomi ripuliti, registro degli ultimi caricamenti in Impostazioni.
@@ -130,8 +130,8 @@ ridimensionando una finestra su PC):
 - **Sotto i 1000px** (telefono, tablet in verticale): stessa navigazione a schermo singolo di sempre, solo con una
   colonna un po' più larga tra 600 e 999px.
 - **Da 1000px in su** (tablet in orizzontale, PC): elenco e scheda stanno affiancati nello stesso schermo — si tocca
-  una pratica nell'elenco e si apre subito a destra, senza cambiare schermata. Ruotando il tablet si passa dall'uno
-  all'altro senza perdere la pratica aperta.
+  un'attività nell'elenco e si apre subito a destra, senza cambiare schermata. Ruotando il tablet si passa dall'uno
+  all'altro senza perdere l'attività aperta.
 
 Su tablet Android con Chrome vero (es. Galaxy Tab, Redmi Pad) tutte le funzioni restano invariate, scanner barcode
 e salvataggio incluso. Su iPad, come su iPhone, Safari/WebKit non supporta lo scanner barcode né la scelta della
@@ -167,7 +167,7 @@ Al secondo avvio dopo l'aggiornamento il telefono usa la nuova versione. I dati 
 | `js/office.js` | scheda campioni Excel e riepilogo Word |
 | `js/ra.js` | sopralluogo RA: manufatti, stato di conservazione, anno di incarico |
 | `js/hs-data.js`, `js/hs-word.js`, `js/hs.js` | sopralluogo H&S: dati fissi, motore Word (modelli .docx con JSZip) e import, interfaccia |
-| `js/firme.js` | fogli firme: modelli, sezione nelle pratiche, attività a sé, passa il telefono, impostazioni |
+| `js/firme.js` | fogli firme: modelli, sezione nelle attività, attività a sé, passa il telefono, impostazioni |
 | `js/home.js` | schermata Oggi e foglio Nuova attività |
 | `js/onedrive.js` | caricamento su OneDrive e stato di invio |
 | `js/sync.js` | sincronizzazione tra dispositivi tramite la cartella dell'app (`_nembo/`) |
