@@ -46,11 +46,13 @@ function nextVisit(records, od) {
   for (const r of records) {
     if (r.type === 'radon') {
       const s = radonStato(r);
-      const d = s === 'fase1' || s === 'fase2' ? radonScadenza(r) : s === 'da_iniziare' && r.momenti[0].data ? r.momenti[0].data : '';
-      if (d) c.push({ r, d });
-    } else if (r.data && r.data >= t && odStatus(od, r) !== 'ok' && !(r.type === 'ra' && !raOpen(r))) c.push({ r, d: r.data });
+      if (s !== 'da_iniziare' && s !== 'fase1' && s !== 'fase2') continue;
+      const i = s === 'fase1' ? 1 : s === 'fase2' ? 2 : 0, mm = r.momenti[i] || {};
+      const d = mm.data || (s === 'fase1' || s === 'fase2' ? radonScadenza(r) : '');
+      if (d && mm.stato !== 'annullato') c.push({ r, d, o: mm.ora || '' });
+    } else if (r.data && r.data >= t && r.stato !== 'annullato' && odStatus(od, r) !== 'ok' && !(r.type === 'ra' && !raOpen(r))) c.push({ r, d: r.data, o: r.ora || '' });
   }
-  c.sort((a, b) => a.d.localeCompare(b.d) || (b.r.updatedAt || 0) - (a.r.updatedAt || 0));
+  c.sort((a, b) => a.d.localeCompare(b.d) || (a.o || '99').localeCompare(b.o || '99') || (b.r.updatedAt || 0) - (a.r.updatedAt || 0));
   return c[0] || null;
 }
 function whenLabel(d) {
@@ -117,6 +119,8 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
   const raRest = Math.max(0, raYear.length - raDoneY - raCrit.length);
 
   const nx = nextVisit(records, od);
+  const agT = agendaItems(allRecords, settings).filter(it => it.data === today() && it.stato !== 'annullato');
+  const agOggi = { n: agT.length, first: agT.map(it => it.ora).filter(Boolean).sort()[0] };
   const hsAll = records.filter(r => r.type === 'hs').map(hsCriticita);
   const hsP1 = hsAll.reduce((a, c) => a + c.filter(x => x.p === 1).length, 0), hsCrit = hsAll.reduce((a, c) => a + c.length, 0);
   const hsDaCaricare = records.filter(r => r.type === 'hs' && odStatus(od, r) !== 'ok').length;
@@ -134,9 +138,9 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
     <div class="card-navy">
       ${nx ? html`
         <div class="row" style="justify-content:space-between"><span class="nv-eye">Prossimo sopralluogo</span>
-          <span class=${'nv-eye' + (when.crit ? ' crit' : '')} style="text-transform:none;letter-spacing:0;font-size:14px">${when.l}</span></div>
+          <span class=${'nv-eye' + (when.crit ? ' crit' : '')} style="text-transform:none;letter-spacing:0;font-size:14px">${when.l}${nx.o ? ' · ' + nx.o : ''}</span></div>
         <div class="next-addr">${nxAddr || 'Indirizzo da indicare'}</div>
-        <div class="next-line">${[recLine(nx.r), nx.r.cliente].filter(Boolean).join(' · ')}</div>
+        <div class="next-line">${[recLine(nx.r), nx.r.cliente, nx.r.type !== 'radon' && nx.r.stato && progL(progDi(nx.r.stato, nx.r.ora))].filter(Boolean).join(' · ')}</div>
         <div class="next-acts">
           <button class="btn pri" onClick=${() => open(nx.r)}>Avvia sopralluogo</button>
           ${nxAddr && html`<a class="btn-icon glass" aria-label="Indicazioni stradali" href=${'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(nxAddr)} target="_blank" rel="noopener"><${Icon} n="nav" s=${20} /></a>`}
@@ -146,6 +150,8 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
         <div class="next-line">Le attività con data da oggi in poi e i ritiri radon compaiono qui.</div>
         <div class="next-acts"><button class="btn pri" onClick=${newAct}>Nuova attività</button></div>`}
     </div>
+    <div class="card" style="padding:0"><button class="prow" style="width:100%;border:0;background:none;text-align:left" onClick=${() => goList('agenda')}>
+      <span class="sq"><${Icon} n="clock" s=${20} /></span><span class="t"><b>Programmazione</b><small>${agOggi.n ? `${agOggi.n} ${agOggi.n === 1 ? 'attività' : 'attività'} oggi${agOggi.first ? ' · la prima alle ' + agOggi.first : ''}` : 'Giornate a fasce orarie, JSON e calendario'}</small></span><${Icon} n="right" s=${18} /></button></div>
 
     <div class="card">
       <div class="card-h"><h4>Attività di oggi</h4>${!todays.length && html`<span class="wg-lbl">nessuna attività con data di oggi</span>`}</div>
@@ -221,7 +227,7 @@ const NEW_OPTS = [
   { k: 'firme', t: 'firme', bu: 'altro', patch: {}, l: 'Foglio firme', s: 'Presenze, informative, consegne fuori da un’attività', ic: 'sign', bg: 'var(--fill-soft)', fg: 'var(--blue)' },
   { k: 'hsS', t: 'hs', bu: 'hs', patch: { formato: 'sintetico' }, l: 'H&S · Sintetico', s: 'Checklist Sì/No/N.A., azioni consigliate, rilievo fotografico', ic: 'helmet', bg: 'var(--fill-soft)', fg: 'var(--navy)' },
 ];
-function NewActivity({ records, onClose, onCreate, bu }) {
+function NewActivity({ records, onClose, onCreate, bu, preset }) {
   useBackClose(onClose);
   const [k, setK] = useState(bu === 'hs' ? 'hsE' : 'dda1');
   const gruppi = [['Ambiente', NEW_OPTS.filter(o => !o.bu)], ['H&S', NEW_OPTS.filter(o => o.bu === 'hs')]];
@@ -234,11 +240,12 @@ function NewActivity({ records, onClose, onCreate, bu }) {
   // prossima scadenza RA non critica (oltre 30 giorni): avviso sobrio sulla riga
   const raNext = records.filter(r => r.type === 'ra' && raOpen(r) && raScadenza(r) && raScadenza(r) >= today()).map(raScadenza).sort()[0];
   const raSoft = raNext && daysBetween(today(), raNext) > 30;
-  const start = () => onCreate(opt.t, { ...opt.patch, commessa: commessa.trim(), citta: citta.trim(), indirizzo: indirizzo.trim() });
+  const start = () => onCreate(opt.t, { ...opt.patch, ...(preset || {}), commessa: commessa.trim(), citta: citta.trim(), indirizzo: indirizzo.trim() });
   return html`<div class="sheet-ov" onClick=${e => e.target === e.currentTarget && onClose()}>
     <div class="sheet" role="dialog" aria-label="Nuova attività">
       <div class="sheet-grab"></div>
       <div class="sheet-nav"><button class="btn link" onClick=${onClose}>Annulla</button><b>Nuova attività</b><span></span></div>
+      ${preset && preset.data && html`<div class="notice" style="margin:0 var(--gutter) 4px">Programmata per ${new Date(preset.data + 'T12:00:00').toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}${preset.ora ? ' alle ' + preset.ora : ''}</div>`}
       <div class="sheet-body">
         ${gruppi.map(([gl, opts], gi) => html`<div class="sec-h" style=${gi ? '' : 'margin-top:6px'}><h3>${gl}</h3></div>
         ${opts.map(o => html`<button class=${'opt' + (k === o.k ? ' on' : '') + (o.k === 'ra' && raSoft && k !== 'ra' ? ' alert-soft' : '')} onClick=${() => setK(o.k)} aria-pressed=${k === o.k}>

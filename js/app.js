@@ -335,6 +335,13 @@ function Settings({ settings, setSettings, onTemplates }) {
       <${Inp} label="Tecnici incaricati (Sintetico)" value=${s.hsTecnici} set=${v => set({ hsTecnici: v })} />
     </div></div>
 
+    <div class="sec-h"><h3>Programmazione · durate tipiche</h3></div>
+    <div class="card"><p class="lead" style="margin:2px 0 10px">Durata proposta per ogni nuova attività; nella singola attività si cambia quando serve.</p><div class="grid2">
+      ${Object.keys(DURATE_BASE).map(k => html`<label class="fld" key=${k}><span>${TIPI_AG[k].l}</span>
+        <select value=${String(durataBase(k, s))} onChange=${e => set({ durate: { ...(s.durate || {}), [k]: +e.target.value } })}>
+          ${DUR_OPT.map(m => html`<option value=${m}>${fmtDur(m)}</option>`)}</select></label>`)}
+    </div></div>
+
     <div class="sec-h"><h3>Fogli firme</h3></div>
     <${FirmeSettings} s=${s} set=${set} />
 
@@ -457,9 +464,9 @@ function useWide() {
 }
 const LIST_OF = { dda: 'ddaList', mappatura: 'mappaturaList', radon: 'radonList', ra: 'raList', hs: 'hsList', firme: 'firmeList' };
 const DETAIL_OF = { ddaList: 'dda', mappaturaList: 'mappatura', radonList: 'radon', raList: 'ra', hsList: 'hs', firmeList: 'firme' };
-const TOP_ROUTES = ['home', 'ddaList', 'mappaturaList', 'raList', 'radonList', 'hsList', 'firmeList'];
+const TOP_ROUTES = ['home', 'agenda', 'ddaList', 'mappaturaList', 'raList', 'radonList', 'hsList', 'firmeList'];
 const ROUTE_TITLE = { home: 'Oggi', ddaList: 'Ambiente · DDA', mappaturaList: 'Mappatura MCA e FAV', raList: 'Sopralluogo RA', radonList: 'Campagne radon',
-  hsList: 'Sopralluoghi H&S', hs: 'Sopralluogo H&S', firmeList: 'Fogli firme', firme: 'Fogli firme', settings: 'Impostazioni', backup: 'Backup', notifiche: 'Notifiche', dda: 'DDA', mappatura: 'Mappatura', ra: 'Sopralluogo RA', radon: 'Campagna radon' };
+  hsList: 'Sopralluoghi H&S', hs: 'Sopralluogo H&S', firmeList: 'Fogli firme', firme: 'Fogli firme', agenda: 'Programmazione', settings: 'Impostazioni', backup: 'Backup', notifiche: 'Notifiche', dda: 'DDA', mappatura: 'Mappatura', ra: 'Sopralluogo RA', radon: 'Campagna radon' };
 
 /* ---------------- menu laterale (tablet in orizzontale e PC) ---------------- */
 const NAV_AREAS = [
@@ -495,6 +502,7 @@ function SideNav({ route, go, counts, settings, min, toggle }) {
     <button class="sn-brand" title="Oggi" onClick=${() => nav('home')}><span class="logo">N</span><div><b>Nembo</b>${name && html`<small>${name}</small>`}</div></button>
     <div class="sn-sec">Oggi</div><div class="sn-div"></div>
     ${item({ v: 'home', ic: 'today', l: 'Oggi' }, 0)}
+    ${item({ v: 'agenda', ic: 'clock', l: 'Programmazione' }, 0)}
     <div class="sn-sec">Aree di lavoro</div>
     ${NAV_AREAS.map(x => item(x, counts[x.d]))}
     <div class="sn-sec">H&S</div><div class="sn-div"></div>
@@ -527,6 +535,7 @@ function App() {
   const [installEvt, setInstallEvt] = useState(null);
   const [tplOk, setTplOk] = useState(true);
   const [sheet, setSheet] = useState(false);
+  const [preset, setPreset] = useState(null);
   const [, odTick] = useState(0);
   useEffect(() => OD.subscribe(() => odTick(x => x + 1)), []);
 
@@ -602,7 +611,12 @@ function App() {
   };
   const create = (type, patch = {}) => {
     const base = type === 'dda' ? newDda(records, settings) : type === 'mappatura' ? newMappatura(records, settings) : type === 'ra' ? newRa(records, settings) : type === 'hs' ? newHs(records, settings, patch.formato) : type === 'firme' ? newFirmeRec(records, settings) : newRadon(settings);
-    const r = { ...base, ...patch, _new: true };
+    let r = { ...base, ...patch, _new: true };
+    // dalla Programmazione: per il radon data e ora vanno sul primo momento (posa)
+    if (type === 'radon' && (patch.data || patch.ora)) { const { data, ora, ...rest } = patch; r = { ...base, ...rest, _new: true, momenti: base.momenti.map((m, i) => i ? m : { ...m, data: data || m.data, ora: ora || '' }) }; }
+    // RA dello stesso immobile già in Nembo: riprendo i manufatti dell'anno precedente
+    const prev = type === 'ra' ? raPrecedente(records, r) : null;
+    if (prev) { raRiprendi(prev, r).then(p => { const x = { ...r, ...p }; saveRec(x); openRec(x); toast(`${p.manufatti.length === 1 ? 'Ripreso 1 manufatto' : 'Ripresi ' + p.manufatti.length + ' manufatti'} da ${prev.codice}`); }).catch(e => { fail('Ripresa non riuscita', e); saveRec(r); openRec(r); }); return; }
     saveRec(r); openRec(r);
   };
   const createDda = () => create('dda');
@@ -661,6 +675,10 @@ function App() {
     body = split(html`<${HsList} records=${records} acts=${listActs(createHs, 'Nuovo sopralluogo H&S')} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'hs', id })} create=${createHs} />`,
       dRec && html`<${HsForm} ...${formProps(dRec)} onOpenNew=${openNewRec} onSave=${r => saveRec({ ...r, _new: r._new && hsIsEmpty(r) })} />`,
       ['Nessun report selezionato', 'Toccane uno dall\'elenco per aprirlo qui.']);
+  } else if (route.v === 'agenda') {
+    wideCreate = () => { setPreset(null); setSheet(true); };
+    body = html`<${Agenda} records=${records} settings=${settings} saveRec=${saveRec} openRec=${openRec} acts=${listActs(() => { setPreset(null); setSheet(true); }, 'Nuova attività')}
+      onNew=${p => { setPreset(p); setSheet(true); }} />`;
   } else if (route.v === 'firmeList') {
     wideCreate = createFirme;
     body = split(html`<${FirmeList} records=${records} acts=${listActs(createFirme, 'Nuovo foglio firme')} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'firme', id })} />`,
@@ -702,7 +720,7 @@ function App() {
       <div class="nb-grow"></div>${route.v !== 'notifiche' && bell}</header>`}
     ${body}
     ${!wide && isTop && html`<${TabBar} route=${route} tab=${tab} bu=${settings.buDefault} />`}
-    ${sheet && html`<${NewActivity} records=${records} bu=${sheet === 'hs' ? 'hs' : settings.buDefault} onClose=${() => setSheet(false)} onCreate=${(t, patch) => { window.addEventListener('popstate', () => setTimeout(() => create(t, patch), 0), { once: true }); setSheet(false); }} />`}
+    ${sheet && html`<${NewActivity} records=${records} preset=${preset} bu=${sheet === 'hs' ? 'hs' : settings.buDefault} onClose=${() => { setSheet(false); setPreset(null); }} onCreate=${(t, patch) => { window.addEventListener('popstate', () => setTimeout(() => create(t, patch), 0), { once: true }); setSheet(false); }} />`}
     <${ShareAsk} />
     <${Progress} />
     <${Toast} />

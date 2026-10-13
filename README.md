@@ -66,6 +66,35 @@ priorità, natura del rischio, costo, competenza e termine; anagrafica, visite, 
   collegamento alla voce della checklist nel Sintetico. Massimo 250 nel report.
 - Con la BU H&S scelta in Impostazioni la tab bar diventa Oggi · H&S · DDA · RA e la home mostra criticità urgenti e report da caricare.
 
+## Programmazione
+
+Ogni attività ha **data, ora di inizio, durata prevista e stato** (campi accanto alla Data; nel radon per ciascun momento).
+**Stato**: *Da programmare* (senza ora) e *In attesa* (con l'ora) si mettono da soli; *Confermato* e *Annullato* li scegli tu e restano anche se cambi l'ora.
+Le annullate restano in vista barrate, non contano in Oggi e non vanno nel file della giornata; nel file .ics lo stato diventa confermato, provvisorio o annullato. La durata proposta
+dipende dal tipo e si cambia in Impostazioni → Programmazione · durate tipiche.
+
+**Vista Programmazione** (menu laterale sotto Oggi; sul telefono dalla schermata Oggi): settimana in alto, sotto la giornata a fasce di mezz'ora.
+- Le attività sono blocchi colorati per tipo, alti quanto durano; quelle del giorno senza ora sono in "Senza ora".
+- Tocca un'attività senza ora e poi la fascia: è programmata. Tocca un blocco per cambiare ora e durata, spostarlo, aprirla o aggiungerla al calendario.
+- Tocca una fascia vuota: *Nuova attività qui* (parte già con data e ora) oppure *Carica JSON*.
+- Con il mouse i blocchi si trascinano e si allungano dal bordo inferiore.
+- Il ritiro radon previsto (+6 mesi) compare come attività senza ora finché non gli dai data e ora.
+
+**JSON**: una mappatura/PMC (come l'import RA) crea il sopralluogo RA nella fascia scelta; un **piano** (`"type": "nembo-programmazione"`,
+elenco `attivita` con `tipo`, `data`, `ora`, `durata`, `stato` (facoltativo), `commessa`, `cliente`, `citta`, `indirizzo`, `sito`, `note`) crea più attività nei loro giorni.
+Tipi: `ra`, `dda1`, `dda2`, `mappatura`, `radon` (posa), `hsE`, `hsS`, `firme`. Le righe già presenti vengono saltate. Modello scaricabile dalla vista.
+Per le righe `ra`: se contengono `manufatti` (stesso formato del modello RA, utile per i siti nuovi) l'RA nasce con quei manufatti;
+se non li contengono e in Nembo c'è già un'RA dello stesso immobile, i manufatti vengono **ripresi dall'anno precedente**.
+
+**Ripresa dall'anno precedente (RA)**: stesso immobile = stesso codice sito se indicato su entrambe, altrimenti stesso indirizzo e città.
+Si prende l'RA più recente prima della data della nuova (o la più recente in assoluto). Stato e note diventano "stato precedente" e "note precedenti",
+le foto vanno tra le foto precedenti, le planimetrie vengono copiate con le etichette dei manufatti; il periodo di incarico avanza di un anno.
+Foto e planimetrie sono copie: eliminare l'RA vecchia non tocca la nuova. Avviene da sola creando un'RA con l'indirizzo (Nuova attività o piano);
+nella scheda di un'RA senza manufatti compare il riquadro "Riprendi dall'anno precedente".
+
+**Calendario (.ics)**: "Aggiungi al calendario" per un'attività e "Giornata in calendario" per tutto il giorno: il file si apre con Outlook
+(o il calendario del telefono) senza nuovi permessi Microsoft.
+
 ## Fogli firme
 
 Per sostituire i fogli di carta con le firme (informativa amianto, presenze, consegna documenti). Si usano in due modi:
@@ -167,6 +196,7 @@ Al secondo avvio dopo l'aggiornamento il telefono usa la nuova versione. I dati 
 | `js/office.js` | scheda campioni Excel e riepilogo Word |
 | `js/ra.js` | sopralluogo RA: manufatti, stato di conservazione, anno di incarico |
 | `js/hs-data.js`, `js/hs-word.js`, `js/hs.js` | sopralluogo H&S: dati fissi, motore Word (modelli .docx con JSZip) e import, interfaccia |
+| `js/agenda.js` | programmazione: ora e durata, vista a fasce orarie, JSON del piano, file .ics |
 | `js/firme.js` | fogli firme: modelli, sezione nelle attività, attività a sé, passa il telefono, impostazioni |
 | `js/home.js` | schermata Oggi e foglio Nuova attività |
 | `js/onedrive.js` | caricamento su OneDrive e stato di invio |

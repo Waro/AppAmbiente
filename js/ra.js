@@ -87,6 +87,44 @@ async function importRa(text, rec) {
   return { patch, nuovi: add.length, head, foto };
 }
 
+/* ---------------- ripresa dall'anno precedente ---------------- */
+// stesso immobile: codice sito se c'è su entrambe, altrimenti indirizzo + città
+const normLuogo = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+function raPrecedente(records, r) {
+  const sito = normLuogo(r.sito), ind = normLuogo(r.indirizzo), cit = normLuogo(r.citta);
+  if (!sito && !ind) return null;
+  return records.filter(x => x.type === 'ra' && x.id !== r.id && (x.manufatti || []).length && !x._new)
+    .filter(x => sito && normLuogo(x.sito) ? normLuogo(x.sito) === sito : ind && normLuogo(x.indirizzo) === ind && (!cit || !normLuogo(x.citta) || normLuogo(x.citta) === cit))
+    // la più recente prima della data della nuova RA; se non c'è, la più recente in assoluto
+    .sort((a, b) => { const d = r.data || today(), pa = (a.data || '') <= d, pb = (b.data || '') <= d; return (pb - pa) || (b.data || '').localeCompare(a.data || '') || (b.updatedAt || 0) - (a.updatedAt || 0); })[0] || null;
+}
+// copia i file (foto, planimetrie) con nuovi id: eliminare un anno non tocca l'altro
+async function dupBlob(id) { const b = id && await DB.getBlob(id); if (!b) return null; const nid = uid('b'); await DB.putBlob({ ...b, id: nid }); return nid; }
+// patch per la nuova RA: manufatti con stato, note e foto dell'anno scorso come "precedenti"
+async function raRiprendi(prev, r) {
+  const map = {}; const manufatti = [];
+  for (const m of prev.manufatti) {
+    const st = raStato(m.stato);
+    const fotoPrec = [];
+    for (const f of ((m.foto || []).length ? m.foto : (m.fotoPrec || [])).slice(0, 3)) { const n = await dupBlob(f); if (n) fotoPrec.push(n); }
+    const nm = newManufatto({ codice: m.codice, ubicazione: m.ubicazione, descrizione: m.descrizione, tipologia: m.tipologia, quantita: m.quantita,
+      statoPrec: st ? st.l : (m.statoPrec || ''), notePrec: m.note || m.notePrec || '', fotoPrec });
+    map[m.id] = nm.id; manufatti.push(nm);
+  }
+  const planimetrie = [];
+  for (const pl of (prev.planimetrie || [])) {
+    const blobId = await dupBlob(pl.blobId); if (!blobId) continue;
+    const annot = JSON.parse(JSON.stringify(pl.annot || {}));
+    for (const a of Object.values(annot)) a.labels = (a.labels || []).filter(l => map[l.ref]).map(l => ({ ...l, ref: map[l.ref] }));
+    planimetrie.push({ id: uid('pl'), nome: pl.nome, blobId, annot });
+  }
+  const patch = { manufatti, planimetrie, fonte: `Ripreso da ${prev.codice} del ${fmtD(prev.data)}`, ripresoDa: prev.id };
+  for (const k of ['cliente', 'citta', 'indirizzo', 'sito', 'commessa']) if (!r[k] && prev[k]) patch[k] = prev[k];
+  if (!r.incaricoDal && prev.incaricoDal) patch.incaricoDal = addMonths(prev.incaricoDal, 12);
+  if (!r.incaricoAl && prev.incaricoAl) patch.incaricoAl = addMonths(prev.incaricoAl, 12);
+  return patch;
+}
+
 /* ---------------- elenco ---------------- */
 function RaList({ records, open, create, activeId, acts }) {
   const od = useOdSynced();
@@ -172,6 +210,14 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
     rd.readAsText(file);
   };
 
+  const prec = r.manufatti.length ? null : raPrecedente(records, r);
+  const [riprendo, setRiprendo] = useState(false);
+  const riprendi = async () => {
+    setRiprendo(true);
+    try { const p = await raRiprendi(prec, r); up(x => ({ ...x, ...p })); toast(`${p.manufatti.length === 1 ? 'Ripreso 1 manufatto' : 'Ripresi ' + p.manufatti.length + ' manufatti'} da ${prec.codice}`); }
+    catch (e) { fail('Ripresa non riuscita', e); }
+    setRiprendo(false);
+  };
   const tot = r.manufatti.length, fatti = r.manufatti.filter(m => m.stato).length;
   const list = r.manufatti.filter(m => f === 'tutti' || (f === 'da' ? !m.stato : !!m.stato));
   const dann = r.manufatti.filter(m => m.stato === 'danneggiato').length;
@@ -201,12 +247,17 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
       <${Inp} cls="full" label="Indirizzo" value=${r.indirizzo} set=${v => up({ indirizzo: v })} placeholder="Via e numero civico" />
       <${Inp} label="Sito / codice immobile" value=${r.sito} set=${v => up({ sito: v })} placeholder="Facoltativo" />
       <${Inp} label="Data" type="date" value=${r.data} set=${v => up({ data: v })} />
+      <${OraDurata} ora=${r.ora} durata=${r.durata} stato=${r.stato} tipo=${r.type} set=${p => up(p)} />
       <${Inp} label="Tecnico" value=${r.tecnico} set=${v => up({ tecnico: v })} />
       <${Inp} label="Incarico RA dal" type="date" value=${r.incaricoDal || ''} set=${v => up({ incaricoDal: v, ...(v && !r.incaricoAl ? { incaricoAl: dayBefore(addMonths(v, 12)) } : {}) })} />
       <${Inp} label="Incarico RA al" type="date" value=${r.incaricoAl || ''} set=${v => up({ incaricoAl: v })} />
       ${r.fonte && html`<${Inp} cls="full" label="Fonte dei dati" value=${r.fonte} set=${v => up({ fonte: v })} />`}
     </div><datalist id="dl-cli-ra">${clienti.map(c => html`<option value=${c} />`)}</datalist></div>
 
+    ${!r.manufatti.length && prec && html`<div class="card tight alert-soft" style="margin-top:12px">
+      <b style="font-weight:600">Stesso immobile di ${prec.codice} (${fmtD(prec.data)})</b>
+      <p class="lead" style="margin:4px 0 10px">Riprendi ${prec.manufatti.length === 1 ? 'il manufatto' : 'i ' + prec.manufatti.length + ' manufatti'} con stato, note e foto dell'anno scorso come riferimento${(prec.planimetrie || []).length ? ', più le planimetrie' : ''}.</p>
+      <button class="btn pri block" disabled=${riprendo} onClick=${riprendi}>${riprendo ? html`<div class="spin" />` : ''} Riprendi dall'anno precedente</button></div>`}
     <div class="sec-h"><h3>Mappatura o PMC</h3></div>
     <div class="card tight">
       <p class="lead" style="margin:2px 0 10px">Fatti preparare da Claude il file JSON dalla mappatura o dal Piano di Manutenzione e Controllo, poi caricalo: crea la lista dei manufatti. Ricaricando un file si aggiungono solo i codici nuovi.</p>

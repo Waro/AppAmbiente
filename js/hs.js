@@ -362,6 +362,7 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
       <${Inp} cls="full" label="Indirizzo" value=${r.indirizzo} set=${v => up({ indirizzo: v })} placeholder="Via, CAP Comune (Prov.)" />
       <${Inp} label="Città" value=${r.citta} set=${v => up({ citta: v })} />
       <${Inp} label="Data sopralluogo" type="date" value=${r.data} set=${v => up({ data: v })} />
+      <${OraDurata} ora=${r.ora} durata=${r.durata} stato=${r.stato} tipo=${r.type} set=${p => up(p)} />
       <${Inp} label="Commessa" value=${r.commessa} set=${v => up({ commessa: v })} />
       <${Inp} label="Committente" value=${r.cliente} set=${v => up({ cliente: v })} />
       <${Inp} label="Emissione" value=${r.meta.emissione} set=${v => setM({ emissione: v })} placeholder=${'automatica: ' + meseAnno(r.data)} />
@@ -377,6 +378,7 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
       <${Inp} cls="full" label="Indirizzo immobile" value=${r.indirizzo} set=${v => up({ indirizzo: v })} />
       <${Inp} label="Comune (piè di pagina)" value=${r.citta} set=${v => up({ citta: v })} />
       <${Inp} label="Data sopralluogo" type="date" value=${r.data} set=${v => up({ data: v })} />
+      <${OraDurata} ora=${r.ora} durata=${r.durata} stato=${r.stato} tipo=${r.type} set=${p => up(p)} />
       <${Inp} cls="full" label="Presenti al sopralluogo" value=${r.meta.presenti} set=${v => setM({ presenti: v })} />
       <${Inp} label="Proprietà" value=${r.meta.proprieta} set=${v => setM({ proprieta: v })} />
       <${Inp} label="Committente" value=${r.cliente} set=${v => up({ cliente: v })} />

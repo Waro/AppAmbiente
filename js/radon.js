@@ -306,6 +306,7 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
         ${!enabled ? html`<div class="lock">Si compila dopo aver confermato il momento ${i}${prevista ? ' · previsto ' + fmtD(prevista) : ''}</div>` : html`
           <div class="grid2">
             <${Inp} label="Data" type="date" value=${mm.data} disabled=${ro} set=${v => setM(i, { data: v })} />
+            <${OraDurata} ora=${mm.ora} durata=${mm.durata} stato=${mm.stato} tipo="radon" disabled=${ro} set=${p => setM(i, p)} />
             <div class="fld"><span>${prevista ? 'Previsto' : ''}</span>${prevista && html`<div style="padding:10px 0;font-size:14px">${fmtD(prevista)}</div>`}</div>
           </div>
           <div class="who">TECNICO</div>

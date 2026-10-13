@@ -120,6 +120,7 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
       <${Inp} cls="full" label="Indirizzo" value=${r.indirizzo} set=${v => up({ indirizzo: v })} placeholder="Via e numero civico" />
       <${Inp} label="Sito / codice immobile" list="dl-siti-map" value=${r.sito} set=${v => up({ sito: v })} placeholder="Facoltativo" />
       <${Inp} label="Data" type="date" value=${r.data} set=${v => up({ data: v })} />
+      <${OraDurata} ora=${r.ora} durata=${r.durata} stato=${r.stato} tipo=${r.type} set=${p => up(p)} />
       <${Inp} label="Tecnico" value=${r.tecnico} set=${v => up({ tecnico: v })} />
     </div>
     <datalist id="dl-cli-map">${clienti.map(c => html`<option value=${c} />`)}</datalist>
