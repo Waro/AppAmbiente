@@ -107,7 +107,17 @@ su OneDrive e nella condivisione va la versione annotata.
 **Con l'account Microsoft 365 collegato** (Impostazioni → OneDrive → Accedi): "Carica su OneDrive" invia foto, allegati,
 PDF e `dati.json` nella cartella dell'app dentro OneDrive › App, una cartella per indagine o campagna. Il nome di quella cartella dipende dal **nome registrato per l'app in Entra ID**, non dal codice: se rinomini l'app qui, per cambiare anche il nome della cartella su OneDrive va rinominata separatamente la app registration in Entra ID (basta il nome visualizzato, non serve ricreare le credenziali).
 Foto e allegati si caricano una volta sola; PDF e dati.json vengono sostituiti a ogni invio. Backup → "Carica tutto su OneDrive" invia tutto l'archivio.
-Permesso usato: `Files.ReadWrite.AppFolder` (delegato): l'app scrive solo nella propria cartella, non legge e non cancella nulla.
+Permesso usato: `Files.ReadWrite.AppFolder` (delegato): l'app legge e scrive solo nella propria cartella, non vede il resto del OneDrive e non cancella nulla.
+
+**Sincronizzazione tra dispositivi** (dalla v20, Impostazioni → OneDrive → *Sincronizza tra i dispositivi*, attiva di default):
+con lo stesso account Microsoft, telefono, tablet e PC vedono le stesse pratiche. Parte da sola all'apertura dell'app, quando torna
+la rete e poco dopo ogni modifica; c'è anche il tasto *Sincronizza ora*. Su un dispositivo nuovo basta accedere: le pratiche arrivano da sole.
+- Usa la sottocartella `_nembo/` della cartella dell'app (una scheda per pratica e i file per id), separata dalle cartelle leggibili di "Carica su OneDrive".
+- Vince la modifica più recente; se una pratica è cambiata su due dispositivi, l'altra versione diventa una copia ("· copia") con le sue foto, e lo dice nelle Notifiche.
+- Una pratica eliminata sparisce anche dagli altri dispositivi; i suoi file restano su OneDrive.
+- La pratica aperta sullo schermo non viene sovrascritta: si aggiorna quando la chiudi.
+- Non chiede mai l'accesso a Microsoft da sola: se la sessione è scaduta lo segnala in Impostazioni.
+- Modelli, configurazione e firma del tecnico non vengono sincronizzati (restano nel file di configurazione).
 Controlli: solo PDF, JPEG, PNG verificati sul contenuto, massimo 60 MB, nomi ripuliti, registro degli ultimi caricamenti in Impostazioni.
 ID applicazione e ID tenant stanno nel file di configurazione, non nel codice.
 
@@ -160,6 +170,7 @@ Al secondo avvio dopo l'aggiornamento il telefono usa la nuova versione. I dati 
 | `js/firme.js` | fogli firme: modelli, sezione nelle pratiche, attività a sé, passa il telefono, impostazioni |
 | `js/home.js` | schermata Oggi e foglio Nuova attività |
 | `js/onedrive.js` | caricamento su OneDrive e stato di invio |
+| `js/sync.js` | sincronizzazione tra dispositivi tramite la cartella dell'app (`_nembo/`) |
 | `js/app.js` | navigazione, impostazioni, backup ZIP e ripristino |
 | `fonts/` | IBM Plex Sans e Mono (woff2) |
 | `pdfgen.js` | compilazione PDF (pdf-lib), compreso il PDF del foglio firme |

@@ -2,7 +2,7 @@
 // Stessa stringa di VERSION in sw.js: aumentala insieme a quella ad ogni aggiornamento.
 // Essendo dentro un file JS servito dalla cache, se l'aggiornamento automatico fallisce
 // questa scritta mostra ancora la versione vecchia — è il modo per accorgersene.
-const APP_VERSION = 'nembo-v19';
+const APP_VERSION = 'nembo-v20';
 
 /* ---------------- tema grafico: "essenziale" (predefinito) o "originale" ----------------
    Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno. */
@@ -353,7 +353,7 @@ const DEFAULT_SETTINGS = {
   mcaCodice: '', mcaDesc: '', favCodice: '', favDesc: '',
   livelloRif: 300, buDefault: 'ambiente',
   // valori proposti nei nuovi sopralluoghi H&S (restano nel file di configurazione, mai nel codice)
-  firmeEnte: '', firmeModelli: [],
+  firmeEnte: '', firmeModelli: [], odSync: true,
   hsCommEsteso: '', hsCommSint: '', hsVerificato: '', hsApprovato: '', hsFirma: '', hsDeveloper: '', hsPropertyManager: '', hsProcuratore: '', hsTecnici: '',
   msClientId: '', msTenantId: '',
 };

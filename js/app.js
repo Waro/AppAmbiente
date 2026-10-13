@@ -292,6 +292,7 @@ function Settings({ settings, setSettings, onTemplates }) {
     </div>
     <div class="sec-h"><h3>OneDrive</h3></div>
     <${OneDriveSettings} settings=${s} set=${set} />
+    <${SyncCard} settings=${s} set=${set} />
     <div class="sec-h"><h3>Modelli</h3></div>
     <div class="card tight"><p class="lead" style="margin:2px 0 6px">I moduli aziendali (PDF per l'Ambiente, Word per l'H&S) non sono nell'app pubblicata: caricali qui dal telefono o da OneDrive. Restano solo su questo dispositivo e finiscono nel file di configurazione e nel backup.</p>
       ${Object.entries(TEMPLATES).map(([name, t]) => html`<${TemplateRow} key=${name} name=${name} t=${t} onChange=${onTemplates} />`)}</div>
@@ -489,6 +490,7 @@ function SideNav({ route, go, counts, settings, min, toggle }) {
       <${Icon} n=${x.ic} s=${21} /><span class="l">${x.l}</span>${n > 0 && html`<span class="n">${n}</span>`}</button>`;
   };
   const name = `${settings.tecnicoNome || ''} ${settings.tecnicoCognome || ''}`.trim();
+  const ss = useSync(); const sync = OD.account && settings.odSync !== false ? syncLabel(ss) : ''; const syncPhase = ss.phase;
   return html`<aside class=${'sidenav' + (min ? ' min' : '')} aria-label="Aree di lavoro">
     <button class="sn-brand" title="Oggi" onClick=${() => nav('home')}><span class="logo">N</span><div><b>Nembo</b>${name && html`<small>${name}</small>`}</div></button>
     <div class="sn-sec">Oggi</div><div class="sn-div"></div>
@@ -502,7 +504,7 @@ function SideNav({ route, go, counts, settings, min, toggle }) {
     <div class="sn-grow"></div>
     <button class="sn-toggle" title=${min ? 'Espandi il menu' : 'Riduci il menu'} aria-expanded=${!min} onClick=${toggle}>
       <${Icon} n=${min ? 'expand' : 'collapse'} s=${19} /><span class="l">Riduci menu</span></button>
-    <div class="sn-ver">${APP_VERSION}</div>
+    <div class="sn-ver">${APP_VERSION}${sync && html`<br /><span class=${'sn-sync ' + syncPhase}>${sync}</span>`}</div>
   </aside>`;
 }
 const TABS_HS = [{ v: 'home', ic: 'today', l: 'Oggi' }, { v: 'hsList', ic: 'helmet', l: 'H&S' }, { v: 'ddaList', ic: 'leaf', l: 'DDA' }, { v: 'raList', ic: 'shield', l: 'RA' }];
@@ -538,11 +540,12 @@ function App() {
     return rs;
   };
   useEffect(() => {
-    reload().then(rs => { setReady(true); radonReminders(rs).then(n => n && DB.all().then(setRecords)); });
+    reload().then(rs => { setReady(true); radonReminders(rs).then(n => n && DB.all().then(setRecords)); Sync.start(); });
+    const offRec = Sync.onRecords(() => DB.all().then(setRecords));
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
     const bip = e => { e.preventDefault(); setInstallEvt(e); };
     window.addEventListener('beforeinstallprompt', bip);
-    return () => window.removeEventListener('beforeinstallprompt', bip);
+    return () => { window.removeEventListener('beforeinstallprompt', bip); offRec(); };
   }, []);
 
   const setSettings = s => { setSettingsState(s); _settings = s; DB.set('settings', s); };
@@ -570,15 +573,19 @@ function App() {
   const saveRec = useCallback(async rec => {
     await DB.put(rec);
     setRecords(rs => { const i = rs.findIndex(x => x.id === rec.id); if (i < 0) return [...rs, rec]; const c = rs.slice(); c[i] = rec; return c; });
+    Sync.schedule();
   }, []);
   const delRec = async rec => {
     if (!confirm('Eliminare definitivamente? Foto e allegati vengono cancellati da questo telefono.')) return;
     for (const b of blobIds(rec)) await removeBlob(b);
     await DB.del(rec.id);
+    Sync.markDeleted(rec.id);
     setRecords(rs => rs.filter(x => x.id !== rec.id));
     toast('Eliminato');
     if (wide) select(null); else goBack();
   };
+  // la pratica aperta non viene sovrascritta dalla sincronizzazione
+  useEffect(() => { Sync.busy = route.id || null; }, [route.id]);
   // uscendo da un record nuovo rimasto vuoto, lo scarto
   useEffect(() => {
     if (route.v === 'dda' || route.v === 'mappatura' || route.v === 'radon' || route.v === 'ra' || route.v === 'hs' || route.v === 'firme') return;

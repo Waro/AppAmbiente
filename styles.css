@@ -613,3 +613,11 @@ input[type=checkbox] { accent-color: var(--blue); }
 .fg-testo.open { display: block; }
 .fg-cnt { justify-self: end; font-size: 13px; color: var(--muted); padding-right: 6px; }
 .sheet-nav > span { min-width: 0; }
+
+/* sincronizzazione (v20) */
+.sync-st { margin-top: 10px; font-size: 14px; color: var(--text2); }
+.sync-st.ok { color: var(--ok); }
+.sync-st.err, .sync-st.login { color: var(--danger); }
+.sn-sync { font-size: 11px; color: var(--muted); }
+.sn-sync.err, .sn-sync.login { color: var(--danger); }
+.sidenav.min .sn-sync { display: none; }

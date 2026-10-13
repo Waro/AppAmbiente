@@ -1,6 +1,8 @@
-/* Caricamento su OneDrive tramite Microsoft Graph.
-   Permesso delegato Files.ReadWrite.AppFolder: l'app scrive solo nella propria cartella
-   (OneDrive › App › nome registrato in Entra ID per questa app). Non legge e non cancella nulla. */
+/* OneDrive tramite Microsoft Graph.
+   Permesso delegato Files.ReadWrite.AppFolder: l'app legge e scrive solo nella propria cartella
+   (OneDrive › App › nome registrato in Entra ID per questa app). Non vede il resto del OneDrive e non cancella nulla.
+   - cartelle leggibili per pratica: "Carica su OneDrive" (foto, PDF, dati.json)
+   - cartella _nembo/: copia per la sincronizzazione tra dispositivi (vedi sync.js) */
 
 const OD = (() => {
   const SCOPES = ['User.Read', 'Files.ReadWrite.AppFolder'];
@@ -49,7 +51,8 @@ const OD = (() => {
     const a = account; account = null; emit();
     try { await pca.logoutRedirect({ account: a, postLogoutRedirectUri: redirectUri() }); } catch (e) { console.warn(e); }
   }
-  async function token() {
+  // silent: per la sincronizzazione automatica, mai una pagina di accesso non richiesta
+  async function token(opt = {}) {
     if (!account) throw new Error('non sei collegato a OneDrive (Impostazioni → OneDrive → Accedi)');
     try { return (await pca.acquireTokenSilent({ scopes: SCOPES, account })).accessToken; }
     catch (e) {
@@ -58,6 +61,7 @@ const OD = (() => {
       const code = (e && (e.errorCode || e.code)) || '';
       const needLogin = (window.msal && e instanceof msal.InteractionRequiredAuthError)
         || /monitor_window_timeout|timed_out|iframe|no_tokens_found|login_required|consent_required|interaction_required/i.test(code + ' ' + (e && e.message));
+      if (needLogin && opt.silent) { const err = new Error('accesso a Microsoft da rinnovare'); err.code = 'LOGIN'; throw err; }
       if (needLogin) {
         toast('Sessione Microsoft scaduta: ti riporto alla pagina di accesso, poi ripeti il caricamento');
         await pca.acquireTokenRedirect({ scopes: SCOPES, account });
@@ -139,6 +143,64 @@ const OD = (() => {
     }
   }
 
+  /* ---- sincronizzazione: solo sotto _nembo/ della cartella dell'app ---- */
+  const SYNC = '_nembo/';
+  const okSync = p => typeof p === 'string' && p.startsWith(SYNC) && !p.includes('..') && /^[\w\-./]+$/.test(p);
+  const enc = p => p.split('/').map(encodeURIComponent).join('/');
+  async function putRaw(path, blob, type) {
+    if (!okSync(path)) throw new Error('percorso non ammesso');
+    if (blob.size > MAX_SIZE) throw new Error('file oltre 60 MB');
+    const t = await OD.token({ silent: true });
+    if (blob.size <= 4 * 1048576) {
+      const r = await fetch(`${ROOT}:/${enc(path)}:/content?@microsoft.graph.conflictBehavior=replace`, {
+        method: 'PUT', headers: { Authorization: 'Bearer ' + t, 'Content-Type': type || 'application/octet-stream' }, body: blob });
+      if (!r.ok) throw await gErr(r);
+      return r.json();
+    }
+    const s = await fetch(`${ROOT}:/${enc(path)}:/createUploadSession`, {
+      method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ item: { '@microsoft.graph.conflictBehavior': 'replace' } }) });
+    if (!s.ok) throw await gErr(s);
+    const { uploadUrl } = await s.json();
+    if (!/^https:\/\/[a-z0-9.-]+\.(sharepoint\.com|microsoft\.com)\//i.test(uploadUrl)) throw new Error('indirizzo di caricamento inatteso');
+    const CH = 10 * 327680;
+    for (let o = 0; o < blob.size; o += CH) {
+      const end = Math.min(o + CH, blob.size);
+      const r = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Range': `bytes ${o}-${end - 1}/${blob.size}` }, body: blob.slice(o, end) });
+      if (!r.ok && r.status !== 202) throw await gErr(r);
+      if (end === blob.size) return r.json();
+    }
+  }
+  // elenco dei file di una cartella: [{ name, size, lastModifiedDateTime }]; cartella assente = []
+  async function list(dir) {
+    if (!okSync(dir)) throw new Error('percorso non ammesso');
+    const t = await OD.token({ silent: true });
+    let url = `${ROOT}:/${enc(dir.replace(/\/$/, ''))}:/children?$select=name,size,lastModifiedDateTime&$top=999`;
+    const out = [];
+    while (url) {
+      const r = await fetch(url, { headers: { Authorization: 'Bearer ' + t } });
+      if (r.status === 404) return out;
+      if (!r.ok) throw await gErr(r);
+      const j = await r.json(); out.push(...(j.value || []));
+      url = j['@odata.nextLink'] && j['@odata.nextLink'].startsWith('https://graph.microsoft.com/') ? j['@odata.nextLink'] : null;
+    }
+    return out;
+  }
+  // contenuto di un file (null se non esiste): prima l'indirizzo di scaricamento, poi il file senza credenziali
+  async function getRaw(path) {
+    if (!okSync(path)) throw new Error('percorso non ammesso');
+    const t = await OD.token({ silent: true });
+    const r = await fetch(`${ROOT}:/${enc(path)}`, { headers: { Authorization: 'Bearer ' + t } });
+    if (r.status === 404) return null;
+    if (!r.ok) throw await gErr(r);
+    const meta = await r.json();
+    const dl = meta['@microsoft.graph.downloadUrl'];
+    if (!dl || !/^https:\/\/[a-z0-9.-]+\.(sharepoint\.com|microsoft\.com|live\.com|1drv\.com)\//i.test(dl)) throw new Error('indirizzo di scaricamento inatteso');
+    const d = await fetch(dl);
+    if (!d.ok) throw await gErr(d);
+    return d.blob();
+  }
+
   async function me() {
     const r = await fetch('https://graph.microsoft.com/v1.0/me?$select=displayName,userPrincipalName', { headers: { Authorization: 'Bearer ' + await token() } });
     if (!r.ok) throw await gErr(r);
@@ -146,7 +208,7 @@ const OD = (() => {
   }
 
   return {
-    configured, init, login, logout, token, upload, me, sniff,
+    configured, init, login, logout, token, upload, me, sniff, putRaw, list, getRaw,
     get account() { return account; },
     get error() { return lastError; },
     subscribe(f) { listeners.add(f); return () => listeners.delete(f); },
