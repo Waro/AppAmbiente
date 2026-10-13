@@ -13,7 +13,7 @@ function newMappatura(records, settings) {
     recs: [], documenti: [], // vuoti: servono solo perché ZIP/OneDrive riusano lo stesso codice della DDA
   };
 }
-const mappaturaIsEmpty = r => !r.commessa && !r.cliente && !r.sito && !r.citta && !r.indirizzo && !(r.fotoAppunti || []).length && !MAP_MATS.some(m => (r.campioni[m.k] || []).length) && !(r.planimetrie || []).length && !r.appunti;
+const mappaturaIsEmpty = r => !r.commessa && !r.cliente && !r.sito && !r.citta && !r.indirizzo && !(r.fotoAppunti || []).length && !MAP_MATS.some(m => (r.campioni[m.k] || []).length) && !(r.planimetrie || []).length && !r.appunti && !(r.fogli || []).length;
 const allCampMap = r => MAP_MATS.flatMap(m => (r.campioni[m.k] || []).map(c => ({ ...c, k: m.k })));
 
 /* ---------------- elenco ---------------- */
@@ -149,6 +149,7 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
     <button class="btn dashed" style="margin:10px 0 12px" onClick=${addCamp}>+ Aggiungi campione ${nextCode(tab)}</button>
 
     ${planSection}
+    <${FogliFirme} r=${r} up=${up} settings=${settings} />
 
     <button class="btn outline block" style="margin-top:4px" disabled=${!camp.length || busy} onClick=${() => scheda(tab)}>
       ${busy === tab ? html`<div class="spin" />` : html`<${Icon} n="file" s=${18} />`}

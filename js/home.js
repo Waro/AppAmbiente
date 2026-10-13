@@ -66,7 +66,7 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
   const [per, setPer] = useState('w');
   useEffect(() => setBu(settings.buDefault || 'ambiente'), [settings.buDefault]);
   // ogni business unit vede le proprie pratiche
-  const records = allRecords.filter(r => bu === 'hs' ? r.type === 'hs' : bu === 'ambiente' ? r.type !== 'hs' : false);
+  const records = allRecords.filter(r => bu === 'hs' ? r.type === 'hs' : bu === 'ambiente' ? r.type !== 'hs' && r.type !== 'firme' : false);
   const t = today();
   const eye = new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -203,6 +203,8 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
 
     ${bu === 'hs' && hsTplOk === false && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goSettings}>Per generare i report carica i modelli Word H&S (Esteso e Sintetico) in Impostazioni → Modelli.</button>`}
     ${bu === 'ambiente' && (!tplOk || !settings.tecnicoCognome) && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goSettings}>Prima di iniziare: in Impostazioni inserisci i tuoi dati e carica i due modelli PDF.</button>`}
+    ${allRecords.some(r => r.type === 'firme') && html`<div class="card" style="margin-top:12px;padding:0"><button class="prow" style="width:100%;border:0;background:none;text-align:left" onClick=${() => goList('firmeList')}>
+      <span class="sq"><${Icon} n="sign" s=${20} /></span><span class="t"><b>Fogli firme</b><small>${allRecords.filter(r => r.type === 'firme').length} fuori dalle pratiche</small></span><${Icon} n="right" s=${18} /></button></div>`}
     ${stale && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goBackup}>${lastBackup ? 'L\'ultimo backup ha più di una settimana.' : 'Non hai ancora fatto un backup.'} I dati stanno solo su questo dispositivo: salvane una copia su OneDrive.</button>`}
     ${installEvt && html`<button class="btn block" style="margin-top:12px" onClick=${onInstall}><${Icon} n="plus" s=${18} /> Installa l'app</button>`}
   </div>`;
@@ -216,6 +218,7 @@ const NEW_OPTS = [
   { k: 'ra', t: 'ra', patch: {}, l: 'RA · verifica annuale', s: 'Manufatti da mappatura o PMC', ic: 'shield', bg: 'color-mix(in srgb, var(--mca) 12%, white)', fg: 'var(--mca)' },
   { k: 'radon', t: 'radon', patch: {}, l: 'Campagna radon', s: 'Posa e ritiro dosimetri', ic: 'radon', bg: 'var(--ok-soft)', fg: 'var(--ok)' },
   { k: 'hsE', t: 'hs', bu: 'hs', patch: { formato: 'esteso' }, l: 'H&S · Esteso', s: '13 schede, rischio e priorità, documentazione fotografica', ic: 'helmet', bg: 'var(--blue-soft)', fg: 'var(--blue)' },
+  { k: 'firme', t: 'firme', bu: 'altro', patch: {}, l: 'Foglio firme', s: 'Presenze, informative, consegne fuori da una pratica', ic: 'sign', bg: 'var(--fill-soft)', fg: 'var(--blue)' },
   { k: 'hsS', t: 'hs', bu: 'hs', patch: { formato: 'sintetico' }, l: 'H&S · Sintetico', s: 'Checklist Sì/No/N.A., azioni consigliate, rilievo fotografico', ic: 'helmet', bg: 'var(--fill-soft)', fg: 'var(--navy)' },
 ];
 function NewActivity({ records, onClose, onCreate, bu }) {
@@ -223,6 +226,7 @@ function NewActivity({ records, onClose, onCreate, bu }) {
   const [k, setK] = useState(bu === 'hs' ? 'hsE' : 'dda1');
   const gruppi = [['Ambiente', NEW_OPTS.filter(o => !o.bu)], ['H&S', NEW_OPTS.filter(o => o.bu === 'hs')]];
   if (bu === 'hs') gruppi.reverse();
+  gruppi.push(['Altro', NEW_OPTS.filter(o => o.bu === 'altro')]);
   const [commessa, setCommessa] = useState('');
   const [citta, setCitta] = useState('');
   const [indirizzo, setIndirizzo] = useState('');
@@ -240,7 +244,7 @@ function NewActivity({ records, onClose, onCreate, bu }) {
         ${opts.map(o => html`<button class=${'opt' + (k === o.k ? ' on' : '') + (o.k === 'ra' && raSoft && k !== 'ra' ? ' alert-soft' : '')} onClick=${() => setK(o.k)} aria-pressed=${k === o.k}>
           <span class="oi" style=${`background:${o.bg};color:${o.fg}`}><${Icon} n=${o.ic} s=${21} /></span>
           <span class="ot"><b>${o.l}</b><small>${o.k === 'ra' && raNext ? html`${o.s} · <span style=${k === 'ra' ? '' : 'color:var(--blue)'}>prossima scadenza ${new Date(raNext + 'T12:00:00').toLocaleDateString('it-IT', { month: 'short', year: 'numeric' })}</span>` : o.s}</small></span>
-          <span class="ck"><${Icon} n="check" s=${15} w=${3} /></span></button>`)}`)}
+          </button>`)}`)}
         <div class="sec-h"><h3>Dati di partenza</h3><span class="hint">facoltativi</span></div>
         <div class="card tight">
           <label class="fld"><span>Commessa</span><input class="mono" value=${commessa} onInput=${e => setCommessa(e.target.value)} placeholder="es. 000/26" /></label>

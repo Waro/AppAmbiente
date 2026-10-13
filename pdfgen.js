@@ -238,6 +238,114 @@
     return await doc.save();
   }
 
-  const api = { radonPdf, schedaCampioniPdf, RADON_ROWS };
+  /* ---------- foglio firme: impaginazione propria (A4), nessun modello da caricare ----------
+     f: { titolo, sottotitolo, data, luogo, relatore, responsabile, testo, documenti:[{t, ok}], partecipanti:[{nome, societa, ruolo, firma, ts}],
+          firmaRelatore, note, manufatti:[{codice, descrizione, tipologia, ubicazione, stato, note}] }
+     ctx: { ente, committente, sito, commessa, codice } */
+  async function foglioFirmePdf(f, ctx) {
+    const { PDFDocument, StandardFonts, rgb } = lib();
+    const doc = await PDFDocument.create();
+    const font = await doc.embedFont(StandardFonts.Helvetica), bold = await doc.embedFont(StandardFonts.HelveticaBold);
+    const W = 595.28, H = 841.89, M = 42, CW = W - 2 * M;
+    const ink = rgb(0.06, 0.09, 0.16), mute = rgb(0.38, 0.42, 0.5), line = rgb(0.78, 0.8, 0.85), band = rgb(0.94, 0.95, 0.97);
+    let page, y;
+    const pages = [];
+    const newPage = () => { page = doc.addPage([W, H]); pages.push(page); y = H - M; };
+    const ensure = h => { if (y - h < M + 24) { newPage(); return true; } return false; };
+    const wrap = (text, fnt, size, maxW) => {
+      const out = [];
+      for (const par of safe(text).split('\n')) {
+        const words = par.split(/\s+/).filter(Boolean); let cur = '';
+        if (!words.length) { out.push(''); continue; }
+        for (const w of words) {
+          const t = cur ? cur + ' ' + w : w;
+          if (fnt.widthOfTextAtSize(t, size) <= maxW) cur = t;
+          else { if (cur) out.push(cur); cur = w; while (fnt.widthOfTextAtSize(cur, size) > maxW && cur.length > 1) { let k = cur.length; while (k > 1 && fnt.widthOfTextAtSize(cur.slice(0, k), size) > maxW) k--; out.push(cur.slice(0, k)); cur = cur.slice(k); } }
+        }
+        out.push(cur);
+      }
+      return out;
+    };
+    const para = (text, size = 10, fnt = font, color = ink, lead = 1.38) => {
+      for (const l of wrap(text, fnt, size, CW)) { ensure(size * lead); page.drawText(l, { x: M, y: y - size, size, font: fnt, color }); y -= size * lead; }
+    };
+    const head = t => { ensure(40); y -= 10; page.drawText(safe(t).toUpperCase(), { x: M, y: y - 9, size: 9, font: bold, color: mute }); y -= 16; };
+    const embed = async url => { try { return await doc.embedPng(await dataUrlBytes(url)); } catch (e) { return null; } };
+    // tabella con intestazione ripetuta su ogni pagina; cell(row, i) → testo; sig(row) → immagine per l'ultima colonna
+    const table = async (cols, rows, opt = {}) => {
+      const size = opt.size || 9, pad = 4, minH = opt.minH || 0;
+      const drawHead = () => {
+        let x = M; page.drawRectangle({ x: M, y: y - 18, width: CW, height: 18, color: band });
+        for (const c of cols) { page.drawText(safe(c.t), { x: x + pad, y: y - 12.5, size: 8, font: bold, color: ink }); x += c.w * CW; }
+        y -= 18;
+      };
+      ensure(18 + Math.max(minH, 20)); drawHead();
+      for (const r of rows) {
+        const lines = cols.map((c, i) => c.sig ? [] : wrap(r[i] == null ? '' : r[i], font, size, c.w * CW - 2 * pad));
+        const h = Math.max(minH, ...lines.map(l => l.length * size * 1.25 + 2 * pad));
+        if (ensure(h)) drawHead();
+        let x = M;
+        for (const [i, c] of cols.entries()) {
+          lines[i].forEach((l, k) => page.drawText(l, { x: x + pad, y: y - pad - size - k * size * 1.25 + 1, size, font, color: ink }));
+          if (c.sig && r[i]) {
+            const img = await embed(r[i]);
+            if (img) { const bw = c.w * CW - 2 * pad, bh = h - 2 * pad; const s = Math.min(bw / img.width, bh / img.height); page.drawImage(img, { x: x + pad + (bw - img.width * s) / 2, y: y - h + pad + (bh - img.height * s) / 2, width: img.width * s, height: img.height * s }); }
+          }
+          x += c.w * CW;
+        }
+        page.drawLine({ start: { x: M, y: y - h }, end: { x: M + CW, y: y - h }, thickness: 0.6, color: line });
+        y -= h;
+      }
+    };
+    newPage();
+    // intestazione: chi conduce (dalla configurazione) e data
+    const ente = safe(ctx.ente || '').split('\n').filter(Boolean);
+    let ey = y;
+    ente.forEach((l, i) => { const fn = i ? font : bold, t = fitText(fn, l, CW * 0.62, i ? 8.5 : 10, 6); page.drawText(t.text, { x: M, y: ey - (i ? 9 : 10), size: t.size, font: fn, color: i ? mute : ink }); ey -= i ? 11 : 13; });
+    const dl = safe([f.luogo, fmtData(f.data)].filter(Boolean).join(', '));
+    if (dl) page.drawText(dl, { x: M + CW - font.widthOfTextAtSize(dl, 9.5), y: y - 10, size: 9.5, font, color: ink });
+    y = Math.min(ey, y - 14) - 14;
+    page.drawLine({ start: { x: M, y }, end: { x: M + CW, y }, thickness: 1.2, color: ink }); y -= 22;
+    for (const l of wrap(f.titolo || 'Foglio firme', bold, 15, CW)) { page.drawText(l, { x: M, y: y - 15, size: 15, font: bold, color: ink }); y -= 19; }
+    if (f.sottotitolo) for (const l of wrap(f.sottotitolo, font, 10.5, CW)) { page.drawText(l, { x: M, y: y - 10.5, size: 10.5, font, color: mute }); y -= 14; }
+    y -= 8;
+    // dati
+    const info = [['Committente', ctx.committente], ['Immobile', ctx.sito], ['Commessa', ctx.commessa], ['Relatore', f.relatore], ['Responsabile di commessa', f.responsabile]].filter(x => x[1]);
+    for (const [k, v] of info) {
+      const ls = wrap(v, font, 10, CW - 150); ensure(ls.length * 13 + 2);
+      page.drawText(safe(k), { x: M, y: y - 10, size: 9, font: bold, color: mute });
+      ls.forEach((l, i) => page.drawText(l, { x: M + 150, y: y - 10 - i * 13, size: 10, font, color: ink })); y -= ls.length * 13 + 3;
+    }
+    if (f.testo && f.testo.trim()) { head('Oggetto'); para(f.testo); }
+    const docs = (f.documenti || []).filter(d => d.ok && d.t);
+    if (docs.length) { head('Documenti consegnati'); for (const d of docs) { const ls = wrap(d.t, font, 10, CW - 14); ensure(ls.length * 13.8); page.drawText('•', { x: M + 2, y: y - 10, size: 10, font, color: ink }); ls.forEach((l, i) => page.drawText(l, { x: M + 14, y: y - 10 - i * 13.8, size: 10, font, color: ink })); y -= ls.length * 13.8 + 2; } }
+    const pp = (f.partecipanti || []);
+    head('Persone coinvolte');
+    await table([{ t: '#', w: 0.05 }, { t: 'Nome e cognome', w: 0.27 }, { t: 'Società / ditta', w: 0.22 }, { t: 'Ruolo', w: 0.18 }, { t: 'Firma', w: 0.28, sig: true }],
+      (pp.length ? pp : [{}, {}, {}]).map((p, i) => [String(i + 1), p.nome || '', p.societa || '', p.ruolo || '', p.firma || '']), { minH: 38 });
+    const man = f.manufatti || [];
+    if (man.length) {
+      head('Manufatti presenti in sito');
+      await table([{ t: 'Codice', w: 0.09 }, { t: 'Manufatto', w: 0.25 }, { t: 'Matrice', w: 0.12 }, { t: 'Ubicazione', w: 0.22 }, { t: 'Stato', w: 0.13 }, { t: 'Note', w: 0.19 }],
+        man.map(m => [m.codice, m.descrizione, m.tipologia, m.ubicazione, m.stato, m.note]));
+    }
+    if (f.note && f.note.trim()) { head('Note'); para(f.note); }
+    // firma del relatore
+    ensure(80); y -= 18;
+    const bx = M + CW - 200;
+    page.drawText(safe('Il relatore' + (f.relatore ? ' - ' + f.relatore : '')), { x: bx, y: y - 9, size: 9, font: bold, color: mute }); y -= 14;
+    if (f.firmaRelatore) { const img = await embed(f.firmaRelatore); if (img) { const s = Math.min(200 / img.width, 46 / img.height); page.drawImage(img, { x: bx, y: y - img.height * s, width: img.width * s, height: img.height * s }); } }
+    page.drawLine({ start: { x: bx, y: y - 50 }, end: { x: bx + 200, y: y - 50 }, thickness: 0.6, color: line });
+    // piè di pagina
+    const foot = safe([f.titolo, ctx.commessa ? 'Commessa ' + ctx.commessa : '', ctx.codice].filter(Boolean).join(' - '));
+    pages.forEach((p, i) => {
+      p.drawText(fitText(font, foot, CW - 70, 8, 6).text, { x: M, y: 24, size: 8, font, color: mute });
+      const n = `pag. ${i + 1} di ${pages.length}`; p.drawText(n, { x: M + CW - font.widthOfTextAtSize(n, 8), y: 24, size: 8, font, color: mute });
+    });
+    doc.setTitle(safe(f.titolo || 'Foglio firme'));
+    return await doc.save();
+  }
+
+  const api = { radonPdf, schedaCampioniPdf, foglioFirmePdf, RADON_ROWS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.PdfGen = api;
 })(typeof window !== 'undefined' ? window : globalThis);

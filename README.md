@@ -66,6 +66,21 @@ priorità, natura del rischio, costo, competenza e termine; anagrafica, visite, 
   collegamento alla voce della checklist nel Sintetico. Massimo 250 nel report.
 - Con la BU H&S scelta in Impostazioni la tab bar diventa Oggi · H&S · DDA · RA e la home mostra criticità urgenti e report da caricare.
 
+## Fogli firme
+
+Per sostituire i fogli di carta con le firme (informativa amianto, presenze, consegna documenti). Si usano in due modi:
+- **dentro una pratica** (DDA, Mappatura, RA): sezione **Firme**, anche più fogli per pratica;
+- **da soli**: Nuova attività → *Foglio firme* (menu laterale → Fogli firme; sul telefono il collegamento è in Oggi).
+
+Ogni foglio parte da un **modello** (titolo, testo dell'oggetto, documenti consegnati, note) con campi che si compilano da soli:
+`{committente}`, `{immobile}`, `{indirizzo}`, `{citta}`, `{commessa}`, `{data}`, `{relatore}`. I testi restano modificabili sul foglio.
+I modelli si cambiano in Impostazioni → Fogli firme e viaggiano nel file di configurazione, insieme all'intestazione del PDF (chi conduce).
+Nel sopralluogo RA il foglio può allegare l'elenco dei manufatti della pratica (tutti o scelti).
+
+**Passa il telefono**: una persona alla volta scrive nome, società e ruolo e firma; non vede le righe degli altri.
+**Chiudi il foglio** blocca dati e firme; riaprire cancella le firme. Il PDF lo impagina Nembo (nessun modello da caricare)
+e va nello ZIP, su OneDrive e nella condivisione, nella cartella `firme/`.
+
 ## Excel e Word
 
 - **Scheda campioni in Excel** (Fase 2, schede MCA e FAV): stessi dati della scheda PDF in un foglio .xlsx modificabile, con date in formato Excel.
@@ -142,11 +157,12 @@ Al secondo avvio dopo l'aggiornamento il telefono usa la nuova versione. I dati 
 | `js/office.js` | scheda campioni Excel e riepilogo Word |
 | `js/ra.js` | sopralluogo RA: manufatti, stato di conservazione, anno di incarico |
 | `js/hs-data.js`, `js/hs-word.js`, `js/hs.js` | sopralluogo H&S: dati fissi, motore Word (modelli .docx con JSZip) e import, interfaccia |
+| `js/firme.js` | fogli firme: modelli, sezione nelle pratiche, attività a sé, passa il telefono, impostazioni |
 | `js/home.js` | schermata Oggi e foglio Nuova attività |
 | `js/onedrive.js` | caricamento su OneDrive e stato di invio |
 | `js/app.js` | navigazione, impostazioni, backup ZIP e ripristino |
 | `fonts/` | IBM Plex Sans e Mono (woff2) |
-| `pdfgen.js` | compilazione PDF (pdf-lib) |
+| `pdfgen.js` | compilazione PDF (pdf-lib), compreso il PDF del foglio firme |
 | `vendor/` | librerie (Preact, htm, pdf-lib, JSZip, signature_pad), incluse per l'uso offline |
 
 Se cambia il modulo radon, i nomi dei campi del nuovo PDF vanno rimappati in `RADON_ROWS` (pdfgen.js).

@@ -79,7 +79,7 @@ function newDda(records, settings) {
     campioni: emptyCampioni(), congelati: {}, schede: {}, risultati: [], colonna: 'B', checklist: [],
   };
 }
-const ddaIsEmpty = r => !r.commessa && !r.cliente && !r.sito && !r.citta && !r.indirizzo && !(r.fotoAppunti || []).length && !(r.fotoAppunti2 || []).length && !r.recs.length && !Object.keys(r.check).length && !MATS.some(m => r.campioni[m.k].length) && !r.usoAttuale && !r.interviste && !r.appunti && !r.appunti2 && !(r.checklist && r.checklist.length) && !(r.planimetrie && r.planimetrie.length);
+const ddaIsEmpty = r => !r.commessa && !r.cliente && !r.sito && !r.citta && !r.indirizzo && !(r.fotoAppunti || []).length && !(r.fotoAppunti2 || []).length && !r.recs.length && !Object.keys(r.check).length && !MATS.some(m => r.campioni[m.k].length) && !r.usoAttuale && !r.interviste && !r.appunti && !r.appunti2 && !(r.checklist && r.checklist.length) && !(r.planimetrie && r.planimetrie.length) && !(r.fogli || []).length;
 const allCamp = r => MATS.flatMap(m => (r.campioni[m.k] || []).map(c => ({ ...c, k: m.k })));
 
 function superamenti(r) {
@@ -346,6 +346,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
       </div>
 
       ${planSection}
+      <${FogliFirme} r=${r} up=${up} settings=${settings} />
 
       <div class="sec-h"><h3>Documenti allegati</h3></div>
       <div class="card"><${FileList} items=${r.documenti}
@@ -407,6 +408,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
         <${NotePhotos} rec=${r} field="fotoAppunti2" up=${up} /></div>
 
       ${planSection}
+      <${FogliFirme} r=${r} up=${up} settings=${settings} />
 
       ${(tab === 'mca' || tab === 'fav') && html`
         <button class="btn outline block" style="margin-top:4px" disabled=${!camp.length || busy} onClick=${() => scheda(tab)}>

@@ -171,6 +171,8 @@ async function odRecordItems(r, settings) {
     r.punti.forEach((p, i) => p.foto.forEach((f, k) => photo(f, 'foto', `R${i + 1}_${k + 1}`)));
     r.rapporti.forEach(d => photo(d.blobId, 'rapporti', d.nome));
     items.push({ kind: 'pdf', segs: ['Scheda_radon_' + (r.commessa || 'campagna')], make: async () => PdfGen.radonPdf(await loadTemplate('radon.pdf'), r) });
+  } else if (r.type === 'firme') {
+    // solo fogli firme: aggiunti sotto
   } else {
     r.recs.forEach(x => x.foto.forEach((f, k) => photo(f, 'foto', `${x.nome}_${k + 1}`)));
     MATS.forEach(m => r.campioni[m.k].forEach(c => (c.foto || []).forEach((f, k) => photo(f, 'foto', `${m.l}_${c.codice || 'campione'}_${k + 1}`))));
@@ -193,6 +195,7 @@ async function odRecordItems(r, settings) {
     const id = p.mergedBlobId || p.blobId;
     items.push({ kind: 'pdfblob', blobId: id, segs: ['planimetrie', p.nome + (p.mergedBlobId ? '_annotata' : '')] });
   }
+  for (const f of (r.fogli || [])) if (foglioFirme(f)) items.push({ kind: 'pdf', segs: ['firme', foglioNome(f)], make: () => foglioPdf(r, f, s) });
   const { _new, ...data } = r;
   items.push({ kind: 'json', segs: ['dati'], make: async () => JSON.stringify({ app: 'nembo', version: 1, record: data }, null, 1) });
   return items;

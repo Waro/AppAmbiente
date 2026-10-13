@@ -8,7 +8,7 @@ function recordTitle(r) {
   return [id, r.cliente, placeLabel(r)].filter(Boolean).join(' · ');
 }
 function recordLabel(r) {
-  return r.type === 'dda' || r.type === 'mappatura' || r.type === 'ra' || r.type === 'hs' ? slug([r.codice, r.cliente, r.sito || placeAddr(r)].filter(Boolean).join('_'))
+  return r.type === 'dda' || r.type === 'mappatura' || r.type === 'ra' || r.type === 'hs' || r.type === 'firme' ? slug([r.codice, r.cliente, r.sito || placeAddr(r)].filter(Boolean).join('_'))
     : slug(['Radon', r.commessa, r.cliente, r.citta].filter(Boolean).join('_')) || r.id;
 }
 
@@ -41,6 +41,8 @@ async function buildZip(records, settings, withSettings) {
         const bytes = await PdfGen.radonPdf(await loadTemplate('radon.pdf'), r);
         zip.file(uniq(`${dir}Scheda_radon_${slug(r.commessa || 'campagna')}.pdf`), bytes);
       } catch (e) { console.warn(e); }
+    } else if (r.type === 'firme') {
+      // solo fogli firme: i PDF si aggiungono sotto
     } else {
       for (const x of r.recs) for (const [k, f] of x.foto.entries()) await addBlob(f, `${dir}foto/${slug(x.nome)}_${k + 1}.jpg`);
       for (const m of MATS) for (const c of r.campioni[m.k]) for (const [k, f] of (c.foto || []).entries()) await addBlob(f, `${dir}foto/${m.l}_${slug(c.codice) || 'campione'}_${k + 1}.jpg`);
@@ -65,6 +67,7 @@ async function buildZip(records, settings, withSettings) {
       await addBlob(p.blobId, `${dir}planimetrie/${slug(p.nome)}.pdf`);
       if (p.mergedBlobId) await addBlob(p.mergedBlobId, `${dir}planimetrie/${slug(p.nome)}_annotata.pdf`);
     }
+    for (const f of (r.fogli || [])) if (foglioFirme(f)) { try { zip.file(uniq(`${dir}firme/${foglioNome(f)}.pdf`), await foglioPdf(r, f, settings)); } catch (e) { console.warn('firme', e); } }
     // eventuali file non ancora inclusi
     for (const [k, f] of (r.fotoAppunti || []).entries()) await addBlob(f, `${dir}foto/Appunti_${k + 1}.jpg`);
     for (const [k, f] of (r.fotoAppunti2 || []).entries()) await addBlob(f, `${dir}foto/Appunti_Fase2_${k + 1}.jpg`);
@@ -85,7 +88,7 @@ async function buildZip(records, settings, withSettings) {
 // Tutti i PDF, le foto e gli allegati (PDF/immagini) di un record, con nomi leggibili
 async function recordFiles(r, settings) {
   const s = settings || _settings;
-  const pre = (r.type === 'dda' || r.type === 'mappatura' || r.type === 'hs') ? slug([r.codice, r.commessa].filter(Boolean).join('_')) : slug(['Radon', r.commessa || r.cliente].filter(Boolean).join('_'));
+  const pre = (r.type === 'dda' || r.type === 'mappatura' || r.type === 'hs' || r.type === 'ra' || r.type === 'firme') ? slug([r.codice, r.commessa].filter(Boolean).join('_')) : slug(['Radon', r.commessa || r.cliente].filter(Boolean).join('_'));
   const out = [];
   const pdf = (bytes, name) => out.push({ blob: new Blob([bytes], { type: 'application/pdf' }), name: `${pre}_${name}.pdf` });
   const add = async (id, name) => {
@@ -104,6 +107,8 @@ async function recordFiles(r, settings) {
     pdf(await PdfGen.radonPdf(await loadTemplate('radon.pdf'), r), 'Scheda_radon');
     for (const [i, p] of r.punti.entries()) for (const [k, f] of p.foto.entries()) await add(f, `R${i + 1}_${k + 1}`);
     for (const d of r.rapporti) await add(d.blobId, d.nome.replace(/\.[^.]+$/, ''));
+  } else if (r.type === 'firme') {
+    // solo fogli firme
   } else {
     for (const k of ['mca', 'fav']) if (r.campioni[k].length) pdf(await PdfGen.schedaCampioniPdf(await loadTemplate('scheda_campioni.pdf'), {
       commessa: r.commessa, sito: placeDoc(r), campioni: r.campioni[k],
@@ -117,6 +122,7 @@ async function recordFiles(r, settings) {
   for (const [k, f] of (r.fotoAppunti || []).entries()) await add(f, `Appunti_${k + 1}`);
   for (const [k, f] of (r.fotoAppunti2 || []).entries()) await add(f, `Appunti_Fase2_${k + 1}`);
   for (const p of (r.planimetrie || [])) await add(p.mergedBlobId || p.blobId, 'Planimetria_' + p.nome + (p.mergedBlobId ? '_annotata' : ''));
+  for (const f of (r.fogli || [])) if (foglioFirme(f)) pdf(await foglioPdf(r, f, s), foglioNome(f));
   return out;
 }
 
@@ -328,6 +334,9 @@ function Settings({ settings, setSettings, onTemplates }) {
       <${Inp} label="Tecnici incaricati (Sintetico)" value=${s.hsTecnici} set=${v => set({ hsTecnici: v })} />
     </div></div>
 
+    <div class="sec-h"><h3>Fogli firme</h3></div>
+    <${FirmeSettings} s=${s} set=${set} />
+
     <div class="sec-h"><h3>Radon</h3></div>
     <div class="card"><${Inp} label="Livello di riferimento (Bq/m³)" type="number" inputmode="numeric" value=${s.livelloRif} set=${v => set({ livelloRif: num(v) || 300 })} /></div>
     <p class="lead" style="margin:14px 2px">Le impostazioni si salvano da sole e restano su questo telefono.</p>
@@ -445,11 +454,11 @@ function useWide() {
   }, []);
   return w;
 }
-const LIST_OF = { dda: 'ddaList', mappatura: 'mappaturaList', radon: 'radonList', ra: 'raList', hs: 'hsList' };
-const DETAIL_OF = { ddaList: 'dda', mappaturaList: 'mappatura', radonList: 'radon', raList: 'ra', hsList: 'hs' };
-const TOP_ROUTES = ['home', 'ddaList', 'mappaturaList', 'raList', 'radonList', 'hsList'];
+const LIST_OF = { dda: 'ddaList', mappatura: 'mappaturaList', radon: 'radonList', ra: 'raList', hs: 'hsList', firme: 'firmeList' };
+const DETAIL_OF = { ddaList: 'dda', mappaturaList: 'mappatura', radonList: 'radon', raList: 'ra', hsList: 'hs', firmeList: 'firme' };
+const TOP_ROUTES = ['home', 'ddaList', 'mappaturaList', 'raList', 'radonList', 'hsList', 'firmeList'];
 const ROUTE_TITLE = { home: 'Oggi', ddaList: 'Ambiente · DDA', mappaturaList: 'Mappatura MCA e FAV', raList: 'Sopralluogo RA', radonList: 'Campagne radon',
-  hsList: 'Sopralluoghi H&S', hs: 'Sopralluogo H&S', settings: 'Impostazioni', backup: 'Backup', notifiche: 'Notifiche', dda: 'DDA', mappatura: 'Mappatura', ra: 'Sopralluogo RA', radon: 'Campagna radon' };
+  hsList: 'Sopralluoghi H&S', hs: 'Sopralluogo H&S', firmeList: 'Fogli firme', firme: 'Fogli firme', settings: 'Impostazioni', backup: 'Backup', notifiche: 'Notifiche', dda: 'DDA', mappatura: 'Mappatura', ra: 'Sopralluogo RA', radon: 'Campagna radon' };
 
 /* ---------------- menu laterale (tablet in orizzontale e PC) ---------------- */
 const NAV_AREAS = [
@@ -459,7 +468,7 @@ const NAV_AREAS = [
   { v: 'radonList', d: 'radon', ic: 'radon', l: 'Campagne radon' },
 ];
 const NAV_HS = [{ v: 'hsList', d: 'hs', ic: 'helmet', l: 'Sopralluoghi H&S' }];
-const NAV_TOOLS = [{ v: 'backup', ic: 'archive', l: 'Backup' }, { v: 'settings', ic: 'gear', l: 'Impostazioni' }];
+const NAV_TOOLS = [{ v: 'firmeList', d: 'firme', ic: 'sign', l: 'Fogli firme' }, { v: 'backup', ic: 'archive', l: 'Backup' }, { v: 'settings', ic: 'gear', l: 'Impostazioni' }];
 // tab bar del telefono: Oggi + le quattro aree
 const TABS = [{ v: 'home', ic: 'today', l: 'Oggi' }, { v: 'ddaList', ic: 'leaf', l: 'DDA' }, { v: 'mappaturaList', ic: 'pin', l: 'Mappature' },
   { v: 'raList', ic: 'shield', l: 'RA' }, { v: 'radonList', ic: 'radon', l: 'Radon' }];
@@ -489,7 +498,7 @@ function SideNav({ route, go, counts, settings, min, toggle }) {
     <div class="sn-sec">H&S</div><div class="sn-div"></div>
     ${NAV_HS.map(x => item(x, counts[x.d]))}
     <div class="sn-sec">Strumenti</div><div class="sn-div"></div>
-    ${NAV_TOOLS.map(x => item(x, 0))}
+    ${NAV_TOOLS.map(x => item(x, x.d ? counts[x.d] : 0))}
     <div class="sn-grow"></div>
     <button class="sn-toggle" title=${min ? 'Espandi il menu' : 'Riduci il menu'} aria-expanded=${!min} onClick=${toggle}>
       <${Icon} n=${min ? 'expand' : 'collapse'} s=${19} /><span class="l">Riduci menu</span></button>
@@ -572,9 +581,9 @@ function App() {
   };
   // uscendo da un record nuovo rimasto vuoto, lo scarto
   useEffect(() => {
-    if (route.v === 'dda' || route.v === 'mappatura' || route.v === 'radon' || route.v === 'ra' || route.v === 'hs') return;
+    if (route.v === 'dda' || route.v === 'mappatura' || route.v === 'radon' || route.v === 'ra' || route.v === 'hs' || route.v === 'firme') return;
     const keep = route.id;
-    const empties = records.filter(r => r._new && r.id !== keep && (r.type === 'dda' ? ddaIsEmpty(r) : r.type === 'mappatura' ? mappaturaIsEmpty(r) : r.type === 'ra' ? raIsEmpty(r) : r.type === 'hs' ? hsIsEmpty(r) : radonIsEmpty(r)));
+    const empties = records.filter(r => r._new && r.id !== keep && (r.type === 'dda' ? ddaIsEmpty(r) : r.type === 'mappatura' ? mappaturaIsEmpty(r) : r.type === 'ra' ? raIsEmpty(r) : r.type === 'hs' ? hsIsEmpty(r) : r.type === 'firme' ? firmeIsEmpty(r) : radonIsEmpty(r)));
     empties.forEach(r => DB.del(r.id));
     if (empties.length) setRecords(rs => rs.filter(r => !empties.includes(r)));
   }, [route.v, route.id]);
@@ -585,7 +594,7 @@ function App() {
     else go({ v: r.type, id: r.id });
   };
   const create = (type, patch = {}) => {
-    const base = type === 'dda' ? newDda(records, settings) : type === 'mappatura' ? newMappatura(records, settings) : type === 'ra' ? newRa(records, settings) : type === 'hs' ? newHs(records, settings, patch.formato) : newRadon(settings);
+    const base = type === 'dda' ? newDda(records, settings) : type === 'mappatura' ? newMappatura(records, settings) : type === 'ra' ? newRa(records, settings) : type === 'hs' ? newHs(records, settings, patch.formato) : type === 'firme' ? newFirmeRec(records, settings) : newRadon(settings);
     const r = { ...base, ...patch, _new: true };
     saveRec(r); openRec(r);
   };
@@ -594,6 +603,7 @@ function App() {
   const createRadon = () => create('radon');
   const createRa = () => create('ra');
   const createHs = () => setSheet('hs');
+  const createFirme = () => create('firme');
   // un report H&S già pronto (aggiornamento per l'anno successivo): lo salvo e lo apro
   const openNewRec = r => { saveRec(r); openRec(r); toast('Nuovo report creato: ' + r.codice); };
 
@@ -644,6 +654,13 @@ function App() {
     body = split(html`<${HsList} records=${records} acts=${listActs(createHs, 'Nuovo sopralluogo H&S')} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'hs', id })} create=${createHs} />`,
       dRec && html`<${HsForm} ...${formProps(dRec)} onOpenNew=${openNewRec} onSave=${r => saveRec({ ...r, _new: r._new && hsIsEmpty(r) })} />`,
       ['Nessun report selezionato', 'Toccane uno dall\'elenco per aprirlo qui.']);
+  } else if (route.v === 'firmeList') {
+    wideCreate = createFirme;
+    body = split(html`<${FirmeList} records=${records} acts=${listActs(createFirme, 'Nuovo foglio firme')} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'firme', id })} />`,
+      dRec && html`<${FirmeForm} ...${formProps(dRec)} onSave=${r => saveRec({ ...r, _new: r._new && firmeIsEmpty(r) })} />`,
+      ['Nessun foglio selezionato', 'Toccane uno dall\'elenco per aprirlo qui.']);
+  } else if (route.v === 'firme' && rec) {
+    body = html`<${FirmeForm} ...${formProps(rec)} embedded=${false} onClose=${null} onSave=${r => saveRec({ ...r, _new: r._new && firmeIsEmpty(r) })} />`;
   } else if (route.v === 'hs' && rec) {
     body = html`<${HsForm} ...${formProps(rec)} embedded=${false} onClose=${null} onOpenNew=${openNewRec} onSave=${r => saveRec({ ...r, _new: r._new && hsIsEmpty(r) })} />`;
   } else if (route.v === 'dda' && rec) {
@@ -667,7 +684,7 @@ function App() {
   const isTop = TOP_ROUTES.includes(route.v);
   const splitActive = wide && !!DETAIL_OF[route.v];
   const counts = { dda: records.filter(r => r.type === 'dda').length, mappatura: records.filter(r => r.type === 'mappatura').length,
-    ra: records.filter(r => r.type === 'ra').length, hs: records.filter(r => r.type === 'hs').length, radon: records.filter(r => r.type === 'radon' && radonStato(r) !== 'terminata').length };
+    ra: records.filter(r => r.type === 'ra').length, hs: records.filter(r => r.type === 'hs').length, firme: records.filter(r => r.type === 'firme').length, radon: records.filter(r => r.type === 'radon' && radonStato(r) !== 'terminata').length };
   return html`<div class=${'frame' + (wide ? ' wide' : '')}>
     ${wide && html`<${SideNav} route=${route} go=${go} counts=${counts} settings=${settings} min=${navMin} toggle=${toggleNav} />`}
     <div class=${'shell' + (splitActive ? ' split' : '') + (!wide && isTop ? ' has-tabs' : '')}>

@@ -22,7 +22,7 @@ function newRa(records, settings) {
     fonte: '', manufatti: [], appunti: '', planimetrie: [], incaricoDal: '', incaricoAl: '',
   };
 }
-const raIsEmpty = r => !r.commessa && !r.cliente && !r.sito && !r.citta && !r.indirizzo && !(r.fotoAppunti || []).length && !r.manufatti.length && !r.appunti && !(r.planimetrie || []).length;
+const raIsEmpty = r => !r.commessa && !r.cliente && !r.sito && !r.citta && !r.indirizzo && !(r.fotoAppunti || []).length && !r.manufatti.length && !r.appunti && !(r.planimetrie || []).length && !(r.fogli || []).length;
 // foto da scorrere nel visualizzatore: prima quelle del sopralluogo precedente, poi le nuove
 const gal = m => [...(m.fotoPrec || []), ...(m.foto || [])];
 const lab = m => id => (m.fotoPrec || []).includes(id) ? 'Sopralluogo precedente' : 'Nuova foto';
@@ -227,6 +227,8 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
       onAdd=${p => up(q => ({ ...q, planimetrie: [...(q.planimetrie || []), p] }))}
       onUpdate=${(id, patch) => up(q => ({ ...q, planimetrie: (q.planimetrie || []).map(x => x.id === id ? { ...x, ...patch } : x) }))}
       onRemove=${async p => { for (const b of blobIds(p)) await removeBlob(b); up(q => ({ ...q, planimetrie: (q.planimetrie || []).filter(x => x.id !== p.id) })); }} /></div>
+
+    <${FogliFirme} r=${r} up=${up} settings=${settings} />
 
     <div class="sec-h"><h3>Appunti</h3><span class="hint">Testo libero</span></div>
     <div class="card"><textarea class="inp" rows="4" placeholder="Note generali del sopralluogo" value=${r.appunti} onInput=${e => up({ appunti: e.target.value })} aria-label="Appunti"></textarea>
