@@ -82,11 +82,39 @@
     });
   }
 
+  // Alcuni aspetti dei campi del modello (es. i campi DATA vuoti) sono stream senza /Subtype:
+  // dopo l'appiattimento diventano XObject non validi e Acrobat / Anteprima iOS possono lasciare la pagina bianca.
+  function fixAppearances(form) {
+    const { PDFName, PDFDict, PDFStream } = lib();
+    const T = PDFName.of('Type'), S = PDFName.of('Subtype'), BB = PDFName.of('BBox');
+    const fix = s => {
+      if (!(s instanceof PDFStream)) return;
+      const d = s.dict;
+      if (!d.has(T)) d.set(T, PDFName.of('XObject'));
+      if (!d.has(S)) d.set(S, PDFName.of('Form'));
+      if (!d.has(BB)) d.set(BB, form.doc.context.obj([0, 0, 1, 1]));
+    };
+    form.getFields().forEach(f => {
+      let widgets = [];
+      try { widgets = f.acroField.getWidgets(); } catch (e) {}
+      widgets.forEach(w => {
+        const ap = w.dict.lookup(PDFName.of('AP'));
+        if (!(ap instanceof PDFDict)) return;
+        ['N', 'D', 'R'].forEach(k => {
+          const v = ap.lookup(PDFName.of(k));
+          if (v instanceof PDFStream) fix(v);
+          else if (v instanceof PDFDict) v.keys().forEach(st => fix(v.lookup(st)));
+        });
+      });
+    });
+  }
+
   function flatten(form) {
     // i campi mai toccati possono non avere l'aspetto: lo rigenero prima di appiattire
     form.getFields().forEach(f => {
       if (f.constructor.name === 'PDFTextField' && !f.getText()) { try { f.setText(''); } catch (e) {} }
     });
+    fixAppearances(form);
     form.flatten();
   }
 
