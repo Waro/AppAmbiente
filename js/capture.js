@@ -122,7 +122,65 @@ function trimCanvas(src) {
   return out.toDataURL('image/png');
 }
 
-function SignaturePadOverlay({ title, onDone, onClose }) {
+// Firma da immagine (foto o scansione su carta bianca): lo sfondo chiaro diventa trasparente,
+// l'immagine viene ritagliata sul tratto e salvata come PNG, come una firma disegnata.
+async function signatureFromImage(file) {
+  if (!file || !/^image\//.test(file.type || '')) throw new Error('scegli un\'immagine (JPG o PNG)');
+  let src;
+  try { src = await createImageBitmap(file, { imageOrientation: 'from-image' }); }
+  catch (e) { src = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('immagine non leggibile')); i.src = URL.createObjectURL(file); }); }
+  const k = Math.min(1, 1600 / Math.max(src.width, src.height));
+  const c = document.createElement('canvas'); c.width = Math.round(src.width * k); c.height = Math.round(src.height * k);
+  const g = c.getContext('2d'); g.drawImage(src, 0, 0, c.width, c.height);
+  const im = g.getImageData(0, 0, c.width, c.height), d = im.data;
+  // sfondo stimato a blocchi (la carta è la parte più chiara di ogni zona): così ombre e luce non uniforme spariscono
+  let hasAlpha = false;
+  for (let i = 3; i < d.length; i += 4) if (d[i] < 250) { hasAlpha = true; break; }
+  const W = c.width, H = c.height, B = 40, bw = Math.ceil(W / B), bh = Math.ceil(H / B);
+  const lum = new Float32Array(W * H);
+  for (let p = 0, i = 0; p < W * H; p++, i += 4) lum[p] = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+  const bm = new Float32Array(bw * bh);
+  for (let by = 0; by < bh; by++) for (let bx = 0; bx < bw; bx++) {
+    let m = 0; for (let y = by * B; y < Math.min(H, by * B + B); y += 2) for (let x = bx * B; x < Math.min(W, bx * B + B); x += 2) { const v = lum[y * W + x]; if (v > m) m = v; }
+    bm[by * bw + bx] = m;
+  }
+  // un blocco tutto inchiostro prende lo sfondo dei vicini
+  const bg = bm.slice();
+  for (let by = 0; by < bh; by++) for (let bx = 0; bx < bw; bx++) {
+    let m = bm[by * bw + bx];
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const yy = by + dy, xx = bx + dx; if (yy >= 0 && yy < bh && xx >= 0 && xx < bw) m = Math.max(m, bm[yy * bw + xx]); }
+    bg[by * bw + bx] = m;
+  }
+  const bgAt = (x, y) => {
+    const fx = Math.min(bw - 1, Math.max(0, x / B - .5)), fy = Math.min(bh - 1, Math.max(0, y / B - .5));
+    const x0 = Math.floor(fx), y0 = Math.floor(fy), x1 = Math.min(bw - 1, x0 + 1), y1 = Math.min(bh - 1, y0 + 1), tx = fx - x0, ty = fy - y0;
+    return (bg[y0 * bw + x0] * (1 - tx) + bg[y0 * bw + x1] * tx) * (1 - ty) + (bg[y1 * bw + x0] * (1 - tx) + bg[y1 * bw + x1] * tx) * ty;
+  };
+  let ink = 0;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const p = y * W + x, i = p * 4;
+    const a = hasAlpha ? d[i + 3] : Math.max(0, Math.min(255, (bgAt(x, y) - lum[p] - 28) * 5));
+    d[i + 3] = Math.min(d[i + 3], a);
+    if (d[i + 3] > 20) ink++;
+  }
+  if (ink < 30) throw new Error('nell\'immagine non trovo una firma: serve un tratto scuro su fondo chiaro');
+  if (ink > d.length / 4 * 0.5) throw new Error('l\'immagine è troppo scura: fotografa la firma su un foglio bianco');
+  g.putImageData(im, 0, 0);
+  const url = trimCanvas(c);
+  if (!url) throw new Error('nell\'immagine non trovo una firma');
+  return url;
+}
+function SigImageButton({ onDone, cls = 'btn sm' }) {
+  const inp = useRef();
+  const pick = async e => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    try { onDone(await signatureFromImage(f)); toast('Firma caricata'); } catch (err) { toast('Firma non caricata: ' + err.message); }
+  };
+  return html`<button class=${cls} onClick=${() => inp.current.click()}><${Icon} n="camera" s=${15} /> Carica immagine</button>
+    <input ref=${inp} type="file" accept="image/png,image/jpeg,image/webp" style="display:none" onChange=${pick} />`;
+}
+
+function SignaturePadOverlay({ title, onDone, onClose, allowImage }) {
   useBackClose(onClose);
   const cv = useRef(); const pad = useRef();
   useEffect(() => {
@@ -153,6 +211,7 @@ function SignaturePadOverlay({ title, onDone, onClose }) {
   };
   return html`<div class="sig-wrap" role="dialog" aria-label=${title}>
     <div class="sig-top"><b>${title}</b>
+      ${allowImage && html`<${SigImageButton} onDone=${url => { onDone(url); onClose(); }} />`}
       <button class="btn sm" onClick=${() => pad.current && pad.current.clear()}>Cancella</button>
       <button class="btn sm" onClick=${onClose}>Annulla</button>
       <button class="btn sm pri" onClick=${ok}>Conferma</button></div>

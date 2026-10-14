@@ -377,6 +377,6 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
     <//>
 
     ${scan && html`<${Scanner} title=${scan.title} target=${scan.target} onCode=${scan.onCode} onClose=${() => { if (scan.onEnd) scan.onEnd(); setScan(null); }} />`}
-    ${sig && html`<${SignaturePadOverlay} title=${sig.title} onClose=${() => setSig(null)} onDone=${url => setM(sig.i, { [sig.who]: url })} />`}
+    ${sig && html`<${SignaturePadOverlay} title=${sig.title} allowImage=${sig.who === 'firmaTecnico'} onClose=${() => setSig(null)} onDone=${url => setM(sig.i, { [sig.who]: url })} />`}
   </div>`;
 }

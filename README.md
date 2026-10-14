@@ -58,7 +58,7 @@ priorità, natura del rischio, costo, competenza e termine; anagrafica, visite, 
 - **Modelli Word**: si caricano in Impostazioni → Modelli (o arrivano con la configurazione). Contengono i testi fissi e
   i segnaposto `@@…@@` che l'app compila. Restano sul dispositivo: **non vanno mai nel repository**.
 - **Anno precedente**: "Parti dal report precedente" importa il Word dell'anno scorso o il .json della vecchia app.
-  Nel Word nuovo il testo rimasto uguale è **grigio**, quello nuovo o modificato è **nero** (si può disattivare).
+  Nel Word nuovo il testo rimasto uguale resta **nero**, quello nuovo o modificato esce in **rosso** (interruttore «Novità in rosso»). Senza report precedente tutto resta nero.
   Dall'archivio di un report, "Nuovo report per il prossimo sopralluogo" fa lo stesso partendo da Nembo.
   Dall'import arriva solo testo semplice: grassetti e immagini nel testo non vengono ripresi (le immagini vanno tra le foto precedenti).
 - **Scrittura**: Detta (riconoscimento vocale di Chrome, serve rete), Frasi tipo e personali, Riformula (regole locali).
@@ -185,6 +185,7 @@ cartella nel salvataggio (resta il download semplice).
 - **Rimuovi i dati da questo dispositivo** (Impostazioni): controlla che le attività siano su OneDrive, poi toglie attività, foto, configurazione, modelli, firma e accesso Microsoft. Se qualcosa non è su OneDrive chiede di scrivere ELIMINA.
 - **Avvio leggero**: ExcelJS, docx, pdf-lib e pdf.js si caricano solo quando servono (`needLib`); restano nella cache offline.
 - La pagina dichiara `noindex` per i motori di ricerca.
+- **Firma da immagine** (v27): per la firma del tecnico (Impostazioni, momenti radon) e del relatore nei fogli firme si può caricare una foto della firma su carta bianca; lo sfondo viene tolto (soglia adattiva a blocchi) e l'immagine ritagliata. Non disponibile per chi firma con «Passa il telefono» né per il referente del cliente.
 
 ## Aggiornare l'app
 

@@ -173,7 +173,7 @@ function FoglioSheet({ r, f, settings, set, onDelete, onClose }) {
         <button class="btn danger block" onClick=${onDelete}><${Icon} n="trash" s=${18} /> Elimina foglio</button>
       </div>
     </div></div>
-    ${sig && html`<${SignaturePadOverlay} title=${sig.title} onClose=${() => setSig(null)}
+    ${sig && html`<${SignaturePadOverlay} title=${sig.title} allowImage=${sig.who === 'rel'} onClose=${() => setSig(null)}
       onDone=${url => sig.who === 'rel' ? set({ firmaRelatore: url }) : setP(sig.who, { firma: url, ts: Date.now() })} />`}
   </div>`;
 }

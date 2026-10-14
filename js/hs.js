@@ -102,7 +102,7 @@ function HsText({ label, value, set, base, gruppo, rows = 4, onRiformula, placeh
       ${SR_API && html`<button class=${'chip-btn' + (rec ? ' rec' : '')} onClick=${toggleRec}><${Icon} n=${rec ? 'stop' : 'mic'} s=${15} /> ${rec ? 'Stop' : 'Detta'}</button>`}
       ${gruppo && html`<button class="chip-btn" onClick=${() => setFrasi(true)}><${Icon} n="list" s=${15} /> Frasi</button>`}
       ${onRiformula && html`<button class="chip-btn" onClick=${() => { const p = hsRiformula(value); if (!p) toast('Nessuna formulazione tecnica per questa nota'); else setRif(p); }}><${Icon} n="spark" s=${15} /> Riformula</button>`}
-      ${base ? html`<span class="hs-base">${changed ? 'Modificato: le righe nuove escono in nero' : 'Dal report precedente (grigio nel Word)'}</span>` : null}
+      ${base ? html`<span class="hs-base">${changed ? 'Modificato: le righe nuove escono in rosso' : 'Dal report precedente (nero nel Word)'}</span>` : null}
     </div>
     ${frasi && html`<${FrasiSheet} gruppo=${gruppo} onClose=${() => setFrasi(false)} onPick=${f => set((value || '').replace(/\s+$/, '') + (value && value.trim() ? '\n' : '') + f)} />`}
     ${rif && html`<${RiformulaSheet} prop=${rif} testo=${value} onClose=${() => setRif(null)} onApply=${(s, m) => onRiformula(s, m)} />`}
@@ -157,7 +157,7 @@ function HsGallery({ r, up, items }) {
   const refLab = id => { const it = items && items.find(x => x.id === id); return it ? it.ref : ''; };
   return html`<div>
     <div class="lead" style="margin:0 2px 12px">${Object.keys(num).length} foto nel report${ord.length - Object.keys(num).length ? ` · ${ord.length - Object.keys(num).length} escluse` : ''} · ${ord.length}/${HS_MAX_FOTO}. Nel Word prima quelle del sopralluogo precedente, poi le nuove, in quest'ordine.</div>
-    ${HS_GRUPPI.map(G => { const L = ord.filter(p => (p.g === 'prev') === (G.g === 'prev')); return html`<div key=${G.g}>
+    ${HS_GRUPPI.map(G => { const L = ord.filter(p => (p.g === 'prev') === (G.g === 'prev')); return html`<div class="hsg-grp" key=${G.g}>
       <div class="sec-h"><h3>${G.t} · ${L.length}</h3>
         <button class="btn link sm" onClick=${() => setAperti(a => ({ ...a, [G.g]: !a[G.g] }))}>${aperti[G.g] ? 'Chiudi' : 'Apri'}</button></div>
       ${aperti[G.g] && html`<div class="row" style="margin-bottom:10px">
@@ -172,9 +172,8 @@ function HsGallery({ r, up, items }) {
           <textarea class="inp" rows="2" placeholder="Didascalia" value=${p.cap} onInput=${e => updF(p.id, { cap: e.target.value })}></textarea>
           ${items && html`<select class="inp" value=${p.ref || ''} onChange=${e => updF(p.id, { ref: e.target.value })} aria-label="Voce collegata">
             <option value="">Nessuna voce collegata</option>${items.map(it => html`<option value=${it.id}>${it.ref} · ${it.txt.slice(0, 60)}</option>`)}</select>`}
-          <div class="row" style="gap:6px">
-            <label class="hsg-inc"><input type="checkbox" checked=${p.inc !== false} onChange=${e => updF(p.id, { inc: e.target.checked })} /> Nel report</label>
-            <span class="tb-grow"></span>
+          <label class="hsg-inc"><input type="checkbox" checked=${p.inc !== false} onChange=${e => updF(p.id, { inc: e.target.checked })} /> Nel report</label>
+          <div class="hsg-act">
             <button class="x" title="Prima" disabled=${k === 0} onClick=${() => move(p, -1)}>‹</button>
             <button class="x" title="Dopo" disabled=${k === L.length - 1} onClick=${() => move(p, 1)}>›</button>
             <button class="x" title=${G.g === 'prev' ? 'Sposta in questo sopralluogo' : 'Sposta nel sopralluogo precedente'} onClick=${() => updF(p.id, { g: G.g === 'prev' ? 'new' : 'prev' })}>${G.g === 'prev' ? '↓' : '↑'}</button>
@@ -220,7 +219,7 @@ function HsCheck({ it, r, up, base }) {
       <textarea ref=${ta} class="inp" rows="2" placeholder="Annotazioni" value=${nota} onInput=${e => setNota(e.target.value)}></textarea>
       <div class="hs-tools">
         ${SR_API && html`<button class=${'chip-btn' + (rec ? ' rec' : '')} onClick=${toggleRec}><${Icon} n=${rec ? 'stop' : 'mic'} s=${15} /> ${rec ? 'Stop' : 'Detta'}</button>`}
-        ${base ? html`<span class="hs-base">${nota === base ? 'Dal report precedente (grigio nel Word)' : 'Modificato: le righe nuove escono in nero'}</span>` : null}
+        ${base ? html`<span class="hs-base">${nota === base ? 'Dal report precedente (nero nel Word)' : 'Modificato: le righe nuove escono in rosso'}</span>` : null}
         <button class="btn link sm" style="margin-left:auto" onClick=${() => setOpen(false)}>Fatto</button>
       </div></div>`}
     ${view !== null && html`<${Viewer} ids=${linked.map(p => p.id)} index=${view} labelOf=${id => { const p = linked.find(x => x.id === id); return p && p.cap ? p.cap.slice(0, 40) : null; }} onClose=${() => setView(null)} />`}
@@ -321,7 +320,7 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
     setBusy(null);
   };
   const nextYear = async () => {
-    if (!confirm('Creo un nuovo report per il prossimo sopralluogo: testi e foto di questo diventano "sopralluogo precedente" (grigio nel Word). Continuare?')) return;
+    if (!confirm('Creo un nuovo report per il prossimo sopralluogo: testi e foto di questo diventano "sopralluogo precedente": nel nuovo Word restano neri, le novità escono in rosso. Continuare?')) return;
     setBusy('next'); try { onOpenNew(await hsNextYear(r, records, settings)); } catch (e) { fail('Nuovo report non creato', e); } setBusy(null);
   };
   const upload = () => OD.account ? odSync([r], settings) : sendToOneDrive(r, settings);
@@ -337,7 +336,7 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
         <div><b class=${crit.some(c => c.p === 1) ? 'crit' : ''}>${crit.filter(c => c.p === 1).length}</b><span>priorità 1</span></div>`}
       <div><b>${hsFotoReport(r).length}</b><span>foto nel report</span></div></div></div>
     ${!Object.keys(B).length && html`<div class="card alert-soft"><div class="optline" style="padding:0">
-      <div class="t"><b>Parti dal report precedente</b><small>Carica il Word dell'anno scorso (o il .json della vecchia app): testi e foto diventano la base, in grigio nel nuovo Word.</small></div>
+      <div class="t"><b>Parti dal report precedente</b><small>Carica il Word dell'anno scorso (o il .json della vecchia app): testi e foto diventano la base: nel nuovo Word quello che aggiungi o modifichi esce in rosso.</small></div>
       <button class="btn sm" disabled=${busy === 'imp'} onClick=${() => imp.current.click()}>${busy === 'imp' ? html`<div class="spin" />` : 'Importa'}</button></div></div>`}
     <div class="sec-h"><h3>Sezioni</h3><span class="hint">${HS_FMT[r.formato]}</span></div>
     <div class="list">${secs.map(s => html`<button class="rcard hs-sec" key=${s.k} onClick=${() => setSec(s.k)}>
@@ -345,7 +344,7 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
     <div class="sec-h"><h3>Word e archivio</h3></div>
     <div class="card">
       ${hasTpl === false && html`<div class="notice err" style="margin:0 0 10px">Manca il modello Word ${HS_FMT[r.formato]}: caricalo in Impostazioni → Modelli. <button class="btn link" onClick=${onSettings}>Apri</button></div>`}
-      <div class="optline" style="padding-top:0"><div class="t"><b>Testo dell'anno precedente in grigio</b><small>Le righe nuove o modificate escono in nero</small></div><${Toggle} on=${grigio} set=${setGrigio} label="Testo precedente in grigio" /></div>
+      <div class="optline" style="padding-top:0"><div class="t"><b>Novità in rosso</b><small>Righe nuove o modificate in rosso, testo dell'anno precedente in nero</small></div><${Toggle} on=${grigio} set=${setGrigio} label="Testo precedente in grigio" /></div>
       <div class="stack" style="margin-top:6px">
         <button class="btn outline block" onClick=${upload}><${Icon} n="share" s=${18} /> ${OD.account ? 'Carica su OneDrive' : 'Invia foto e Word a OneDrive'}</button>
         <button class="btn block" disabled=${busy === 'imp'} onClick=${() => imp.current.click()}><${Icon} n="paper" s=${18} /> Importa report precedente (Word o JSON)</button>

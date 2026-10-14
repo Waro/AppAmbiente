@@ -106,8 +106,10 @@ function hsFileBase(r) {
 }
 
 /* ---------------- confronto con il report precedente ----------------
-   Le righe già presenti nel report importato escono in GRIGIO, quelle nuove o modificate in NERO. */
-const HS_GRIGIO = '808080';
+   Le righe già presenti nel report importato restano in NERO (colore del modello), quelle nuove o modificate escono in ROSSO.
+   Senza report precedente (nessuna base) non c'è confronto: tutto resta nero. */
+const HS_ROSSO = 'FF0000';
+const hsHasBase = r => !!(r && r.base && Object.values(r.base).some(v => String(v || '').trim()));
 const hsNormLine = l => String(l || '').replace(/^[ \t]*[-•*]\s+/, '').replace(/\s+/g, ' ').trim().toLowerCase();
 function hsDiff(text, base) {
   const old = {};
@@ -171,7 +173,7 @@ function hsRpr(rpr, color) {
   }
   return inner ? '<w:rPr>' + inner + '</w:rPr>' : '';
 }
-// testo su più paragrafi al posto del segnaposto: righe vecchie grigie, nuove nere, "- " = elenco
+// testo su più paragrafi al posto del segnaposto: righe nuove rosse, vecchie nere, "- " = elenco
 function hsFillBlock(x, key, text, base, opt = {}) {
   const p = hsPara(x, key); if (!p) return x;
   const lines = opt.grigio === false ? String(text || '').split('\n').map(t => ({ t, old: false })) : hsDiff(text, base);
@@ -188,7 +190,7 @@ function hsFillBlock(x, key, text, base, opt = {}) {
       inner = at >= 0 ? inner.slice(0, at) + ind + inner.slice(at) : inner + ind;
       ppr = '<w:pPr>' + inner + '</w:pPr>'; t = '•\t' + bm[2];
     }
-    const rp = hsRpr(p.rpr, L.old && opt.grigio !== false ? HS_GRIGIO : null);
+    const rp = hsRpr(p.rpr, !L.old && opt.grigio !== false ? HS_ROSSO : null);
     const runs = t.split('\t').map((piece, j) => (j ? '<w:r>' + rp + '<w:tab/></w:r>' : '') + (piece ? '<w:r>' + (L.b ? rp.replace('<w:rPr>', '<w:rPr><w:b/>') || '<w:rPr><w:b/></w:rPr>' : rp) + '<w:t xml:space="preserve">' + xe(piece) + '</w:t></w:r>' : '')).join('');
     out += p.head + ppr + runs + '</w:p>';
   });
@@ -272,14 +274,15 @@ function wP(text, o = {}) {
   return '<w:p><w:pPr>' + (o.style ? '<w:pStyle w:val="' + o.style + '"/>' : '') + (o.pShd ? '<w:shd w:val="clear" w:color="auto" w:fill="' + o.pShd + '"/>' : '') + sp +
     (o.align ? '<w:jc w:val="' + o.align + '"/>' : '') + (o.ind != null ? '<w:ind w:left="' + o.ind + '" w:hanging="240"/>' : '') + (o.keep ? '<w:keepNext/>' : '') + '</w:pPr>' + wRuns(text, o) + '</w:p>';
 }
-// testo di una scheda: righe dell'anno precedente grigie, nuove nere; "- " diventa elenco
+// testo di una scheda: righe nuove rosse, dell'anno precedente nere; "- " diventa elenco
 function wBody(text, base, grigio, o = {}) {
   const lines = grigio ? hsDiff(text, base) : String(text || '').split('\n').map(t => ({ t, old: false }));
   let out = '', buf = null;
-  const flush = () => { if (buf && buf.r.length) out += wP(buf.r.join('\n'), Object.assign({ before: 60, after: 60, align: 'both' }, o, buf.old ? { color: HS_GRIGIO } : {})); buf = null; };
+  const red = L => grigio && !L.old ? { color: HS_ROSSO } : {};
+  const flush = () => { if (buf && buf.r.length) out += wP(buf.r.join('\n'), Object.assign({ before: 60, after: 60, align: 'both' }, o, red(buf))); buf = null; };
   lines.forEach(L => {
     const m = L.t.match(/^([ \t]*)[-•*]\s+(.*)$/);
-    if (m) { flush(); const lv = Math.min(3, Math.floor(m[1].replace(/\t/g, '    ').length / 4)); out += wP('•\t' + m[2], Object.assign({ before: 30, after: 30, align: 'both', ind: 600 + lv * 360 }, o, L.old ? { color: HS_GRIGIO } : {})); }
+    if (m) { flush(); const lv = Math.min(3, Math.floor(m[1].replace(/\t/g, '    ').length / 4)); out += wP('•\t' + m[2], Object.assign({ before: 30, after: 30, align: 'both', ind: 600 + lv * 360 }, o, red(L))); }
     else if (!L.t.trim()) flush();
     else { flush(); buf = { old: L.old, r: [L.t] }; flush(); }
   });
@@ -379,7 +382,7 @@ function hsVisite(r) {
 /* ---------------- compilazione: Esteso ---------------- */
 async function hsBuildEsteso(r, settings, tpl, opt = {}) {
   const files = await hsUnzip(tpl);
-  const ctx = hsCtx(files); ctx.grigio = opt.grigio !== false;
+  const ctx = hsCtx(files); ctx.grigio = opt.grigio !== false && hsHasBase(r);
   const m = r.meta, a = r.an || {}, B = r.base || {};
   let x = hsHeal(dec8(files['word/document.xml']));
   if (x.indexOf('@@SCHEDE@@') < 0) throw new Error('il modello Esteso non contiene il segnaposto @@SCHEDE@@');
@@ -429,7 +432,7 @@ function hsFinish(ctx, x, foot) {
 /* ---------------- compilazione: Sintetico ---------------- */
 async function hsBuildSintetico(r, settings, tpl, opt = {}) {
   const files = await hsUnzip(tpl);
-  const ctx = hsCtx(files); const g = opt.grigio !== false; ctx.grigio = g;
+  const ctx = hsCtx(files); const g = opt.grigio !== false && hsHasBase(r); ctx.grigio = g;
   const m = r.meta, B = r.base || {};
   let x = hsHeal(dec8(files['word/document.xml']));
   if (x.indexOf('@@NT_0_1@@') < 0) throw new Error('il modello Sintetico non contiene le voci della checklist (@@NT_…@@)');
@@ -510,7 +513,7 @@ async function hsCheckTemplate(name, buf) {
 
 /* ================= lettura del report dell'anno precedente =================
    Restituisce un oggetto con i campi dell’attività; le immagini come Blob (le salva il chiamante).
-   Tutto il testo letto diventa "base": nel nuovo Word esce in grigio finché non lo modifichi. */
+   Tutto il testo letto diventa "base": nel nuovo Word resta nero; quello che aggiungi o modifichi esce in rosso. */
 const hsNorm = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[’'`´]/g, '').replace(/[^A-Z0-9]+/g, ' ').replace(/\s+/g, ' ').trim();
 const kidsW = (n, name) => [...(n.childNodes || [])].filter(c => c.nodeType === 1 && (!name || c.localName === name));
 function walkW(node, fn) { kidsW(node).forEach(n => { if (n.localName === 'Fallback') return; fn(n); walkW(n, fn); }); }

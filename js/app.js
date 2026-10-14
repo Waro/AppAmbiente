@@ -303,7 +303,9 @@ function Settings({ settings, setSettings, onTemplates }) {
     </div>
     <div class="fld" style="margin-top:10px"><span>Firma salvata (per i moduli radon)</span></div>
     <button class=${'sigbox' + (s.firmaTecnico ? ' has' : '')} onClick=${() => setSig(true)}>${s.firmaTecnico ? html`<img src=${s.firmaTecnico} alt="Firma salvata" />` : 'Tocca per salvare la tua firma'}</button>
-    ${s.firmaTecnico && html`<button class="btn sm" style="margin-top:6px" onClick=${() => set({ firmaTecnico: '' })}>Rimuovi firma salvata</button>`}
+    <div style="display:flex;margin-top:8px;gap:8px;flex-wrap:wrap"><${SigImageButton} onDone=${url => set({ firmaTecnico: url })} />
+      ${s.firmaTecnico && html`<button class="btn sm" onClick=${() => set({ firmaTecnico: '' })}>Rimuovi firma salvata</button>`}</div>
+    <p class="lead" style="margin:6px 2px 0;font-size:12.5px">Puoi disegnarla o caricare una foto della tua firma su un foglio bianco: lo sfondo viene tolto da solo.</p>
     </div>
 
     <div class="sec-h"><h3>Scheda campioni</h3></div>
@@ -348,7 +350,7 @@ function Settings({ settings, setSettings, onTemplates }) {
     <div class="sec-h"><h3>Radon</h3></div>
     <div class="card"><${Inp} label="Livello di riferimento (Bq/m³)" type="number" inputmode="numeric" value=${s.livelloRif} set=${v => set({ livelloRif: num(v) || 300 })} /></div>
     <p class="lead" style="margin:14px 2px">Le impostazioni si salvano da sole e restano su questo telefono.</p>
-    ${sig && html`<${SignaturePadOverlay} title="La tua firma" onClose=${() => setSig(false)} onDone=${url => set({ firmaTecnico: url })} />`}
+    ${sig && html`<${SignaturePadOverlay} title="La tua firma" allowImage=${true} onClose=${() => setSig(false)} onDone=${url => set({ firmaTecnico: url })} />`}
 
     <div class="sec-h"><h3>Assistenza</h3></div>
     <div class="card"><${Inp} label="Email per le segnalazioni" type="email" value=${s.supportEmail || ''} set=${v => set({ supportEmail: v.trim() })} /></div>
