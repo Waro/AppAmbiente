@@ -177,6 +177,15 @@ cartella nel salvataggio (resta il download semplice).
   (calcolate sulla fine dell'anno di incarico indicata nel sopralluogo RA).
 - **Campioni** raggruppati per piano, con segnaposto rosso e foto rapida per quelli ancora senza foto.
 
+## Assistenza e dati del dispositivo (v26)
+
+- **Errori dell'app**: gli errori imprevisti finiscono nelle Notifiche con codice `APP-JS` (senza ripetizioni). Se una schermata va in errore compare «Qualcosa non ha funzionato» con *Torna a Oggi*, *Ricarica* e *Segnala*.
+- **Segnala un problema** (Notifiche e Impostazioni → Assistenza): prepara un'email con versione, dispositivo e ultimi errori. Il destinatario è `supportEmail`, nel file di configurazione.
+- **Primi passi** in Oggi: configurazione, firma, OneDrive, installazione. Sparisce a passi completati o con *Nascondi*.
+- **Rimuovi i dati da questo dispositivo** (Impostazioni): controlla che le attività siano su OneDrive, poi toglie attività, foto, configurazione, modelli, firma e accesso Microsoft. Se qualcosa non è su OneDrive chiede di scrivere ELIMINA.
+- **Avvio leggero**: ExcelJS, docx, pdf-lib e pdf.js si caricano solo quando servono (`needLib`); restano nella cache offline.
+- La pagina dichiara `noindex` per i motori di ricerca.
+
 ## Aggiornare l'app
 
 Modifica i file, poi in `sw.js` aumenta `VERSION` (es. `nembo-v2`) e ricarica su GitHub.

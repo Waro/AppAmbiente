@@ -17,6 +17,7 @@ async function saveOffice(handle, blob, name) {
 
 /* ---------------- Excel: scheda campioni ---------------- */
 async function schedaCampioniXlsx(r, k, s) {
+  await needLib('exceljs');
   const list = r.campioni[k] || [];
   const an = k === 'mca' ? { codice: s.mcaCodice, desc: s.mcaDesc } : { codice: s.favCodice, desc: s.favDesc };
   const wb = new ExcelJS.Workbook(); wb.creator = 'Nembo'; wb.created = new Date();
@@ -74,6 +75,7 @@ async function photoForDoc(id, maxSide = 1100) {
 }
 
 async function riepilogoCampioniDocx(r, s) {
+  await needLib('docx');
   const D = window.docx;
   const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, ImageRun, AlignmentType, BorderStyle, ShadingType, HeadingLevel, Footer, PageNumber, VerticalAlign } = D;
   const txt = (t, o = {}) => new TextRun({ text: String(t ?? ''), font: 'Calibri', size: o.size || 20, bold: o.bold, color: o.color, italics: o.italics });

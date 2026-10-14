@@ -62,6 +62,31 @@ function whenLabel(d) {
   return { l: g < 7 ? new Date(d + 'T12:00:00').toLocaleDateString('it-IT', { weekday: 'long' }) : fmtD(d) };
 }
 
+/* ---------------- primi passi (finché non sono completati o nascosti) ---------------- */
+const onbHidden = () => { try { return localStorage.getItem('nembo_onb') === 'hide'; } catch (e) { return false; } };
+function PrimiPassi({ settings, tplOk, goSettings, installEvt, onInstall }) {
+  const [, force] = useState(0);
+  const [hide, setHide] = useState(onbHidden);
+  useEffect(() => OD.subscribe(() => force(x => x + 1)), []);
+  const installed = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const steps = [
+    { ok: !!(settings.tecnicoCognome && tplOk), l: 'Carica la configurazione', s: 'Impostazioni → File di configurazione → Carica .json', go: goSettings },
+    { ok: !!settings.firmaTecnico, l: 'Salva la tua firma', s: 'Impostazioni → Tecnico', go: goSettings },
+    { ok: !!OD.account, l: 'Collega OneDrive', s: 'Impostazioni → OneDrive → Accedi', go: goSettings },
+    { ok: installed, l: "Installa l'app", s: installEvt ? 'Tocca per installarla' : 'Menu ⋮ di Chrome → Installa app', go: installEvt ? onInstall : null },
+  ];
+  const n = steps.filter(x => x.ok).length;
+  if (hide || n === steps.length) return null;
+  const close = () => { try { localStorage.setItem('nembo_onb', 'hide'); } catch (e) {} setHide(true); };
+  return html`<div class="card onb">
+    <div class="onb-h"><b>Primi passi</b><span>${n} di ${steps.length}</span></div>
+    ${steps.map(x => html`<button class=${'onb-it' + (x.ok ? ' ok' : '')} disabled=${x.ok || !x.go} onClick=${x.go}>
+      <span class="onb-ck">${x.ok && html`<${Icon} n="check" s=${14} w=${2.6} />`}</span>
+      <span class="t"><b>${x.l}</b>${!x.ok && html`<small>${x.s}</small>`}</span>${!x.ok && x.go && html`<${Icon} n="right" s=${16} />`}</button>`)}
+    <button class="btn link" style="margin-top:4px;font-size:13px" onClick=${close}>Nascondi</button>
+  </div>`;
+}
+
 function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk, lastBackup, goList, goSettings, goBackup, installEvt, onInstall }) {
   const od = useOdSynced();
   const [bu, setBu] = useState(settings.buDefault || 'ambiente');
@@ -133,6 +158,7 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
   return html`<div class="content">
     <${LargeTitle} eye=${eye} title="Oggi" acts=${html`<button class="btn-icon pri" aria-label="Nuova attività" onClick=${newAct}><${Icon} n="plus" s=${22} w=${2.4} /></button>${bell}${avatar}`} />
     <div class="seg" style="margin-bottom:var(--gap)">${BUS.map(([k, l]) => html`<button class=${bu === k ? 'on' : ''} onClick=${() => setBu(k)}>${l}</button>`)}</div>
+    <${PrimiPassi} settings=${settings} tplOk=${tplOk} goSettings=${goSettings} installEvt=${installEvt} onInstall=${onInstall} />
 
     ${bu === 'sicurezza' ? html`<div class="card"><div class="empty" style="padding:28px 10px"><b>Nessuna attività Sicurezza in Nembo</b>Per ora l'app gestisce le attività Ambiente e H&S. Puoi scegliere la business unit predefinita in Impostazioni.</div></div>` : html`
     <div class="card-navy">
@@ -208,7 +234,7 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
     </div>`}`}
 
     ${bu === 'hs' && hsTplOk === false && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goSettings}>Per generare i report carica i modelli Word H&S (Esteso e Sintetico) in Impostazioni → Modelli.</button>`}
-    ${bu === 'ambiente' && (!tplOk || !settings.tecnicoCognome) && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goSettings}>Prima di iniziare: in Impostazioni inserisci i tuoi dati e carica i due modelli PDF.</button>`}
+    ${bu === 'ambiente' && onbHidden() && (!tplOk || !settings.tecnicoCognome) && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goSettings}>Prima di iniziare: in Impostazioni inserisci i tuoi dati e carica i due modelli PDF.</button>`}
     ${allRecords.some(r => r.type === 'firme') && html`<div class="card" style="margin-top:12px;padding:0"><button class="prow" style="width:100%;border:0;background:none;text-align:left" onClick=${() => goList('firmeList')}>
       <span class="sq"><${Icon} n="sign" s=${20} /></span><span class="t"><b>Fogli firme</b><small>${allRecords.filter(r => r.type === 'firme').length} fuori dalle attività</small></span><${Icon} n="right" s=${18} /></button></div>`}
     ${stale && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goBackup}>${lastBackup ? 'L\'ultimo backup ha più di una settimana.' : 'Non hai ancora fatto un backup.'} I dati stanno solo su questo dispositivo: salvane una copia su OneDrive.</button>`}

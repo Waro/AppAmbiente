@@ -350,6 +350,11 @@ function Settings({ settings, setSettings, onTemplates }) {
     <p class="lead" style="margin:14px 2px">Le impostazioni si salvano da sole e restano su questo telefono.</p>
     ${sig && html`<${SignaturePadOverlay} title="La tua firma" onClose=${() => setSig(false)} onDone=${url => set({ firmaTecnico: url })} />`}
 
+    <div class="sec-h"><h3>Assistenza</h3></div>
+    <div class="card"><${Inp} label="Email per le segnalazioni" type="email" value=${s.supportEmail || ''} set=${v => set({ supportEmail: v.trim() })} /></div>
+    <${IssueCard} settings=${s} />
+    <div class="sec-h"><h3>Dati su questo dispositivo</h3></div>
+    <${WipeCard} />
     <div class="sec-h"><h3>Info app</h3></div>
     <div class="card tight" style="font-size:14.5px;color:var(--text2)">
       <div style="display:flex;justify-content:space-between;padding:9px 2px"><span>Versione app</span><b class="mono" style="color:var(--text)">${APP_VERSION}</b></div>
@@ -362,8 +367,71 @@ function Settings({ settings, setSettings, onTemplates }) {
   </div>`;
 }
 
+/* ---------------- segnala un problema ---------------- */
+function IssueCard({ settings }) {
+  return html`<div class="card tight" style="margin:4px 0 14px">
+    <div style="font-weight:700">Qualcosa non funziona?</div>
+    <p class="lead" style="margin:4px 0 10px">Prepara un'email con versione dell'app, dispositivo e ultimi errori: tu aggiungi cosa stavi facendo.</p>
+    <div class="row"><button class="btn" style="flex:1" onClick=${() => reportIssue(settings)}><${Icon} n="bell" s=${17} /> Segnala un problema</button>
+      <button class="btn" onClick=${copyIssue}>Copia</button></div>
+  </div>`;
+}
+// se una schermata va in errore resta l'app, con la possibilità di riprovare e di segnalarlo
+function Boundary({ children }) {
+  const [err, reset] = useErrorBoundary(e => reportAppError(e, 'schermata'));
+  if (!err) return children;
+  return html`<div class="content" style="padding:28px 20px;max-width:560px;margin:0 auto">
+    <div class="lt-title" style="font-size:26px">Qualcosa non ha funzionato</div>
+    <p class="lead">I tuoi dati sono salvati. L'errore è stato registrato nelle Notifiche con il codice APP-JS.</p>
+    <div class="mono" style="font-size:12.5px;background:var(--fill-soft);border-radius:8px;padding:8px;word-break:break-word;margin:10px 0 16px">${String(err && err.message || err)}</div>
+    <button class="btn pri block" onClick=${() => { location.hash = ''; reset(); }}>Torna a Oggi</button>
+    <button class="btn block" style="margin-top:8px" onClick=${() => location.reload()}>Ricarica l'app</button>
+    <button class="btn block" style="margin-top:8px" onClick=${() => DB.get('settings').then(s => reportIssue(s))}>Segnala un problema</button>
+  </div>`;
+}
+
+/* ---------------- rimuovi i dati da questo dispositivo ---------------- */
+async function wipeStatus() {
+  const recs = ((await DB.all()) || []).filter(r => !r._new);
+  const st = (await DB.get('sync_state')) || {};
+  const del = Object.keys((await DB.get('sync_del')) || {}).length;
+  const syncOn = Sync.enabled();
+  const pending = syncOn ? recs.filter(r => !st[r.id] || (r.updatedAt || 0) > (st[r.id].v || 0)) : recs;
+  return { total: recs.length, pending, del, syncOn };
+}
+async function wipeDevice() {
+  if (Sync.enabled()) { toast('Controllo la sincronizzazione…'); try { await Sync.run(); } catch (e) {} }
+  const w = await wipeStatus();
+  const what = 'attività, foto, configurazione, modelli, firma salvata e accesso a Microsoft';
+  if (!w.pending.length && !w.del) {
+    if (!confirm(`Tutte le ${w.total} attività sono su OneDrive.\n\nDa questo dispositivo verranno rimossi: ${what}.\nSu OneDrive resta tutto: accedendo di nuovo le attività tornano.\n\nContinuare?`)) return;
+  } else {
+    const nomi = w.pending.slice(0, 5).map(r => '· ' + recordLabel(r)).join('\n') + (w.pending.length > 5 ? `\n· e altre ${w.pending.length - 5}` : '');
+    const motivo = w.syncOn ? `${w.pending.length} attività non sono ancora su OneDrive${w.del ? ' e alcune eliminazioni non sono state inviate' : ''}` : `la sincronizzazione con OneDrive non è attiva: le ${w.total} attività sono solo qui`;
+    const ans = prompt(`ATTENZIONE: ${motivo}.\n${nomi}\n\nSe continui andranno perse. Prima collega OneDrive o fai un backup ZIP.\n\nPer rimuovere comunque ${what}, scrivi ELIMINA.`);
+    if ((ans || '').trim().toUpperCase() !== 'ELIMINA') { toast('Nessun dato rimosso'); return; }
+  }
+  try {
+    await DB.wipe();
+    const ks = []; for (let i = 0; i < localStorage.length; i++) ks.push(localStorage.key(i));
+    ks.filter(k => /^nembo_|^msal\.|login\.microsoftonline|^[0-9a-f-]{36}\./i.test(k)).forEach(k => localStorage.removeItem(k));
+    try { sessionStorage.clear(); } catch (e) {}
+    location.hash = ''; location.reload();
+  } catch (e) { fail('Dati non rimossi', e); }
+}
+function WipeCard() {
+  const [w, setW] = useState(null);
+  useEffect(() => { wipeStatus().then(setW); }, []);
+  return html`<div class="card tight">
+    <p class="lead" style="margin:6px 0 10px">Per cambiare dispositivo, restituirlo o prima della migrazione dell'account Microsoft: toglie da qui attività, foto, configurazione, modelli, firma e accesso a Microsoft. Quello che è su OneDrive resta.</p>
+    ${w && html`<p style=${'margin:0 2px 10px;font-size:14px;font-weight:600;color:' + (w.pending.length || w.del ? 'var(--danger)' : 'var(--ok)')}>
+      ${!w.total ? 'Nessuna attività su questo dispositivo.' : w.pending.length || w.del ? (w.syncOn ? `${w.pending.length} attività su ${w.total} non ancora su OneDrive.` : `Sincronizzazione non attiva: le ${w.total} attività sono solo qui.`) : `Tutte le ${w.total} attività sono su OneDrive.`}</p>`}
+    <button class="btn danger block" onClick=${wipeDevice}><${Icon} n="trash" s=${17} /> Rimuovi i dati da questo dispositivo</button>
+  </div>`;
+}
+
 /* ---------------- notifiche ---------------- */
-function Notifiche() {
+function Notifiche({ settings }) {
   const list = useNotifiche();
   const [open, setOpen] = useState({});
   const [f, setF] = useState('tutte');
@@ -379,6 +447,7 @@ function Notifiche() {
   return html`<div class="content">
     <${LargeTitle} top title="Notifiche" />
     <p class="lead">Esiti dei caricamenti su OneDrive, promemoria ed errori dell'app, con il relativo codice. Restano su questo dispositivo (ultime ${NOTIF_MAX}).</p>
+    <${IssueCard} settings=${settings} />
     ${list.length > 0 && html`<div class="row" style="margin:6px 0 12px">
       <div class="seg" style="flex:1">
         <button class=${f === 'tutte' ? 'on' : ''} onClick=${() => setF('tutte')}>Tutte · ${list.length}</button>
@@ -699,7 +768,7 @@ function App() {
   } else if (route.v === 'settings') {
     body = html`<${Settings} settings=${settings} setSettings=${setSettings} onTemplates=${reload} />`;
   } else if (route.v === 'notifiche') {
-    body = html`<${Notifiche} />`;
+    body = html`<${Notifiche} settings=${settings} />`;
   } else if (route.v === 'backup') {
     body = html`<${Backup} records=${records} settings=${settings} reload=${reload} lastBackup=${lastBackup} />`;
   } else {
@@ -729,7 +798,7 @@ function App() {
 }
 
 
-render(html`<${App} />`, document.getElementById('root'));
+render(html`<${Boundary}><${App} /></${Boundary}>`, document.getElementById('root'));
 const splash = document.getElementById('splash');
 if (splash) requestAnimationFrame(() => requestAnimationFrame(() => { splash.classList.add('hide'); setTimeout(() => splash.remove(), 550); }));
 

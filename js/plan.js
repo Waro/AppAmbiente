@@ -8,6 +8,7 @@ function pdfjsReady() {
   return lib;
 }
 async function openPdf(bytes) {
+  await needLib('pdfjs');
   // isEvalSupported:false chiude la vulnerabilità dei font nelle versioni 3.x
   return pdfjsReady().getDocument({ data: bytes, isEvalSupported: false, disableFontFace: false }).promise;
 }
@@ -23,6 +24,7 @@ const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
 /* ---------------- fusione nel PDF ---------------- */
 // labelsById: { ref: { text, color } } — le etichette orfane (campione eliminato) vengono saltate
 async function mergePlan(origBytes, annot, labelsById) {
+  await needLib('pdflib');
   const { PDFDocument, rgb, StandardFonts, degrees, LineCapStyle } = PDFLib;
   const doc = await PDFDocument.load(origBytes, { ignoreEncryption: true });
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);

@@ -2,7 +2,7 @@
 // Stessa stringa di VERSION in sw.js: aumentala insieme a quella ad ogni aggiornamento.
 // Essendo dentro un file JS servito dalla cache, se l'aggiornamento automatico fallisce
 // questa scritta mostra ancora la versione vecchia — è il modo per accorgersene.
-const APP_VERSION = 'nembo-v25';
+const APP_VERSION = 'nembo-v26';
 
 /* ---------------- tema grafico: "essenziale" (predefinito) o "originale" ----------------
    Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno. */
@@ -15,7 +15,7 @@ function applyTheme(t) {
 function setTheme(t) { try { localStorage.setItem('nembo_theme', t); } catch (e) {} applyTheme(t); }
 applyTheme(getTheme());
 const { h, render } = preact;
-const { useState, useEffect, useRef, useMemo, useCallback } = preactHooks;
+const { useState, useEffect, useRef, useMemo, useCallback, useErrorBoundary } = preactHooks;
 const html = htm.bind(h);
 
 /* ---------------- utilità ---------------- */
@@ -56,6 +56,13 @@ const DB = (() => {
     delBlob: id => tx('blobs', 'readwrite', s => s.delete(id)),
     get: k => tx('kv', 'readonly', s => s.get(k)),
     set: (k, v) => tx('kv', 'readwrite', s => s.put(v, k)),
+    keys: () => tx('kv', 'readonly', s => s.getAllKeys()),
+    // svuota tutto il database del dispositivo (attività, file, impostazioni, modelli)
+    wipe: () => open().then(d => new Promise((res, rej) => {
+      const t = d.transaction(['records', 'blobs', 'kv'], 'readwrite');
+      ['records', 'blobs', 'kv'].forEach(n => t.objectStore(n).clear());
+      t.oncomplete = res; t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
+    })),
   };
 })();
 
@@ -353,6 +360,7 @@ const DEFAULT_SETTINGS = {
   labNome: '', labR1: '', labR2: '', offerta: '', offertaRev: '',
   mcaCodice: '', mcaDesc: '', favCodice: '', favDesc: '',
   livelloRif: 300, buDefault: 'ambiente',
+  supportEmail: '', // destinatario di "Segnala un problema" (solo nel file di configurazione)
   // valori proposti nei nuovi sopralluoghi H&S (restano nel file di configurazione, mai nel codice)
   firmeEnte: '', firmeModelli: [], odSync: true, durate: {},
   hsCommEsteso: '', hsCommSint: '', hsVerificato: '', hsApprovato: '', hsFirma: '', hsDeveloper: '', hsPropertyManager: '', hsProcuratore: '', hsTecnici: '',
@@ -374,6 +382,7 @@ async function loadTemplate(name) {
 }
 async function checkTemplate(name, bytes) {
   if (/\.docx$/.test(name)) return hsCheckTemplate(name, bytes);
+  await needLib('pdflib');
   const doc = await PDFLib.PDFDocument.load(bytes);
   if (name === 'radon.pdf') {
     const names = doc.getForm().getFields().map(f => f.getName());
@@ -408,13 +417,17 @@ function errCode(e) {
   return e.name && e.name !== 'Error' ? e.name : '';
 }
 // level: 'ok' | 'warn' | 'err'
-async function notify(level, title, opt = {}) {
-  try {
+// le scritture sono in coda: due notifiche nello stesso istante non si sovrascrivono
+let notifQ = Promise.resolve();
+function notify(level, title, opt = {}) {
+  const n = { id: uid('n'), t: Date.now(), level, title, detail: opt.detail || '', code: opt.code || '', record: opt.record || '', items: (opt.items || []).slice(0, 100), read: false };
+  notifQ = notifQ.then(async () => {
     const list = (await DB.get('notifiche')) || [];
-    list.unshift({ id: uid('n'), t: Date.now(), level, title, detail: opt.detail || '', code: opt.code || '', record: opt.record || '', items: (opt.items || []).slice(0, 100), read: false });
+    list.unshift(n);
     await DB.set('notifiche', list.slice(0, NOTIF_MAX));
     notifSubs.forEach(f => f());
-  } catch (e) { console.warn('notifica non salvata', e); }
+  }).catch(e => console.warn('notifica non salvata', e));
+  return notifQ;
 }
 // errore mostrato a schermo e registrato nelle notifiche
 function fail(title, e, record) {
@@ -430,11 +443,80 @@ function useNotifiche() {
   }, []);
   return list;
 }
-async function notifMarkRead() {
-  const l = (await DB.get('notifiche')) || [];
-  if (l.some(n => !n.read)) { await DB.set('notifiche', l.map(n => ({ ...n, read: true }))); notifSubs.forEach(f => f()); }
+function notifMarkRead() {
+  notifQ = notifQ.then(async () => {
+    const l = (await DB.get('notifiche')) || [];
+    if (l.some(n => !n.read)) { await DB.set('notifiche', l.map(n => ({ ...n, read: true }))); notifSubs.forEach(f => f()); }
+  }).catch(e => console.warn(e));
+  return notifQ;
 }
-async function notifClear() { await DB.set('notifiche', []); notifSubs.forEach(f => f()); }
+function notifClear() { notifQ = notifQ.then(async () => { await DB.set('notifiche', []); notifSubs.forEach(f => f()); }).catch(e => console.warn(e)); return notifQ; }
+
+/* ---------------- librerie caricate solo quando servono ---------------- */
+// Excel, Word, lettura e scrittura PDF pesano più di 2 MB: all'avvio non servono.
+// I file restano nella cache del service worker, quindi funzionano anche offline.
+const LIBS = {
+  exceljs: ['vendor/exceljs.min.js', () => window.ExcelJS],
+  docx: ['vendor/docx.umd.min.js', () => window.docx],
+  pdfjs: ['vendor/pdfjs.min.js', () => window.pdfjsLib || window['pdfjs-dist/build/pdf']],
+  pdflib: ['vendor/pdf-lib.min.js', () => window.PDFLib],
+};
+const libP = {};
+function needLib(k) {
+  const [src, get] = LIBS[k];
+  if (get()) return Promise.resolve(get());
+  if (!libP[k]) libP[k] = new Promise((res, rej) => {
+    const el = document.createElement('script'); el.src = src; el.async = true;
+    el.onload = () => get() ? res(get()) : rej(Object.assign(new Error('libreria ' + k + ' non disponibile'), { code: 'LIB-LOAD' }));
+    el.onerror = () => { delete libP[k]; el.remove(); rej(Object.assign(new Error('libreria ' + k + ' non caricata: riapri l\'app con la rete attiva'), { code: 'LIB-LOAD' })); };
+    document.head.appendChild(el);
+  });
+  return libP[k];
+}
+
+/* ---------------- errori dell'app ---------------- */
+// Gli errori non gestiti (bug) finiscono nelle Notifiche con codice APP-JS, senza ripetizioni.
+const appErr = { seen: new Map(), n: 0, toasted: false };
+function reportAppError(e, where) {
+  try {
+    const msg = String((e && e.message) || e || 'errore sconosciuto');
+    if (/ResizeObserver loop|^Script error\.?$/i.test(msg)) return;
+    const now = Date.now(); const last = appErr.seen.get(msg);
+    if (last && now - last < 60000) return;
+    appErr.seen.set(msg, now); if (++appErr.n > 15) return;
+    const stack = String((e && e.stack) || '').split('\n').slice(0, 5).map(l => l.trim()).join('\n');
+    const page = (location.hash || '').slice(0, 60);
+    notify('err', 'Errore dell\'app', { code: 'APP-JS', detail: [msg, stack && stack !== msg ? stack : '', where, 'Schermata: ' + (page || 'Oggi') + ' · ' + APP_VERSION].filter(Boolean).join('\n') });
+    if (!appErr.toasted) { appErr.toasted = true; toast('Si è verificato un errore: i dettagli sono nelle Notifiche'); }
+  } catch (x) { console.warn(x); }
+}
+addEventListener('error', ev => reportAppError(ev.error || ev.message, ev.filename ? ev.filename.split('/').pop() + ':' + ev.lineno : ''));
+addEventListener('unhandledrejection', ev => reportAppError(ev.reason));
+
+/* ---------------- segnala un problema ---------------- */
+function deviceInfo() {
+  const ua = navigator.userAgent;
+  const os = /Android [\d.]+/.exec(ua)?.[0] || (/iPhone|iPad/.test(ua) ? 'iOS ' + ((/OS ([\d_]+)/.exec(ua) || [])[1] || '').replace(/_/g, '.') : /Windows NT [\d.]+/.exec(ua)?.[0] || /Mac OS X [\d_]+/.exec(ua)?.[0]?.replace(/_/g, '.') || (/Linux/.test(ua) ? 'Linux' : 'sistema non riconosciuto'));
+  const br = /Edg\/[\d]+/.exec(ua)?.[0] || /Chrome\/[\d]+/.exec(ua)?.[0] || /Version\/[\d.]+ .*Safari/.test(ua) && 'Safari' || 'browser non riconosciuto';
+  const inst = matchMedia('(display-mode: standalone)').matches || navigator.standalone ? 'installata' : 'nel browser';
+  return `${os} · ${br} · ${screen.width}×${screen.height} · app ${inst}`;
+}
+async function issueText() {
+  const list = ((await DB.get('notifiche')) || []).filter(n => n.level === 'err').slice(0, 5);
+  const errs = list.map(n => `- ${new Date(n.t).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })} · ${n.title}${n.code ? ' · ' + n.code : ''}${n.detail ? '\n  ' + String(n.detail).split('\n')[0].slice(0, 200) : ''}`);
+  return ['Descrivi qui cosa stavi facendo e cosa è successo:', '', '', '', '— Dati tecnici (non modificare) —',
+    'Versione: ' + APP_VERSION, 'Dispositivo: ' + deviceInfo(), 'Data: ' + new Date().toLocaleString('it-IT'),
+    'Ultimi errori:', ...(errs.length ? errs : ['nessuno'])].join('\n');
+}
+async function reportIssue(settings) {
+  const body = (await issueText()).slice(0, 1800);
+  const to = (settings && settings.supportEmail) || '';
+  location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent('Nembo · segnalazione (' + APP_VERSION + ')')}&body=${encodeURIComponent(body)}`;
+}
+async function copyIssue() {
+  try { await navigator.clipboard.writeText(await issueText()); toast('Segnalazione copiata: incollala in un messaggio'); } catch (e) { toast('Copia non riuscita'); }
+}
+
 
 /* ---------------- foto negli appunti ---------------- */
 function NotePhotos({ rec, field = 'fotoAppunti', up }) {

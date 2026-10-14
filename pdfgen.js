@@ -126,6 +126,7 @@
 
   // ---------- RADON ----------
   async function radonPdf(templateBytes, c) {
+    if (root.needLib) await root.needLib('pdflib');
     const { PDFDocument, StandardFonts } = lib();
     const punti = c.punti || [];
     const chunks = [];
@@ -191,6 +192,7 @@
   const SC_COLS = { n: [21.8, 49.2], data: [49.2, 94.9], desc: [94.9, 413.5], tip: [413.5, 571.2] };
 
   async function schedaCampioniPdf(templateBytes, info) {
+    if (root.needLib) await root.needLib('pdflib');
     // info: { commessa, sito, campioni:[{codice,data,descrizione}], analisi:{codice,desc}, lab:{nome,r1,r2}, offerta, offertaRev, email, prelevatoDa, verificatoDa }
     const { PDFDocument, StandardFonts, rgb } = lib();
     const tpl = await PDFDocument.load(templateBytes);
@@ -271,6 +273,7 @@
           firmaRelatore, note, manufatti:[{codice, descrizione, tipologia, ubicazione, stato, note}] }
      ctx: { ente, committente, sito, commessa, codice } */
   async function foglioFirmePdf(f, ctx) {
+    if (root.needLib) await root.needLib('pdflib');
     const { PDFDocument, StandardFonts, rgb } = lib();
     const doc = await PDFDocument.create();
     const font = await doc.embedFont(StandardFonts.Helvetica), bold = await doc.embedFont(StandardFonts.HelveticaBold);
