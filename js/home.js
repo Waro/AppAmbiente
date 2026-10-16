@@ -39,7 +39,7 @@ function recLine(r) {
   if (r.type === 'mappatura') { const n = allCampMap(r).length; return `Mappatura MCA e FAV · ${n} ${n === 1 ? 'campione' : 'campioni'}`; }
   if (r.type === 'ra') return `Verifica RA · ${r.manufatti.filter(m => m.stato).length}/${r.manufatti.length} manufatti`;
   if (r.type === 'hs') return `HSE ${HS_FMT[r.formato]} · ${hsProgress(r)}`;
-  if (r.type === 'vs') { const n = (r.note || []).length; return `Verbale sopralluogo · ${n} ${n === 1 ? 'nota' : 'note'}`; }
+  if (r.type === 'vs') { const n = (r.note || []).length; return `Verbale HSE · ${n} ${n === 1 ? 'nota' : 'note'}`; }
   if (r.type === 'aria') { const R = ariaRiepilogo(r); return `Monitoraggio aria · ${R.chiusi}/${R.tot} punti`; }
   if (r.type !== 'radon') return r.codice || '';
   const s = radonStato(r);
@@ -262,7 +262,7 @@ const NEW_OPTS = [
   { k: 'hsE', t: 'hs', bu: 'hs', patch: { formato: 'esteso' }, l: 'HSE · Esteso', s: '13 schede, rischio e priorità, documentazione fotografica', ic: 'helmet', bg: 'var(--blue-soft)', fg: 'var(--blue)' },
   { k: 'firme', t: 'firme', bu: 'altro', patch: {}, l: 'Foglio firme', s: 'Presenze, informative, consegne fuori da un’attività', ic: 'sign', bg: 'var(--fill-soft)', fg: 'var(--blue)' },
   { k: 'hsS', t: 'hs', bu: 'hs', patch: { formato: 'sintetico' }, l: 'HSE · Sintetico', s: 'Checklist Sì/No/N.A., azioni consigliate, rilievo fotografico', ic: 'helmet', bg: 'var(--fill-soft)', fg: 'var(--navy)' },
-  { k: 'vs', t: 'vs', bu: 'hs', patch: {}, l: 'Verbale sopralluogo', s: 'Note con titolo, testo, foto e tag', ic: 'note', bg: 'var(--ok-soft)', fg: 'var(--ok)' },
+  { k: 'vs', t: 'vs', bu: 'hs', patch: {}, l: 'Verbale HSE', s: 'Note con titolo, testo, foto e tag', ic: 'note', bg: 'var(--ok-soft)', fg: 'var(--ok)' },
 ];
 function NewActivity({ records, onClose, onCreate, bu, preset }) {
   useBackClose(onClose);

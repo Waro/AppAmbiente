@@ -726,3 +726,10 @@ input[type=checkbox] { accent-color: var(--blue); }
 .vs-nota .vs-n { font-family: var(--mono); font-size: 12px; color: var(--muted); }
 .vs-filter { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 2px 10px; }
 .vs-filter .tag.on { background: var(--navy); color: #fff; }
+
+/* v35: menu laterale con icone colorate, chip "senza ora" apribili */
+.sn-ic { flex: none; width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; }
+.sn-it.on .sn-ic { box-shadow: 0 0 0 2px var(--card); }
+.ag-chip { display: flex; align-items: stretch; padding: 0; }
+.ag-chip-main { flex: 1; min-width: 0; text-align: left; border: 0; background: none; padding: 9px 4px 9px 12px; color: var(--text); }
+.ag-chip-put { flex: none; width: 44px; border: 0; background: none; color: var(--blue); border-left: 1px solid var(--sep); }

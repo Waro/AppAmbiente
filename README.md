@@ -104,11 +104,13 @@ nella scheda di un'RA senza manufatti compare il riquadro "Riprendi dall'anno pr
 - Il **+** apre *Nuovo*: **Appuntamento** (titolo, data, ora, durata, stato, luogo, note: record `type: 'app'`, senza cartelle né documenti) oppure **Attività** da programmare (creata con data, ora e stato, ma non aperta). Toccando una fascia vuota si sceglie tra le stesse due opzioni.
 - *Senza ora* e *Prossime senza ora* stanno in una colonna a destra su tablet e PC (sotto la griglia sul telefono).
 
-## Verbale sopralluogo (v34, BU HSE)
+## Verbale HSE (v34–v35, BU HSE)
 
-Nuova attività HSE: Nuova attività → *Verbale sopralluogo* (codice `VS-AAAA-NNN`). Dati del sopralluogo e un elenco di **note**, ognuna con titolo, testo (anche dettato), foto e tag; le note si riordinano e si filtrano per tag. La fotocamera nella barra azioni apre una nota nuova con la foto. Fogli firme, appunti, ZIP e OneDrive come le altre attività (foto in `note/`).
+Nuova attività HSE: Nuova attività → *Verbale HSE* (codice `VS-AAAA-NNN`). Dati del sopralluogo e un elenco di **note**, ognuna con titolo, testo (anche dettato), foto e tag; le note si riordinano e si filtrano per tag. La fotocamera nella barra azioni apre una nota nuova con la foto. Appunti, ZIP e OneDrive come le altre attività (foto in `note/`); niente fogli firme.
 
-**Tag**: ogni nota del verbale e gli *Appunti* di tutte le attività hanno i tag. Toccando *+ Tag* Nembo propone i tag già usati (i più frequenti per primi); se ne scrivi uno nuovo, *Crea «…»*. I tag stanno nelle attività, quindi si sincronizzano con loro.
+**Tag**: ogni nota del verbale e gli *Appunti* di tutte le attività hanno i tag. Toccando *+ Tag* Nembo propone i tag già usati (i più frequenti per primi); se ne scrivi uno nuovo, *Crea «…»*. I tag stanno nelle attività, quindi si sincronizzano con loro. Ogni tag ha un colore suo, preso da una tavolozza diversa dai colori dei tipi di attività.
+
+**v35**: nel menu laterale esteso le icone hanno i colori del foglio Nuova attività; in Programmazione, toccando un'attività della colonna «Senza ora» si apre l'attività (l'orologio accanto serve per darle un orario).
 
 **H&S → HSE**: in tutta l'app la business unit si chiama HSE.
 

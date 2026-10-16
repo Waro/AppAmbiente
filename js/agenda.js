@@ -4,7 +4,7 @@
 const DURATE_BASE = { dda: 180, mappatura: 180, ra: 120, radon: 60, aria: 300, hs: 180, vs: 120, firme: 60 };
 const TIPI_AG = {
   dda: { l: 'DDA', c: 'var(--warn)' }, mappatura: { l: 'Mappatura', c: 'var(--mca)' }, ra: { l: 'RA', c: '#7a3db8' },
-  radon: { l: 'Radon', c: 'var(--ok)' }, aria: { l: 'Aria', c: '#0a6ebd' }, hs: { l: 'HSE', c: 'var(--blue)' }, vs: { l: 'Verbale', c: '#2f7d5b' }, firme: { l: 'Firme', c: 'var(--navy)' },
+  radon: { l: 'Radon', c: 'var(--ok)' }, aria: { l: 'Aria', c: '#0a6ebd' }, hs: { l: 'HSE', c: 'var(--blue)' }, vs: { l: 'Verbale HSE', c: '#2f7d5b' }, firme: { l: 'Firme', c: 'var(--navy)' },
   app: { l: 'Appuntamento', c: '#64748b' },
 };
 // appuntamento: impegno in agenda che non è un sopralluogo (riunione, consegna, telefonata…)
@@ -255,8 +255,9 @@ function Agenda({ records, settings, saveRec, openRec, removeRec, bell }) {
   };
   const pickJson = s => { pendingSlot.current = s || null; setSlot(null); setAdd(null); setTimeout(() => fileRef.current.click(), 0); };
   const openIt = it => { if (it.tipo === 'app') { setAdd({ rec: it.rec, tab: 'app' }); return; } openRec(it.rec); };
-  const chip = (it, showDate) => html`<button key=${it.key} class=${'ag-chip' + (place && place.key === it.key ? ' on' : '')} style=${'--c:' + TIPI_AG[it.tipo].c} onClick=${() => { setPlace(it); if (view === 'month') setView('day'); }}>
-    <b>${it.titolo}</b><small>${it.stato === 'annullato' ? 'Annullato · ' : ''}${showDate ? fmtD(it.data) + (it.previsto ? ' (previsto)' : '') + ' · ' : it.previsto ? 'ritiro previsto · ' : ''}${it.sub}</small></button>`;
+  const chip = (it, showDate) => html`<div key=${it.key} class=${'ag-chip' + (place && place.key === it.key ? ' on' : '')} style=${'--c:' + TIPI_AG[it.tipo].c}>
+    <button class="ag-chip-main" onClick=${() => openIt(it)}><b>${it.titolo}</b><small>${it.stato === 'annullato' ? 'Annullato · ' : ''}${showDate ? fmtD(it.data) + (it.previsto ? ' (previsto)' : '') + ' · ' : it.previsto ? 'ritiro previsto · ' : ''}${it.sub}</small></button>
+    <button class="ag-chip-put" title="Dai un orario" aria-label=${'Dai un orario a ' + it.titolo} onClick=${() => { setPlace(it); if (view === 'month') setView('day'); }}><${Icon} n="clock" s=${17} /></button></div>`;
   const plusBtn = html`<button class="btn-icon pri" aria-label="Nuovo appuntamento o attività da programmare" onClick=${() => setAdd({ data: day, ora: '', tab: 'app' })}><${Icon} n="plus" s=${22} w=${2.4} /></button>`;
 
   // ---- griglia oraria (giorno o settimana)
@@ -324,7 +325,7 @@ function Agenda({ records, settings, saveRec, openRec, removeRec, bell }) {
     <aside class="ag-side">
       <div class="sec-h"><h3>Senza ora · ${untimed.length}</h3><span class="hint">${view === 'month' ? 'questo mese' : view === 'week' ? 'questa settimana' : 'questo giorno'}</span></div>
       ${untimed.length ? html`<div class="ag-chips">${untimed.map(it => chip(it, view !== 'day'))}</div>` : html`<div class="ag-empty">Nessuna attività senza ora.</div>`}
-      <div class="sec-h"><h3>Prossime senza ora</h3><span class="hint">tocca e scegli la fascia</span></div>
+      <div class="sec-h"><h3>Prossime senza ora</h3><span class="hint">⏱ per dare un orario</span></div>
       ${daProgr.length ? html`<div class="ag-chips">${daProgr.map(it => chip(it, true))}</div>` : html`<div class="ag-empty">Niente da programmare più avanti.</div>`}
     </aside></div>
     ${sel && html`<${AgEvSheet} it=${items.find(x => x.key === sel.key) || sel} onClose=${() => setSel(null)} put=${put}
@@ -386,7 +387,7 @@ function AgSlotSheet({ slot, senza, onPut, onAdd, onJson, onModello, onClose }) 
 
 // "Nuovo" della Programmazione: un appuntamento oppure un'attività programmata (creata ma non aperta)
 const AG_TIPI_NUOVI = [['ra', 'Sopralluogo RA'], ['dda1', 'DDA Fase 1'], ['dda2', 'DDA Fase 2'], ['mappatura', 'Mappatura MCA e FAV'], ['radon', 'Campagna radon (posa)'],
-  ['aria', 'Monitoraggio aria'], ['hsE', 'HSE Esteso'], ['hsS', 'HSE Sintetico'], ['vs', 'Verbale sopralluogo'], ['firme', 'Foglio firme']];
+  ['aria', 'Monitoraggio aria'], ['hsE', 'HSE Esteso'], ['hsS', 'HSE Sintetico'], ['vs', 'Verbale HSE'], ['firme', 'Foglio firme']];
 function AgAddSheet({ start, records, settings, onSave, onDelete, onJson, onClose }) {
   useBackClose(onClose);
   const ed = start.rec || null;

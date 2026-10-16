@@ -1,14 +1,14 @@
-/* Verbale di sopralluogo (BU HSE): note con titolo, testo, foto e tag. */
+/* Verbale HSE: note con titolo, testo, foto e tag. */
 
 function newVerbale(records, s) {
   const y = new Date().getFullYear();
   const n = records.filter(r => r.type === 'vs' && (r.codice || '').startsWith('VS-' + y)).map(r => +r.codice.slice(-3)).reduce((a, b) => Math.max(a, b), 0) + 1;
   return { id: uid('vs'), type: 'vs', codice: `VS-${y}-${String(n).padStart(3, '0')}`, createdAt: Date.now(), updatedAt: Date.now(),
     commessa: '', cliente: '', citta: '', sito: '', indirizzo: '', data: today(), tecnico: `${s.tecnicoNome} ${s.tecnicoCognome}`.trim(),
-    note: [], fogli: [], appunti: '', fotoAppunti: [] };
+    note: [], appunti: '', fotoAppunti: [] };
 }
 const newNotaVs = () => ({ id: uid('n'), titolo: '', testo: '', foto: [], tag: [] });
-const verbaleIsEmpty = r => !r.commessa && !r.cliente && !r.sito && !r.citta && !r.indirizzo && !(r.note || []).some(n => n.titolo || n.testo || n.foto.length) && !r.appunti && !(r.fotoAppunti || []).length && !(r.fogli || []).length;
+const verbaleIsEmpty = r => !r.commessa && !r.cliente && !r.sito && !r.citta && !r.indirizzo && !(r.note || []).some(n => n.titolo || n.testo || n.foto.length) && !r.appunti && !(r.fotoAppunti || []).length;
 const vsPhotos = r => r.type === 'vs' ? (r.note || []).flatMap((n, i) => (n.foto || []).map((f, k) => ({ id: f, name: `Nota_${i + 1}_${(n.titolo || 'senza_titolo').slice(0, 40)}_${k + 1}` }))) : [];
 
 function VerbaleList({ records, open, activeId, acts }) {
@@ -17,13 +17,13 @@ function VerbaleList({ records, open, activeId, acts }) {
   const groups = {};
   all.forEach(r => { const c = r.cliente || 'Senza cliente'; (groups[c] = groups[c] || []).push(r); });
   return html`<div class="content">
-    <${LargeTitle} top eye="HSE" title="Verbali di sopralluogo" sub=${`${all.length} ${all.length === 1 ? 'verbale' : 'verbali'}`} acts=${acts} />
-    ${!all.length && html`<div class="empty"><b>Nessun verbale</b>Tocca + e scegli “Verbale sopralluogo”.</div>`}
+    <${LargeTitle} top eye="HSE" title="Verbali HSE" sub=${`${all.length} ${all.length === 1 ? 'verbale' : 'verbali'}`} acts=${acts} />
+    ${!all.length && html`<div class="empty"><b>Nessun verbale</b>Tocca + e scegli “Verbale HSE”.</div>`}
     ${Object.entries(groups).map(([c, rs]) => html`<div key=${c}><div class="grp-client">${c}</div><div class="list">
       ${rs.map(r => { const N = (r.note || []).length, tg = Object.keys(collectTags(r.note || [])); return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r)} key=${r.id} onClick=${() => open(r.id)}>
         <div class="r1"><span class="id">${r.codice}</span><span class=${'badge ' + (N ? 'b-ok' : 'b-grey')}>${N ? N + (N === 1 ? ' nota' : ' note') : 'Da compilare'}</span><span class="dt">${fmtD(r.data)}</span></div>
         ${(r.commessa || placeLabel(r)) && html`<div class="ttl">${[r.commessa, placeLabel(r)].filter(Boolean).join(' · ')}</div>`}
-        ${tg.length > 0 && html`<div class="sum">${tg.slice(0, 6).map(t => '#' + t).join(' ')}</div>`}
+        ${tg.length > 0 && html`<div class="sum">${tg.slice(0, 6).map(t => html`<span key=${t} style=${'color:' + tagColor(t) + ';margin-right:6px'}>#${t}</span>`)}</div>`}
         <${OdBadge} map=${od} r=${r} /></button>`; })}</div></div>`)}
   </div>`;
 }
@@ -42,7 +42,7 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
   const vis = note.filter(n => !filtro || (n.tag || []).includes(filtro));
   const nFoto = note.reduce((a, n) => a + (n.foto || []).length, 0);
   return html`<div class="content form">
-    <${DetailHead} eye="Verbale sopralluogo" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
+    <${DetailHead} eye="Verbale HSE" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
     <div class="card-navy"><div class="sum3">
       <div><b>${note.length}</b><span>${note.length === 1 ? 'nota' : 'note'}</span></div>
       <div><b>${nFoto}</b><span>foto</span></div>
@@ -59,7 +59,7 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
     </div><datalist id="dl-cli-vs">${clienti.map(c => html`<option value=${c} />`)}</datalist></div>
     <div class="sec-h"><h3>Note · ${note.length}</h3><span class="hint">Titolo, testo, foto e tag</span></div>
     ${tagsV.length > 0 && html`<div class="vs-filter"><button class=${'tag' + (!filtro ? ' on' : ' sugg')} onClick=${() => setFiltro(null)}>Tutte</button>
-      ${tagsV.map(t => html`<button key=${t} class=${'tag' + (filtro === t ? ' on' : ' sugg')} onClick=${() => setFiltro(filtro === t ? null : t)}>#${t}</button>`)}</div>`}
+      ${tagsV.map(t => html`<button key=${t} class=${'tag' + (filtro === t ? ' on' : '')} style=${tagStyle(t, filtro === t)} onClick=${() => setFiltro(filtro === t ? null : t)}>#${t}</button>`)}</div>`}
     ${!note.length && html`<div class="card"><div class="empty" style="padding:16px">Nessuna nota. Tocca “Nuova nota” per aggiungerne una.</div></div>`}
     ${vis.map(n => { const i = note.indexOf(n); return html`<div class="card vs-nota" key=${n.id} id=${'n-' + n.id}>
       <div class="vs-h"><span class="vs-n">Nota ${i + 1}</span><span class="tb-grow"></span>
@@ -74,7 +74,6 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
       <${TagPicker} tags=${n.tag || []} set=${t => updN(n.id, { tag: t })} />
     </div>`; })}
     <button class="btn dashed block" style="margin-top:4px" onClick=${addN}>+ Nuova nota</button>
-    <${FogliFirme} r=${r} up=${up} settings=${settings} />
     <div class="sec-h"><h3>Appunti</h3><span class="hint">Testo libero</span></div>
     <div class="card"><textarea class="inp" rows="3" value=${r.appunti} onInput=${e => up({ appunti: e.target.value })} aria-label="Appunti"></textarea>
       <${NotePhotos} rec=${r} up=${up} /></div>

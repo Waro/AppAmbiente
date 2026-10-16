@@ -554,7 +554,7 @@ const LIST_OF = { dda: 'ddaList', mappatura: 'mappaturaList', radon: 'radonList'
 const DETAIL_OF = { ddaList: 'dda', mappaturaList: 'mappatura', radonList: 'radon', raList: 'ra', hsList: 'hs', vsList: 'vs', firmeList: 'firme', ariaList: 'aria' };
 const TOP_ROUTES = ['home', 'agenda', 'ddaList', 'mappaturaList', 'raList', 'radonList', 'hsList', 'vsList', 'firmeList', 'ariaList'];
 const ROUTE_TITLE = { home: 'Oggi', ddaList: 'Ambiente · DDA', mappaturaList: 'Mappatura MCA e FAV', raList: 'Sopralluogo RA', radonList: 'Campagne radon', ariaList: 'Monitoraggio aria', aria: 'Monitoraggio aria',
-  hsList: 'Sopralluoghi HSE', hs: 'Sopralluogo HSE', vsList: 'Verbali di sopralluogo', vs: 'Verbale sopralluogo', firmeList: 'Fogli firme', firme: 'Fogli firme', agenda: 'Programmazione', settings: 'Impostazioni', backup: 'Backup', notifiche: 'Notifiche', dda: 'DDA', mappatura: 'Mappatura', ra: 'Sopralluogo RA', radon: 'Campagna radon' };
+  hsList: 'Sopralluoghi HSE', hs: 'Sopralluogo HSE', vsList: 'Verbali HSE', vs: 'Verbale HSE', firmeList: 'Fogli firme', firme: 'Fogli firme', agenda: 'Programmazione', settings: 'Impostazioni', backup: 'Backup', notifiche: 'Notifiche', dda: 'DDA', mappatura: 'Mappatura', ra: 'Sopralluogo RA', radon: 'Campagna radon' };
 
 /* ---------------- menu laterale (tablet in orizzontale e PC) ---------------- */
 const NAV_AREAS = [
@@ -564,7 +564,7 @@ const NAV_AREAS = [
   { v: 'radonList', d: 'radon', ic: 'radon', l: 'Campagne radon' },
   { v: 'ariaList', d: 'aria', ic: 'air', l: 'Monitoraggio aria' },
 ];
-const NAV_HS = [{ v: 'hsList', d: 'hs', ic: 'helmet', l: 'Sopralluoghi HSE' }, { v: 'vsList', d: 'vs', ic: 'note', l: 'Verbali di sopralluogo' }];
+const NAV_HS = [{ v: 'hsList', d: 'hs', ic: 'helmet', l: 'Sopralluoghi HSE' }, { v: 'vsList', d: 'vs', ic: 'note', l: 'Verbali HSE' }];
 const NAV_TOOLS = [{ v: 'agenda', ic: 'clock', l: 'Programmazione' }, { v: 'firmeList', d: 'firme', ic: 'sign', l: 'Fogli firme' }, { v: 'backup', ic: 'archive', l: 'Backup' }, { v: 'settings', ic: 'gear', l: 'Impostazioni' }];
 // tab bar del telefono: Oggi + le quattro aree
 const TABS = [{ v: 'home', ic: 'today', l: 'Oggi' }, { v: 'ddaList', ic: 'leaf', l: 'DDA' }, { v: 'mappaturaList', ic: 'pin', l: 'Mappature' },
@@ -578,12 +578,20 @@ function useNavMin() {
   const toggle = () => setMin(m => { try { localStorage.setItem('nembo_nav', m ? 'full' : 'min'); } catch (e) {} return !m; });
   return [min, toggle];
 }
+// colori delle icone nel menu laterale esteso: gli stessi del foglio "Nuova attività"
+const SN_COL = {
+  home: ['var(--blue-soft)', 'var(--blue)'], ddaList: ['var(--warn-soft)', 'var(--warn)'], mappaturaList: ['color-mix(in srgb, var(--mca) 12%, var(--card))', 'var(--mca)'],
+  raList: ['color-mix(in srgb, var(--mca) 12%, var(--card))', 'var(--mca)'], radonList: ['var(--ok-soft)', 'var(--ok)'], ariaList: ['var(--blue-soft)', '#0a6ebd'],
+  hsList: ['var(--blue-soft)', 'var(--blue)'], vsList: ['var(--ok-soft)', 'var(--ok)'], agenda: ['var(--fill-soft)', 'var(--navy)'], firmeList: ['var(--fill-soft)', 'var(--blue)'],
+  backup: ['var(--fill-soft)', 'var(--text2)'], settings: ['var(--fill-soft)', 'var(--text2)'],
+};
 function SideNav({ route, go, counts, settings, min, toggle }) {
   const nav = v => { if (route.v !== v) go({ v }); };
   const item = (x, n) => {
     const on = route.v === x.v || route.v === x.d;
+    const col = SN_COL[x.v];
     return html`<button class=${'sn-it' + (on ? ' on' : '')} title=${min ? x.l : null} aria-current=${on ? 'page' : null} onClick=${() => nav(x.v)}>
-      <${Icon} n=${x.ic} s=${21} /><span class="l">${x.l}</span>${n > 0 && html`<span class="n">${n}</span>`}</button>`;
+      ${!min && col ? html`<span class="sn-ic" style=${'background:' + col[0] + ';color:' + col[1]}><${Icon} n=${x.ic} s=${19} /></span>` : html`<${Icon} n=${x.ic} s=${21} />`}<span class="l">${x.l}</span>${n > 0 && html`<span class="n">${n}</span>`}</button>`;
   };
   const name = `${settings.tecnicoNome || ''} ${settings.tecnicoCognome || ''}`.trim();
   const ss = useSync(); const sync = OD.account && settings.odSync !== false ? syncLabel(ss) : ''; const syncPhase = ss.phase;
@@ -687,6 +695,8 @@ function App() {
     await DB.del(rec.id); Sync.markDeleted(rec.id);
     setRecords(rs => rs.filter(x => x.id !== rec.id));
   };
+  // colori dei tag coerenti in tutta l'app
+  useEffect(() => { setTagList(Object.keys(collectTags(records))); }, [records]);
   // l’attività aperta non viene sovrascritta dalla sincronizzazione
   useEffect(() => { Sync.busy = route.id || null; }, [route.id]);
   // uscendo da un record nuovo rimasto vuoto, lo scarto
@@ -781,7 +791,7 @@ function App() {
       ['Nessun foglio selezionato', 'Toccane uno dall\'elenco per aprirlo qui.']);
   } else if (route.v === 'vsList') {
     wideCreate = createVs;
-    body = split(html`<${VerbaleList} records=${records} acts=${listActs(createVs, 'Nuovo verbale di sopralluogo')} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'vs', id })} />`,
+    body = split(html`<${VerbaleList} records=${records} acts=${listActs(createVs, 'Nuovo verbale HSE')} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'vs', id })} />`,
       dRec && html`<${VerbaleForm} ...${formProps(dRec)} onSave=${r => saveRec({ ...r, _new: r._new && verbaleIsEmpty(r) })} />`,
       ['Nessun verbale selezionato', 'Toccane uno dall\'elenco per aprirlo qui.']);
   } else if (route.v === 'vs' && rec) {

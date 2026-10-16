@@ -2,7 +2,7 @@
 // Stessa stringa di VERSION in sw.js: aumentala insieme a quella ad ogni aggiornamento.
 // Essendo dentro un file JS servito dalla cache, se l'aggiornamento automatico fallisce
 // questa scritta mostra ancora la versione vecchia — è il modo per accorgersene.
-const APP_VERSION = 'nembo-v34';
+const APP_VERSION = 'nembo-v35';
 
 /* ---------------- tema grafico: "essenziale" (predefinito) o "originale" ----------------
    Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno. */
@@ -540,21 +540,37 @@ function collectTags(o, cnt = {}) {
   }
   return cnt;
 }
-async function knownTags() { const cnt = collectTags(await DB.all()); return Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a] || a.localeCompare(b, 'it')); }
+// colore del tag: tavolozza di colori diversi tra loro e da quelli dei tipi di attività (MCA, FAV, radon, aria, RA, HSE).
+// Ogni tag ha il suo colore: si parte dal nome e, se il colore è già preso da un altro tag, si passa al successivo.
+const TAG_PAL = ['#0f8b8d', '#5b4fd6', '#c2416b', '#6b8e23', '#8b5e3c', '#e07a5f', '#3d5a80', '#0ca678', '#e5007d', '#b08968', '#5e548e', '#495057', '#2b9348', '#d1495b', '#00798c', '#9a6324'];
+let _tagCol = {};
+const tagHash = t => { let h = 2166136261; for (const ch of String(t).toLowerCase()) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h; };
+function setTagList(list) {
+  const used = new Set(); _tagCol = {};
+  [...list].sort((a, b) => a.localeCompare(b, 'it')).forEach(t => {
+    let k = tagHash(t) % TAG_PAL.length, n = 0;
+    while (used.has(k) && n < TAG_PAL.length) { k = (k + 1) % TAG_PAL.length; n++; }
+    if (n < TAG_PAL.length) { used.add(k); _tagCol[t.toLowerCase()] = TAG_PAL[k]; }
+    else _tagCol[t.toLowerCase()] = `hsl(${tagHash(t) % 360} 55% 38%)`;
+  });
+}
+function tagColor(t) { return _tagCol[String(t).toLowerCase()] || TAG_PAL[tagHash(t) % TAG_PAL.length]; }
+const tagStyle = (t, on) => { const c = tagColor(t); return on ? `background:${c};color:#fff` : `background:color-mix(in srgb, ${c} 14%, var(--card));color:${c}`; };
+async function knownTags() { const cnt = collectTags(await DB.all()); const L = Object.keys(cnt); setTagList(L); return L.sort((a, b) => cnt[b] - cnt[a] || a.localeCompare(b, 'it')); }
 function TagPicker({ tags = [], set, label = 'Tag' }) {
   const [open, setOpen] = useState(false); const [q, setQ] = useState(''); const [known, setKnown] = useState([]);
   useEffect(() => { if (open) knownTags().then(setKnown); }, [open]);
   const has = t => tags.some(x => x.toLowerCase() === t.toLowerCase());
-  const addT = t => { t = (t || '').trim().replace(/^#/, ''); if (!t || has(t)) { setQ(''); return; } set([...tags, t]); setQ(''); };
+  const addT = t => { t = (t || '').trim().replace(/^#/, ''); if (!t || has(t)) { setQ(''); return; } if (!known.some(x => x.toLowerCase() === t.toLowerCase())) { const L = [...known, t]; setKnown(L); setTagList(L); } set([...tags, t]); setQ(''); };
   const sugg = known.filter(t => !has(t) && (!q || t.toLowerCase().includes(q.trim().toLowerCase()))).slice(0, 12);
   const nuovo = q.trim() && !known.some(t => t.toLowerCase() === q.trim().toLowerCase()) && !has(q.trim());
   return html`<div class="tags">
-    <div class="tags-row">${tags.map(t => html`<span class="tag" key=${t}>#${t}<button aria-label=${'Togli il tag ' + t} onClick=${() => set(tags.filter(x => x !== t))}>×</button></span>`)}
+    <div class="tags-row">${tags.map(t => html`<span class="tag" key=${t} style=${tagStyle(t)}>#${t}<button aria-label=${'Togli il tag ' + t} onClick=${() => set(tags.filter(x => x !== t))}>×</button></span>`)}
       <button class="tag add" onClick=${() => setOpen(o => !o)}>${open ? 'Chiudi' : '+ ' + label}</button></div>
     ${open && html`<div class="tags-pick">
       <input class="inp" value=${q} placeholder="Scrivi un tag o scegline uno" onInput=${e => setQ(e.target.value)} onKeyDown=${e => { if (e.key === 'Enter') { e.preventDefault(); addT(q); } }} />
       <div class="tags-row">${nuovo && html`<button class="tag new" onClick=${() => addT(q)}>Crea “${q.trim()}”</button>`}
-        ${sugg.map(t => html`<button class="tag sugg" key=${t} onClick=${() => addT(t)}>#${t}</button>`)}
+        ${sugg.map(t => html`<button class="tag sugg" key=${t} style=${'color:' + tagColor(t)} onClick=${() => addT(t)}>#${t}</button>`)}
         ${!sugg.length && !nuovo && html`<span class="lock">${known.length ? 'Nessun altro tag' : 'Ancora nessun tag: scrivine uno'}</span>`}</div></div>`}
   </div>`;
 }
