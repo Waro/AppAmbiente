@@ -66,6 +66,9 @@ priorità, natura del rischio, costo, competenza e termine; anagrafica, visite, 
   collegamento alla voce della checklist nel Sintetico. Massimo 250 nel report.
 - Con la BU H&S scelta in Impostazioni la tab bar diventa Oggi · H&S · DDA · RA e la home mostra criticità urgenti e report da caricare.
 
+**Foto del sopralluogo precedente** (v32): non vanno su OneDrive né nella condivisione (sono già nel report dell'anno prima); restano nel backup ZIP e nella sincronizzazione. Nel Rilievo fotografico *elimina tutte* toglie in un colpo tutte le foto del sopralluogo precedente.
+**Foto di inquadramento del capitolo 8** (Sintetico): le immagini sotto «Condizioni generali dell'immobile» vengono lette dal Word importato, rimesse nel nuovo Word con le stesse dimensioni e copiate nel report dell'anno successivo. Si gestiscono nella sezione 8.
+
 ## Programmazione
 
 Ogni attività ha **data, ora di inizio, durata prevista e stato** (campi accanto alla Data; nel radon per ciascun momento).
@@ -95,6 +98,12 @@ nella scheda di un'RA senza manufatti compare il riquadro "Riprendi dall'anno pr
 **Calendario (.ics)**: "Aggiungi al calendario" per un'attività e "Giornata in calendario" per tutto il giorno: il file si apre con Outlook
 (o il calendario del telefono) senza nuovi permessi Microsoft.
 
+**Dalla v33**: la voce *Programmazione* sta sotto *Strumenti* nel menu laterale (sul telefono resta il collegamento in Oggi).
+- Viste **Giorno**, **Settimana** e **Mese**; il mese in corso è sempre indicato. La griglia oraria scorre nel suo riquadro, così cambiando giorno o settimana la pagina resta in alto.
+- Striscia della settimana con frecce e scorrimento col dito; vista giorno con frecce ai lati e scorrimento col dito per passare al giorno prima o dopo.
+- Il **+** apre *Nuovo*: **Appuntamento** (titolo, data, ora, durata, stato, luogo, note: record `type: 'app'`, senza cartelle né documenti) oppure **Attività** da programmare (creata con data, ora e stato, ma non aperta). Toccando una fascia vuota si sceglie tra le stesse due opzioni.
+- *Senza ora* e *Prossime senza ora* stanno in una colonna a destra su tablet e PC (sotto la griglia sul telefono).
+
 ## Fogli firme
 
 Per sostituire i fogli di carta con le firme (informativa amianto, presenze, consegna documenti). Si usano in due modi:
@@ -109,6 +118,21 @@ Nel sopralluogo RA il foglio può allegare l'elenco dei manufatti dell'attività
 **Passa il telefono**: una persona alla volta scrive nome, società e ruolo e firma; non vede le righe degli altri.
 **Chiudi il foglio** blocca dati e firme; riaprire cancella le firme. Il PDF lo impagina Nembo (nessun modello da caricare)
 e va nello ZIP, su OneDrive e nella condivisione, nella cartella `firme/`.
+
+## Monitoraggio aria (v29)
+
+Prelievi di fibre aerodisperse (SEM, MOCF, FAV). Si usa in due modi:
+- **da solo**: Nuova attività → *Monitoraggio aria* (menu laterale → Monitoraggio aria; in Oggi sul telefono);
+- **dentro il sopralluogo RA**: card *Aggiungi monitoraggio aria*, prima delle planimetrie. Se non contiene nulla si toglie con *Togli il monitoraggio aria*.
+
+I punti si chiamano **S** per SEM e FAV e **M** per MOCF (numerazione separata: S1, S2…, M1, M2…); cambiando metodica il nome si aggiorna. I punti ripresi dall'anno prima e quelli rinominati a mano mantengono il loro nome.
+Per ogni punto: piano, postazione, Eseguito / Non eseguito, data, metodica, ora di inizio e fine, campionatore, membrana (anche con Scansiona), flusso, litri, rapporto di prova, concentrazione, note e foto.
+La durata e i litri (flusso × minuti) si calcolano da soli; i litri scritti a mano hanno la precedenza. Le concentrazioni oltre il limite (SEM 2 ff/l, MOCF 20 ff/l) sono evidenziate.
+I punti compaiono come etichette sulle planimetrie. Il RA ripreso dall'anno prima copia i punti senza le misure.
+
+**Uscite** (Excel e PDF): *Scheda di prelievo*, da inviare con le membrane, e *Riepilogo esiti*, la tabella per la relazione (punti non eseguiti con «MONITORAGGIO NON EFFETTUATO», superamenti in rosso).
+Vanno nello ZIP, nella condivisione e su OneDrive, nella cartella `aria/`, insieme ai rapporti di prova allegati.
+Campionatori, addetto alla verifica della taratura e codici d'analisi si impostano in Impostazioni → Monitoraggio aria e viaggiano nel file di configurazione. Laboratorio, offerta, email per i referti, «prelevato da» e «verificato da» sono quelli della scheda campioni.
 
 ## Excel e Word
 
@@ -207,6 +231,7 @@ Al secondo avvio dopo l'aggiornamento il telefono usa la nuova versione. I dati 
 | `js/ra.js` | sopralluogo RA: manufatti, stato di conservazione, anno di incarico |
 | `js/hs-data.js`, `js/hs-word.js`, `js/hs.js` | sopralluogo H&S: dati fissi, motore Word (modelli .docx con JSZip) e import, interfaccia |
 | `js/agenda.js` | programmazione: ora e durata, vista a fasce orarie, JSON del piano, file .ics |
+| `js/aria.js` | monitoraggio aria: punti, calcoli, sezione per attività e RA, schede Excel/PDF |
 | `js/firme.js` | fogli firme: modelli, sezione nelle attività, attività a sé, passa il telefono, impostazioni |
 | `js/home.js` | schermata Oggi e foglio Nuova attività |
 | `js/onedrive.js` | caricamento su OneDrive e stato di invio |

@@ -377,6 +377,92 @@
     return await doc.save();
   }
 
-  const api = { radonPdf, schedaCampioniPdf, foglioFirmePdf, RADON_ROWS };
+  // ---------- MONITORAGGIO ARIA: scheda di prelievo e riepilogo esiti (impaginazione propria, A4 orizzontale) ----------
+  async function ariaPdf(kind, I) {
+    if (root.needLib) await root.needLib('pdflib');
+    const { PDFDocument, StandardFonts, rgb } = lib();
+    const doc = await PDFDocument.create();
+    const font = await doc.embedFont(StandardFonts.Helvetica), bold = await doc.embedFont(StandardFonts.HelveticaBold), ital = await doc.embedFont(StandardFonts.HelveticaOblique);
+    const W = 841.89, H = 595.28, M = 34, CW = W - 2 * M;
+    const ink = rgb(0.06, 0.09, 0.16), mute = rgb(0.38, 0.42, 0.5), line = rgb(0.55, 0.58, 0.63), band = rgb(0.93, 0.94, 0.96), red = rgb(0.75, 0, 0);
+    const pages = []; let page, y;
+    const newPage = () => { page = doc.addPage([W, H]); pages.push(page); y = H - M; };
+    const wrap = (text, fnt, size, maxW) => {
+      const out = [];
+      for (const par of safe(text).split('\n')) {
+        const words = par.split(/\s+/).filter(Boolean); let cur = '';
+        if (!words.length) { out.push(''); continue; }
+        for (const w of words) { const t = cur ? cur + ' ' + w : w; if (fnt.widthOfTextAtSize(t, size) <= maxW) cur = t; else { if (cur) out.push(cur); cur = w; } }
+        out.push(cur);
+      }
+      return out;
+    };
+    const fmtD = iso => { if (!iso) return ''; const [a, b, c] = iso.split('-'); return c + '/' + b + '/' + a; };
+    const fmtN = v => v == null || v === '' ? '' : Number(v).toLocaleString('it-IT', { maximumFractionDigits: 2 });
+    const title = kind === 'scheda' ? 'SCHEDA DI PRELIEVO: CAMPIONI FIBRE AERODISPERSE' : "MONITORAGGI DELL'ARIA: RIEPILOGO DEGLI ESITI";
+    newPage();
+    const tw = bold.widthOfTextAtSize(title, 14); page.drawText(title, { x: (W - tw) / 2, y: y - 14, size: 14, font: bold, color: ink }); y -= 30;
+    // intestazione a coppie etichetta / valore
+    const heads = [['COMMESSA - PROGETTO', [I.commessa, I.cliente].filter(Boolean).join(' - ')], ['SITO', I.sito]];
+    if (kind === 'scheda') heads.push(['REFERTI A', I.email], ['LABORATORIO', I.lab], ['OFFERTA', I.offerta]);
+    const LW = 150;
+    for (const [l, v] of heads) {
+      const ls = wrap(v || '', bold, 10, CW - LW - 12); const h = Math.max(20, ls.length * 12 + 8);
+      page.drawRectangle({ x: M, y: y - h, width: LW, height: h, color: band, borderColor: line, borderWidth: 0.6 });
+      page.drawRectangle({ x: M + LW, y: y - h, width: CW - LW, height: h, borderColor: line, borderWidth: 0.6 });
+      page.drawText(l, { x: M + 6, y: y - h / 2 - 3, size: 8.5, font: bold, color: ink });
+      ls.forEach((t, i) => page.drawText(t, { x: M + LW + 6, y: y - 14 - i * 12, size: 10, font: bold, color: ink }));
+      y -= h;
+    }
+    y -= 14;
+    const cols = kind === 'scheda'
+      ? [{ t: '#', w: .05, c: 1 }, { t: 'Data prelievo', w: .09, c: 1 }, { t: 'Postazione prelievo', w: .22 }, { t: 'Campionatore e matricola', w: .2 }, { t: "Litri d'aria prelevati", w: .1, c: 1 }, { t: 'Flusso (litri/minuto)', w: .1, c: 1 }, { t: 'Tipologia analisi richiesta', w: .24 }]
+      : [{ t: 'Punto', w: .06, c: 1 }, { t: 'Postazione', w: .24 }, { t: 'Data', w: .09, c: 1 }, { t: 'Metodica', w: .08, c: 1 }, { t: 'Membrana / Rapporto di prova', w: .2, c: 1 }, { t: 'Volume campionato (litri)', w: .11, c: 1 }, { t: 'Limite di legge (fibre/litro)', w: .11, c: 1 }, { t: 'Concentrazione (fibre/litro)', w: .11, c: 1 }];
+    const pad = 4, size = 9;
+    const drawHead = () => {
+      const hl = cols.map(c => wrap(c.t, bold, 8, c.w * CW - 2 * pad)); const h = Math.max(...hl.map(l => l.length)) * 10 + 10;
+      let x = M; cols.forEach((c, i) => {
+        page.drawRectangle({ x, y: y - h, width: c.w * CW, height: h, color: band, borderColor: line, borderWidth: 0.6 });
+        hl[i].forEach((t, k) => { const w = bold.widthOfTextAtSize(t, 8); page.drawText(t, { x: c.c ? x + (c.w * CW - w) / 2 : x + pad, y: y - 13 - k * 10, size: 8, font: bold, color: ink }); });
+        x += c.w * CW;
+      });
+      y -= h;
+    };
+    drawHead();
+    const rows = kind === 'scheda'
+      ? I.prelievi.map(p => ({ cells: [p.codice, fmtD(p.data), p.postazione, p.campionatore, fmtN(p.volume), fmtN(p.flusso), p.analisi] }))
+      : I.esiti.map(e => e.non ? { cells: [e.codice, e.postazione, fmtD(e.data)], non: true }
+        : { cells: [e.codice, e.postazione, fmtD(e.data), e.metodica, [e.membrana, e.rdp].filter(Boolean).join('\n'), fmtN(e.volume), e.limite == null ? '-' : fmtN(e.limite), e.conc || 'in attesa'], over: e.over });
+    for (const r of rows) {
+      const lines = cols.map((c, i) => (r.non && i > 2) ? [] : wrap(r.cells[i] == null ? '' : r.cells[i], i === 0 ? bold : font, size, c.w * CW - 2 * pad));
+      const h = Math.max(24, Math.max(...lines.map(l => l.length)) * 11 + 10);
+      if (y - h < M + 40) { page = null; newPage(); drawHead(); }
+      let x = M;
+      cols.forEach((c, i) => {
+        if (r.non && i > 3) return;
+        const w = r.non && i === 3 ? cols.slice(3).reduce((a, k) => a + k.w * CW, 0) : c.w * CW;
+        page.drawRectangle({ x, y: y - h, width: w, height: h, borderColor: line, borderWidth: 0.6 });
+        if (r.non && i === 3) { const t = 'MONITORAGGIO NON EFFETTUATO', tw2 = bold.widthOfTextAtSize(t, 9); page.drawText(t, { x: x + (w - tw2) / 2, y: y - h / 2 - 3, size: 9, font: bold, color: ink }); page.drawLine({ start: { x: x + (w - tw2) / 2, y: y - h / 2 - 4.5 }, end: { x: x + (w + tw2) / 2, y: y - h / 2 - 4.5 }, thickness: 0.6, color: ink }); }
+        else {
+          const ls = lines[i], top = y - (h - ls.length * 11) / 2 - 8.5;
+          const isConc = kind !== 'scheda' && i === 7, fnt = i === 0 || isConc ? bold : font, col = isConc && r.over ? red : ink;
+          ls.forEach((t, k) => { const tw3 = fnt.widthOfTextAtSize(t, size); page.drawText(t, { x: c.c ? x + (w - tw3) / 2 : x + pad, y: top - k * 11, size, font: fnt, color: col }); });
+        }
+        x += w;
+      });
+      y -= h;
+    }
+    if (!rows.length) { page.drawText(kind === 'scheda' ? 'Nessun prelievo eseguito.' : 'Nessun punto compilato.', { x: M + 4, y: y - 14, size: 9.5, font: ital, color: mute }); y -= 24; }
+    y -= 16;
+    const foot = kind === 'scheda'
+      ? [I.taratura && 'ADDETTO VERIFICA TARATURA: ' + I.taratura, 'PRELEVATO DA: ' + (I.prelevatoDa || ''), 'VERIFICATO DA: ' + (I.verificatoDa || '')].filter(Boolean)
+      : ['Limiti di riferimento DM 06/09/1994: 2 fibre/litro in SEM, 20 fibre/litro in MOCF.'];
+    for (const t of foot) { if (y < M + 20) newPage(); page.drawText(safe(t), { x: M, y: y - 10, size: 9.5, font: kind === 'scheda' ? bold : ital, color: kind === 'scheda' ? ink : mute }); y -= 15; }
+    pages.forEach((pg, i) => { const t = 'Pag. ' + (i + 1) + ' di ' + pages.length; pg.drawText(t, { x: W - M - font.widthOfTextAtSize(t, 8), y: 16, size: 8, font, color: mute }); });
+    doc.setTitle(title);
+    return await doc.save();
+  }
+
+  const api = { radonPdf, schedaCampioniPdf, foglioFirmePdf, ariaPdf, RADON_ROWS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.PdfGen = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -224,7 +224,9 @@ async function odRecordItems(r, settings) {
   if (r.type === 'ra') {
     r.manufatti.forEach(m => m.foto.forEach((f, k) => photo(f, 'foto', `${m.codice || 'manufatto'}_${k + 1}`)));
   } else if (r.type === 'hs') {
-    hsFotoOrd(r).forEach((p, k) => photo(p.id, 'foto', `${String(k + 1).padStart(3, '0')}${p.g === 'prev' ? '_prec' : ''}${p.cap ? '_' + p.cap.slice(0, 40) : ''}`));
+    // le foto del sopralluogo precedente non vanno su OneDrive (sono già nel report dell'anno scorso)
+    hsFotoOrd(r).filter(p => p.g !== 'prev').forEach((p, k) => photo(p.id, 'foto', `${String(k + 1).padStart(3, '0')}${p.cap ? '_' + p.cap.slice(0, 40) : ''}`));
+    (r.cgFoto || []).forEach((o, k) => photo(o.id, 'immagini', `inquadramento_${k + 1}`));
     Object.entries(r.img || {}).forEach(([k, v]) => photo(v, 'immagini', k));
     (r.documenti || []).forEach(d => photo(d.blobId, 'documenti', d.nome));
     const tk = TEMPLATES[r.formato === 'sintetico' ? 'hs_sintetico.docx' : 'hs_esteso.docx'].key;
@@ -233,8 +235,8 @@ async function odRecordItems(r, settings) {
     r.punti.forEach((p, i) => p.foto.forEach((f, k) => photo(f, 'foto', `R${i + 1}_${k + 1}`)));
     r.rapporti.forEach(d => photo(d.blobId, 'rapporti', d.nome));
     items.push({ kind: 'pdf', segs: ['Scheda_radon_' + (r.commessa || 'campagna')], make: async () => PdfGen.radonPdf(await loadTemplate('radon.pdf'), r) });
-  } else if (r.type === 'firme') {
-    // solo fogli firme: aggiunti sotto
+  } else if (r.type === 'firme' || r.type === 'aria' || r.type === 'app') {
+    // solo fogli firme / monitoraggio aria: aggiunti sotto
   } else {
     r.recs.forEach(x => x.foto.forEach((f, k) => photo(f, 'foto', `${x.nome}_${k + 1}`)));
     MATS.forEach(m => r.campioni[m.k].forEach(c => (c.foto || []).forEach((f, k) => photo(f, 'foto', `${m.l}_${c.codice || 'campione'}_${k + 1}`))));
@@ -258,6 +260,9 @@ async function odRecordItems(r, settings) {
     items.push({ kind: 'pdfblob', blobId: id, segs: ['planimetrie', p.nome + (p.mergedBlobId ? '_annotata' : '')] });
   }
   for (const f of (r.fogli || [])) if (foglioFirme(f)) items.push({ kind: 'pdf', segs: ['firme', foglioNome(f)], make: () => foglioPdf(r, f, s) });
+  ariaPhotos(r).forEach(x => photo(x.id, 'aria', x.name));
+  ariaRapporti(r).forEach(d => photo(d.blobId, 'aria', d.nome));
+  ariaOutputs(r, s).forEach(o => items.push(o.kind === 'office' ? { kind: 'office', type: o.type, segs: ['aria', o.name], make: o.make } : { kind: 'pdf', segs: ['aria', o.name], make: o.make }));
   const { _new, ...data } = r;
   items.push({ kind: 'json', segs: ['dati'], make: async () => JSON.stringify({ app: 'nembo', version: 1, record: data }, null, 1) });
   return items;

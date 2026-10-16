@@ -2,7 +2,7 @@
 // Stessa stringa di VERSION in sw.js: aumentala insieme a quella ad ogni aggiornamento.
 // Essendo dentro un file JS servito dalla cache, se l'aggiornamento automatico fallisce
 // questa scritta mostra ancora la versione vecchia — è il modo per accorgersene.
-const APP_VERSION = 'nembo-v28';
+const APP_VERSION = 'nembo-v33';
 
 /* ---------------- tema grafico: "essenziale" (predefinito) o "originale" ----------------
    Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno. */
@@ -212,6 +212,7 @@ const P = {
   radon: 'M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0M7.5 4.2a9 9 0 0 1 9 0l-2.5 4.3a4 4 0 0 0-4 0ZM20.6 16.3a9 9 0 0 1-4.5 7.8l-2.5-4.3a4 4 0 0 0 2-3.5ZM3.4 16.3h5a4 4 0 0 0 2 3.5l-2.5 4.3a9 9 0 0 1-4.5-7.8',
   plus: 'M12 5v14M5 12h14', back: 'M15 18l-6-6 6-6', chev: 'M6 9l6 6 6-6', right: 'M9 18l6-6-6-6',
   camera: 'M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3zM12 13m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0',
+  air: 'M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h8',
   scan: 'M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8v8M10.5 8v8M14 8v8M17 8v8',
   file: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 13h6M9 17h6',
   pin: 'M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0ZM12 10m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0',
@@ -360,6 +361,7 @@ const DEFAULT_SETTINGS = {
   labNome: '', labR1: '', labR2: '', offerta: '', offertaRev: '',
   mcaCodice: '', mcaDesc: '', favCodice: '', favDesc: '',
   livelloRif: 300, buDefault: 'ambiente',
+  ariaCampionatori: [], ariaTaratura: '', ariaProfili: {}, // monitoraggio aria
   supportEmail: '', // destinatario di "Segnala un problema" (solo nel file di configurazione)
   // valori proposti nei nuovi sopralluoghi H&S (restano nel file di configurazione, mai nel codice)
   firmeEnte: '', firmeModelli: [], odSync: true, durate: {},

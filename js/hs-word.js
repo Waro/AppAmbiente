@@ -63,7 +63,7 @@ function newHs(records, settings, formato) {
     img: {}, foto: [], base: {}, visite: [],
     an: {}, inquadramento: '', catFab: [], catTer: [], schede: Object.fromEntries(HS_SCHEDE.map(x => [x.k, hsEmptyScheda(x)])),
     anS: HS_SINT_AN.map((l, i) => i === 10 ? (s.hsDeveloper || '') : i === 11 ? (s.hsPropertyManager || '') : i === 12 ? (s.hsProcuratore || '') : i === 13 ? (s.hsTecnici || '') : ''),
-    risp: {}, note: {}, descr: '', azioni: [],
+    risp: {}, note: {}, descr: '', azioni: [], cgFoto: [],
     appunti: '', fotoAppunti: [], documenti: [],
   };
 }
@@ -452,7 +452,17 @@ async function hsBuildSintetico(r, settings, tpl, opt = {}) {
     const extra = nums.length ? [{ t: 'ID Foto ' + nums.join(', '), old: g && !nuove.length, b: true }] : null;
     x = hsFillBlock(x, 'NT_' + it.id, r.note[it.id], B['nt.' + it.id], { grigio: g, extra });
   });
+  { const i = x.indexOf('@@DESCR@@'), e = i < 0 ? -1 : x.indexOf('</w:p>', i); if (e > 0) x = x.slice(0, e + 6) + '<w:p><w:r><w:t>@@CGFOTO@@</w:t></w:r></w:p>' + x.slice(e + 6); }
   x = hsFillBlock(x, 'DESCR', r.descr, B.descr, { grigio: g });
+  { // foto di inquadramento sotto il capitolo 8, con le dimensioni che avevano nel report
+    let ps = '';
+    for (const o of (r.cgFoto || [])) {
+      const im = await hsImage(o.id); if (!im) continue;
+      const w = Math.min(o.w || 16, 16.5), h = Math.min(o.h || 11, 23);
+      ps += '<w:p><w:pPr><w:spacing w:before="120" w:after="120"/><w:jc w:val="center"/></w:pPr>' + hsImgRun(ctx, hsAddMedia(ctx, im.u8, im.png), im.w, im.h, Math.round(w * CMx), Math.round(h * CMx)) + '</w:p>';
+    }
+    x = x.replace('<w:p><w:r><w:t>@@CGFOTO@@</w:t></w:r></w:p>', ps);
+  }
   const righe = (r.azioni || []).filter(a => a.cod || a.sit || a.risk || a.grav || a.az);
   const KZ = ['cod', 'sit', 'risk', 'grav', 'az'];
   x = hsCloneRows(x, 'AZ0', righe, (row, a) => KZ.reduce((t, k, i) => a ? hsFillBlock(t, 'AZ' + i, a[k], (a.b || {})[k], { grigio: g, lists: k !== 'cod' && k !== 'grav' }) : hsFill(t, 'AZ' + i, 'N.A.'), row));
@@ -699,7 +709,7 @@ function hsReadSintetico(files, doc, body) {
   const txt = n => { const ps = n.localName === 'p' ? [n] : [...n.getElementsByTagNameNS(W, 'p')]; return ps.map(p => pText(p).replace(/\t/g, ' ')).join('\n').replace(/[ \t]+\n/g, '\n').trim(); };
   const lines = c => [...c.getElementsByTagNameNS(W, 'p')].map(p => { const t = pText(p).replace(/ /g, ' ').trim().replace(/^\u2022\s*/, '- ').replace(/\t/g, ' '); if (!t) return null; return isList(p) && !t.startsWith('- ') ? '- ' + t : t; }).filter(x => x != null).join('\n').trim();
   const allT = [...body.getElementsByTagNameNS(W, 'tbl')];
-  const out = { formato: 'sintetico', meta: {}, anS: HS_SINT_AN.map(() => ''), risp: {}, note: {}, descr: '', azioni: [], foto: [], img: {}, refFoto: {} };
+  const out = { formato: 'sintetico', meta: {}, anS: HS_SINT_AN.map(() => ''), risp: {}, note: {}, descr: '', azioni: [], foto: [], img: {}, refFoto: {}, cgFoto: [] };
   const risk = allT.filter(t => /fattore di rischio/i.test(txt(rowsW(t)[0] || t)));
   if (!risk.length) throw new Error('non sembra un report Sintetico (tabelle dei fattori di rischio non trovate)');
   risk.forEach((t, k) => {
@@ -739,6 +749,13 @@ function hsReadSintetico(files, doc, body) {
     const cg = [];
     for (let k = iCG + 1; k < paras.length; k++) { const p = paras[k]; if (isHead(p)) break; const t = pText(p).trim(); if (pageBr(p)) { if (t) cg.push(t); break; } if (t && t !== 'Breve descrizione') cg.push(isList(p) ? '- ' + t : t); }
     out.descr = cg.join('\n').trim();
+    // foto di inquadramento sotto il capitolo 8: tutto quello che sta tra il titolo e il capitolo successivo
+    const nodes = kidsW(body), i0 = nodes.indexOf(paras[iCG]);
+    for (let k = i0 + 1; k < nodes.length; k++) {
+      const n = nodes[k]; if (n.localName === 'p' && isHead(n)) break;
+      if (n.localName === 'sectPr') break;
+      imgs(n).forEach(o => out.cgFoto.push({ blob: o.blob, w: o.cx ? +(o.cx / CMx).toFixed(2) : 0, h: o.cy ? +(o.cy / CMx).toFixed(2) : 0 }));
+    }
   }
   const iF = paras.findIndex(p => /procuratore incaricato/i.test(txt(p)));
   if (iF >= 0 && paras[iF + 1]) { const t = txt(paras[iF + 1]); out.meta.firma = !t || t === 'Ing.' ? '' : t; }
@@ -784,9 +801,16 @@ async function hsApplyImport(rec, d, onStep) {
     r.anS = c.anS; r.risp = c.risp; r.note = c.note; r.descr = d.descr; r.azioni = c.azioni;
     r.anS.forEach((v, i) => B['an.' + i] = v); Object.entries(r.note).forEach(([k, v]) => B['nt.' + k] = v); B.descr = r.descr;
   }
-  const tot = Object.keys(d.img || {}).length + (d.foto || []).length + (d.extraFoto || []).length; let k = 0;
+  const tot = Object.keys(d.img || {}).length + (d.foto || []).length + (d.extraFoto || []).length + (d.cgFoto || []).length; let k = 0;
   r.img = { ...r.img };
   for (const [key, blob] of Object.entries(d.img || {})) { const id = await save(blob, ++k, tot); if (id) r.img[key] = id; }
+  // foto di inquadramento del capitolo 8 (Sintetico): restano nel report a ogni nuovo caricamento
+  if ((d.cgFoto || []).length) {
+    const cg = [];
+    for (const f of d.cgFoto) { const id = await save(f.blob, ++k, tot); if (id) cg.push({ id, w: f.w || 0, h: f.h || 0 }); }
+    for (const o of (r.cgFoto || [])) await removeBlob(o.id);
+    r.cgFoto = cg;
+  }
   const foto = [];
   for (const f of [...(d.foto || []), ...(d.extraFoto || [])].slice(0, HS_MAX_FOTO)) {
     const id = await save(f.blob, ++k, tot); if (!id) continue;

@@ -111,6 +111,12 @@ async function raRiprendi(prev, r) {
       statoPrec: st ? st.l : (m.statoPrec || ''), notePrec: m.note || m.notePrec || '', fotoPrec });
     map[m.id] = nm.id; manufatti.push(nm);
   }
+  // monitoraggio aria: riprendo i punti (codice, piano, postazione) e la loro denominazione resta fissa, senza i prelievi dell'anno scorso
+  let aria;
+  if (ariaHas(prev)) {
+    aria = emptyAria(true);
+    for (const p of prev.aria.punti) { const np = newAriaPunto({ codice: p.codice, piano: p.piano, postazione: p.postazione, metodica: p.metodica, flusso: p.flusso, ripreso: true }); map[p.id] = np.id; aria.punti.push(np); }
+  }
   const planimetrie = [];
   for (const pl of (prev.planimetrie || [])) {
     const blobId = await dupBlob(pl.blobId); if (!blobId) continue;
@@ -118,7 +124,7 @@ async function raRiprendi(prev, r) {
     for (const a of Object.values(annot)) a.labels = (a.labels || []).filter(l => map[l.ref]).map(l => ({ ...l, ref: map[l.ref] }));
     planimetrie.push({ id: uid('pl'), nome: pl.nome, blobId, annot });
   }
-  const patch = { manufatti, planimetrie, fonte: `Ripreso da ${prev.codice} del ${fmtD(prev.data)}`, ripresoDa: prev.id };
+  const patch = { manufatti, planimetrie, fonte: `Ripreso da ${prev.codice} del ${fmtD(prev.data)}`, ripresoDa: prev.id, ...(aria ? { aria } : {}) };
   for (const k of ['cliente', 'citta', 'indirizzo', 'sito', 'commessa']) if (!r[k] && prev[k]) patch[k] = prev[k];
   if (!r.incaricoDal && prev.incaricoDal) patch.incaricoDal = addMonths(prev.incaricoDal, 12);
   if (!r.incaricoAl && prev.incaricoAl) patch.incaricoAl = addMonths(prev.incaricoAl, 12);
@@ -228,7 +234,7 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
     setF('tutti'); setOpenM({ [m.id]: true }); setTimeout(() => scrollToId('m-' + m.id), 80);
   };
   const upload = () => OD.account ? odSync([r], settings) : sendToOneDrive(r, settings);
-  const labels = r.manufatti.map(m => { const st = raStato(m.stato); return { ref: m.id, text: m.codice || 'M', color: st ? st.c : '#52555b' }; });
+  const labels = [...r.manufatti.map(m => { const st = raStato(m.stato); return { ref: m.id, text: m.codice || 'M', color: st ? st.c : '#52555b' }; }), ...ariaLabels(r)];
 
   return html`<div class="content form">
     <${DetailHead} eye="Sopralluogo RA" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
@@ -272,6 +278,8 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
     ${list.map(m => html`<${ManufattoCard} key=${m.id} m=${m} open=${!!openM[m.id]} toggle=${() => setOpenM({ ...openM, [m.id]: !openM[m.id] })} onUpd=${updM} onDel=${delM} />`)}
     ${f === 'da' && tot > 0 && !list.length && html`<div class="empty" style="padding:20px"><b>Tutti verificati</b>Controlla le note e carica tutto su OneDrive.</div>`}
     <button class="btn dashed" onClick=${addM}>+ Aggiungi manufatto</button>
+
+    <${AriaInRa} r=${r} up=${up} settings=${settings} />
 
     <div class="sec-h" id=${'plan-' + r.id}><h3>Planimetrie</h3><span class="hint">Etichette colorate per stato</span></div>
     <div class="card"><${PlanList} items=${r.planimetrie || []} labels=${labels}

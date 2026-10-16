@@ -153,6 +153,12 @@ function HsGallery({ r, up, items }) {
     const a = q.foto.indexOf(same[i]), b = q.foto.indexOf(same[j]); const f = q.foto.slice(); [f[a], f[b]] = [f[b], f[a]]; return { ...q, foto: f };
   });
   const del = async p => { if (!confirm('Eliminare la foto?')) return; await removeBlob(p.id); up(q => ({ ...q, foto: q.foto.filter(x => x.id !== p.id) })); };
+  const delPrev = async () => {
+    const L = (r.foto || []).filter(x => x.g === 'prev'); if (!L.length) return;
+    if (!confirm(`Eliminare tutte le ${L.length} foto del sopralluogo precedente? Le foto del sopralluogo attuale restano.`)) return;
+    for (const p of L) await removeBlob(p.id);
+    up(q => ({ ...q, foto: q.foto.filter(x => x.g !== 'prev') })); toast('Foto del sopralluogo precedente eliminate');
+  };
   const pick = e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) hsAddPhotos(fs, target.current, '', up, (r.foto || []).length); };
   const refLab = id => { const it = items && items.find(x => x.id === id); return it ? it.ref : ''; };
   return html`<div>
@@ -165,7 +171,8 @@ function HsGallery({ r, up, items }) {
           <button class="btn" style="flex:1" onClick=${() => { target.current = G.g; inp.current.click(); }}><${Icon} n="paper" s=${18} /> Dalla galleria</button></div>
         ${L.length > 0 && html`<div class="row" style="margin:-4px 0 8px;gap:4px"><span class="lock tb-grow">Nel report:</span>
           <button class="btn link sm" onClick=${() => up(q => ({ ...q, foto: q.foto.map(x => (x.g === 'prev') === (G.g === 'prev') ? { ...x, inc: true } : x) }))}>includi tutte</button>
-          <button class="btn link sm" onClick=${() => up(q => ({ ...q, foto: q.foto.map(x => (x.g === 'prev') === (G.g === 'prev') ? { ...x, inc: false } : x) }))}>escludi tutte</button></div>`}
+          <button class="btn link sm" onClick=${() => up(q => ({ ...q, foto: q.foto.map(x => (x.g === 'prev') === (G.g === 'prev') ? { ...x, inc: false } : x) }))}>escludi tutte</button>
+          ${G.g === 'prev' && html`<button class="btn link sm" style="color:var(--danger)" onClick=${delPrev}>elimina tutte</button>`}</div>`}
         ${!L.length ? html`<div class="card"><div class="empty" style="padding:16px">${G.g === 'prev' ? 'Le foto del report importato arrivano qui da sole.' : 'Nessuna foto scattata in questo sopralluogo.'}</div></div>`
         : html`<div class="hsg">${L.map((p, k) => html`<div class=${'hsg-card' + (num[p.id] ? '' : ' excl')} key=${p.id}>
           <button class="hsg-img" onClick=${() => setView(ord.indexOf(p))}><${HsThumb} id=${p.id} /><span class="hsg-n">${num[p.id] ? 'Foto ' + num[p.id] : 'Esclusa'}</span>${p.ref && html`<span class="hsg-ref mono">${refLab(p.ref)}</span>`}</button>
@@ -266,8 +273,9 @@ async function hsNextYear(r, records, settings) {
   const foto = [];
   for (const p of (x.foto || [])) { const id = await copy(p.id); if (id) foto.push({ ...p, id, g: 'prev', ts: p.ts || '' }); }
   const img = {}; for (const [k, v] of Object.entries(x.img || {})) { const id = await copy(v); if (id) img[k] = id; }
+  const cgFoto = []; for (const o of (x.cgFoto || [])) { const id = await copy(o.id); if (id) cgFoto.push({ ...o, id }); }
   const out = { ...x, id: n.id, codice: n.codice, createdAt: Date.now(), updatedAt: Date.now(), data: today(), tecnico: n.tecnico,
-    visite: hsVisite(r), foto, img, appunti: '', fotoAppunti: [], documenti: [], azioni: (x.azioni || []).map(a => ({ ...a, b: { cod: a.cod, sit: a.sit, risk: a.risk, grav: a.grav, az: a.az } })) };
+    visite: hsVisite(r), foto, img, cgFoto, appunti: '', fotoAppunti: [], documenti: [], azioni: (x.azioni || []).map(a => ({ ...a, b: { cod: a.cod, sit: a.sit, risk: a.risk, grav: a.grav, az: a.az } })) };
   out.meta = { ...x.meta, presenti: '', emissione: '', redatto: n.meta.redatto };
   out.base = hsBaseOf({ ...out, foto });
   return out;
@@ -453,7 +461,11 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
       <div class="card ck-list">${g.items.map(it => html`<${HsCheck} key=${it.id} it=${it} r=${r} up=${up} base=${B['nt.' + it.id]} />`)}</div>
     </div>`)}</div>`;
   }
-  else if (S && S.k === 'descr') body = html`<div class="card"><${HsText} label="Condizioni generali dell'immobile" rows=${10} value=${r.descr} base=${B.descr} set=${v => up({ descr: v })} /></div>`;
+  else if (S && S.k === 'descr') body = html`<div class="card"><${HsText} label="Condizioni generali dell'immobile" rows=${10} value=${r.descr} base=${B.descr} set=${v => up({ descr: v })} /></div>
+    <div class="sec-h"><h3>Foto di inquadramento</h3><span class="hint">Sotto il capitolo 8</span></div>
+    <div class="card"><${PhotoStrip} ids=${(r.cgFoto || []).map(o => o.id)} max=${8} onAdd=${ids => up(q => ({ ...q, cgFoto: [...(q.cgFoto || []), ...ids.map(id => ({ id, w: 16, h: 11 }))] }))}
+      onRemove=${async id => { await removeBlob(id); up(q => ({ ...q, cgFoto: (q.cgFoto || []).filter(o => o.id !== id) })); }} />
+      <p class="lead" style="margin:8px 0 0;font-size:13px">Restano nel report anche nei sopralluoghi successivi.</p></div>`;
   else if (S && S.k === 'azioni') body = html`<div>
     ${(r.azioni || []).map((a, i) => { const set = patch => up(p => ({ ...p, azioni: p.azioni.map((x, j) => j === i ? { ...x, ...patch } : x) })); return html`<div class="card" key=${i}>
       <div class="row"><label class="fld" style="max-width:120px"><span>Codice</span><input class="mono" list="hs-codes" value=${a.cod} onInput=${e => set({ cod: e.target.value })} placeholder="es. 3.2" /></label>
