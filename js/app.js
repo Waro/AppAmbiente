@@ -9,7 +9,7 @@ function recordTitle(r) {
 }
 function recordLabel(r) {
   if (r.type === 'app') return slug(['Appuntamento', r.data, r.titolo].filter(Boolean).join('_')) || r.id;
-  return r.type === 'dda' || r.type === 'mappatura' || r.type === 'ra' || r.type === 'hs' || r.type === 'firme' || r.type === 'aria' ? slug([r.codice, r.cliente, r.sito || placeAddr(r)].filter(Boolean).join('_'))
+  return r.type === 'dda' || r.type === 'mappatura' || r.type === 'ra' || r.type === 'hs' || r.type === 'vs' || r.type === 'firme' || r.type === 'aria' ? slug([r.codice, r.cliente, r.sito || placeAddr(r)].filter(Boolean).join('_'))
     : slug(['Radon', r.commessa, r.cliente, r.citta].filter(Boolean).join('_')) || r.id;
 }
 
@@ -43,6 +43,8 @@ async function buildZip(records, settings, withSettings) {
         const bytes = await PdfGen.radonPdf(await loadTemplate('radon.pdf'), r);
         zip.file(uniq(`${dir}Scheda_radon_${slug(r.commessa || 'campagna')}.pdf`), bytes);
       } catch (e) { console.warn(e); }
+    } else if (r.type === 'vs') {
+      for (const x of vsPhotos(r)) await addBlob(x.id, `${dir}note/${slug(x.name)}.jpg`);
     } else if (r.type === 'firme' || r.type === 'aria' || r.type === 'app') {
       // solo fogli firme / monitoraggio aria: i file si aggiungono sotto
     } else {
@@ -94,7 +96,7 @@ async function buildZip(records, settings, withSettings) {
 // Tutti i PDF, le foto e gli allegati (PDF/immagini) di un record, con nomi leggibili
 async function recordFiles(r, settings) {
   const s = settings || _settings;
-  const pre = (r.type === 'dda' || r.type === 'mappatura' || r.type === 'hs' || r.type === 'ra' || r.type === 'firme' || r.type === 'aria') ? slug([r.codice, r.commessa].filter(Boolean).join('_')) : slug(['Radon', r.commessa || r.cliente].filter(Boolean).join('_'));
+  const pre = (r.type === 'dda' || r.type === 'mappatura' || r.type === 'hs' || r.type === 'vs' || r.type === 'ra' || r.type === 'firme' || r.type === 'aria') ? slug([r.codice, r.commessa].filter(Boolean).join('_')) : slug(['Radon', r.commessa || r.cliente].filter(Boolean).join('_'));
   const out = [];
   const pdf = (bytes, name) => out.push({ blob: new Blob([bytes], { type: 'application/pdf' }), name: `${pre}_${name}.pdf` });
   const add = async (id, name) => {
@@ -114,6 +116,8 @@ async function recordFiles(r, settings) {
     pdf(await PdfGen.radonPdf(await loadTemplate('radon.pdf'), r), 'Scheda_radon');
     for (const [i, p] of r.punti.entries()) for (const [k, f] of p.foto.entries()) await add(f, `R${i + 1}_${k + 1}`);
     for (const d of r.rapporti) await add(d.blobId, d.nome.replace(/\.[^.]+$/, ''));
+  } else if (r.type === 'vs') {
+    for (const x of vsPhotos(r)) await add(x.id, x.name);
   } else if (r.type === 'firme' || r.type === 'aria' || r.type === 'app') {
     // solo fogli firme / monitoraggio aria
   } else {
@@ -245,7 +249,7 @@ async function importConfig(file, current) {
 }
 
 /* ---------------- impostazioni ---------------- */
-const BUS = [['ambiente', 'Ambiente'], ['hs', 'H&S'], ['sicurezza', 'Sicurezza']];
+const BUS = [['ambiente', 'Ambiente'], ['hs', 'HSE'], ['sicurezza', 'Sicurezza']];
 function TemplateRow({ name, t, onChange }) {
   const [has, setHas] = useState(null); const inp = useRef();
   useEffect(() => { DB.get(t.key).then(b => setHas(!!b)); }, []);
@@ -304,7 +308,7 @@ function Settings({ settings, setSettings, onTemplates }) {
     <${OneDriveSettings} settings=${s} set=${set} />
     <${SyncCard} settings=${s} set=${set} />
     <div class="sec-h"><h3>Modelli</h3></div>
-    <div class="card tight"><p class="lead" style="margin:2px 0 6px">I moduli aziendali (PDF per l'Ambiente, Word per l'H&S) non sono nell'app pubblicata: caricali qui dal telefono o da OneDrive. Restano solo su questo dispositivo e finiscono nel file di configurazione e nel backup.</p>
+    <div class="card tight"><p class="lead" style="margin:2px 0 6px">I moduli aziendali (PDF per l'Ambiente, Word per l'HSE) non sono nell'app pubblicata: caricali qui dal telefono o da OneDrive. Restano solo su questo dispositivo e finiscono nel file di configurazione e nel backup.</p>
       ${Object.entries(TEMPLATES).map(([name, t]) => html`<${TemplateRow} key=${name} name=${name} t=${t} onChange=${onTemplates} />`)}</div>
     <div class="sec-h"><h3>Tecnico</h3></div>
     <div class="card"><div class="grid2">
@@ -334,8 +338,8 @@ function Settings({ settings, setSettings, onTemplates }) {
       <${Inp} label="Descrizione analisi FAV" value=${s.favDesc} set=${v => set({ favDesc: v })} />
     </div></div>
 
-    <div class="sec-h"><h3>Sopralluoghi H&S · valori proposti</h3></div>
-    <div class="card"><p class="lead" style="margin:2px 0 10px">Compilano i nuovi report H&S; restano nel tuo file di configurazione, mai nel codice dell'app.</p><div class="grid2">
+    <div class="sec-h"><h3>Sopralluoghi HSE · valori proposti</h3></div>
+    <div class="card"><p class="lead" style="margin:2px 0 10px">Compilano i nuovi report HSE; restano nel tuo file di configurazione, mai nel codice dell'app.</p><div class="grid2">
       <${Inp} label="Committente (Esteso)" value=${s.hsCommEsteso} set=${v => set({ hsCommEsteso: v })} />
       <${Inp} label="Committente (Sintetico)" value=${s.hsCommSint} set=${v => set({ hsCommSint: v })} />
       <${Inp} label="Verificato da" value=${s.hsVerificato} set=${v => set({ hsVerificato: v })} />
@@ -546,11 +550,11 @@ function useWide() {
   }, []);
   return w;
 }
-const LIST_OF = { dda: 'ddaList', mappatura: 'mappaturaList', radon: 'radonList', ra: 'raList', hs: 'hsList', firme: 'firmeList', aria: 'ariaList' };
-const DETAIL_OF = { ddaList: 'dda', mappaturaList: 'mappatura', radonList: 'radon', raList: 'ra', hsList: 'hs', firmeList: 'firme', ariaList: 'aria' };
-const TOP_ROUTES = ['home', 'agenda', 'ddaList', 'mappaturaList', 'raList', 'radonList', 'hsList', 'firmeList', 'ariaList'];
+const LIST_OF = { dda: 'ddaList', mappatura: 'mappaturaList', radon: 'radonList', ra: 'raList', hs: 'hsList', vs: 'vsList', firme: 'firmeList', aria: 'ariaList' };
+const DETAIL_OF = { ddaList: 'dda', mappaturaList: 'mappatura', radonList: 'radon', raList: 'ra', hsList: 'hs', vsList: 'vs', firmeList: 'firme', ariaList: 'aria' };
+const TOP_ROUTES = ['home', 'agenda', 'ddaList', 'mappaturaList', 'raList', 'radonList', 'hsList', 'vsList', 'firmeList', 'ariaList'];
 const ROUTE_TITLE = { home: 'Oggi', ddaList: 'Ambiente · DDA', mappaturaList: 'Mappatura MCA e FAV', raList: 'Sopralluogo RA', radonList: 'Campagne radon', ariaList: 'Monitoraggio aria', aria: 'Monitoraggio aria',
-  hsList: 'Sopralluoghi H&S', hs: 'Sopralluogo H&S', firmeList: 'Fogli firme', firme: 'Fogli firme', agenda: 'Programmazione', settings: 'Impostazioni', backup: 'Backup', notifiche: 'Notifiche', dda: 'DDA', mappatura: 'Mappatura', ra: 'Sopralluogo RA', radon: 'Campagna radon' };
+  hsList: 'Sopralluoghi HSE', hs: 'Sopralluogo HSE', vsList: 'Verbali di sopralluogo', vs: 'Verbale sopralluogo', firmeList: 'Fogli firme', firme: 'Fogli firme', agenda: 'Programmazione', settings: 'Impostazioni', backup: 'Backup', notifiche: 'Notifiche', dda: 'DDA', mappatura: 'Mappatura', ra: 'Sopralluogo RA', radon: 'Campagna radon' };
 
 /* ---------------- menu laterale (tablet in orizzontale e PC) ---------------- */
 const NAV_AREAS = [
@@ -560,7 +564,7 @@ const NAV_AREAS = [
   { v: 'radonList', d: 'radon', ic: 'radon', l: 'Campagne radon' },
   { v: 'ariaList', d: 'aria', ic: 'air', l: 'Monitoraggio aria' },
 ];
-const NAV_HS = [{ v: 'hsList', d: 'hs', ic: 'helmet', l: 'Sopralluoghi H&S' }];
+const NAV_HS = [{ v: 'hsList', d: 'hs', ic: 'helmet', l: 'Sopralluoghi HSE' }, { v: 'vsList', d: 'vs', ic: 'note', l: 'Verbali di sopralluogo' }];
 const NAV_TOOLS = [{ v: 'agenda', ic: 'clock', l: 'Programmazione' }, { v: 'firmeList', d: 'firme', ic: 'sign', l: 'Fogli firme' }, { v: 'backup', ic: 'archive', l: 'Backup' }, { v: 'settings', ic: 'gear', l: 'Impostazioni' }];
 // tab bar del telefono: Oggi + le quattro aree
 const TABS = [{ v: 'home', ic: 'today', l: 'Oggi' }, { v: 'ddaList', ic: 'leaf', l: 'DDA' }, { v: 'mappaturaList', ic: 'pin', l: 'Mappature' },
@@ -589,7 +593,7 @@ function SideNav({ route, go, counts, settings, min, toggle }) {
     ${item({ v: 'home', ic: 'today', l: 'Oggi' }, 0)}
     <div class="sn-sec">Aree di lavoro</div>
     ${NAV_AREAS.map(x => item(x, counts[x.d]))}
-    <div class="sn-sec">H&S</div><div class="sn-div"></div>
+    <div class="sn-sec">HSE</div><div class="sn-div"></div>
     ${NAV_HS.map(x => item(x, counts[x.d]))}
     <div class="sn-sec">Strumenti</div><div class="sn-div"></div>
     ${NAV_TOOLS.map(x => item(x, x.d ? counts[x.d] : 0))}
@@ -599,7 +603,7 @@ function SideNav({ route, go, counts, settings, min, toggle }) {
     <div class="sn-ver">${APP_VERSION}${sync && html`<br /><span class=${'sn-sync ' + syncPhase}>${sync}</span>`}</div>
   </aside>`;
 }
-const TABS_HS = [{ v: 'home', ic: 'today', l: 'Oggi' }, { v: 'hsList', ic: 'helmet', l: 'H&S' }, { v: 'ddaList', ic: 'leaf', l: 'DDA' }, { v: 'raList', ic: 'shield', l: 'RA' }];
+const TABS_HS = [{ v: 'home', ic: 'today', l: 'Oggi' }, { v: 'hsList', ic: 'helmet', l: 'HSE' }, { v: 'vsList', ic: 'note', l: 'Verbali' }, { v: 'ddaList', ic: 'leaf', l: 'DDA' }, { v: 'raList', ic: 'shield', l: 'RA' }];
 function TabBar({ route, tab, bu }) {
   const tabs = bu === 'hs' ? TABS_HS : TABS;
   return html`<nav class="tabbar" aria-label="Sezioni" style=${'grid-template-columns:repeat(' + tabs.length + ',1fr)'}>${tabs.map(t => html`<button class=${route.v === t.v ? 'on' : ''} aria-current=${route.v === t.v ? 'page' : null} onClick=${() => tab(t.v)}>
@@ -687,9 +691,9 @@ function App() {
   useEffect(() => { Sync.busy = route.id || null; }, [route.id]);
   // uscendo da un record nuovo rimasto vuoto, lo scarto
   useEffect(() => {
-    if (route.v === 'dda' || route.v === 'mappatura' || route.v === 'radon' || route.v === 'ra' || route.v === 'hs' || route.v === 'firme' || route.v === 'aria') return;
+    if (route.v === 'dda' || route.v === 'mappatura' || route.v === 'radon' || route.v === 'ra' || route.v === 'hs' || route.v === 'vs' || route.v === 'firme' || route.v === 'aria') return;
     const keep = route.id;
-    const empties = records.filter(r => r._new && r.id !== keep && (r.type === 'aria' ? ariaIsEmpty(r) : r.type === 'dda' ? ddaIsEmpty(r) : r.type === 'mappatura' ? mappaturaIsEmpty(r) : r.type === 'ra' ? raIsEmpty(r) : r.type === 'hs' ? hsIsEmpty(r) : r.type === 'firme' ? firmeIsEmpty(r) : radonIsEmpty(r)));
+    const empties = records.filter(r => r._new && r.id !== keep && (r.type === 'aria' ? ariaIsEmpty(r) : r.type === 'dda' ? ddaIsEmpty(r) : r.type === 'mappatura' ? mappaturaIsEmpty(r) : r.type === 'ra' ? raIsEmpty(r) : r.type === 'hs' ? hsIsEmpty(r) : r.type === 'vs' ? verbaleIsEmpty(r) : r.type === 'firme' ? firmeIsEmpty(r) : radonIsEmpty(r)));
     empties.forEach(r => DB.del(r.id));
     if (empties.length) setRecords(rs => rs.filter(r => !empties.includes(r)));
   }, [route.v, route.id]);
@@ -700,7 +704,7 @@ function App() {
     else go({ v: r.type, id: r.id });
   };
   const create = (type, patch = {}) => {
-    const base = type === 'aria' ? newAria(records, settings) : type === 'dda' ? newDda(records, settings) : type === 'mappatura' ? newMappatura(records, settings) : type === 'ra' ? newRa(records, settings) : type === 'hs' ? newHs(records, settings, patch.formato) : type === 'firme' ? newFirmeRec(records, settings) : newRadon(settings);
+    const base = type === 'aria' ? newAria(records, settings) : type === 'dda' ? newDda(records, settings) : type === 'mappatura' ? newMappatura(records, settings) : type === 'ra' ? newRa(records, settings) : type === 'hs' ? newHs(records, settings, patch.formato) : type === 'vs' ? newVerbale(records, settings) : type === 'firme' ? newFirmeRec(records, settings) : newRadon(settings);
     let r = { ...base, ...patch, _new: true };
     // dalla Programmazione: per il radon data e ora vanno sul primo momento (posa)
     if (type === 'radon' && (patch.data || patch.ora)) { const { data, ora, ...rest } = patch; r = { ...base, ...rest, _new: true, momenti: base.momenti.map((m, i) => i ? m : { ...m, data: data || m.data, ora: ora || '' }) }; }
@@ -716,7 +720,8 @@ function App() {
   const createHs = () => setSheet('hs');
   const createFirme = () => create('firme');
   const createAria = () => create('aria');
-  // un report H&S già pronto (aggiornamento per l'anno successivo): lo salvo e lo apro
+  const createVs = () => create('vs');
+  // un report HSE già pronto (aggiornamento per l'anno successivo): lo salvo e lo apro
   const openNewRec = r => { saveRec(r); openRec(r); toast('Nuovo report creato: ' + r.codice); };
 
   const header = useCallback(() => {}, []); // le schede disegnano da sole la propria intestazione
@@ -763,7 +768,7 @@ function App() {
       ['Nessuna campagna selezionata', 'Toccane una dall\'elenco per aprirla qui.']);
   } else if (route.v === 'hsList') {
     wideCreate = createHs;
-    body = split(html`<${HsList} records=${records} acts=${listActs(createHs, 'Nuovo sopralluogo H&S')} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'hs', id })} create=${createHs} />`,
+    body = split(html`<${HsList} records=${records} acts=${listActs(createHs, 'Nuovo sopralluogo HSE')} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'hs', id })} create=${createHs} />`,
       dRec && html`<${HsForm} ...${formProps(dRec)} onOpenNew=${openNewRec} onSave=${r => saveRec({ ...r, _new: r._new && hsIsEmpty(r) })} />`,
       ['Nessun report selezionato', 'Toccane uno dall\'elenco per aprirlo qui.']);
   } else if (route.v === 'agenda') {
@@ -774,6 +779,13 @@ function App() {
     body = split(html`<${FirmeList} records=${records} acts=${listActs(createFirme, 'Nuovo foglio firme')} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'firme', id })} />`,
       dRec && html`<${FirmeForm} ...${formProps(dRec)} onSave=${r => saveRec({ ...r, _new: r._new && firmeIsEmpty(r) })} />`,
       ['Nessun foglio selezionato', 'Toccane uno dall\'elenco per aprirlo qui.']);
+  } else if (route.v === 'vsList') {
+    wideCreate = createVs;
+    body = split(html`<${VerbaleList} records=${records} acts=${listActs(createVs, 'Nuovo verbale di sopralluogo')} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'vs', id })} />`,
+      dRec && html`<${VerbaleForm} ...${formProps(dRec)} onSave=${r => saveRec({ ...r, _new: r._new && verbaleIsEmpty(r) })} />`,
+      ['Nessun verbale selezionato', 'Toccane uno dall\'elenco per aprirlo qui.']);
+  } else if (route.v === 'vs' && rec) {
+    body = html`<${VerbaleForm} ...${formProps(rec)} embedded=${false} onClose=${null} onSave=${r => saveRec({ ...r, _new: r._new && verbaleIsEmpty(r) })} />`;
   } else if (route.v === 'ariaList') {
     wideCreate = createAria;
     body = split(html`<${AriaList} records=${records} acts=${listActs(createAria, 'Nuovo monitoraggio aria')} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'aria', id })} />`,
@@ -806,7 +818,7 @@ function App() {
   const isTop = TOP_ROUTES.includes(route.v);
   const splitActive = wide && !!DETAIL_OF[route.v];
   const counts = { dda: records.filter(r => r.type === 'dda').length, mappatura: records.filter(r => r.type === 'mappatura').length,
-    ra: records.filter(r => r.type === 'ra').length, hs: records.filter(r => r.type === 'hs').length, firme: records.filter(r => r.type === 'firme').length, aria: records.filter(r => r.type === 'aria').length, radon: records.filter(r => r.type === 'radon' && radonStato(r) !== 'terminata').length };
+    ra: records.filter(r => r.type === 'ra').length, hs: records.filter(r => r.type === 'hs').length, vs: records.filter(r => r.type === 'vs').length, firme: records.filter(r => r.type === 'firme').length, aria: records.filter(r => r.type === 'aria').length, radon: records.filter(r => r.type === 'radon' && radonStato(r) !== 'terminata').length };
   return html`<div class=${'frame' + (wide ? ' wide' : '')}>
     ${wide && html`<${SideNav} route=${route} go=${go} counts=${counts} settings=${settings} min=${navMin} toggle=${toggleNav} />`}
     <div class=${'shell' + (splitActive ? ' split' : '') + (!wide && isTop ? ' has-tabs' : '')}>

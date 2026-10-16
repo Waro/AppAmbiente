@@ -1,4 +1,4 @@
-/* Sopralluoghi H&S — dati fissi: regole di riformulazione, frasi ricorrenti, voci del formato Sintetico.
+/* Sopralluoghi HSE — dati fissi: regole di riformulazione, frasi ricorrenti, voci del formato Sintetico.
    Nessun dato di clienti o persone: i testi dei report stanno nei modelli Word caricati dall'utente. */
 
 const HS_TEC_RULES = [

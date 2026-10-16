@@ -1,4 +1,4 @@
-/* Sopralluoghi H&S — modello dati e motore Word (compilazione dei modelli caricati dall'utente,
+/* Sopralluoghi HSE — modello dati e motore Word (compilazione dei modelli caricati dall'utente,
    lettura dei report dell'anno precedente). Nessun testo aziendale: tutto sta nei modelli .docx. */
 
 /* ---------------- struttura dei due formati ---------------- */
@@ -517,8 +517,8 @@ async function hsCheckTemplate(name, buf) {
   const f = await hsUnzip(buf);
   if (!f['word/document.xml']) throw new Error('il file non è un documento Word .docx');
   const x = hsHeal(dec8(f['word/document.xml']));
-  if (name === 'hs_esteso.docx' && !/@@SCHEDE@@/.test(x)) throw new Error('non è il modello H&S Esteso (manca il segnaposto @@SCHEDE@@)');
-  if (name === 'hs_sintetico.docx' && !/@@NT_0_1@@/.test(x)) throw new Error('non è il modello H&S Sintetico (mancano i segnaposto della checklist)');
+  if (name === 'hs_esteso.docx' && !/@@SCHEDE@@/.test(x)) throw new Error('non è il modello HSE Esteso (manca il segnaposto @@SCHEDE@@)');
+  if (name === 'hs_sintetico.docx' && !/@@NT_0_1@@/.test(x)) throw new Error('non è il modello HSE Sintetico (mancano i segnaposto della checklist)');
 }
 
 /* ================= lettura del report dell'anno precedente =================
@@ -700,7 +700,7 @@ function hsReadEsteso(files, body) {
   if (inq[0]) out.img.mappa = inq[0].blob; if (inq[1]) out.img.aerea = inq[1].blob;
   if (cat[0]) out.img.catasto1 = cat[0].blob; if (cat[1]) out.img.catasto2 = cat[1].blob;
   out.foto = out.foto.filter(f => f.blob).sort((a, b) => a.ord - b.ord);
-  if (!HS_SCHEDE.some(s => hsSchedaFatta(out.schede[s.k]) || out.schede[s.k].natura)) throw new Error('nel documento non sono state riconosciute schede H&S');
+  if (!HS_SCHEDE.some(s => hsSchedaFatta(out.schede[s.k]) || out.schede[s.k].natura)) throw new Error('nel documento non sono state riconosciute schede HSE');
   return out;
 }
 function hsReadSintetico(files, doc, body) {
@@ -822,7 +822,7 @@ async function hsApplyImport(rec, d, onStep) {
   r.base = d.baseMap ? Object.assign(d.baseMap, Object.fromEntries(Object.entries(B).filter(([k]) => k.startsWith('cap.')))) : B;
   return r;
 }
-// backup JSON della vecchia app H&S (entrambi i formati)
+// backup JSON della vecchia app HSE (entrambi i formati)
 async function hsReadOldJson(o) {
   const fromUrl = async u => { try { return dataUriToBlob(u); } catch (e) { return null; } };
   if (o && o.site && o.site.meta && Array.isArray(o.site.an || [])) { // formato sintetico: dati in o.site
@@ -859,5 +859,5 @@ async function hsReadOldJson(o) {
     d.baseMap = B; d.fromJson = true;
     return d;
   }
-  throw new Error('il file JSON non è un backup dell\'app sopralluoghi H&S');
+  throw new Error('il file JSON non è un backup dell\'app sopralluoghi HSE');
 }

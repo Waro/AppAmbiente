@@ -1,4 +1,4 @@
-/* Sopralluoghi H&S (formati Esteso e Sintetico): elenco, scheda a sezioni, galleria foto, strumenti di scrittura. */
+/* Sopralluoghi HSE (formati Esteso e Sintetico): elenco, scheda a sezioni, galleria foto, strumenti di scrittura. */
 
 const HS_FMT = { esteso: 'Esteso', sintetico: 'Sintetico' };
 const HS_VOCI = HS_SINT_ALL.length;
@@ -16,9 +16,9 @@ function HsList({ records, open, create, activeId, acts }) {
   const groups = {};
   list.forEach(r => { const c = r.cliente || 'Senza committente', s = placeLabel(r); ((groups[c] = groups[c] || {})[s] = groups[c][s] || []).push(r); });
   return html`<div class="content">
-    <${LargeTitle} top eye="H&S" title="Sopralluoghi" sub=${`${all.length} ${all.length === 1 ? 'report' : 'report'}`} acts=${acts} />
+    <${LargeTitle} top eye="HSE" title="Sopralluoghi" sub=${`${all.length} ${all.length === 1 ? 'report' : 'report'}`} acts=${acts} />
     <div class="pills">${[['tutti', 'Tutti'], ['esteso', 'Esteso'], ['sintetico', 'Sintetico']].map(([k, l]) => html`<button class=${'pill' + (f === k ? ' on' : '')} onClick=${() => setF(k)}>${l}<span class="n">${all.filter(r => k === 'tutti' || r.formato === k).length}</span></button>`)}</div>
-    ${!list.length && html`<div class="empty"><b>Nessun sopralluogo H&S</b>Tocca + e scegli il formato Esteso o Sintetico.</div>`}
+    ${!list.length && html`<div class="empty"><b>Nessun sopralluogo HSE</b>Tocca + e scegli il formato Esteso o Sintetico.</div>`}
     ${Object.entries(groups).map(([c, sites]) => html`<div key=${c}><div class="grp-client">${c}</div>
       ${Object.entries(sites).map(([s, rs]) => html`<div key=${s}><div class="grp-site">${s}<span class="count">${rs.length}</span></div><div class="list">
         ${rs.map(r => { const cr = hsCriticita(r).filter(x => x.p === 1).length; return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r)} key=${r.id} onClick=${() => open(r.id)}>
@@ -494,7 +494,7 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
       onRemove=${async d => { await removeBlob(d.blobId); up(p => ({ ...p, documenti: p.documenti.filter(x => x.id !== d.id) })); }} /></div>`;
 
   return html`<div class="content form" ref=${root}>
-    <${DetailHead} eye=${'H&S · ' + HS_FMT[r.formato]} title=${S ? S.l : r.codice} sub=${S ? [r.codice, r.sito].filter(Boolean).join(' · ') : [r.commessa, r.cliente, placeAddr(r) || r.sito].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
+    <${DetailHead} eye=${'HSE · ' + HS_FMT[r.formato]} title=${S ? S.l : r.codice} sub=${S ? [r.codice, r.sito].filter(Boolean).join(' · ') : [r.commessa, r.cliente, placeAddr(r) || r.sito].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
     ${S && html`<button class="btn link" style="margin:-8px 0 8px -4px" onClick=${() => setSec(null)}><${Icon} n="back" s=${18} /> Indice delle sezioni</button>`}
     ${S ? body : indice}
     <input ref=${imp} type="file" accept=".docx,.json,application/json,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden onChange=${doImport} />

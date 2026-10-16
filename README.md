@@ -1,6 +1,6 @@
 # Nembo
 
-App web (PWA) per Android: DDA ambientali (Fase 1 e Fase 2), mappature, campagne radon, sopralluoghi RA amianto e sopralluoghi H&S.
+App web (PWA) per Android: DDA ambientali (Fase 1 e Fase 2), mappature, campagne radon, sopralluoghi RA amianto e sopralluoghi HSE.
 I dati restano sul telefono (IndexedDB), senza server, senza login e senza SharePoint.
 
 ## Pubblicazione su GitHub Pages (una volta sola)
@@ -20,7 +20,7 @@ Da installata funziona anche offline e Chrome protegge i dati dalla pulizia auto
 ## Primo avvio su ogni dispositivo
 
 Impostazioni → **Carica configurazione** e scegli il file `.json` ricevuto (da OneDrive, email o Teams).
-Contiene impostazioni (tecnico, laboratorio, offerta, codici analisi, valori proposti H&S), i due modelli PDF e, se caricati, i due modelli Word H&S. Resta solo su quel dispositivo.
+Contiene impostazioni (tecnico, laboratorio, offerta, codici analisi, valori proposti HSE), i due modelli PDF e, se caricati, i due modelli Word HSE. Resta solo su quel dispositivo.
 In alternativa si caricano i modelli e si compilano i campi a mano.
 
 **Preparare la configurazione per un collega:** compila le impostazioni sul tuo dispositivo, tocca **Esporta**,
@@ -49,7 +49,7 @@ Per ogni manufatto: stato di conservazione (classi del DM 06/09/1994 più "Non i
 note e fino a 3 foto. Se il file riporta lo stato del sopralluogo precedente, compare come riferimento.
 Barra di avanzamento e filtro "Da verificare". Le planimetrie usano come etichette i codici dei manufatti, colorati per stato.
 
-## Sopralluogo H&S
+## Sopralluogo HSE
 
 Due formati, scelti in Nuova attività: **Esteso** (schede per sistema con situazione rilevata, attività di miglioramento,
 priorità, natura del rischio, costo, competenza e termine; anagrafica, visite, catasto, inquadramento) e **Sintetico**
@@ -64,7 +64,7 @@ priorità, natura del rischio, costo, competenza e termine; anagrafica, visite, 
 - **Scrittura**: Detta (riconoscimento vocale di Chrome, serve rete), Frasi tipo e personali, Riformula (regole locali).
 - **Foto**: salvate come nel resto dell'app; due gruppi (sopralluogo precedente e attuale), scelta di quelle da includere, didascalie,
   collegamento alla voce della checklist nel Sintetico. Massimo 250 nel report.
-- Con la BU H&S scelta in Impostazioni la tab bar diventa Oggi · H&S · DDA · RA e la home mostra criticità urgenti e report da caricare.
+- Con la BU HSE scelta in Impostazioni la tab bar diventa Oggi · HSE · DDA · RA e la home mostra criticità urgenti e report da caricare.
 
 **Foto del sopralluogo precedente** (v32): non vanno su OneDrive né nella condivisione (sono già nel report dell'anno prima); restano nel backup ZIP e nella sincronizzazione. Nel Rilievo fotografico *elimina tutte* toglie in un colpo tutte le foto del sopralluogo precedente.
 **Foto di inquadramento del capitolo 8** (Sintetico): le immagini sotto «Condizioni generali dell'immobile» vengono lette dal Word importato, rimesse nel nuovo Word con le stesse dimensioni e copiate nel report dell'anno successivo. Si gestiscono nella sezione 8.
@@ -103,6 +103,14 @@ nella scheda di un'RA senza manufatti compare il riquadro "Riprendi dall'anno pr
 - Striscia della settimana con frecce e scorrimento col dito; vista giorno con frecce ai lati e scorrimento col dito per passare al giorno prima o dopo.
 - Il **+** apre *Nuovo*: **Appuntamento** (titolo, data, ora, durata, stato, luogo, note: record `type: 'app'`, senza cartelle né documenti) oppure **Attività** da programmare (creata con data, ora e stato, ma non aperta). Toccando una fascia vuota si sceglie tra le stesse due opzioni.
 - *Senza ora* e *Prossime senza ora* stanno in una colonna a destra su tablet e PC (sotto la griglia sul telefono).
+
+## Verbale sopralluogo (v34, BU HSE)
+
+Nuova attività HSE: Nuova attività → *Verbale sopralluogo* (codice `VS-AAAA-NNN`). Dati del sopralluogo e un elenco di **note**, ognuna con titolo, testo (anche dettato), foto e tag; le note si riordinano e si filtrano per tag. La fotocamera nella barra azioni apre una nota nuova con la foto. Fogli firme, appunti, ZIP e OneDrive come le altre attività (foto in `note/`).
+
+**Tag**: ogni nota del verbale e gli *Appunti* di tutte le attività hanno i tag. Toccando *+ Tag* Nembo propone i tag già usati (i più frequenti per primi); se ne scrivi uno nuovo, *Crea «…»*. I tag stanno nelle attività, quindi si sincronizzano con loro.
+
+**H&S → HSE**: in tutta l'app la business unit si chiama HSE.
 
 ## Fogli firme
 
@@ -195,7 +203,7 @@ cartella nel salvataggio (resta il download semplice).
 - **Due temi**: *Essenziale* (grigio freddo, predefinito) e *Originale* (rosa-grigio e petrolio). Si sceglie in
   Impostazioni → Aspetto e avvio; la scelta resta solo su quel dispositivo.
 - **Font IBM Plex** inclusi in `fonts/` (woff2, licenza OFL in `fonts/OFL.txt`): funzionano anche offline.
-- **Telefono e tablet in verticale**: tab bar flottante in basso, in stile segmented control (Oggi, DDA, Mappature, RA, Radon; con BU H&S: Oggi, H&S, DDA, RA); nelle schede la barra
+- **Telefono e tablet in verticale**: tab bar flottante in basso, in stile segmented control (Oggi, DDA, Mappature, RA, Radon; con BU HSE: Oggi, HSE, DDA, RA); nelle schede la barra
   azioni in basso con l'azione principale. **Tablet in orizzontale e PC**: menu laterale comprimibile + elenco e scheda.
 - **Oggi**: prossimo sopralluogo, anelli della giornata, andamento dei caricamenti, ritiri radon e scadenze RA
   (calcolate sulla fine dell'anno di incarico indicata nel sopralluogo RA).
@@ -229,7 +237,7 @@ Al secondo avvio dopo l'aggiornamento il telefono usa la nuova versione. I dati 
 | `js/plan.js` | planimetrie: visualizzatore, disegno, etichette, PDF annotato |
 | `js/office.js` | scheda campioni Excel e riepilogo Word |
 | `js/ra.js` | sopralluogo RA: manufatti, stato di conservazione, anno di incarico |
-| `js/hs-data.js`, `js/hs-word.js`, `js/hs.js` | sopralluogo H&S: dati fissi, motore Word (modelli .docx con JSZip) e import, interfaccia |
+| `js/hs-data.js`, `js/hs-word.js`, `js/hs.js` | sopralluogo HSE: dati fissi, motore Word (modelli .docx con JSZip) e import, interfaccia |
 | `js/agenda.js` | programmazione: ora e durata, vista a fasce orarie, JSON del piano, file .ics |
 | `js/aria.js` | monitoraggio aria: punti, calcoli, sezione per attività e RA, schede Excel/PDF |
 | `js/firme.js` | fogli firme: modelli, sezione nelle attività, attività a sé, passa il telefono, impostazioni |

@@ -11,6 +11,7 @@ function recDone(r) {
   if (r.type === 'ra') return r.manufatti.length > 0 && r.manufatti.every(m => m.stato);
   if (r.type === 'radon') return (r.momenti || []).some(m => m.data === today() && m.confermato);
   if (r.type === 'aria') { const R = ariaRiepilogo(r); return R.tot > 0 && R.chiusi === R.tot; }
+  if (r.type === 'vs') return (r.note || []).length > 0;
   if (r.type === 'hs') return r.formato === 'sintetico' ? Object.keys(r.risp || {}).length > 0 : HS_SCHEDE.some(s => hsSchedaFatta(r.schede[s.k] || {}));
   return false;
 }
@@ -22,6 +23,7 @@ function photoItems(r) {
   else if (r.type === 'ra') items = r.manufatti;
   else if (r.type === 'radon') items = r.punti;
   else if (r.type === 'aria') items = ariaOf(r).punti.filter(p => p.stato !== 'non');
+  else if (r.type === 'vs') items = r.note || [];
   else if (r.type === 'hs') return { tot: 1, ok: (r.foto || []).some(p => p.g !== 'prev') ? 1 : 0 };
   return { tot: items.length, ok: items.filter(x => (x.foto || []).length > 0).length };
 }
@@ -36,7 +38,8 @@ function recLine(r) {
   }
   if (r.type === 'mappatura') { const n = allCampMap(r).length; return `Mappatura MCA e FAV · ${n} ${n === 1 ? 'campione' : 'campioni'}`; }
   if (r.type === 'ra') return `Verifica RA · ${r.manufatti.filter(m => m.stato).length}/${r.manufatti.length} manufatti`;
-  if (r.type === 'hs') return `H&S ${HS_FMT[r.formato]} · ${hsProgress(r)}`;
+  if (r.type === 'hs') return `HSE ${HS_FMT[r.formato]} · ${hsProgress(r)}`;
+  if (r.type === 'vs') { const n = (r.note || []).length; return `Verbale sopralluogo · ${n} ${n === 1 ? 'nota' : 'note'}`; }
   if (r.type === 'aria') { const R = ariaRiepilogo(r); return `Monitoraggio aria · ${R.chiusi}/${R.tot} punti`; }
   if (r.type !== 'radon') return r.codice || '';
   const s = radonStato(r);
@@ -97,7 +100,7 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
   const [per, setPer] = useState('w');
   useEffect(() => setBu(settings.buDefault || 'ambiente'), [settings.buDefault]);
   // ogni business unit vede le proprie attività
-  const records = allRecords.filter(r => bu === 'hs' ? r.type === 'hs' : bu === 'ambiente' ? r.type !== 'hs' && r.type !== 'firme' && r.type !== 'app' : false);
+  const records = allRecords.filter(r => bu === 'hs' ? r.type === 'hs' || r.type === 'vs' : bu === 'ambiente' ? r.type !== 'hs' && r.type !== 'firme' && r.type !== 'app' : false);
   const t = today();
   const eye = new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -164,7 +167,7 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
     <div class="seg" style="margin-bottom:var(--gap)">${BUS.map(([k, l]) => html`<button class=${bu === k ? 'on' : ''} onClick=${() => setBu(k)}>${l}</button>`)}</div>
     <${PrimiPassi} settings=${settings} tplOk=${tplOk} goSettings=${goSettings} installEvt=${installEvt} onInstall=${onInstall} />
 
-    ${bu === 'sicurezza' ? html`<div class="card"><div class="empty" style="padding:28px 10px"><b>Nessuna attività Sicurezza in Nembo</b>Per ora l'app gestisce le attività Ambiente e H&S. Puoi scegliere la business unit predefinita in Impostazioni.</div></div>` : html`
+    ${bu === 'sicurezza' ? html`<div class="card"><div class="empty" style="padding:28px 10px"><b>Nessuna attività Sicurezza in Nembo</b>Per ora l'app gestisce le attività Ambiente e HSE. Puoi scegliere la business unit predefinita in Impostazioni.</div></div>` : html`
     <div class="card-navy">
       ${nx ? html`
         <div class="row" style="justify-content:space-between"><span class="nv-eye">Prossimo sopralluogo</span>
@@ -215,7 +218,7 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
         <span class="wg-ic" style="background:var(--blue-soft);color:var(--blue)"><${Icon} n="helmet" s=${20} /></span>
         <div class="wg-num">${hsDaCaricare}</div>
         <div class="wg-lbl">report da caricare su OneDrive</div>
-        <div class="wg-sub">${records.length} report H&S in archivio</div>
+        <div class="wg-sub">${records.length} report HSE in archivio</div>
       </button>
     </div>` : html`<div class="widgets">
       <button class="card" onClick=${() => goList('radonList')}>
@@ -237,7 +240,7 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
       </button>
     </div>`}`}
 
-    ${bu === 'hs' && hsTplOk === false && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goSettings}>Per generare i report carica i modelli Word H&S (Esteso e Sintetico) in Impostazioni → Modelli.</button>`}
+    ${bu === 'hs' && hsTplOk === false && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goSettings}>Per generare i report carica i modelli Word HSE (Esteso e Sintetico) in Impostazioni → Modelli.</button>`}
     ${bu === 'ambiente' && onbHidden() && (!tplOk || !settings.tecnicoCognome) && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goSettings}>Prima di iniziare: in Impostazioni inserisci i tuoi dati e carica i due modelli PDF.</button>`}
     ${bu === 'ambiente' && allRecords.some(r => r.type === 'aria') && html`<div class="card" style="margin-top:12px;padding:0"><button class="prow" style="width:100%;border:0;background:none;text-align:left" onClick=${() => goList('ariaList')}>
       <span class="sq"><${Icon} n="air" s=${20} /></span><span class="t"><b>Monitoraggio aria</b><small>${allRecords.filter(r => r.type === 'aria').length} attività</small></span><${Icon} n="right" s=${18} /></button></div>`}
@@ -256,14 +259,15 @@ const NEW_OPTS = [
   { k: 'ra', t: 'ra', patch: {}, l: 'RA · verifica annuale', s: 'Manufatti da mappatura o PMC', ic: 'shield', bg: 'color-mix(in srgb, var(--mca) 12%, white)', fg: 'var(--mca)' },
   { k: 'radon', t: 'radon', patch: {}, l: 'Campagna radon', s: 'Posa e ritiro dosimetri', ic: 'radon', bg: 'var(--ok-soft)', fg: 'var(--ok)' },
   { k: 'aria', t: 'aria', patch: {}, l: 'Monitoraggio aria', s: 'Fibre aerodisperse: prelievi, scheda ed esiti', ic: 'air', bg: 'var(--blue-soft)', fg: '#0a6ebd' },
-  { k: 'hsE', t: 'hs', bu: 'hs', patch: { formato: 'esteso' }, l: 'H&S · Esteso', s: '13 schede, rischio e priorità, documentazione fotografica', ic: 'helmet', bg: 'var(--blue-soft)', fg: 'var(--blue)' },
+  { k: 'hsE', t: 'hs', bu: 'hs', patch: { formato: 'esteso' }, l: 'HSE · Esteso', s: '13 schede, rischio e priorità, documentazione fotografica', ic: 'helmet', bg: 'var(--blue-soft)', fg: 'var(--blue)' },
   { k: 'firme', t: 'firme', bu: 'altro', patch: {}, l: 'Foglio firme', s: 'Presenze, informative, consegne fuori da un’attività', ic: 'sign', bg: 'var(--fill-soft)', fg: 'var(--blue)' },
-  { k: 'hsS', t: 'hs', bu: 'hs', patch: { formato: 'sintetico' }, l: 'H&S · Sintetico', s: 'Checklist Sì/No/N.A., azioni consigliate, rilievo fotografico', ic: 'helmet', bg: 'var(--fill-soft)', fg: 'var(--navy)' },
+  { k: 'hsS', t: 'hs', bu: 'hs', patch: { formato: 'sintetico' }, l: 'HSE · Sintetico', s: 'Checklist Sì/No/N.A., azioni consigliate, rilievo fotografico', ic: 'helmet', bg: 'var(--fill-soft)', fg: 'var(--navy)' },
+  { k: 'vs', t: 'vs', bu: 'hs', patch: {}, l: 'Verbale sopralluogo', s: 'Note con titolo, testo, foto e tag', ic: 'note', bg: 'var(--ok-soft)', fg: 'var(--ok)' },
 ];
 function NewActivity({ records, onClose, onCreate, bu, preset }) {
   useBackClose(onClose);
   const [k, setK] = useState(bu === 'hs' ? 'hsE' : 'dda1');
-  const gruppi = [['Ambiente', NEW_OPTS.filter(o => !o.bu)], ['H&S', NEW_OPTS.filter(o => o.bu === 'hs')]];
+  const gruppi = [['Ambiente', NEW_OPTS.filter(o => !o.bu)], ['HSE', NEW_OPTS.filter(o => o.bu === 'hs')]];
   if (bu === 'hs') gruppi.reverse();
   gruppi.push(['Altro', NEW_OPTS.filter(o => o.bu === 'altro')]);
   const [commessa, setCommessa] = useState('');

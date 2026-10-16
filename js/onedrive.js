@@ -235,6 +235,8 @@ async function odRecordItems(r, settings) {
     r.punti.forEach((p, i) => p.foto.forEach((f, k) => photo(f, 'foto', `R${i + 1}_${k + 1}`)));
     r.rapporti.forEach(d => photo(d.blobId, 'rapporti', d.nome));
     items.push({ kind: 'pdf', segs: ['Scheda_radon_' + (r.commessa || 'campagna')], make: async () => PdfGen.radonPdf(await loadTemplate('radon.pdf'), r) });
+  } else if (r.type === 'vs') {
+    vsPhotos(r).forEach(x => photo(x.id, 'note', x.name));
   } else if (r.type === 'firme' || r.type === 'aria' || r.type === 'app') {
     // solo fogli firme / monitoraggio aria: aggiunti sotto
   } else {

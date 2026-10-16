@@ -1,10 +1,10 @@
 /* Programmazione: ora e durata delle attività, vista a fasce orarie (stile calendario), JSON e file .ics.
    Ogni attività ha data + ora di inizio + durata (minuti); per il radon valgono i tre momenti (posa e ritiri). */
 
-const DURATE_BASE = { dda: 180, mappatura: 180, ra: 120, radon: 60, aria: 300, hs: 180, firme: 60 };
+const DURATE_BASE = { dda: 180, mappatura: 180, ra: 120, radon: 60, aria: 300, hs: 180, vs: 120, firme: 60 };
 const TIPI_AG = {
   dda: { l: 'DDA', c: 'var(--warn)' }, mappatura: { l: 'Mappatura', c: 'var(--mca)' }, ra: { l: 'RA', c: '#7a3db8' },
-  radon: { l: 'Radon', c: 'var(--ok)' }, aria: { l: 'Aria', c: '#0a6ebd' }, hs: { l: 'H&S', c: 'var(--blue)' }, firme: { l: 'Firme', c: 'var(--navy)' },
+  radon: { l: 'Radon', c: 'var(--ok)' }, aria: { l: 'Aria', c: '#0a6ebd' }, hs: { l: 'HSE', c: 'var(--blue)' }, vs: { l: 'Verbale', c: '#2f7d5b' }, firme: { l: 'Firme', c: 'var(--navy)' },
   app: { l: 'Appuntamento', c: '#64748b' },
 };
 // appuntamento: impegno in agenda che non è un sopralluogo (riunione, consegna, telefonata…)
@@ -88,15 +88,15 @@ async function shareIcs(items, name) {
 
 /* ---------------- JSON: PMC/mappatura in una fascia, oppure piano di più sopralluoghi ---------------- */
 const PIANO_TIPI = { ra: ['ra', {}], dda1: ['dda', { fase: 1 }], dda2: ['dda', { fase: 2 }], mappatura: ['mappatura', {}], radon: ['radon', {}],
-  hsE: ['hs', { formato: 'esteso' }], hsS: ['hs', { formato: 'sintetico' }], firme: ['firme', {}], aria: ['aria', {}] };
+  hsE: ['hs', { formato: 'esteso' }], hsS: ['hs', { formato: 'sintetico' }], vs: ['vs', {}], firme: ['firme', {}], aria: ['aria', {}] };
 const PIANO_MODELLO = { type: 'nembo-programmazione', attivita: [
   { tipo: 'ra', data: '2026-11-03', ora: '09:00', durata: 120, stato: 'confermato', commessa: '000/26', cliente: 'Cliente', citta: 'Città', indirizzo: 'Via e numero civico', sito: '', note: 'senza manufatti: Nembo li riprende dall\'RA precedente dello stesso immobile (codice sito, oppure indirizzo + città)' },
   { tipo: 'ra', data: '2026-11-04', ora: '09:00', durata: 120, commessa: '000/26', cliente: 'Cliente', citta: 'Città', indirizzo: 'Via e numero civico', sito: '', incaricoDal: '2026-04-01', incaricoAl: '2027-03-31', note: 'sito nuovo: manufatti come nel modello RA',
     manufatti: [{ codice: 'M1', ubicazione: 'Copertura', descrizione: 'Lastre in cemento-amianto', tipologia: 'compatto', quantita: '120 m²', statoPrecedente: '', notePrecedenti: '' }] },
-  { tipo: 'dda1', data: '2026-11-03', ora: '14:00', durata: 180, commessa: '', cliente: '', citta: '', indirizzo: '', sito: '', note: 'tipi: ra, dda1, dda2, mappatura, radon (posa), aria, hsE, hsS, firme; stato (facoltativo): confermato, in_attesa, da_programmare, annullato' }] };
+  { tipo: 'dda1', data: '2026-11-03', ora: '14:00', durata: 180, commessa: '', cliente: '', citta: '', indirizzo: '', sito: '', note: 'tipi: ra, dda1, dda2, mappatura, radon (posa), aria, hsE, hsS, vs, firme; stato (facoltativo): confermato, in_attesa, da_programmare, annullato' }] };
 function newOfType(tipo, all, s, extra = {}) {
   const [t, p] = PIANO_TIPI[tipo] || [tipo, {}];
-  const base = t === 'dda' ? newDda(all, s) : t === 'mappatura' ? newMappatura(all, s) : t === 'ra' ? newRa(all, s) : t === 'hs' ? newHs(all, s, p.formato) : t === 'firme' ? newFirmeRec(all, s) : t === 'aria' ? newAria(all, s) : newRadon(s);
+  const base = t === 'dda' ? newDda(all, s) : t === 'mappatura' ? newMappatura(all, s) : t === 'ra' ? newRa(all, s) : t === 'hs' ? newHs(all, s, p.formato) : t === 'firme' ? newFirmeRec(all, s) : t === 'aria' ? newAria(all, s) : t === 'vs' ? newVerbale(all, s) : newRadon(s);
   const r = { ...base, ...p };
   const { data, ora, durata, stato, ...rest } = extra;
   Object.assign(r, rest);
@@ -386,7 +386,7 @@ function AgSlotSheet({ slot, senza, onPut, onAdd, onJson, onModello, onClose }) 
 
 // "Nuovo" della Programmazione: un appuntamento oppure un'attività programmata (creata ma non aperta)
 const AG_TIPI_NUOVI = [['ra', 'Sopralluogo RA'], ['dda1', 'DDA Fase 1'], ['dda2', 'DDA Fase 2'], ['mappatura', 'Mappatura MCA e FAV'], ['radon', 'Campagna radon (posa)'],
-  ['aria', 'Monitoraggio aria'], ['hsE', 'H&S Esteso'], ['hsS', 'H&S Sintetico'], ['firme', 'Foglio firme']];
+  ['aria', 'Monitoraggio aria'], ['hsE', 'HSE Esteso'], ['hsS', 'HSE Sintetico'], ['vs', 'Verbale sopralluogo'], ['firme', 'Foglio firme']];
 function AgAddSheet({ start, records, settings, onSave, onDelete, onJson, onClose }) {
   useBackClose(onClose);
   const ed = start.rec || null;

@@ -2,7 +2,7 @@
 // Stessa stringa di VERSION in sw.js: aumentala insieme a quella ad ogni aggiornamento.
 // Essendo dentro un file JS servito dalla cache, se l'aggiornamento automatico fallisce
 // questa scritta mostra ancora la versione vecchia — è il modo per accorgersene.
-const APP_VERSION = 'nembo-v33';
+const APP_VERSION = 'nembo-v34';
 
 /* ---------------- tema grafico: "essenziale" (predefinito) o "originale" ----------------
    Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno. */
@@ -209,7 +209,7 @@ function Toast() {
 /* ---------------- icone ---------------- */
 const P = {
   leaf: 'M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10ZM2 21c0-3 1.85-5.36 5.08-6',
-  radon: 'M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0M7.5 4.2a9 9 0 0 1 9 0l-2.5 4.3a4 4 0 0 0-4 0ZM20.6 16.3a9 9 0 0 1-4.5 7.8l-2.5-4.3a4 4 0 0 0 2-3.5ZM3.4 16.3h5a4 4 0 0 0 2 3.5l-2.5 4.3a9 9 0 0 1-4.5-7.8',
+  radon: 'M12 12.65m-1.3 0a1.3 1.3 0 1 0 2.6 0a1.3 1.3 0 1 0-2.6 0M7.2 4.34A9.6 9.6 0 0 1 16.8 4.34L14.15 8.93A4.3 4.3 0 0 0 9.85 8.93ZM21.6 12.65A9.6 9.6 0 0 1 16.8 20.96L14.15 16.37A4.3 4.3 0 0 0 16.3 12.65ZM7.2 20.96A9.6 9.6 0 0 1 2.4 12.65L7.7 12.65A4.3 4.3 0 0 0 9.85 16.37Z',
   plus: 'M12 5v14M5 12h14', back: 'M15 18l-6-6 6-6', chev: 'M6 9l6 6 6-6', right: 'M9 18l6-6-6-6',
   camera: 'M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3zM12 13m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0',
   air: 'M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h8',
@@ -363,7 +363,7 @@ const DEFAULT_SETTINGS = {
   livelloRif: 300, buDefault: 'ambiente',
   ariaCampionatori: [], ariaTaratura: '', ariaProfili: {}, // monitoraggio aria
   supportEmail: '', // destinatario di "Segnala un problema" (solo nel file di configurazione)
-  // valori proposti nei nuovi sopralluoghi H&S (restano nel file di configurazione, mai nel codice)
+  // valori proposti nei nuovi sopralluoghi HSE (restano nel file di configurazione, mai nel codice)
   firmeEnte: '', firmeModelli: [], odSync: true, durate: {},
   hsCommEsteso: '', hsCommSint: '', hsVerificato: '', hsApprovato: '', hsFirma: '', hsDeveloper: '', hsPropertyManager: '', hsProcuratore: '', hsTecnici: '',
   msClientId: '', msTenantId: '',
@@ -373,8 +373,8 @@ const DEFAULT_SETTINGS = {
 const TEMPLATES = {
   'radon.pdf': { key: 'tpl_radon', label: 'Scheda raccolta dati radon (PDF compilabile)', bu: 'ambiente' },
   'scheda_campioni.pdf': { key: 'tpl_scheda', label: 'Scheda di prelievo campioni massivi', bu: 'ambiente' },
-  'hs_esteso.docx': { key: 'tpl_hs_esteso', label: 'Modello Word H&S Esteso', bu: 'hs', docx: true },
-  'hs_sintetico.docx': { key: 'tpl_hs_sintetico', label: 'Modello Word H&S Sintetico', bu: 'hs', docx: true },
+  'hs_esteso.docx': { key: 'tpl_hs_esteso', label: 'Modello Word HSE Esteso', bu: 'hs', docx: true },
+  'hs_sintetico.docx': { key: 'tpl_hs_sintetico', label: 'Modello Word HSE Sintetico', bu: 'hs', docx: true },
 };
 async function loadTemplate(name) {
   const t = TEMPLATES[name];
@@ -523,9 +523,40 @@ async function copyIssue() {
 /* ---------------- foto negli appunti ---------------- */
 function NotePhotos({ rec, field = 'fotoAppunti', up }) {
   const ids = rec[field] || [];
+  const tk = field === 'fotoAppunti' ? 'tagAppunti' : 'tag' + field.slice(4); // tag degli appunti
   return html`<div style="margin-top:10px"><${PhotoStrip} ids=${ids} max=${10}
     onAdd=${add => up(p => ({ ...p, [field]: [...(p[field] || []), ...add] }))}
-    onRemove=${async id => { await removeBlob(id); up(p => ({ ...p, [field]: (p[field] || []).filter(f => f !== id) })); }} /></div>`;
+    onRemove=${async id => { await removeBlob(id); up(p => ({ ...p, [field]: (p[field] || []).filter(f => f !== id) })); }} />
+    <${TagPicker} tags=${rec[tk] || []} set=${t => up({ [tk]: t })} /></div>`;
+}
+
+/* ---------------- tag delle note ----------------
+   Un tag è un testo breve. Quelli già usati in qualunque attività (campi "tag…") vengono proposti. */
+function collectTags(o, cnt = {}) {
+  if (Array.isArray(o)) o.forEach(x => collectTags(x, cnt));
+  else if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) {
+    if (/^tag/.test(k) && Array.isArray(v)) v.forEach(t => { if (typeof t === 'string' && t.trim()) { const key = t.trim(); cnt[key] = (cnt[key] || 0) + 1; } });
+    else if (v && typeof v === 'object') collectTags(v, cnt);
+  }
+  return cnt;
+}
+async function knownTags() { const cnt = collectTags(await DB.all()); return Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a] || a.localeCompare(b, 'it')); }
+function TagPicker({ tags = [], set, label = 'Tag' }) {
+  const [open, setOpen] = useState(false); const [q, setQ] = useState(''); const [known, setKnown] = useState([]);
+  useEffect(() => { if (open) knownTags().then(setKnown); }, [open]);
+  const has = t => tags.some(x => x.toLowerCase() === t.toLowerCase());
+  const addT = t => { t = (t || '').trim().replace(/^#/, ''); if (!t || has(t)) { setQ(''); return; } set([...tags, t]); setQ(''); };
+  const sugg = known.filter(t => !has(t) && (!q || t.toLowerCase().includes(q.trim().toLowerCase()))).slice(0, 12);
+  const nuovo = q.trim() && !known.some(t => t.toLowerCase() === q.trim().toLowerCase()) && !has(q.trim());
+  return html`<div class="tags">
+    <div class="tags-row">${tags.map(t => html`<span class="tag" key=${t}>#${t}<button aria-label=${'Togli il tag ' + t} onClick=${() => set(tags.filter(x => x !== t))}>×</button></span>`)}
+      <button class="tag add" onClick=${() => setOpen(o => !o)}>${open ? 'Chiudi' : '+ ' + label}</button></div>
+    ${open && html`<div class="tags-pick">
+      <input class="inp" value=${q} placeholder="Scrivi un tag o scegline uno" onInput=${e => setQ(e.target.value)} onKeyDown=${e => { if (e.key === 'Enter') { e.preventDefault(); addT(q); } }} />
+      <div class="tags-row">${nuovo && html`<button class="tag new" onClick=${() => addT(q)}>Crea “${q.trim()}”</button>`}
+        ${sugg.map(t => html`<button class="tag sugg" key=${t} onClick=${() => addT(t)}>#${t}</button>`)}
+        ${!sugg.length && !nuovo && html`<span class="lock">${known.length ? 'Nessun altro tag' : 'Ancora nessun tag: scrivine uno'}</span>`}</div></div>`}
+  </div>`;
 }
 
 /* ---------------- componenti dello stile "Essenziale" ---------------- */
