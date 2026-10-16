@@ -50,12 +50,15 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
   const [r, up, saved] = useAutosave(initial, onSave);
   const [busy, setBusy] = useState(null);
   const [openS, setOpenS] = useState({});
+  const firmeOn = (initial.fogli || []).length > 0;
+  const [T, setT] = useSchede('mappatura', firmeOn ? ['anag', 'camp', 'firme'] : ['anag', 'camp'], initial._new, { 's-': 'camp', 'plan-': 'camp' });
 
   const clienti = [...new Set(records.filter(x => x.cliente).map(x => x.cliente))];
   const siti = [...new Set(records.filter(x => x.sito && (!r.cliente || x.cliente === r.cliente)).map(x => x.sito))];
 
   const tab = r.tab === 'fav' ? 'fav' : 'mca';
   const setTab = k => up({ tab: k });
+  useEffect(() => { const h = e => { const c = allCampMap(r).find(x => 's-' + x.id === e.detail); if (c && c.k !== tab) setTab(c.k); }; addEventListener('nembo-goto', h); return () => removeEventListener('nembo-goto', h); }, [r]);
   const mat = MAP_MATS.find(m => m.k === tab);
   const camp = r.campioni[tab] || [];
 
@@ -113,7 +116,8 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
 
   return html`<div class="content form">
     <${DetailHead} eye="Mappatura MCA e FAV" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
-    <div class="card"><div class="grid2">
+    <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'camp', l: 'Campioni', n: allCampMap(r).length }, firmeOn && { k: 'firme', l: 'Firme', n: (r.fogli || []).length }].filter(Boolean)} />
+    ${T === 'anag' && html`<div class="card"><div class="grid2">
       <${Inp} cls="full" label="Commessa - progetto" value=${r.commessa} set=${v => up({ commessa: v })} placeholder="es. 000/26" />
       <${Inp} label="Cliente" req list="dl-cli-map" value=${r.cliente} set=${v => up({ cliente: v })} />
       <${Inp} label="Città" value=${r.citta} set=${v => up({ citta: v })} />
@@ -125,6 +129,13 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
     </div>
     <datalist id="dl-cli-map">${clienti.map(c => html`<option value=${c} />`)}</datalist>
     <datalist id="dl-siti-map">${siti.map(c => html`<option value=${c} />`)}</datalist></div>
+    <div class="sec-h"><h3>Archivio</h3></div>
+    <div class="stack">
+      ${allCampMap(r).length > 0 && html`<button class="btn outline block" disabled=${busy === 'docx'} onClick=${riepilogo}>${busy === 'docx' ? html`<div class="spin" />` : html`<${Icon} n="file" s=${18} />`} Riepilogo campioni (Word)</button>`}
+      <button class="btn block" onClick=${() => exportRecords([r], settings)}><${Icon} n="archive" s=${18} /> Salva tutto in un file ZIP</button>
+      <button class="btn danger block" onClick=${() => onDelete(r)}><${Icon} n="trash" s=${18} /> Elimina mappatura</button>
+    </div>`}
+    ${T === 'camp' && html`
 
     <div class="sec-h"><h3>Campioni</h3><span class="hint">${r.congelati[tab] ? 'Codici bloccati dalla scheda' : `Codici automatici ${mat.auto}1, ${mat.auto}2…`}</span></div>
     <${CampSummary} r=${r} mats=${MAP_MATS} />
@@ -150,7 +161,6 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
     <button class="btn dashed" style="margin:10px 0 12px" onClick=${addCamp}>+ Aggiungi campione ${nextCode(tab)}</button>
 
     ${planSection}
-    <${FogliFirme} r=${r} up=${up} settings=${settings} />
 
     <button class="btn outline block" style="margin-top:4px" disabled=${!camp.length || busy} onClick=${() => scheda(tab)}>
       ${busy === tab ? html`<div class="spin" />` : html`<${Icon} n="file" s=${18} />`}
@@ -165,17 +175,12 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
     <div class="card"><${Area} rows=${4} value=${r.appunti} set=${v => up({ appunti: v })} placeholder="Note generali del censimento" />
       <${NotePhotos} rec=${r} up=${up} /></div>
 
-    <div class="sec-h"><h3>Archivio</h3></div>
-    <div class="stack">
-      ${allCampMap(r).length > 0 && html`<button class="btn outline block" disabled=${busy === 'docx'} onClick=${riepilogo}>${busy === 'docx' ? html`<div class="spin" />` : html`<${Icon} n="file" s=${18} />`} Riepilogo campioni (Word)</button>`}
-      ${OD.account ? html`<button class="btn outline block" onClick=${() => odSync([r], settings)}><${Icon} n="share" s=${18} /> Carica su OneDrive</button>`
-        : html`<button class="btn outline block" onClick=${() => sendToOneDrive(r, settings)}><${Icon} n="share" s=${18} /> Invia PDF e foto a OneDrive</button>`}
-      <button class="btn block" onClick=${() => exportRecords([r], settings)}><${Icon} n="archive" s=${18} /> Salva tutto in un file ZIP</button>
-      <button class="btn danger block" onClick=${() => onDelete(r)}><${Icon} n="trash" s=${18} /> Elimina mappatura</button>
-    </div>
-    <${ActionBar}>
+    `}
+    ${T === 'firme' && html`<${FogliFirme} r=${r} up=${up} settings=${settings} />`}
+    ${T !== 'firme' && html`<${ActionBar}>
+      ${T === 'anag' ? html`<${OdBtn} r=${r} settings=${settings} />` : html`
       <button class="btn-icon lg" aria-label="Planimetrie" title="Planimetrie" onClick=${() => scrollToId('plan-' + r.id)}><${Icon} n="map" s=${22} /></button>
-      <button class="btn pri" onClick=${addCamp}><${Icon} n="plus" s=${20} w=${2.4} /> Nuovo campione ${nextCode(tab)}</button>
-    <//>
+      <button class="btn pri" onClick=${addCamp}><${Icon} n="plus" s=${20} w=${2.4} /> Nuovo campione ${nextCode(tab)}</button>`}
+    <//>`}
   </div>`;
 }

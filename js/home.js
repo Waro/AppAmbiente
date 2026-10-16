@@ -163,7 +163,8 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
   const stale = records.length > 0 && (!lastBackup || Date.now() - lastBackup > 7 * 86400000);
 
   return html`<div class="content">
-    <${LargeTitle} eye=${eye} title="Oggi" acts=${html`<button class="btn-icon pri" aria-label="Nuova attività" onClick=${newAct}><${Icon} n="plus" s=${22} w=${2.4} /></button><button class="btn-icon" aria-label="Cerca" onClick=${goCerca}><${Icon} n="search" s=${20} /></button>${bell}${avatar}`} />
+    <${LargeTitle} top eye=${eye} title="Oggi" acts=${html`<button class="btn-icon pri" aria-label="Nuova attività" onClick=${newAct}><${Icon} n="plus" s=${22} w=${2.4} /></button>${bell}${avatar}`} />
+    <button class="home-cerca" onClick=${goCerca}><${Icon} n="search" s=${18} /> Cerca in tutte le attività</button>
     <div class="seg" style="margin-bottom:var(--gap)">${BUS.map(([k, l]) => html`<button class=${bu === k ? 'on' : ''} onClick=${() => setBu(k)}>${l}</button>`)}</div>
     <${PrimiPassi} settings=${settings} tplOk=${tplOk} goSettings=${goSettings} installEvt=${installEvt} onInstall=${onInstall} />
 
@@ -184,7 +185,7 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
         <div class="next-acts"><button class="btn pri" onClick=${newAct}>Nuova attività</button></div>`}
     </div>
     <div class="card" style="padding:0"><button class="prow" style="width:100%;border:0;background:none;text-align:left" onClick=${() => goList('agenda')}>
-      <span class="sq"><${Icon} n="clock" s=${20} /></span><span class="t"><b>Programmazione</b><small>${agOggi.n ? `${agOggi.n} ${agOggi.n === 1 ? 'attività' : 'attività'} oggi${agOggi.first ? ' · la prima alle ' + agOggi.first : ''}` : 'Giornate a fasce orarie, JSON e calendario'}</small></span><${Icon} n="right" s=${18} /></button></div>
+      <span class="sq"><${Icon} n="clock" s=${20} /></span><span class="t"><b>Programmazione</b><small>${agOggi.n ? `${agOggi.n} ${agOggi.n === 1 ? 'attività' : 'attività'} oggi${agOggi.first ? ' · la prima alle ' + agOggi.first : ''}` : 'Nessuna attività oggi'}</small></span><${Icon} n="right" s=${18} /></button></div>
 
     <div class="card">
       <div class="card-h"><h4>Attività di oggi</h4>${!todays.length && html`<span class="wg-lbl">nessuna attività con data di oggi</span>`}</div>

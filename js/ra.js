@@ -195,6 +195,8 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
   const [f, setF] = useState('tutti');
   useEffect(() => { const h = () => setF('tutti'); addEventListener('nembo-goto', h); return () => removeEventListener('nembo-goto', h); }, []);
   const imp = useRef();
+  const firmeOn = (initial.fogli || []).length > 0;
+  const [T, setT] = useSchede('ra', firmeOn ? ['anag', 'man', 'firme'] : ['anag', 'man'], initial._new, { 'm-': 'man', 's-': 'man', 'plan-': 'man' });
 
   const clienti = [...new Set(records.filter(x => x.cliente).map(x => x.cliente))];
   const updM = (id, patch) => up(p => ({ ...p, manufatti: p.manufatti.map(x => x.id === id ? { ...x, ...patch } : x) }));
@@ -239,15 +241,8 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
 
   return html`<div class="content form">
     <${DetailHead} eye="Sopralluogo RA" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
-    <div class="card-navy">
-      <div class="sum3">
-        <div><b>${fatti}<small>/${tot}</small></b><span>verificati</span></div>
-        <div><b class=${dann ? 'crit' : ''}>${dann}</b><span>danneggiati</span></div>
-        <div><b class=${noFoto ? 'crit' : ''}>${noFoto}</b><span>senza foto</span></div></div>
-      ${scad && html`<div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.14);font-size:14px" class="nv2">
-        Verifica entro <b style="color:#fff">${fmtD(scad)}</b> · <span class=${gScad <= 30 && fatti < tot ? 'crit' : ''}>${gScad < 0 ? 'scaduta da ' + -gScad + ' gg' : gScad === 0 ? 'oggi' : 'tra ' + gScad + ' gg'}</span> (fine anno di incarico)</div>`}
-    </div>
-    <div class="card"><div class="grid2">
+    <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'man', l: 'Manufatti', n: tot }, firmeOn && { k: 'firme', l: 'Firme', n: (r.fogli || []).length }].filter(Boolean)} />
+    ${T === 'anag' && html`<div class="card"><div class="grid2">
       <${Inp} cls="full" label="Commessa" value=${r.commessa} set=${v => up({ commessa: v })} />
       <${Inp} label="Cliente" req list="dl-cli-ra" value=${r.cliente} set=${v => up({ cliente: v })} />
       <${Inp} label="Città" value=${r.citta} set=${v => up({ citta: v })} />
@@ -260,6 +255,20 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
       <${Inp} label="Incarico RA al" type="date" value=${r.incaricoAl || ''} set=${v => up({ incaricoAl: v })} />
       ${r.fonte && html`<${Inp} cls="full" label="Fonte dei dati" value=${r.fonte} set=${v => up({ fonte: v })} />`}
     </div><datalist id="dl-cli-ra">${clienti.map(c => html`<option value=${c} />`)}</datalist></div>
+    <div class="sec-h"><h3>Archivio</h3></div>
+    <div class="stack">
+      <button class="btn block" onClick=${() => exportRecords([r], settings)}><${Icon} n="archive" s=${18} /> Salva tutto in un file ZIP</button>
+      <button class="btn danger block" onClick=${() => onDelete(r)}><${Icon} n="trash" s=${18} /> Elimina sopralluogo</button>
+    </div>`}
+    ${T === 'man' && html`
+    <div class="card-navy">
+      <div class="sum3">
+        <div><b>${fatti}<small>/${tot}</small></b><span>verificati</span></div>
+        <div><b class=${dann ? 'crit' : ''}>${dann}</b><span>danneggiati</span></div>
+        <div><b class=${noFoto ? 'crit' : ''}>${noFoto}</b><span>senza foto</span></div></div>
+      ${scad && html`<div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.14);font-size:14px" class="nv2">
+        Verifica entro <b style="color:#fff">${fmtD(scad)}</b> · <span class=${gScad <= 30 && fatti < tot ? 'crit' : ''}>${gScad < 0 ? 'scaduta da ' + -gScad + ' gg' : gScad === 0 ? 'oggi' : 'tra ' + gScad + ' gg'}</span> (fine anno di incarico)</div>`}
+    </div>
 
     ${!r.manufatti.length && prec && html`<div class="card tight alert-soft" style="margin-top:12px">
       <b style="font-weight:600">Stesso immobile di ${prec.codice} (${fmtD(prec.data)})</b>
@@ -288,23 +297,18 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
       onUpdate=${(id, patch) => up(q => ({ ...q, planimetrie: (q.planimetrie || []).map(x => x.id === id ? { ...x, ...patch } : x) }))}
       onRemove=${async p => { for (const b of blobIds(p)) await removeBlob(b); up(q => ({ ...q, planimetrie: (q.planimetrie || []).filter(x => x.id !== p.id) })); }} /></div>
 
-    <${FogliFirme} r=${r} up=${up} settings=${settings} />
-
     <div class="sec-h"><h3>Appunti</h3><span class="hint">Testo libero</span></div>
     <div class="card"><textarea class="inp" rows="4" placeholder="Note generali del sopralluogo" value=${r.appunti} onInput=${e => up({ appunti: e.target.value })} aria-label="Appunti"></textarea>
       <${NotePhotos} rec=${r} up=${up} /></div>
 
-    <div class="sec-h"><h3>Archivio</h3></div>
-    <div class="stack">
-      <button class="btn outline block" onClick=${upload}><${Icon} n="share" s=${18} /> ${OD.account ? 'Carica su OneDrive' : 'Invia PDF e foto a OneDrive'}</button>
-      <button class="btn block" onClick=${() => exportRecords([r], settings)}><${Icon} n="archive" s=${18} /> Salva tutto in un file ZIP</button>
-      <button class="btn danger block" onClick=${() => onDelete(r)}><${Icon} n="trash" s=${18} /> Elimina sopralluogo</button>
-    </div>
-    <${ActionBar}>
+    `}
+    ${T === 'firme' && html`<${FogliFirme} r=${r} up=${up} settings=${settings} />`}
+    ${T === 'anag' && html`<${ActionBar}><${OdBtn} r=${r} settings=${settings} /><//>`}
+    ${T === 'man' && html`<${ActionBar}>
       <button class="btn-icon lg" aria-label="Planimetrie" title="Planimetrie" onClick=${() => scrollToId('plan-' + r.id)}><${Icon} n="map" s=${22} /></button>
       ${fatti < tot ? html`<button class="btn pri" onClick=${nextM}>Prossimo da verificare · ${tot - fatti}</button>`
         : tot ? html`<button class="btn pri" onClick=${upload}><${Icon} n="share" s=${19} /> Carica su OneDrive</button>`
         : html`<button class="btn pri" onClick=${addM}><${Icon} n="plus" s=${20} w=${2.4} /> Nuovo manufatto</button>`}
-    <//>
+    <//>`}
   </div>`;
 }

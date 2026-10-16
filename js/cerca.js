@@ -9,6 +9,7 @@ const TIPO_NOME = r => r.type === 'dda' ? 'DDA Fase ' + (r.fase || 1) : r.type =
   : r.type === 'mappatura' ? 'Mappatura MCA e FAV' : r.type === 'ra' ? 'Sopralluogo RA' : r.type === 'radon' ? 'Campagna radon' : r.type === 'aria' ? 'Monitoraggio aria'
   : r.type === 'firme' ? 'Foglio firme' : r.type === 'app' ? 'Appuntamento' : r.type;
 
+const CERCA_TAB = { dda: 'sop', mappatura: 'camp', ra: 'man', radon: 'punti', aria: 'punti', vs: 'note', hs: 'main' };
 // voci ricercabili di un'attività: { ambito, etichetta, testo, anchor }
 function cercaVoci(r) {
   const V = [], add = (ambito, etichetta, testo, anchor) => { if (testo && String(testo).trim()) V.push({ ambito, etichetta, testo: String(testo), anchor }); };
@@ -27,7 +28,7 @@ function cercaVoci(r) {
     Object.entries(r.checkNote || {}).forEach(([k, v]) => add('testo', 'Checklist', v));
     try { allCamp(r).forEach(c => { add('titolo', 'Campione ' + (c.codice || ''), [c.codice, c.descrizione].filter(Boolean).join(' · '), 's-' + c.id); add('testo', 'Campione ' + (c.codice || ''), [c.ubicazione, c.note].filter(Boolean).join(' · '), 's-' + c.id); }); } catch (e) { /* DDA senza campioni */ }
   }
-  if (r.type === 'mappatura') { try { allCampMap(r).forEach(c => { add('titolo', 'Campione ' + (c.codice || ''), [c.codice, c.descrizione].filter(Boolean).join(' · ')); add('testo', 'Campione ' + (c.codice || ''), [c.ubicazione, c.note].filter(Boolean).join(' · ')); }); } catch (e) { /* vuota */ } }
+  if (r.type === 'mappatura') { try { allCampMap(r).forEach(c => { add('titolo', 'Campione ' + (c.codice || ''), [c.codice, c.descrizione].filter(Boolean).join(' · '), 's-' + c.id); add('testo', 'Campione ' + (c.codice || ''), [c.ubicazione, c.note].filter(Boolean).join(' · '), 's-' + c.id); }); } catch (e) { /* vuota */ } }
   if (r.type === 'ra') (r.manufatti || []).forEach(m => {
     const et = 'Manufatto ' + (m.codice || '');
     add('titolo', et, [m.codice, m.descrizione, m.ubicazione].filter(Boolean).join(' · '), 'm-' + m.id); add('testo', et, [m.note, m.notePrec].filter(Boolean).join(' · '), 'm-' + m.id);
@@ -41,7 +42,10 @@ function cercaVoci(r) {
     (r.azioni || []).forEach(a => add('testo', 'Azione ' + (a.cod || ''), [a.sit, a.az].filter(Boolean).join(' · ')));
     (r.foto || []).forEach(p => add('titolo', 'Didascalia foto', p.cap));
   }
-  (r.fogli || []).forEach(f => add('titolo', 'Foglio firme', f.titolo));
+  (r.fogli || []).forEach(f => add('titolo', 'Foglio firme', f.titolo, 'tab:firme'));
+  if (r.type === 'radon') add('testo', 'Appunti generali', r.note);
+  // senza un punto preciso si apre la scheda giusta: Anagrafica per i dati dell'immobile, altrimenti quella del contenuto
+  V.forEach(v => { if (!v.anchor) v.anchor = v.ambito === 'immobile' ? 'tab:anag' : /Fase 2/.test(v.etichetta) ? 'tab:camp' : CERCA_TAB[r.type] && 'tab:' + CERCA_TAB[r.type]; });
   return V;
 }
 // risultati: attività con le voci che contengono tutte le parole cercate (o il tag scelto)
@@ -77,7 +81,8 @@ function Evid({ testo, q }) {
 
 // porta al punto trovato quando la scheda è pronta, e lo evidenzia per un attimo
 function cercaVai(id, n = 0) {
-  if (n === 4) dispatchEvent(new CustomEvent('nembo-goto', { detail: id }));
+  if (id.startsWith('tab:')) { [80, 400].forEach(t => setTimeout(() => dispatchEvent(new CustomEvent('nembo-goto', { detail: id })), t)); return; }
+  if (n === 1 || n === 4) dispatchEvent(new CustomEvent('nembo-goto', { detail: id }));
   const el = document.getElementById(id);
   if (!el) { if (n < 25) setTimeout(() => cercaVai(id, n + 1), 120); return; }
   setTimeout(() => { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('cerca-flash'); setTimeout(() => el.classList.remove('cerca-flash'), 1800); }, 250);

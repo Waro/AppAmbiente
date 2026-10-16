@@ -221,13 +221,12 @@ function AriaForm({ rec: initial, records, settings, onSave, onDelete, embedded,
   const clienti = [...new Set(records.filter(x => x.cliente).map(x => x.cliente))];
   const upload = () => OD.account ? odSync([r], settings) : sendToOneDrive(r, settings);
   const R = ariaRiepilogo(r);
+  const firmeOn = (initial.fogli || []).length > 0;
+  const [T, setT] = useSchede('aria', firmeOn ? ['anag', 'punti', 'firme'] : ['anag', 'punti'], initial._new, { 's-': 'punti', 'plan-': 'punti', 'aria-': 'punti' });
   return html`<div class="content form">
     <${DetailHead} eye="Monitoraggio aria" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
-    <div class="card-navy"><div class="sum3">
-      <div><b>${R.chiusi}<small>/${R.tot}</small></b><span>prelievi fatti</span></div>
-      <div><b>${R.esiti}<small>/${R.fatti}</small></b><span>esiti inseriti</span></div>
-      <div><b class=${R.over ? 'crit' : ''}>${R.over}</b><span>oltre il limite</span></div></div></div>
-    <div class="card"><div class="grid2">
+    <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'punti', l: 'Punti', n: R.tot }, firmeOn && { k: 'firme', l: 'Firme', n: (r.fogli || []).length }].filter(Boolean)} />
+    ${T === 'anag' && html`    <div class="card"><div class="grid2">
       <${Inp} cls="full" label="Commessa" value=${r.commessa} set=${v => up({ commessa: v })} />
       <${Inp} label="Cliente" list="dl-cli-aria" value=${r.cliente} set=${v => up({ cliente: v })} />
       <${Inp} label="Città" value=${r.citta} set=${v => up({ citta: v })} />
@@ -237,28 +236,34 @@ function AriaForm({ rec: initial, records, settings, onSave, onDelete, embedded,
       <${OraDurata} ora=${r.ora} durata=${r.durata} stato=${r.stato} tipo=${r.type} set=${p => up(p)} />
       <${Inp} label="Tecnico" value=${r.tecnico} set=${v => up({ tecnico: v })} />
     </div><datalist id="dl-cli-aria">${clienti.map(c => html`<option value=${c} />`)}</datalist></div>
+    <div class="sec-h"><h3>Archivio</h3></div>
+    <div class="stack">
+      <button class="btn block" onClick=${() => exportRecords([r], settings)}><${Icon} n="archive" s=${18} /> Salva tutto in un file ZIP</button>
+      <button class="btn danger block" onClick=${() => onDelete(r)}><${Icon} n="trash" s=${18} /> Elimina</button>
+    </div>`}
+    ${T === 'punti' && html`
+    <div class="card-navy"><div class="sum3">
+      <div><b>${R.chiusi}<small>/${R.tot}</small></b><span>prelievi fatti</span></div>
+      <div><b>${R.esiti}<small>/${R.fatti}</small></b><span>esiti inseriti</span></div>
+      <div><b class=${R.over ? 'crit' : ''}>${R.over}</b><span>oltre il limite</span></div></div></div>
     <${AriaSection} r=${r} up=${up} settings=${settings} />
     <div class="sec-h" id=${'plan-' + r.id}><h3>Planimetrie</h3><span class="hint">Etichette dei punti di monitoraggio</span></div>
     <div class="card"><${PlanList} items=${r.planimetrie || []} labels=${ariaLabels(r)}
       onAdd=${p => up(q => ({ ...q, planimetrie: [...(q.planimetrie || []), p] }))}
       onUpdate=${(id, patch) => up(q => ({ ...q, planimetrie: (q.planimetrie || []).map(x => x.id === id ? { ...x, ...patch } : x) }))}
       onRemove=${async p => { for (const b of blobIds(p)) await removeBlob(b); up(q => ({ ...q, planimetrie: (q.planimetrie || []).filter(x => x.id !== p.id) })); }} /></div>
-    <${FogliFirme} r=${r} up=${up} settings=${settings} />
     <div class="sec-h"><h3>Appunti</h3><span class="hint">Testo libero</span></div>
     <div class="card"><textarea class="inp" rows="3" value=${r.appunti} onInput=${e => up({ appunti: e.target.value })} aria-label="Appunti"></textarea>
       <${NotePhotos} rec=${r} up=${up} /></div>
-    <div class="sec-h"><h3>Archivio</h3></div>
-    <div class="stack">
-      <button class="btn outline block" onClick=${upload}><${Icon} n="share" s=${18} /> ${OD.account ? 'Carica su OneDrive' : 'Invia PDF e foto a OneDrive'}</button>
-      <button class="btn block" onClick=${() => exportRecords([r], settings)}><${Icon} n="archive" s=${18} /> Salva tutto in un file ZIP</button>
-      <button class="btn danger block" onClick=${() => onDelete(r)}><${Icon} n="trash" s=${18} /> Elimina</button>
-    </div>
-    <${ActionBar}>
+    `}
+    ${T === 'firme' && html`<${FogliFirme} r=${r} up=${up} settings=${settings} />`}
+    ${T === 'anag' && html`<${ActionBar}><${OdBtn} r=${r} settings=${settings} /><//>`}
+    ${T === 'punti' && html`    <${ActionBar}>
       <button class="btn-icon lg" aria-label="Planimetrie" title="Planimetrie" onClick=${() => scrollToId('plan-' + r.id)}><${Icon} n="map" s=${22} /></button>
       ${R.chiusi < R.tot ? html`<button class="btn pri" onClick=${() => AriaSection.next && AriaSection.next()}>Prossimo punto · ${R.tot - R.chiusi}</button>`
         : R.tot ? html`<button class="btn pri" onClick=${upload}><${Icon} n="share" s=${19} /> Carica su OneDrive</button>`
         : html`<button class="btn pri" onClick=${() => up(q => ({ ...q, aria: { ...ariaOf(q), punti: [...ariaOf(q).punti, newAriaPunto({ codice: ariaNextCode(ariaOf(q).punti, (ariaOf(q).punti.slice(-1)[0] || {}).metodica), metodica: (ariaOf(q).punti.slice(-1)[0] || {}).metodica || 'SEM' })] } }))}><${Icon} n="plus" s=${20} w=${2.4} /> Nuovo punto</button>`}
-    <//>
+    <//>`}
   </div>`;
 }
 

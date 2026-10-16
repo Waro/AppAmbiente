@@ -31,23 +31,21 @@ function VerbaleList({ records, open, activeId, acts }) {
 function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedded, onClose }) {
   const [r, up, saved] = useAutosave(initial, onSave);
   const [filtro, setFiltro] = useState(null);
+  const [T, setT] = useSchede('vs', ['anag', 'note'], initial._new, { 'n-': 'note' });
   const clienti = [...new Set(records.filter(x => x.cliente).map(x => x.cliente))];
   const upload = () => OD.account ? odSync([r], settings) : sendToOneDrive(r, settings);
   const note = r.note || [];
   const tagsV = Object.keys(collectTags(note)).sort((a, b) => a.localeCompare(b, 'it'));
   const updN = (id, p) => up(q => ({ ...q, note: (q.note || []).map(n => n.id === id ? { ...n, ...p } : n) }));
-  const addN = () => { const n = newNotaVs(); up(q => ({ ...q, note: [...(q.note || []), n] })); setFiltro(null); setTimeout(() => scrollToId('n-' + n.id), 80); };
+  const addN = () => { const n = newNotaVs(); setT('note'); up(q => ({ ...q, note: [...(q.note || []), n] })); setFiltro(null); setTimeout(() => scrollToId('n-' + n.id), 80); };
   const delN = async n => { if (!confirm('Eliminare la nota' + (n.titolo ? ' «' + n.titolo + '»' : '') + '?')) return; for (const f of n.foto || []) await removeBlob(f); up(q => ({ ...q, note: q.note.filter(x => x.id !== n.id) })); };
   const move = (n, d) => up(q => { const L = q.note.slice(); const i = L.findIndex(x => x.id === n.id), j = i + d; if (j < 0 || j >= L.length) return q; [L[i], L[j]] = [L[j], L[i]]; return { ...q, note: L }; });
   const vis = note.filter(n => !filtro || (n.tag || []).includes(filtro));
   const nFoto = note.reduce((a, n) => a + (n.foto || []).length, 0);
   return html`<div class="content form">
     <${DetailHead} eye="Verbale HSE" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
-    <div class="card-navy"><div class="sum3">
-      <div><b>${note.length}</b><span>${note.length === 1 ? 'nota' : 'note'}</span></div>
-      <div><b>${nFoto}</b><span>foto</span></div>
-      <div><b>${tagsV.length}</b><span>tag</span></div></div></div>
-    <div class="card"><div class="grid2">
+    <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'note', l: 'Note', n: note.length }]} />
+    ${T === 'anag' && html`    <div class="card"><div class="grid2">
       <${Inp} cls="full" label="Commessa" value=${r.commessa} set=${v => up({ commessa: v })} />
       <${Inp} label="Cliente" list="dl-cli-vs" value=${r.cliente} set=${v => up({ cliente: v })} />
       <${Inp} label="Città" value=${r.citta} set=${v => up({ citta: v })} />
@@ -57,6 +55,16 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
       <${OraDurata} ora=${r.ora} durata=${r.durata} stato=${r.stato} tipo=${r.type} set=${p => up(p)} />
       <${Inp} label="Tecnico" value=${r.tecnico} set=${v => up({ tecnico: v })} />
     </div><datalist id="dl-cli-vs">${clienti.map(c => html`<option value=${c} />`)}</datalist></div>
+    <div class="sec-h"><h3>Archivio</h3></div>
+    <div class="stack">
+      <button class="btn block" onClick=${() => exportRecords([r], settings)}><${Icon} n="archive" s=${18} /> Salva tutto in un file ZIP</button>
+      <button class="btn danger block" onClick=${() => onDelete(r)}><${Icon} n="trash" s=${18} /> Elimina</button>
+    </div>`}
+    ${T === 'note' && html`
+    <div class="card-navy"><div class="sum3">
+      <div><b>${note.length}</b><span>${note.length === 1 ? 'nota' : 'note'}</span></div>
+      <div><b>${nFoto}</b><span>foto</span></div>
+      <div><b>${tagsV.length}</b><span>tag</span></div></div></div>
     <div class="sec-h"><h3>Note · ${note.length}</h3><span class="hint">Titolo, testo, foto e tag</span></div>
     ${tagsV.length > 0 && html`<div class="vs-filter"><button class=${'tag' + (!filtro ? ' on' : ' sugg')} onClick=${() => setFiltro(null)}>Tutte</button>
       ${tagsV.map(t => html`<button key=${t} class=${'tag' + (filtro === t ? ' on' : '')} style=${tagStyle(t, filtro === t)} onClick=${() => setFiltro(filtro === t ? null : t)}>#${t}</button>`)}</div>`}
@@ -77,15 +85,10 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
     <div class="sec-h"><h3>Appunti</h3><span class="hint">Testo libero</span></div>
     <div class="card"><textarea class="inp" rows="3" value=${r.appunti} onInput=${e => up({ appunti: e.target.value })} aria-label="Appunti"></textarea>
       <${NotePhotos} rec=${r} up=${up} /></div>
-    <div class="sec-h"><h3>Archivio</h3></div>
-    <div class="stack">
-      <button class="btn outline block" onClick=${upload}><${Icon} n="share" s=${18} /> ${OD.account ? 'Carica su OneDrive' : 'Invia foto a OneDrive'}</button>
-      <button class="btn block" onClick=${() => exportRecords([r], settings)}><${Icon} n="archive" s=${18} /> Salva tutto in un file ZIP</button>
-      <button class="btn danger block" onClick=${() => onDelete(r)}><${Icon} n="trash" s=${18} /> Elimina</button>
-    </div>
+    `}
     <${ActionBar}>
-      <${VsCam} onAdd=${ids => { const nn = { ...newNotaVs(), foto: ids }; up(q => ({ ...q, note: [...(q.note || []), nn] })); setFiltro(null); setTimeout(() => scrollToId('n-' + nn.id), 80); }} />
-      <button class="btn pri" onClick=${addN}><${Icon} n="plus" s=${20} w=${2.4} /> Nuova nota</button>
+      ${T === 'anag' ? html`<${OdBtn} r=${r} settings=${settings} />` : html`      <${VsCam} onAdd=${ids => { const nn = { ...newNotaVs(), foto: ids }; setT('note'); up(q => ({ ...q, note: [...(q.note || []), nn] })); setFiltro(null); setTimeout(() => scrollToId('n-' + nn.id), 80); }} />
+      <button class="btn pri" onClick=${addN}><${Icon} n="plus" s=${20} w=${2.4} /> Nuova nota</button>`}
     <//>
   </div>`;
 }

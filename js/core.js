@@ -2,7 +2,7 @@
 // Stessa stringa di VERSION in sw.js: aumentala insieme a quella ad ogni aggiornamento.
 // Essendo dentro un file JS servito dalla cache, se l'aggiornamento automatico fallisce
 // questa scritta mostra ancora la versione vecchia — è il modo per accorgersene.
-const APP_VERSION = 'nembo-v36';
+const APP_VERSION = 'nembo-v37';
 
 /* ---------------- tema grafico: "essenziale" (predefinito) o "originale" ----------------
    Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno. */
@@ -605,6 +605,31 @@ function Stepper({ n, dec, inc, label, min = 0 }) {
     <button aria-label="Togli" disabled=${n <= min} onClick=${dec}>−</button><b>${n}</b><button aria-label="Aggiungi" onClick=${inc}>+</button></div>`;
 }
 // Barra azioni in fondo alla scheda: 1 secondario + 1 primario
+// Schede di un'attività (Anagrafica, contenuto, Firme). Nembo ricorda l'ultima aperta per ogni tipo;
+// la ricerca porta alla scheda giusta con l'evento nembo-goto ("tab:chiave" oppure l'id di un elemento, tramite i prefissi di map).
+function useSchede(type, keys, isNew, map = {}) {
+  const [t, setT] = useState(() => {
+    if (isNew) return keys[0];
+    try { const v = localStorage.getItem('nembo_tab_' + type); if (keys.includes(v)) return v; } catch (e) { /* senza memoria */ }
+    return keys[1] || keys[0];
+  });
+  const set = k => { setT(k); try { localStorage.setItem('nembo_tab_' + type, k); } catch (e) { /* senza memoria */ } };
+  useEffect(() => {
+    const h = e => { const a = String(e.detail || ''); const k = a.startsWith('tab:') ? a.slice(4) : (Object.entries(map).find(([p]) => a.startsWith(p)) || [])[1]; if (k && keys.includes(k)) setT(k); };
+    addEventListener('nembo-goto', h); return () => removeEventListener('nembo-goto', h);
+  }, [keys.join()]);
+  return [keys.includes(t) ? t : keys[0], set];
+}
+function Schede({ tabs, value, set }) {
+  const ref = useRef();
+  const pick = k => { if (k === value) return; set(k); const c = ref.current && ref.current.closest('.content'); if (c) c.scrollTop = 0; };
+  return html`<div class="seg schede" ref=${ref} role="tablist">${tabs.map(x => html`<button key=${x.k} role="tab" aria-selected=${value === x.k} class=${value === x.k ? 'on' : ''} onClick=${() => pick(x.k)}>
+    ${x.l}${x.n > 0 && html`<small class="sch-n">${x.n}</small>`}</button>`)}</div>`;
+}
+// tasto OneDrive per la barra azioni della scheda Anagrafica
+function OdBtn({ r, settings }) {
+  return html`<button class="btn pri" onClick=${() => OD.account ? odSync([r], settings) : sendToOneDrive(r, settings)}><${Icon} n="share" s=${20} /> ${OD.account ? 'Carica su OneDrive' : 'Invia a OneDrive'}</button>`;
+}
 function ActionBar({ children }) { return html`<div class="abar">${children}</div>`; }
 const scrollToId = id => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
 // Foto rapida dalla riga dell'elenco (segnaposto rosso "manca la foto")

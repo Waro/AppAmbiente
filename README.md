@@ -114,6 +114,28 @@ Nuova attività HSE: Nuova attività → *Verbale HSE* (codice `VS-AAAA-NNN`). D
 
 **H&S → HSE**: in tutta l'app la business unit si chiama HSE.
 
+## Schede delle attività (v37)
+
+Ogni attività è divisa in schede, con un selettore come quello Ambiente / HSE / Sicurezza della Home che resta in alto mentre si scorre:
+
+| Attività | Schede |
+|---|---|
+| DDA | Anagrafica · Sopralluogo · Campioni |
+| Mappatura MCA e FAV | Anagrafica · Campioni |
+| Sopralluogo RA | Anagrafica · Manufatti (con monitoraggio aria) |
+| Campagna radon | Anagrafica · Punti · Firme |
+| Monitoraggio aria | Anagrafica · Punti |
+| Sopralluogo HSE | Anagrafica (dati del report, Word e archivio) · Sezioni |
+| Verbale HSE | Anagrafica · Note |
+
+- **Anagrafica**: dati della commessa, data, ora e stato, e in fondo l'archivio (ZIP, Elimina; documenti allegati nel DDA, scheda PDF nel radon). La barra in basso ha *Carica su OneDrive*.
+- La scheda del contenuto ha gli appunti e le planimetrie; la barra in basso cambia con la scheda (*Nuova area REC*, *Nuovo campione*, *Prossimo da verificare*, *Salva e firma*…).
+- **Firme**: solo nella campagna radon. Nelle altre attività la scheda compare solo se l'attività ha già fogli firme salvati; per i nuovi fogli c'è *Fogli firme* negli Strumenti.
+- Nel DDA la fase (1 o 2) si sceglie in Anagrafica.
+- Nembo ricorda l'ultima scheda aperta per ogni tipo di attività; un'attività nuova si apre su Anagrafica. La ricerca apre la scheda giusta (`useSchede`, `Schede` in core.js, evento `nembo-goto` con `tab:chiave`).
+
+**Barra in alto (v37)**: su tablet e PC la Home usa la stessa barra delle altre pagine (Oggi, lente, +, campana) e il profilo sta in fondo al menu laterale, al posto della voce Impostazioni. Sul telefono la Home ha +, campana e profilo, con il campo *Cerca in tutte le attività* sotto il titolo. In Home, la riga Programmazione dice «Nessuna attività oggi» quando non c'è niente in programma.
+
 ## Cerca (v36)
 
 Ricerca in tutte le attività salvate sul dispositivo, anche offline. Si apre dalla lente in *Oggi*, dalla barra in alto su tablet e PC e dalla voce *Cerca* del menu laterale.

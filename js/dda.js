@@ -180,6 +180,8 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
   const [tab, setTab] = useState(() => (MATS.find(m => initial.campioni[m.k].length) || MATS[0]).k);
   const [busy, setBusy] = useState(null);
   const [openS, setOpenS] = useState({});
+  const firmeOn = (initial.fogli || []).length > 0;
+  const [T, setT] = useSchede('dda', firmeOn ? ['anag', 'sop', 'camp', 'firme'] : ['anag', 'sop', 'camp'], initial._new, { 's-': 'camp', 'rec-': 'sop' });
   // dalla ricerca: apre la matrice del campione trovato
   useEffect(() => { const h = e => { const c = allCamp(r).find(x => 's-' + x.id === e.detail); if (c) setTab(c.k); }; addEventListener('nembo-goto', h); return () => removeEventListener('nembo-goto', h); }, [r]);
   const importInp = useRef();
@@ -282,7 +284,8 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
 
   return html`<div class="content form">
     <${DetailHead} eye=${'DDA · Fase ' + r.fase} title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
-    <div class="card"><div class="grid2">
+    <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'sop', l: 'Sopralluogo', n: r.recs.length }, { k: 'camp', l: 'Campioni', n: allCamp(r).length }, firmeOn && { k: 'firme', l: 'Firme', n: (r.fogli || []).length }].filter(Boolean)} />
+    ${T === 'anag' && html`<div class="card"><div class="grid2">
       <${Inp} cls="full" label="Commessa - progetto" value=${r.commessa} set=${v => up({ commessa: v })} placeholder="es. 000/26" />
       <${Inp} label="Cliente" req list="dl-cli" value=${r.cliente} set=${v => up({ cliente: v })} />
       <${Inp} label="Città" value=${r.citta} set=${v => up({ citta: v })} />
@@ -295,12 +298,24 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
     <datalist id="dl-cli">${clienti.map(c => html`<option value=${c} />`)}</datalist>
     <datalist id="dl-siti">${siti.map(c => html`<option value=${c} />`)}</datalist></div>
 
-    <div class="seg" style="margin:4px 0 6px">
+    <div class="sec-h"><h3>Fase dell'indagine</h3></div>
+    <div class="seg" style="margin:0 0 6px">
       <button class=${r.fase === 1 ? 'on' : ''} onClick=${() => up({ fase: 1 })}>Fase 1 · Sopralluogo</button>
       <button class=${r.fase === 2 ? 'on' : ''} onClick=${() => up({ fase: 2 })}>Fase 2 · Campionamento</button>
     </div>
+    <div class="sec-h"><h3>Documenti allegati</h3></div>
+    <div class="card"><${FileList} items=${r.documenti}
+      onAdd=${d => up(p => ({ ...p, documenti: [...p.documenti, d] }))}
+      onRemove=${async d => { await removeBlob(d.blobId); up(p => ({ ...p, documenti: p.documenti.filter(x => x.id !== d.id) })); }} /></div>
+    <div class="sec-h"><h3>Archivio</h3></div>
+    <div class="stack">
+      ${allCamp(r).length > 0 && html`<button class="btn outline block" disabled=${busy === 'docx'} onClick=${riepilogo}>${busy === 'docx' ? html`<div class="spin" />` : html`<${Icon} n="file" s=${18} />`} Riepilogo campioni (Word)</button>`}
+      <button class="btn block" onClick=${() => exportRecords([r], settings)}><${Icon} n="archive" s=${18} /> Salva tutto in un file ZIP</button>
+      <button class="btn danger block" onClick=${() => onDelete(r)}><${Icon} n="trash" s=${18} /> Elimina indagine</button>
+    </div>
+`}
 
-    ${r.fase === 1 ? html`
+    ${T === 'sop' && html`
       <div class="sec-h"><h3>Uso del sito</h3></div>
       <div class="card"><${Area} label="Uso attuale del sito" value=${r.usoAttuale} set=${v => up({ usoAttuale: v })} />
         <div class="divider"></div><${Area} label="Uso storico" value=${r.usoStorico} set=${v => up({ usoStorico: v })} /></div>
@@ -349,13 +364,8 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
       </div>
 
       ${planSection}
-      <${FogliFirme} r=${r} up=${up} settings=${settings} />
-
-      <div class="sec-h"><h3>Documenti allegati</h3></div>
-      <div class="card"><${FileList} items=${r.documenti}
-        onAdd=${d => up(p => ({ ...p, documenti: [...p.documenti, d] }))}
-        onRemove=${async d => { await removeBlob(d.blobId); up(p => ({ ...p, documenti: p.documenti.filter(x => x.id !== d.id) })); }} /></div>
-    ` : html`
+    `}
+    ${T === 'camp' && html`
       <div class="sec-h" style="margin-top:14px"><h3>Punti da campionare</h3><span class="hint">${(r.checklist || []).filter(c => !c.fatto).length} da fare</span></div>
       <div class="card tight">
         ${!(r.checklist || []).length && html`<p class="lead" style="margin:2px 0 4px">Segna qui cosa prevedi di campionare prima di uscire: manufatti, tipologia, dove si trovano. Man mano che preleva, spuntali.</p>`}
@@ -411,7 +421,6 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
         <${NotePhotos} rec=${r} field="fotoAppunti2" up=${up} /></div>
 
       ${planSection}
-      <${FogliFirme} r=${r} up=${up} settings=${settings} />
 
       ${(tab === 'mca' || tab === 'fav') && html`
         <button class="btn outline block" style="margin-top:4px" disabled=${!camp.length || busy} onClick=${() => scheda(tab)}>
@@ -441,18 +450,12 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
         </div>`}
     `}
 
-    <div class="sec-h"><h3>Archivio</h3></div>
-    <div class="stack">
-      ${allCamp(r).length > 0 && html`<button class="btn outline block" disabled=${busy === 'docx'} onClick=${riepilogo}>${busy === 'docx' ? html`<div class="spin" />` : html`<${Icon} n="file" s=${18} />`} Riepilogo campioni (Word)</button>`}
-      ${OD.account ? html`<button class="btn outline block" onClick=${() => odSync([r], settings)}><${Icon} n="share" s=${18} /> Carica su OneDrive</button>`
-        : html`<button class="btn outline block" onClick=${() => sendToOneDrive(r, settings)}><${Icon} n="share" s=${18} /> Invia PDF e foto a OneDrive</button>`}
-      <button class="btn block" onClick=${() => exportRecords([r], settings)}><${Icon} n="archive" s=${18} /> Salva tutto in un file ZIP</button>
-      <button class="btn danger block" onClick=${() => onDelete(r)}><${Icon} n="trash" s=${18} /> Elimina indagine</button>
-    </div>
-    <${ActionBar}>
+    ${T === 'firme' && html`<${FogliFirme} r=${r} up=${up} settings=${settings} />`}
+    ${T !== 'firme' && html`<${ActionBar}>
+      ${T === 'anag' ? html`<${OdBtn} r=${r} settings=${settings} />` : html`
       <button class="btn-icon lg" aria-label="Planimetrie" title="Planimetrie" onClick=${() => scrollToId('plan-' + r.id)}><${Icon} n="map" s=${22} /></button>
-      ${r.fase === 1 ? html`<button class="btn pri" onClick=${addRec}><${Icon} n="plus" s=${20} w=${2.4} /> Nuova area REC</button>`
-        : html`<button class="btn pri" onClick=${addCamp}><${Icon} n="plus" s=${20} w=${2.4} /> Nuovo campione ${mat.auto ? nextCode(tab) : mat.l}</button>`}
-    <//>
+      ${T === 'sop' ? html`<button class="btn pri" onClick=${addRec}><${Icon} n="plus" s=${20} w=${2.4} /> Nuova area REC</button>`
+        : html`<button class="btn pri" onClick=${addCamp}><${Icon} n="plus" s=${20} w=${2.4} /> Nuovo campione ${mat.auto ? nextCode(tab) : mat.l}</button>`}`}
+    <//>`}
   </div>`;
 }

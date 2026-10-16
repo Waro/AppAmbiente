@@ -119,6 +119,7 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
   const [scan, setScan] = useState(null);
   const [sig, setSig] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [T, setT] = useSchede('radon', ['anag', 'punti', 'firme'], initial._new, { 'p-': 'punti', 'plan-': 'punti', 'mom-': 'firme' });
   const stato = radonStato(r);
 
   const m = r.momenti;
@@ -251,7 +252,8 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
 
   return html`<div class="content form">
     <${DetailHead} eye=${'Campagna radon · ' + STATI[stato][0]} title=${r.commessa || 'Nuova campagna'} sub=${[[r.cliente, r.insegna].filter(Boolean).join(' · '), placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
-    <div class="card-navy"><div class="row" style="gap:18px;align-items:center">
+    <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'punti', l: 'Punti', n: r.punti.length }, { k: 'firme', l: 'Firme', n: m.filter(x => x.confermato).length }]} />
+    ${T === 'anag' && html`    <div class="card-navy"><div class="row" style="gap:18px;align-items:center">
       <div class="ring-wrap" style="width:112px;height:112px">
         <${Ring} p=${gTot ? gNow / gTot : stato === 'esiti' || stato === 'terminata' ? 1 : 0} size=${112} w=${10} color="#38a3f0" track="rgba(255,255,255,.14)" />
         <div class="ring-c">${gTot ? html`<b>${gNow}</b><span>di ${gTot} gg</span>` : html`<b style="font-size:16px">${stato === 'da_iniziare' ? 'Da posare' : stato === 'esiti' ? 'Esiti' : 'Fine'}</b>`}</div>
@@ -277,7 +279,14 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
       <${Inp} label="Telefono" type="tel" value=${r.telefono} set=${v => up({ telefono: v })} />
       <${Inp} label="Altro" value=${r.altro} set=${v => up({ altro: v })} />
     </div></div>
+    <div class="sec-h"><h3>Documenti e archivio</h3></div>
+    <div class="stack">
+      <button class="btn outline block" disabled=${busy} onClick=${pdf}>${busy ? html`<div class="spin" />` : html`<${Icon} n="file" s=${18} />`} Scheda raccolta dati radon (PDF)</button>
+      <button class="btn block" onClick=${() => exportRecords([r], settings)}><${Icon} n="archive" s=${18} /> Salva tutto in un file ZIP</button>
+      <button class="btn danger block" onClick=${() => onDelete(r)}><${Icon} n="trash" s=${18} /> Elimina campagna</button>
+    </div>`}
 
+    ${T === 'punti' && html`
     ${!lockPos && html`<div class="sec-h"><h3>Dosimetri per piano</h3><span class="hint">${r.punti.length} in tutto</span></div>
       <div class="list">
         ${piani.map(pi => { const n = r.punti.filter(p => (p.piano || '').trim() === pi).length; return html`<div class="prow" key=${pi}>
@@ -293,8 +302,34 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
       lockPos=${lockPos} lockF2=${lockF2} onUpd=${updP} onDel=${delP} onScan=${scanOne} />`)}
     ${!lockPos && html`<button class="btn dashed" onClick=${addP}>+ Aggiungi punto R${r.punti.length + 1}</button>`}
     <datalist id="dl-piani">${['Piano terra', 'Piano interrato', 'Piano seminterrato', 'Primo piano'].map(x => html`<option value=${x} />`)}</datalist>
+        ${lockPos && html`
+      <div class="sec-h"><h3>Esiti di laboratorio</h3><span class="hint">Bq/m³ · media pesata sui giorni</span></div>
+      <div class="card tight">
+        ${best && html`<div class="bigstat" style="margin-bottom:6px"><b style=${best.v > settings.livelloRif ? 'color:var(--nc)' : ''}>${fmtN(best.v)}</b><span class="lock">Bq/m³ media più alta (R${best.n}) · ${over ? over + ' punti oltre ' + settings.livelloRif : 'nessun punto oltre ' + settings.livelloRif}</span></div>`}
+        <div class="res-row h"><span></span><span>Fase 1</span><span>Fase 2</span><span style="text-align:right">Media</span></div>
+        ${r.punti.map((p, i) => { const v = mediaPunto(r, p); return html`<div class="res-row" key=${p.id}><b>R${i + 1}</b>
+          <input class="inp" inputmode="decimal" value=${p.valoreF1} onInput=${e => updP(p.id, { valoreF1: e.target.value })} aria-label=${'R' + (i + 1) + ' Fase 1'} />
+          <input class="inp" inputmode="decimal" value=${p.valoreF2} disabled=${!lockF2} onInput=${e => updP(p.id, { valoreF2: e.target.value })} aria-label=${'R' + (i + 1) + ' Fase 2'} />
+          <span class=${'mean' + (v != null && v > settings.livelloRif ? ' over' : '')}>${fmtN(v)}</span></div>`; })}
+        <div class="divider"></div>
+        <${FileList} items=${r.rapporti} accept="application/pdf,image/*" label="Allega rapporto di prova"
+          onAdd=${d => up(p => ({ ...p, rapporti: [...p.rapporti, d] }))}
+          onRemove=${async d => { await removeBlob(d.blobId); up(p => ({ ...p, rapporti: p.rapporti.filter(x => x.id !== d.id) })); }} />
+      </div>`}
 
-    <div class="sec-h"><h3>Sopralluoghi e firme</h3></div>
+    <div class="sec-h" id=${'plan-' + r.id}><h3>Planimetrie</h3><span class="hint">Disegno ed etichette dei punti</span></div>
+    <div class="card"><${PlanList} items=${r.planimetrie || []} labels=${r.punti.map((p, i) => ({ ref: p.id, text: 'R' + (i + 1), color: '#0061c5' }))}
+      onAdd=${p => up(q => ({ ...q, planimetrie: [...(q.planimetrie || []), p] }))}
+      onUpdate=${(id, patch) => up(q => ({ ...q, planimetrie: (q.planimetrie || []).map(x => x.id === id ? { ...x, ...patch } : x) }))}
+      onRemove=${async p => { for (const b of blobIds(p)) await removeBlob(b); up(q => ({ ...q, planimetrie: (q.planimetrie || []).filter(x => x.id !== p.id) })); }} /></div>
+
+    <div class="sec-h"><h3>Appunti generali</h3></div>
+    <div class="card"><textarea class="inp" rows="3" value=${r.note} onInput=${e => up({ note: e.target.value })} aria-label="Note"></textarea>
+      <${NotePhotos} rec=${r} up=${up} /></div>
+
+`}
+
+    ${T === 'firme' && html`<div class="sec-h"><h3>Sopralluoghi e firme</h3></div>
     ${m.map((mm, i) => {
       const enabled = i === 0 || m[i - 1].confermato;
       const cls = mm.confermato ? ' done' : enabled ? ' cur' : '';
@@ -337,43 +372,12 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
       </div>`;
     })}
 
-    ${lockPos && html`
-      <div class="sec-h"><h3>Esiti di laboratorio</h3><span class="hint">Bq/m³ · media pesata sui giorni</span></div>
-      <div class="card tight">
-        ${best && html`<div class="bigstat" style="margin-bottom:6px"><b style=${best.v > settings.livelloRif ? 'color:var(--nc)' : ''}>${fmtN(best.v)}</b><span class="lock">Bq/m³ media più alta (R${best.n}) · ${over ? over + ' punti oltre ' + settings.livelloRif : 'nessun punto oltre ' + settings.livelloRif}</span></div>`}
-        <div class="res-row h"><span></span><span>Fase 1</span><span>Fase 2</span><span style="text-align:right">Media</span></div>
-        ${r.punti.map((p, i) => { const v = mediaPunto(r, p); return html`<div class="res-row" key=${p.id}><b>R${i + 1}</b>
-          <input class="inp" inputmode="decimal" value=${p.valoreF1} onInput=${e => updP(p.id, { valoreF1: e.target.value })} aria-label=${'R' + (i + 1) + ' Fase 1'} />
-          <input class="inp" inputmode="decimal" value=${p.valoreF2} disabled=${!lockF2} onInput=${e => updP(p.id, { valoreF2: e.target.value })} aria-label=${'R' + (i + 1) + ' Fase 2'} />
-          <span class=${'mean' + (v != null && v > settings.livelloRif ? ' over' : '')}>${fmtN(v)}</span></div>`; })}
-        <div class="divider"></div>
-        <${FileList} items=${r.rapporti} accept="application/pdf,image/*" label="Allega rapporto di prova"
-          onAdd=${d => up(p => ({ ...p, rapporti: [...p.rapporti, d] }))}
-          onRemove=${async d => { await removeBlob(d.blobId); up(p => ({ ...p, rapporti: p.rapporti.filter(x => x.id !== d.id) })); }} />
-      </div>`}
-
-    <div class="sec-h" id=${'plan-' + r.id}><h3>Planimetrie</h3><span class="hint">Disegno ed etichette dei punti</span></div>
-    <div class="card"><${PlanList} items=${r.planimetrie || []} labels=${r.punti.map((p, i) => ({ ref: p.id, text: 'R' + (i + 1), color: '#0061c5' }))}
-      onAdd=${p => up(q => ({ ...q, planimetrie: [...(q.planimetrie || []), p] }))}
-      onUpdate=${(id, patch) => up(q => ({ ...q, planimetrie: (q.planimetrie || []).map(x => x.id === id ? { ...x, ...patch } : x) }))}
-      onRemove=${async p => { for (const b of blobIds(p)) await removeBlob(b); up(q => ({ ...q, planimetrie: (q.planimetrie || []).filter(x => x.id !== p.id) })); }} /></div>
-
-    <div class="sec-h"><h3>Appunti generali</h3></div>
-    <div class="card"><textarea class="inp" rows="3" value=${r.note} onInput=${e => up({ note: e.target.value })} aria-label="Note"></textarea>
-      <${NotePhotos} rec=${r} up=${up} /></div>
-
-    <div class="sec-h"><h3>Documenti</h3></div>
-    <div class="stack">
-      <button class="btn outline block" disabled=${busy} onClick=${pdf}>${busy ? html`<div class="spin" />` : html`<${Icon} n="file" s=${18} />`} Scheda raccolta dati radon (PDF)</button>
-      <button class="btn outline block" onClick=${upload}><${Icon} n="share" s=${18} /> ${OD.account ? 'Carica su OneDrive' : 'Invia PDF e foto a OneDrive'}</button>
-      <button class="btn block" onClick=${() => exportRecords([r], settings)}><${Icon} n="archive" s=${18} /> Salva tutto in un file ZIP</button>
-      <button class="btn danger block" onClick=${() => onDelete(r)}><${Icon} n="trash" s=${18} /> Elimina campagna</button>
-    </div>
+    `}
     <${ActionBar}>
-      ${!lockF2 ? html`<button class="btn" onClick=${scanSeq}><${Icon} n="scan" s=${20} /> Scansiona</button>`
-        : html`<button class="btn-icon lg" aria-label="Planimetrie" onClick=${() => scrollToId('plan-' + r.id)}><${Icon} n="map" s=${22} /></button>`}
-      ${curMom >= 0 ? html`<button class="btn pri" onClick=${() => scrollToId('mom-cur-' + r.id)}><${Icon} n="sign" s=${19} /> Salva e firma</button>`
-        : html`<button class="btn pri" onClick=${upload}><${Icon} n="share" s=${19} /> Carica su OneDrive</button>`}
+      ${T === 'punti' && (!lockF2 ? html`<button class="btn" onClick=${scanSeq}><${Icon} n="scan" s=${20} /> Scansiona</button>`
+        : html`<button class="btn-icon lg" aria-label="Planimetrie" onClick=${() => scrollToId('plan-' + r.id)}><${Icon} n="map" s=${22} /></button>`)}
+      ${T !== 'anag' && curMom >= 0 ? html`<button class="btn pri" onClick=${() => { setT('firme'); setTimeout(() => scrollToId('mom-cur-' + r.id), 80); }}><${Icon} n="sign" s=${19} /> Salva e firma</button>`
+        : html`<${OdBtn} r=${r} settings=${settings} />`}
     <//>
 
     ${scan && html`<${Scanner} title=${scan.title} target=${scan.target} onCode=${scan.onCode} onClose=${() => { if (scan.onEnd) scan.onEnd(); setScan(null); }} />`}

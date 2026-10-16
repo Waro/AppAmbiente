@@ -565,7 +565,7 @@ const NAV_AREAS = [
   { v: 'ariaList', d: 'aria', ic: 'air', l: 'Monitoraggio aria' },
 ];
 const NAV_HS = [{ v: 'hsList', d: 'hs', ic: 'helmet', l: 'Sopralluoghi HSE' }, { v: 'vsList', d: 'vs', ic: 'note', l: 'Verbali HSE' }];
-const NAV_TOOLS = [{ v: 'agenda', ic: 'clock', l: 'Programmazione' }, { v: 'firmeList', d: 'firme', ic: 'sign', l: 'Fogli firme' }, { v: 'backup', ic: 'archive', l: 'Backup' }, { v: 'settings', ic: 'gear', l: 'Impostazioni' }];
+const NAV_TOOLS = [{ v: 'agenda', ic: 'clock', l: 'Programmazione' }, { v: 'firmeList', d: 'firme', ic: 'sign', l: 'Fogli firme' }, { v: 'backup', ic: 'archive', l: 'Backup' }];
 // tab bar del telefono: Oggi + le quattro aree
 const TABS = [{ v: 'home', ic: 'today', l: 'Oggi' }, { v: 'ddaList', ic: 'leaf', l: 'DDA' }, { v: 'mappaturaList', ic: 'pin', l: 'Mappature' },
   { v: 'raList', ic: 'shield', l: 'RA' }, { v: 'radonList', ic: 'radon', l: 'Radon' }];
@@ -594,6 +594,7 @@ function SideNav({ route, go, counts, settings, min, toggle }) {
       ${!min && col ? html`<span class="sn-ic" style=${'background:' + col[0] + ';color:' + col[1]}><${Icon} n=${x.ic} s=${19} /></span>` : html`<${Icon} n=${x.ic} s=${21} />`}<span class="l">${x.l}</span>${n > 0 && html`<span class="n">${n}</span>`}</button>`;
   };
   const name = `${settings.tecnicoNome || ''} ${settings.tecnicoCognome || ''}`.trim();
+  const initials = (((settings.tecnicoNome || '')[0] || '') + ((settings.tecnicoCognome || '')[0] || '')).toUpperCase();
   const ss = useSync(); const sync = OD.account && settings.odSync !== false ? syncLabel(ss) : ''; const syncPhase = ss.phase;
   return html`<aside class=${'sidenav' + (min ? ' min' : '')} aria-label="Aree di lavoro">
     <button class="sn-brand" title="Oggi" onClick=${() => nav('home')}><span class="logo">N</span><div><b>Nembo</b>${name && html`<small>${name}</small>`}</div></button>
@@ -607,6 +608,8 @@ function SideNav({ route, go, counts, settings, min, toggle }) {
     <div class="sn-sec">Strumenti</div><div class="sn-div"></div>
     ${NAV_TOOLS.map(x => item(x, x.d ? counts[x.d] : 0))}
     <div class="sn-grow"></div>
+    <button class=${'sn-prof' + (route.v === 'settings' ? ' on' : '')} title=${min ? 'Impostazioni' : null} aria-label="Profilo e impostazioni" onClick=${() => nav('settings')}>
+      <span class="ava">${initials || html`<${Icon} n="gear" s=${18} />`}</span><span class="l"><b>${name || 'Profilo'}</b><small>Impostazioni</small></span></button>
     <button class="sn-toggle" title=${min ? 'Espandi il menu' : 'Riduci il menu'} aria-expanded=${!min} onClick=${toggle}>
       <${Icon} n=${min ? 'expand' : 'collapse'} s=${19} /><span class="l">Riduci menu</span></button>
     <div class="sn-ver">${APP_VERSION}${sync && html`<br /><span class=${'sn-sync ' + syncPhase}>${sync}</span>`}</div>
@@ -753,6 +756,7 @@ function App() {
 
   let body, wideCreate = null;
   if (route.v === 'home') {
+    wideCreate = () => setSheet(true);
     body = html`<${Home} records=${records} settings=${settings} open=${openRec} newAct=${() => setSheet(true)} bell=${bell}
       avatar=${html`<button class="ava" aria-label="Impostazioni" onClick=${() => go({ v: 'settings' })}>${initials.toUpperCase() || html`<${Icon} n="gear" s=${20} />`}</button>`}
       tplOk=${tplOk} lastBackup=${lastBackup} goList=${v => go({ v })} goSettings=${() => go({ v: 'settings' })} goBackup=${() => go({ v: 'backup' })} goCerca=${() => go({ v: 'cerca' })}
@@ -835,7 +839,7 @@ function App() {
   return html`<div class=${'frame' + (wide ? ' wide' : '')}>
     ${wide && html`<${SideNav} route=${route} go=${go} counts=${counts} settings=${settings} min=${navMin} toggle=${toggleNav} />`}
     <div class=${'shell' + (splitActive ? ' split' : '') + (!wide && isTop ? ' has-tabs' : '')}>
-    ${wide && route.v !== 'home' && html`<header class="wbar"><div class="tb-grow"><h1>${ROUTE_TITLE[route.v] || 'Nembo'}</h1></div>
+    ${wide && html`<header class="wbar"><div class="tb-grow">${route.v === 'home' && html`<div class="lt-eye">${new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}</div>`}<h1>${ROUTE_TITLE[route.v] || 'Nembo'}</h1></div>
       ${route.v !== 'cerca' && html`<button class="btn-icon" aria-label="Cerca" title="Cerca" onClick=${() => go({ v: 'cerca' })}><${Icon} n="search" s=${20} /></button>`}${wideCreate && plus(wideCreate, 'Nuova')}${bell}</header>`}
     ${!wide && !isTop && html`<header class="navbar">
       <button class="nb-back" onClick=${goBack}><${Icon} n="back" s=${22} /> ${route.from || 'Indietro'}</button>

@@ -288,12 +288,16 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
   const [busy, setBusy] = useState(null);
   const [hasTpl, setHasTpl] = useState(null);
   const root = useRef(); const imp = useRef();
-  const secs = hsSections(r);
+  const [T, setT] = useSchede('hs', ['anag', 'main'], initial._new);
+  const secsAll = hsSections(r);
+  const secs = secsAll.filter(s => s.k !== 'dati');
   const cur = secs.findIndex(s => s.k === sec);
-  const S = cur >= 0 ? secs[cur] : null;
+  const S0 = cur >= 0 ? secs[cur] : null;
+  const S = T === 'anag' ? secsAll.find(s => s.k === 'dati') : S0;
   const tplKey = TEMPLATES[r.formato === 'sintetico' ? 'hs_sintetico.docx' : 'hs_esteso.docx'].key;
   useEffect(() => { DB.get(tplKey).then(b => setHasTpl(!!b)); }, [tplKey]);
   useEffect(() => { const c = root.current; if (c) c.scrollTop = 0; }, [sec]);
+  useEffect(() => { const h = () => setSec(null); addEventListener('nembo-goto', h); return () => removeEventListener('nembo-goto', h); }, []);
   const B = r.base || {};
   const setM = patch => up(p => ({ ...p, meta: { ...p.meta, ...patch } }));
   const setImg = (k, id) => up(p => ({ ...p, img: { ...(p.img || {}), [k]: id || undefined } }));
@@ -349,7 +353,8 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
     <div class="sec-h"><h3>Sezioni</h3><span class="hint">${HS_FMT[r.formato]}</span></div>
     <div class="list">${secs.map(s => html`<button class="rcard hs-sec" key=${s.k} onClick=${() => setSec(s.k)}>
       <div class="r1"><span class="ttl" style="margin:0;font-size:16px">${s.l}</span><span class="dt">${hsSecStato(r, s)}</span></div></button>`)}</div>
-    <div class="sec-h"><h3>Word e archivio</h3></div>
+`;
+  const archivio = html`    <div class="sec-h"><h3>Word e archivio</h3></div>
     <div class="card">
       ${hasTpl === false && html`<div class="notice err" style="margin:0 0 10px">Manca il modello Word ${HS_FMT[r.formato]}: caricalo in Impostazioni → Modelli. <button class="btn link" onClick=${onSettings}>Apri</button></div>`}
       <div class="optline" style="padding-top:0"><div class="t"><b>Novità in rosso</b><small>Righe nuove o modificate in rosso, testo dell'anno precedente in nero</small></div><${Toggle} on=${grigio} set=${setGrigio} label="Testo precedente in grigio" /></div>
@@ -494,13 +499,15 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
       onRemove=${async d => { await removeBlob(d.blobId); up(p => ({ ...p, documenti: p.documenti.filter(x => x.id !== d.id) })); }} /></div>`;
 
   return html`<div class="content form" ref=${root}>
-    <${DetailHead} eye=${'HSE · ' + HS_FMT[r.formato]} title=${S ? S.l : r.codice} sub=${S ? [r.codice, r.sito].filter(Boolean).join(' · ') : [r.commessa, r.cliente, placeAddr(r) || r.sito].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
+    <${DetailHead} eye=${'HSE · ' + HS_FMT[r.formato]} title=${S0 && T === 'main' ? S0.l : r.codice} sub=${S0 && T === 'main' ? [r.codice, r.sito].filter(Boolean).join(' · ') : [r.commessa, r.cliente, placeAddr(r) || r.sito].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
+    <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'main', l: 'Sezioni' }]} />
+    ${T === 'anag' ? html`${body}${archivio}` : html`
     ${S && html`<button class="btn link" style="margin:-8px 0 8px -4px" onClick=${() => setSec(null)}><${Icon} n="back" s=${18} /> Indice delle sezioni</button>`}
-    ${S ? body : indice}
+    ${S ? body : indice}`}
     <input ref=${imp} type="file" accept=".docx,.json,application/json,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden onChange=${doImport} />
     <${ActionBar}>
       <${HsCam} up=${up} r=${r} big />
-      ${S ? html`<button class="btn-icon lg" aria-label="Sezione precedente" onClick=${() => go(-1)}><${Icon} n="back" s=${22} /></button>
+      ${S && T === 'main' ? html`<button class="btn-icon lg" aria-label="Sezione precedente" onClick=${() => go(-1)}><${Icon} n="back" s=${22} /></button>
         <button class="btn pri" onClick=${() => go(1)}>${cur === secs.length - 1 ? 'Torna all\'indice' : 'Successiva'} <${Icon} n="right" s=${20} /></button>`
       : html`<button class="btn pri" disabled=${busy === 'docx'} onClick=${word}>${busy === 'docx' ? html`<div class="spin" />` : html`<${Icon} n="file" s=${20} />`} Genera Word</button>`}
     <//>
