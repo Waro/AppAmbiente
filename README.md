@@ -114,6 +114,15 @@ Nuova attività HSE: Nuova attività → *Verbale HSE* (codice `VS-AAAA-NNN`). D
 
 **H&S → HSE**: in tutta l'app la business unit si chiama HSE.
 
+## Cerca (v36)
+
+Ricerca in tutte le attività salvate sul dispositivo, anche offline. Si apre dalla lente in *Oggi*, dalla barra in alto su tablet e PC e dalla voce *Cerca* del menu laterale.
+
+- Filtri: *Tutto*, *Immobile* (indirizzo, città, sito, commessa, cliente, codice), *Titolo* (titoli delle note, aree REC, campioni, manufatti, punti radon e aria, didascalie), *Testo* (testo delle note, appunti, note di campioni e manufatti, voci e schede HSE, azioni) e *Tag*.
+- Maiuscole e accenti non contano; con più parole devono esserci tutte, ognuna all'inizio di una parola («via esempi» trova «Via degli Esempi»).
+- Sotto il campo ci sono i tag usati, ognuno col suo colore e il numero di volte: toccandone uno compaiono tutte le note e gli appunti con quel tag.
+- I risultati sono raggruppati per attività con il punto trovato evidenziato. Toccando un risultato si apre l'attività e Nembo scorre fino alla nota, al campione, al manufatto o al punto (`cercaVai`, evento `nembo-goto` per aprire la matrice giusta nel DDA). Il codice è in `js/cerca.js`.
+
 ## Fogli firme
 
 Per sostituire i fogli di carta con le firme (informativa amianto, presenze, consegna documenti). Si usano in due modi:

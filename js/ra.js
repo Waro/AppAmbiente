@@ -193,6 +193,7 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
   const [r, up, saved] = useAutosave(initial, onSave);
   const [openM, setOpenM] = useState({});
   const [f, setF] = useState('tutti');
+  useEffect(() => { const h = () => setF('tutti'); addEventListener('nembo-goto', h); return () => removeEventListener('nembo-goto', h); }, []);
   const imp = useRef();
 
   const clienti = [...new Set(records.filter(x => x.cliente).map(x => x.cliente))];

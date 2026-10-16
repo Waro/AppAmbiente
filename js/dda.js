@@ -180,6 +180,8 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
   const [tab, setTab] = useState(() => (MATS.find(m => initial.campioni[m.k].length) || MATS[0]).k);
   const [busy, setBusy] = useState(null);
   const [openS, setOpenS] = useState({});
+  // dalla ricerca: apre la matrice del campione trovato
+  useEffect(() => { const h = e => { const c = allCamp(r).find(x => 's-' + x.id === e.detail); if (c) setTab(c.k); }; addEventListener('nembo-goto', h); return () => removeEventListener('nembo-goto', h); }, [r]);
   const importInp = useRef();
   const planLabels = [
     ...r.recs.map(x => ({ ref: x.id, text: x.nome || 'REC', color: '#b7791f' })),

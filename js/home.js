@@ -94,7 +94,7 @@ function PrimiPassi({ settings, tplOk, goSettings, installEvt, onInstall }) {
   </div>`;
 }
 
-function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk, lastBackup, goList, goSettings, goBackup, installEvt, onInstall }) {
+function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk, lastBackup, goList, goSettings, goBackup, goCerca, installEvt, onInstall }) {
   const od = useOdSynced();
   const [bu, setBu] = useState(settings.buDefault || 'ambiente');
   const [per, setPer] = useState('w');
@@ -163,7 +163,7 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
   const stale = records.length > 0 && (!lastBackup || Date.now() - lastBackup > 7 * 86400000);
 
   return html`<div class="content">
-    <${LargeTitle} eye=${eye} title="Oggi" acts=${html`<button class="btn-icon pri" aria-label="Nuova attività" onClick=${newAct}><${Icon} n="plus" s=${22} w=${2.4} /></button>${bell}${avatar}`} />
+    <${LargeTitle} eye=${eye} title="Oggi" acts=${html`<button class="btn-icon pri" aria-label="Nuova attività" onClick=${newAct}><${Icon} n="plus" s=${22} w=${2.4} /></button><button class="btn-icon" aria-label="Cerca" onClick=${goCerca}><${Icon} n="search" s=${20} /></button>${bell}${avatar}`} />
     <div class="seg" style="margin-bottom:var(--gap)">${BUS.map(([k, l]) => html`<button class=${bu === k ? 'on' : ''} onClick=${() => setBu(k)}>${l}</button>`)}</div>
     <${PrimiPassi} settings=${settings} tplOk=${tplOk} goSettings=${goSettings} installEvt=${installEvt} onInstall=${onInstall} />
 

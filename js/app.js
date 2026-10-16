@@ -554,7 +554,7 @@ const LIST_OF = { dda: 'ddaList', mappatura: 'mappaturaList', radon: 'radonList'
 const DETAIL_OF = { ddaList: 'dda', mappaturaList: 'mappatura', radonList: 'radon', raList: 'ra', hsList: 'hs', vsList: 'vs', firmeList: 'firme', ariaList: 'aria' };
 const TOP_ROUTES = ['home', 'agenda', 'ddaList', 'mappaturaList', 'raList', 'radonList', 'hsList', 'vsList', 'firmeList', 'ariaList'];
 const ROUTE_TITLE = { home: 'Oggi', ddaList: 'Ambiente · DDA', mappaturaList: 'Mappatura MCA e FAV', raList: 'Sopralluogo RA', radonList: 'Campagne radon', ariaList: 'Monitoraggio aria', aria: 'Monitoraggio aria',
-  hsList: 'Sopralluoghi HSE', hs: 'Sopralluogo HSE', vsList: 'Verbali HSE', vs: 'Verbale HSE', firmeList: 'Fogli firme', firme: 'Fogli firme', agenda: 'Programmazione', settings: 'Impostazioni', backup: 'Backup', notifiche: 'Notifiche', dda: 'DDA', mappatura: 'Mappatura', ra: 'Sopralluogo RA', radon: 'Campagna radon' };
+  hsList: 'Sopralluoghi HSE', hs: 'Sopralluogo HSE', vsList: 'Verbali HSE', vs: 'Verbale HSE', firmeList: 'Fogli firme', firme: 'Fogli firme', agenda: 'Programmazione', cerca: 'Cerca', settings: 'Impostazioni', backup: 'Backup', notifiche: 'Notifiche', dda: 'DDA', mappatura: 'Mappatura', ra: 'Sopralluogo RA', radon: 'Campagna radon' };
 
 /* ---------------- menu laterale (tablet in orizzontale e PC) ---------------- */
 const NAV_AREAS = [
@@ -583,7 +583,7 @@ const SN_COL = {
   home: ['var(--blue-soft)', 'var(--blue)'], ddaList: ['var(--warn-soft)', 'var(--warn)'], mappaturaList: ['color-mix(in srgb, var(--mca) 12%, var(--card))', 'var(--mca)'],
   raList: ['color-mix(in srgb, var(--mca) 12%, var(--card))', 'var(--mca)'], radonList: ['var(--ok-soft)', 'var(--ok)'], ariaList: ['var(--blue-soft)', '#0a6ebd'],
   hsList: ['var(--blue-soft)', 'var(--blue)'], vsList: ['var(--ok-soft)', 'var(--ok)'], agenda: ['var(--fill-soft)', 'var(--navy)'], firmeList: ['var(--fill-soft)', 'var(--blue)'],
-  backup: ['var(--fill-soft)', 'var(--text2)'], settings: ['var(--fill-soft)', 'var(--text2)'],
+  cerca: ['var(--fill-soft)', 'var(--navy)'], backup: ['var(--fill-soft)', 'var(--text2)'], settings: ['var(--fill-soft)', 'var(--text2)'],
 };
 function SideNav({ route, go, counts, settings, min, toggle }) {
   const nav = v => { if (route.v !== v) go({ v }); };
@@ -599,6 +599,7 @@ function SideNav({ route, go, counts, settings, min, toggle }) {
     <button class="sn-brand" title="Oggi" onClick=${() => nav('home')}><span class="logo">N</span><div><b>Nembo</b>${name && html`<small>${name}</small>`}</div></button>
     <div class="sn-sec">Oggi</div><div class="sn-div"></div>
     ${item({ v: 'home', ic: 'today', l: 'Oggi' }, 0)}
+    ${item({ v: 'cerca', ic: 'search', l: 'Cerca' }, 0)}
     <div class="sn-sec">Aree di lavoro</div>
     ${NAV_AREAS.map(x => item(x, counts[x.d]))}
     <div class="sn-sec">HSE</div><div class="sn-div"></div>
@@ -754,7 +755,7 @@ function App() {
   if (route.v === 'home') {
     body = html`<${Home} records=${records} settings=${settings} open=${openRec} newAct=${() => setSheet(true)} bell=${bell}
       avatar=${html`<button class="ava" aria-label="Impostazioni" onClick=${() => go({ v: 'settings' })}>${initials.toUpperCase() || html`<${Icon} n="gear" s=${20} />`}</button>`}
-      tplOk=${tplOk} lastBackup=${lastBackup} goList=${v => go({ v })} goSettings=${() => go({ v: 'settings' })} goBackup=${() => go({ v: 'backup' })}
+      tplOk=${tplOk} lastBackup=${lastBackup} goList=${v => go({ v })} goSettings=${() => go({ v: 'settings' })} goBackup=${() => go({ v: 'backup' })} goCerca=${() => go({ v: 'cerca' })}
       installEvt=${installEvt} onInstall=${async () => { installEvt.prompt(); await installEvt.userChoice; setInstallEvt(null); }} />`;
   } else if (route.v === 'ddaList') {
     wideCreate = createDda;
@@ -781,6 +782,8 @@ function App() {
     body = split(html`<${HsList} records=${records} acts=${listActs(createHs, 'Nuovo sopralluogo HSE')} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'hs', id })} create=${createHs} />`,
       dRec && html`<${HsForm} ...${formProps(dRec)} onOpenNew=${openNewRec} onSave=${r => saveRec({ ...r, _new: r._new && hsIsEmpty(r) })} />`,
       ['Nessun report selezionato', 'Toccane uno dall\'elenco per aprirlo qui.']);
+  } else if (route.v === 'cerca') {
+    body = html`<${Cerca} records=${records} openRec=${openRec} acts=${null} />`;
   } else if (route.v === 'agenda') {
     wideCreate = () => dispatchEvent(new Event('nembo-ag-add'));
     body = html`<${Agenda} records=${records} settings=${settings} saveRec=${saveRec} openRec=${openRec} bell=${bell} removeRec=${removeRec} />`;
@@ -833,7 +836,7 @@ function App() {
     ${wide && html`<${SideNav} route=${route} go=${go} counts=${counts} settings=${settings} min=${navMin} toggle=${toggleNav} />`}
     <div class=${'shell' + (splitActive ? ' split' : '') + (!wide && isTop ? ' has-tabs' : '')}>
     ${wide && route.v !== 'home' && html`<header class="wbar"><div class="tb-grow"><h1>${ROUTE_TITLE[route.v] || 'Nembo'}</h1></div>
-      ${wideCreate && plus(wideCreate, 'Nuova')}${bell}</header>`}
+      ${route.v !== 'cerca' && html`<button class="btn-icon" aria-label="Cerca" title="Cerca" onClick=${() => go({ v: 'cerca' })}><${Icon} n="search" s=${20} /></button>`}${wideCreate && plus(wideCreate, 'Nuova')}${bell}</header>`}
     ${!wide && !isTop && html`<header class="navbar">
       <button class="nb-back" onClick=${goBack}><${Icon} n="back" s=${22} /> ${route.from || 'Indietro'}</button>
       <div class="nb-grow"></div>${route.v !== 'notifiche' && bell}</header>`}

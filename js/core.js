@@ -2,7 +2,7 @@
 // Stessa stringa di VERSION in sw.js: aumentala insieme a quella ad ogni aggiornamento.
 // Essendo dentro un file JS servito dalla cache, se l'aggiornamento automatico fallisce
 // questa scritta mostra ancora la versione vecchia — è il modo per accorgersene.
-const APP_VERSION = 'nembo-v35';
+const APP_VERSION = 'nembo-v36';
 
 /* ---------------- tema grafico: "essenziale" (predefinito) o "originale" ----------------
    Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno. */
@@ -209,6 +209,7 @@ function Toast() {
 /* ---------------- icone ---------------- */
 const P = {
   leaf: 'M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10ZM2 21c0-3 1.85-5.36 5.08-6',
+  search: 'M11 4a7 7 0 1 0 0 14a7 7 0 0 0 0-14ZM21 21l-4.35-4.35',
   radon: 'M12 12.65m-1.3 0a1.3 1.3 0 1 0 2.6 0a1.3 1.3 0 1 0-2.6 0M7.2 4.34A9.6 9.6 0 0 1 16.8 4.34L14.15 8.93A4.3 4.3 0 0 0 9.85 8.93ZM21.6 12.65A9.6 9.6 0 0 1 16.8 20.96L14.15 16.37A4.3 4.3 0 0 0 16.3 12.65ZM7.2 20.96A9.6 9.6 0 0 1 2.4 12.65L7.7 12.65A4.3 4.3 0 0 0 9.85 16.37Z',
   plus: 'M12 5v14M5 12h14', back: 'M15 18l-6-6 6-6', chev: 'M6 9l6 6 6-6', right: 'M9 18l6-6-6-6',
   camera: 'M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3zM12 13m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0',
