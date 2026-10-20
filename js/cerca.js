@@ -21,7 +21,7 @@ function cercaVoci(r) {
   add('testo', 'Appunti Fase 2', r.appunti2); tags(r.tagAppunti2, 'Appunti Fase 2');
   if (r.type === 'vs') (r.note || []).forEach((n, i) => {
     const et = `Nota ${i + 1}${n.titolo ? ' · ' + n.titolo : ''}`;
-    add('titolo', et, n.titolo, 'n-' + n.id); add('testo', et, n.testo, 'n-' + n.id); tags(n.tag, et, 'n-' + n.id);
+    add('titolo', et, n.titolo, 'n-' + n.id); add('testo', et, n.testo, 'n-' + n.id); add('testo', et, n.mig, 'n-' + n.id); tags(n.tag, et, 'n-' + n.id);
   });
   if (r.type === 'dda') {
     (r.recs || []).forEach(x => { add('titolo', 'Area ' + (x.nome || ''), x.nome, 'rec-' + x.id); add('testo', 'Area ' + (x.nome || ''), x.descrizione, 'rec-' + x.id); });

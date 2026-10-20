@@ -50,10 +50,10 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
   const [r, up, saved] = useAutosave(initial, onSave);
   const [busy, setBusy] = useState(null);
   const [openS, setOpenS] = useState({});
-  const firmeOn = (initial.fogli || []).length > 0;
+  const firmeOn = !!r.firme || (r.fogli || []).length > 0;
   const [T, setT] = useSchede('mappatura', firmeOn ? ['anag', 'camp', 'firme'] : ['anag', 'camp'], initial._new, { 's-': 'camp', 'plan-': 'camp' });
 
-  const clienti = [...new Set(records.filter(x => x.cliente).map(x => x.cliente))];
+  const clienti = nomiClienti(records);
   const siti = [...new Set(records.filter(x => x.sito && (!r.cliente || x.cliente === r.cliente)).map(x => x.sito))];
 
   const tab = r.tab === 'fav' ? 'fav' : 'mca';
@@ -118,23 +118,18 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
     <${DetailHead} eye="Mappatura MCA e FAV" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
     <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'camp', l: 'Campioni', n: allCampMap(r).length }, firmeOn && { k: 'firme', l: 'Firme', n: (r.fogli || []).length }].filter(Boolean)} />
     ${T === 'anag' && html`<div class="card"><div class="grid2">
-      <${Inp} cls="full" label="Commessa - progetto" value=${r.commessa} set=${v => up({ commessa: v })} placeholder="es. 000/26" />
-      <${Inp} label="Cliente" req list="dl-cli-map" value=${r.cliente} set=${v => up({ cliente: v })} />
-      <${Inp} label="Città" value=${r.citta} set=${v => up({ citta: v })} />
-      <${Inp} cls="full" label="Indirizzo" value=${r.indirizzo} set=${v => up({ indirizzo: v })} placeholder="Via e numero civico" />
-      <${Inp} label="Sito / codice immobile" list="dl-siti-map" value=${r.sito} set=${v => up({ sito: v })} placeholder="Facoltativo" />
+      <${Inp} cls="full" label="Commessa - progetto" value=${r.commessa} set=${v => up({ commessa: v })} imp=${impOf(r, 'commessa')} placeholder="es. 000/26" />
+      <${Inp} label="Cliente" req list="dl-cli-map" value=${r.cliente} set=${v => up({ cliente: v })} imp=${impOf(r, 'cliente')} />
+      <${Inp} label="Città" value=${r.citta} set=${v => up({ citta: v })} imp=${impOf(r, 'citta')} />
+      <${Inp} cls="full" label="Indirizzo" value=${r.indirizzo} set=${v => up({ indirizzo: v })} imp=${impOf(r, 'indirizzo')} placeholder="Via e numero civico" />
+      <${Inp} label="Sito / codice immobile" list="dl-siti-map" value=${r.sito} set=${v => up({ sito: v })} imp=${impOf(r, 'sito')} placeholder="Facoltativo" />
       <${Inp} label="Data" type="date" value=${r.data} set=${v => up({ data: v })} />
       <${OraDurata} ora=${r.ora} durata=${r.durata} stato=${r.stato} tipo=${r.type} set=${p => up(p)} />
       <${Inp} label="Tecnico" value=${r.tecnico} set=${v => up({ tecnico: v })} />
     </div>
     <datalist id="dl-cli-map">${clienti.map(c => html`<option value=${c} />`)}</datalist>
     <datalist id="dl-siti-map">${siti.map(c => html`<option value=${c} />`)}</datalist></div>
-    <div class="sec-h"><h3>Archivio</h3></div>
-    <div class="stack">
-      ${allCampMap(r).length > 0 && html`<button class="btn outline block" disabled=${busy === 'docx'} onClick=${riepilogo}>${busy === 'docx' ? html`<div class="spin" />` : html`<${Icon} n="file" s=${18} />`} Riepilogo campioni (Word)</button>`}
-      <button class="btn block" onClick=${() => exportRecords([r], settings)}><${Icon} n="archive" s=${18} /> Salva tutto in un file ZIP</button>
-      <button class="btn danger block" onClick=${() => onDelete(r)}><${Icon} n="trash" s=${18} /> Elimina mappatura</button>
-    </div>`}
+    `}
     ${T === 'camp' && html`
 
     <div class="sec-h"><h3>Campioni</h3><span class="hint">${r.congelati[tab] ? 'Codici bloccati dalla scheda' : `Codici automatici ${mat.auto}1, ${mat.auto}2…`}</span></div>
@@ -162,14 +157,9 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
 
     ${planSection}
 
-    <button class="btn outline block" style="margin-top:4px" disabled=${!camp.length || busy} onClick=${() => scheda(tab)}>
-      ${busy === tab ? html`<div class="spin" />` : html`<${Icon} n="file" s=${18} />`}
-      ${r.schede[tab] ? 'Rigenera' : 'Genera'} scheda campioni ${mat.l} · ${camp.length}</button>
     ${r.schede[tab] && html`<div class="lock" style="margin:8px 2px;color:var(--ok)">Scheda generata il ${new Date(r.schede[tab]).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}</div>`}
     ${!r.commessa && html`<div class="notice">Indica la commessa in alto: compare nell'intestazione della scheda.</div>`}
-    <button class="btn block" style="margin-top:8px" disabled=${!camp.length || busy} onClick=${() => xlsx(tab)}>
-      ${busy === 'x' + tab ? html`<div class="spin" />` : html`<${Icon} n="file" s=${18} />`} Scheda campioni ${mat.l} in Excel</button>
-    <div style="margin-top:6px"><button class="btn sm" onClick=${onSettings}><${Icon} n="gear" s=${15} /> Laboratorio, offerta, codici analisi</button></div>
+
 
     <div class="sec-h"><h3>Appunti</h3></div>
     <div class="card"><${Area} rows=${4} value=${r.appunti} set=${v => up({ appunti: v })} placeholder="Note generali del censimento" />
@@ -177,10 +167,16 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
 
     `}
     ${T === 'firme' && html`<${FogliFirme} r=${r} up=${up} settings=${settings} />`}
-    ${T !== 'firme' && html`<${ActionBar}>
-      ${T === 'anag' ? html`<${OdBtn} r=${r} settings=${settings} />` : html`
-      <button class="btn-icon lg" aria-label="Planimetrie" title="Planimetrie" onClick=${() => scrollToId('plan-' + r.id)}><${Icon} n="map" s=${22} /></button>
-      <button class="btn pri" onClick=${addCamp}><${Icon} n="plus" s=${20} w=${2.4} /> Nuovo campione ${nextCode(tab)}</button>`}
-    <//>`}
+    <${BarraAtt} r=${r} settings=${settings}
+      left=${html`<button class="btn-icon lg" aria-label="Planimetrie" title="Planimetrie" onClick=${() => { if (T !== 'camp') setT('camp'); setTimeout(() => scrollToId('plan-' + r.id), 120); }}><${Icon} n="map" s=${22} /></button>`}
+      center=${T === 'camp' ? html`<button class="btn pri" onClick=${addCamp}><${Icon} n="plus" s=${20} w=${2.4} /> Nuovo campione ${nextCode(tab)}</button>` : html`<${OdBtn} r=${r} settings=${settings} />`}
+      gruppi=${[['Documenti', [
+        ...MAP_MATS.filter(m => (r.campioni[m.k] || []).length).flatMap(m => [
+          { ic: 'file', l: (r.schede[m.k] ? 'Rigenera' : 'Genera') + ' la scheda campioni ' + m.l, s: r.campioni[m.k].length + ' campioni · PDF per il laboratorio', fn: () => scheda(m.k) },
+          { ic: 'file', l: 'Scheda campioni ' + m.l + ' in Excel', fn: () => xlsx(m.k) }]),
+        allCampMap(r).length > 0 && { ic: 'file', l: 'Riepilogo campioni (Word)', fn: riepilogo },
+        { ic: 'gear', l: 'Laboratorio, offerta, codici analisi', fn: onSettings },
+        T !== 'anag' && { ic: 'share', l: OD.account ? 'Carica su OneDrive' : 'Invia a OneDrive', fn: () => OD.account ? odSync([r], settings) : sendToOneDrive(r, settings) }]],
+        opzArchivio({ r, settings, onDelete, elimina: 'Elimina la mappatura', firme: !firmeOn && (() => { up(q => prepFirme({ ...q }, settings, true)); setT('firme'); }) })]} />
   </div>`;
 }

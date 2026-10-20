@@ -218,3 +218,83 @@ function SignaturePadOverlay({ title, onDone, onClose, allowImage }) {
     <div class="sig-area"><div class="sig-line"></div><div class="sig-hint">Firma qui</div><canvas ref=${cv}></canvas></div>
   </div>`;
 }
+
+/* ---------------- Fotocamera di Nembo: anteprima, scatto e galleria in basso a sinistra ----------------
+   camOpen(input) sostituisce input.click() sui campi foto con capture: le foto scattate o scelte dalla galleria
+   arrivano all'input come se le avesse scelte il telefono (evento change), quindi i gestori esistenti non cambiano.
+   Senza fotocamera utilizzabile (PC, permesso negato) resta la fotocamera del telefono / la scelta file. */
+let _camSet = null;
+const camUsable = () => !!(_camSet && navigator.mediaDevices && navigator.mediaDevices.getUserMedia && matchMedia('(pointer: coarse)').matches);
+function camOpen(input) { if (!input) return; if (!camUsable()) { input.click(); return; } _camSet({ input }); }
+function camDeliver(input, files) {
+  if (!files.length) return;
+  const dt = new DataTransfer(); files.forEach(f => dt.items.add(f));
+  input.files = dt.files; input.dispatchEvent(new Event('change', { bubbles: true }));
+}
+function CameraHost() { const [s, set] = useState(null); _camSet = set; return s ? html`<${Camera} key=${Date.now()} input=${s.input} onClose=${() => set(null)} />` : null; }
+
+function Camera({ input, onClose }) {
+  const multi = !!input.multiple;
+  const video = useRef(); const gal = useRef(); const st = useRef({});
+  const [shots, setShots] = useState([]); const shotsRef = useRef(shots); shotsRef.current = shots;
+  const [err, setErr] = useState(null);
+  const [torch, setTorch] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [flash, setFlash] = useState(false);
+  // chiudendo, le foto già scattate non si perdono
+  const finish = (extra = []) => { const files = [...shotsRef.current.map(s => s.file), ...extra]; shotsRef.current.forEach(s => URL.revokeObjectURL(s.url)); onClose(); setTimeout(() => camDeliver(input, files), 0); };
+  useBackClose(() => finish());
+  useEffect(() => {
+    let alive = true, stream;
+    (async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } } });
+        if (!alive) return stream.getTracks().forEach(t => t.stop());
+        const v = video.current; v.srcObject = stream; await v.play();
+        const track = stream.getVideoTracks()[0]; st.current.track = track;
+        if ('ImageCapture' in window) try { st.current.ic = new ImageCapture(track); } catch (e) { /* scatto dal video */ }
+        const caps = track.getCapabilities ? track.getCapabilities() : {};
+        if (caps.torch) setTorch(false);
+        if (caps.focusMode && caps.focusMode.includes('continuous')) track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {});
+      } catch (e) { setErr('Non riesco ad aprire la fotocamera dentro Nembo. Usa la fotocamera del telefono o la galleria.'); }
+    })();
+    return () => { alive = false; if (stream) stream.getTracks().forEach(t => t.stop()); };
+  }, []);
+  const toggleTorch = () => { const t = st.current.track; if (!t) return; const on = !torch; t.applyConstraints({ advanced: [{ torch: on }] }).then(() => setTorch(on)).catch(() => {}); };
+  const grab = async () => {
+    const ic = st.current.ic;
+    if (ic) { try { return await ic.takePhoto(); } catch (e) { /* ripiego sul fotogramma */ } }
+    const v = video.current, c = document.createElement('canvas'); c.width = v.videoWidth; c.height = v.videoHeight;
+    c.getContext('2d').drawImage(v, 0, 0);
+    return await new Promise(r => c.toBlob(r, 'image/jpeg', .92));
+  };
+  const shoot = async () => {
+    if (busy || err) return; setBusy(true); setFlash(true); setTimeout(() => setFlash(false), 160);
+    try {
+      const b = await grab(); if (!b) throw new Error('scatto non riuscito');
+      const file = new File([b], `foto_${Date.now()}.jpg`, { type: b.type || 'image/jpeg' });
+      if (navigator.vibrate) navigator.vibrate(30);
+      if (!multi) { shotsRef.current = [{ file, url: '' }]; finish(); return; }
+      setShots(s => [...s, { file, url: URL.createObjectURL(b) }]);
+    } catch (e) { toast('Foto non scattata: riprova'); }
+    setBusy(false);
+  };
+  const last = shots[shots.length - 1];
+  return html`<div class="cam" role="dialog" aria-label="Fotocamera">
+    <video ref=${video} playsinline muted></video>
+    ${flash && html`<div class="cam-flash"></div>`}
+    <div class="cam-top">
+      <button class="cam-b" aria-label="Chiudi" onClick=${() => finish()}><${Icon} n="x" s=${22} /></button>
+      <span class="cam-n">${shots.length ? shots.length + (shots.length === 1 ? ' foto' : ' foto') : ''}</span>
+      ${torch !== null ? html`<button class=${'cam-b' + (torch ? ' on' : '')} aria-label="Torcia" onClick=${toggleTorch}><${Icon} n="torch" s=${21} /></button>` : html`<span style="width:44px"></span>`}
+    </div>
+    ${err && html`<div class="cam-err">${err}<button class="btn" style="margin-top:12px" onClick=${() => { onClose(); input.click(); }}><${Icon} n="camera" s=${18} /> Fotocamera del telefono</button></div>`}
+    <div class="cam-bot">
+      <button class="cam-gal" aria-label="Scegli dalla galleria" onClick=${() => gal.current.click()}>
+        ${last ? html`<img src=${last.url} alt="" />` : html`<${Icon} n="image" s=${24} />`}<small>Galleria</small></button>
+      <button class="cam-shut" aria-label="Scatta" disabled=${busy || !!err} onClick=${shoot}><i></i></button>
+      ${multi && shots.length ? html`<button class="cam-done" onClick=${() => finish()}>Fine</button>` : html`<span class="cam-sp"></span>`}
+    </div>
+    <input ref=${gal} type="file" accept="image/*" multiple=${multi} hidden onChange=${e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) finish(fs); }} />
+  </div>`;
+}

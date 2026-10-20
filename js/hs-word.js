@@ -519,6 +519,7 @@ async function hsCheckTemplate(name, buf) {
   const x = hsHeal(dec8(f['word/document.xml']));
   if (name === 'hs_esteso.docx' && !/@@SCHEDE@@/.test(x)) throw new Error('non è il modello HSE Esteso (manca il segnaposto @@SCHEDE@@)');
   if (name === 'hs_sintetico.docx' && !/@@NT_0_1@@/.test(x)) throw new Error('non è il modello HSE Sintetico (mancano i segnaposto della checklist)');
+  if (name === 'vs.docx' && !/@@S_TITOLO@@/.test(x)) throw new Error('non è il modello del Verbale HSE (manca il segnaposto @@S_TITOLO@@)');
 }
 
 /* ================= lettura del report dell'anno precedente =================
@@ -785,12 +786,14 @@ async function hsApplyImport(rec, d, onStep) {
   const r = JSON.parse(JSON.stringify(rec));
   r.formato = d.formato;
   ['commessa', 'cliente', 'sito', 'indirizzo', 'citta'].forEach(k => { if (d[k]) r[k] = d[k]; });
+  // anagrafica importata dal Word: bloccata (si sblocca col lucchetto)
+  markImp(r, d, ['commessa', 'cliente', 'sito', 'indirizzo', 'citta']); markImp(r, d.meta || {}, Object.keys(d.meta || {}), 'meta.');
   if (d.fromJson && d.data) r.data = d.data;
   if (d.appunti && !r.appunti) r.appunti = d.appunti;
   Object.assign(r.meta, Object.fromEntries(Object.entries(d.meta || {}).filter(([, v]) => v)));
   const B = {};
   if (d.formato === 'esteso') {
-    r.an = { ...r.an, ...d.an }; if (d.inquadramento) r.inquadramento = d.inquadramento;
+    r.an = { ...r.an, ...d.an }; markImp(r, d.an || {}, Object.keys(d.an || {}).filter(k => k !== 'descrizione'), 'an.'); if (d.inquadramento) r.inquadramento = d.inquadramento;
     if ((d.catFab || []).length) r.catFab = d.catFab; if ((d.catTer || []).length) r.catTer = d.catTer;
     if ((d.visite || []).length) r.visite = d.visite;
     r.schede = JSON.parse(JSON.stringify(d.schede));
@@ -798,7 +801,7 @@ async function hsApplyImport(rec, d, onStep) {
     B['an.descrizione'] = r.an.descrizione || ''; B.inquadramento = r.inquadramento || '';
   } else {
     const c = JSON.parse(JSON.stringify({ anS: d.anS, risp: d.risp, note: d.note, azioni: d.azioni }));
-    r.anS = c.anS; r.risp = c.risp; r.note = c.note; r.descr = d.descr; r.azioni = c.azioni;
+    r.anS = c.anS; markImp(r, Object.fromEntries((c.anS || []).map((v, i) => [i, v]).filter(([i]) => i != 8 && i != 9)), Object.keys(c.anS || []).filter(i => i != 8 && i != 9), 'anS.'); r.risp = c.risp; r.note = c.note; r.descr = d.descr; r.azioni = c.azioni;
     r.anS.forEach((v, i) => B['an.' + i] = v); Object.entries(r.note).forEach(([k, v]) => B['nt.' + k] = v); B.descr = r.descr;
   }
   const tot = Object.keys(d.img || {}).length + (d.foto || []).length + (d.extraFoto || []).length + (d.cgFoto || []).length; let k = 0;

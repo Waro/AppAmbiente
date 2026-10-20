@@ -5,9 +5,10 @@ function newVerbale(records, s) {
   const n = records.filter(r => r.type === 'vs' && (r.codice || '').startsWith('VS-' + y)).map(r => +r.codice.slice(-3)).reduce((a, b) => Math.max(a, b), 0) + 1;
   return { id: uid('vs'), type: 'vs', codice: `VS-${y}-${String(n).padStart(3, '0')}`, createdAt: Date.now(), updatedAt: Date.now(),
     commessa: '', cliente: '', citta: '', sito: '', indirizzo: '', data: today(), tecnico: `${s.tecnicoNome} ${s.tecnicoCognome}`.trim(),
-    note: [], appunti: '', fotoAppunti: [] };
+    note: [], appunti: '', fotoAppunti: [], visite: [], img: {},
+    meta: { titolo: '', fondo: '', dataReport: '', redatto: `${s.tecnicoNome} ${s.tecnicoCognome}`.trim(), verificato: '', protocollo: '', procura: '', revisione: '00', presenti: '', descrArea: '' } };
 }
-const newNotaVs = () => ({ id: uid('n'), titolo: '', testo: '', foto: [], tag: [] });
+const newNotaVs = () => ({ id: uid('n'), titolo: '', testo: '', mig: '', foto: [], tag: [] });
 const verbaleIsEmpty = r => !r.commessa && !r.cliente && !r.sito && !r.citta && !r.indirizzo && !(r.note || []).some(n => n.titolo || n.testo || n.foto.length) && !r.appunti && !(r.fotoAppunti || []).length;
 const vsPhotos = r => r.type === 'vs' ? (r.note || []).flatMap((n, i) => (n.foto || []).map((f, k) => ({ id: f, name: `Nota_${i + 1}_${(n.titolo || 'senza_titolo').slice(0, 40)}_${k + 1}` }))) : [];
 
@@ -32,7 +33,7 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
   const [r, up, saved] = useAutosave(initial, onSave);
   const [filtro, setFiltro] = useState(null);
   const [T, setT] = useSchede('vs', ['anag', 'note'], initial._new, { 'n-': 'note' });
-  const clienti = [...new Set(records.filter(x => x.cliente).map(x => x.cliente))];
+  const clienti = nomiClienti(records);
   const upload = () => OD.account ? odSync([r], settings) : sendToOneDrive(r, settings);
   const note = r.note || [];
   const tagsV = Object.keys(collectTags(note)).sort((a, b) => a.localeCompare(b, 'it'));
@@ -42,24 +43,49 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
   const move = (n, d) => up(q => { const L = q.note.slice(); const i = L.findIndex(x => x.id === n.id), j = i + d; if (j < 0 || j >= L.length) return q; [L[i], L[j]] = [L[j], L[i]]; return { ...q, note: L }; });
   const vis = note.filter(n => !filtro || (n.tag || []).includes(filtro));
   const nFoto = note.reduce((a, n) => a + (n.foto || []).length, 0);
+  const m = r.meta || {};
+  const setM = patch => up(q => ({ ...q, meta: { ...(q.meta || {}), ...patch } }));
+  const setImg = (k, id) => up(q => ({ ...q, img: { ...(q.img || {}), [k]: id || undefined } }));
+  const visite = r.visite || [];
+  const setV = (i, patch) => up(q => ({ ...q, visite: (q.visite || []).map((x, j) => j === i ? { ...x, ...patch } : x) }));
+  const [tplOk, setTplOk] = useState(null);
+  useEffect(() => { DB.get(TEMPLATES['vs.docx'].key).then(b => setTplOk(!!b)); }, []);
   return html`<div class="content form">
     <${DetailHead} eye="Verbale HSE" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
     <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'note', l: 'Note', n: note.length }]} />
     ${T === 'anag' && html`    <div class="card"><div class="grid2">
-      <${Inp} cls="full" label="Commessa" value=${r.commessa} set=${v => up({ commessa: v })} />
-      <${Inp} label="Cliente" list="dl-cli-vs" value=${r.cliente} set=${v => up({ cliente: v })} />
-      <${Inp} label="Città" value=${r.citta} set=${v => up({ citta: v })} />
-      <${Inp} cls="full" label="Indirizzo" value=${r.indirizzo} set=${v => up({ indirizzo: v })} placeholder="Via e numero civico" />
-      <${Inp} label="Sito / codice immobile" value=${r.sito} set=${v => up({ sito: v })} placeholder="Facoltativo" />
+      <${Inp} cls="full" label="Commessa" value=${r.commessa} set=${v => up({ commessa: v })} imp=${impOf(r, 'commessa')} />
+      <${Inp} label="Cliente" list="dl-cli-vs" value=${r.cliente} set=${v => up({ cliente: v })} imp=${impOf(r, 'cliente')} />
+      <${Inp} label="Città" value=${r.citta} set=${v => up({ citta: v })} imp=${impOf(r, 'citta')} />
+      <${Inp} cls="full" label="Indirizzo" value=${r.indirizzo} set=${v => up({ indirizzo: v })} imp=${impOf(r, 'indirizzo')} placeholder="Via e numero civico" />
+      <${Inp} label="Nome asset / codice immobile" value=${r.sito} set=${v => up({ sito: v })} imp=${impOf(r, 'sito')} placeholder="Nel piè di pagina del Word" />
       <${Inp} label="Data" type="date" value=${r.data} set=${v => up({ data: v })} />
       <${OraDurata} ora=${r.ora} durata=${r.durata} stato=${r.stato} tipo=${r.type} set=${p => up(p)} />
       <${Inp} label="Tecnico" value=${r.tecnico} set=${v => up({ tecnico: v })} />
     </div><datalist id="dl-cli-vs">${clienti.map(c => html`<option value=${c} />`)}</datalist></div>
-    <div class="sec-h"><h3>Archivio</h3></div>
-    <div class="stack">
-      <button class="btn block" onClick=${() => exportRecords([r], settings)}><${Icon} n="archive" s=${18} /> Salva tutto in un file ZIP</button>
-      <button class="btn danger block" onClick=${() => onDelete(r)}><${Icon} n="trash" s=${18} /> Elimina</button>
-    </div>`}
+    <div class="sec-h"><h3>Dati del report</h3><span class="hint">Copertina del Word</span></div>
+    <div class="card"><div class="grid2">
+      <${Inp} cls="full" label="Titolo del sopralluogo" value=${m.titolo} set=${v => setM({ titolo: v })} placeholder=${r.sito || 'es. Sopralluogo HSE'} />
+      <${Inp} label="Fondo" value=${m.fondo} set=${v => setM({ fondo: v })} />
+      <${Inp} label="Data report" value=${m.dataReport} set=${v => setM({ dataReport: v })} placeholder=${'automatica: ' + dataIT(r.data)} />
+      <${Inp} label="Redatto da" value=${m.redatto} set=${v => setM({ redatto: v })} />
+      <${Inp} label="Verificato da" value=${m.verificato} set=${v => setM({ verificato: v })} />
+      <${Inp} label="Protocollo" value=${m.protocollo} set=${v => setM({ protocollo: v })} />
+      <${Inp} label="Revisione" value=${m.revisione} set=${v => setM({ revisione: v })} placeholder="00" />
+      <${Inp} cls="full" label="Procura" value=${m.procura} set=${v => setM({ procura: v })} />
+    </div><div class="divider"></div><${ImgSlot} label="Foto di copertina" id=${(r.img || {}).copertina} set=${id => setImg('copertina', id)} /></div>
+    <div class="sec-h"><h3>Identificazione dell'asset</h3></div>
+    <div class="card"><${HsText} label="Descrizione area" rows=${3} value=${m.descrArea} set=${v => setM({ descrArea: v })} />
+      <${Inp} label="Presenti al sopralluogo" value=${m.presenti} set=${v => setM({ presenti: v })} placeholder="Nomi e ruoli" />
+      <div class="divider"></div><${ImgSlot} label="Inquadramento (ubicazione dell'asset)" id=${(r.img || {}).inquadramento} set=${id => setImg('inquadramento', id)} /></div>
+    <div class="sec-h"><h3>Sopralluoghi precedenti</h3><span class="hint">nel Word con quello di oggi</span></div>
+    <div class="card tight">${visite.map((v, i) => html`<div class="row" key=${i} style="margin-bottom:8px">
+        <input class="inp" type="date" style="max-width:170px" value=${v.data} onInput=${e => setV(i, { data: e.target.value })} aria-label="Data" />
+        <input class="inp" value=${v.presenti} placeholder="Presenti" onInput=${e => setV(i, { presenti: e.target.value })} />
+        <button class="x" aria-label="Elimina" onClick=${() => up(q => ({ ...q, visite: q.visite.filter((_, j) => j !== i) }))}>×</button></div>`)}
+      <button class="btn dashed" onClick=${() => up(q => ({ ...q, visite: [...(q.visite || []), { data: '', presenti: '' }] }))}>+ Aggiungi sopralluogo precedente</button></div>
+    ${tplOk === false && html`<div class="notice">Per il Word carica il «Modello Word Verbale HSE» in Impostazioni → Modelli.</div>`}
+`}
     ${T === 'note' && html`
     <div class="card-navy"><div class="sum3">
       <div><b>${note.length}</b><span>${note.length === 1 ? 'nota' : 'note'}</span></div>
@@ -75,7 +101,8 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
         <button class="x" title="Dopo" disabled=${i === note.length - 1} onClick=${() => move(n, 1)}>›</button>
         <button class="x" title="Elimina la nota" onClick=${() => delN(n)}><${Icon} n="trash" s=${15} /></button></div>
       <${Inp} label="Titolo" value=${n.titolo} set=${v => updN(n.id, { titolo: v })} placeholder="es. Uscita di emergenza lato nord" />
-      <${HsText} label="Testo" rows=${4} value=${n.testo} set=${v => updN(n.id, { testo: v })} />
+      <${HsText} label="Situazione rilevata" rows=${4} value=${n.testo} set=${v => updN(n.id, { testo: v })} />
+      <${HsText} label="Attività di miglioramento" rows=${2} value=${n.mig} set=${v => updN(n.id, { mig: v })} />
       <div class="fld"><span>Foto</span></div>
       <${PhotoStrip} ids=${n.foto || []} max=${20} onAdd=${ids => updN(n.id, { foto: [...(n.foto || []), ...ids] })}
         onRemove=${async id => { await removeBlob(id); up(q => ({ ...q, note: q.note.map(x => x.id === n.id ? { ...x, foto: x.foto.filter(f => f !== id) } : x) })); }} />
@@ -86,17 +113,19 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
     <div class="card"><textarea class="inp" rows="3" value=${r.appunti} onInput=${e => up({ appunti: e.target.value })} aria-label="Appunti"></textarea>
       <${NotePhotos} rec=${r} up=${up} /></div>
     `}
-    <${ActionBar}>
-      ${T === 'anag' ? html`<${OdBtn} r=${r} settings=${settings} />` : html`      <${VsCam} onAdd=${ids => { const nn = { ...newNotaVs(), foto: ids }; setT('note'); up(q => ({ ...q, note: [...(q.note || []), nn] })); setFiltro(null); setTimeout(() => scrollToId('n-' + nn.id), 80); }} />
-      <button class="btn pri" onClick=${addN}><${Icon} n="plus" s=${20} w=${2.4} /> Nuova nota</button>`}
-    <//>
+    <${BarraAtt} r=${r} settings=${settings}
+      left=${html`<${VsCam} onAdd=${ids => { const nn = { ...newNotaVs(), foto: ids }; setT('note'); up(q => ({ ...q, note: [...(q.note || []), nn] })); setFiltro(null); setTimeout(() => scrollToId('n-' + nn.id), 80); }} />`}
+      center=${T === 'note' ? html`<button class="btn pri" onClick=${addN}><${Icon} n="plus" s=${20} w=${2.4} /> Nuova nota</button>`
+        : html`<button class="btn pri" onClick=${() => vsWord(r, settings)}><${Icon} n="file" s=${20} /> Genera Word</button>`}
+      gruppi=${[['Documenti', [T === 'note' && { ic: 'file', l: 'Genera Word', s: 'Ogni nota diventa una scheda del verbale', fn: () => vsWord(r, settings) },
+        { ic: 'share', l: OD.account ? 'Carica su OneDrive' : 'Invia a OneDrive', fn: upload }]], opzArchivio({ r, settings, onDelete, elimina: 'Elimina il verbale' })]} />
   </div>`;
 }
 
 // fotocamera nella barra azioni: la foto apre una nota nuova
 function VsCam({ onAdd }) {
   const inp = useRef();
-  return html`<button class="btn-icon lg" aria-label="Foto in una nuova nota" title="Foto in una nuova nota" onClick=${() => inp.current.click()}><${Icon} n="camera" s=${22} />
+  return html`<button class="btn-icon lg" aria-label="Foto in una nuova nota" title="Foto in una nuova nota" onClick=${() => camOpen(inp.current)}><${Icon} n="camera" s=${22} />
     <input ref=${inp} type="file" accept="image/*" capture="environment" hidden onClick=${e => e.stopPropagation()}
       onChange=${async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { await onAdd([await saveImage(f)]); toast('Foto aggiunta in una nuova nota'); } catch (err) { fail('Foto non salvata', err); } }} /></button>`;
 }

@@ -49,6 +49,7 @@ function importDda1(json, rec) {
   const patch = {}; let n = 0;
   const str = k => { if (data[k] && !rec[k]) { patch[k] = String(data[k]); n++; } };
   ['commessa', 'cliente', 'citta', 'indirizzo', 'sito', 'usoAttuale', 'usoStorico', 'interviste', 'appunti'].forEach(str);
+  { const t = markImp({ imp: rec.imp }, patch, IMP_ANAG); if (t.imp) patch.imp = t.imp; }
   if (data.check && typeof data.check === 'object') {
     const valid = new Set(['presente', 'assente', 'nv']); const chk = { ...rec.check }; const nt = { ...rec.checkNote };
     for (const [k, v] of Object.entries(data.check)) {
@@ -180,7 +181,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
   const [tab, setTab] = useState(() => (MATS.find(m => initial.campioni[m.k].length) || MATS[0]).k);
   const [busy, setBusy] = useState(null);
   const [openS, setOpenS] = useState({});
-  const firmeOn = (initial.fogli || []).length > 0;
+  const firmeOn = !!r.firme || (r.fogli || []).length > 0;
   const [T, setT] = useSchede('dda', firmeOn ? ['anag', 'sop', 'camp', 'firme'] : ['anag', 'sop', 'camp'], initial._new, { 's-': 'camp', 'rec-': 'sop' });
   // dalla ricerca: apre la matrice del campione trovato
   useEffect(() => { const h = e => { const c = allCamp(r).find(x => 's-' + x.id === e.detail); if (c) setTab(c.k); }; addEventListener('nembo-goto', h); return () => removeEventListener('nembo-goto', h); }, [r]);
@@ -195,7 +196,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
       onAdd=${p => up(q => ({ ...q, planimetrie: [...(q.planimetrie || []), p] }))}
       onUpdate=${(id, patch) => up(q => ({ ...q, planimetrie: (q.planimetrie || []).map(x => x.id === id ? { ...x, ...patch } : x) }))}
       onRemove=${async p => { for (const b of blobIds(p)) await removeBlob(b); up(q => ({ ...q, planimetrie: (q.planimetrie || []).filter(x => x.id !== p.id) })); }} /></div>`;
-  const clienti = [...new Set(records.filter(x => x.cliente).map(x => x.cliente))];
+  const clienti = nomiClienti(records);
   const siti = [...new Set(records.filter(x => x.sito && (!r.cliente || x.cliente === r.cliente)).map(x => x.sito))];
 
   const setCheck = (k, v) => up(p => ({ ...p, check: { ...p.check, [k]: p.check[k] === v ? undefined : v } }));
@@ -286,11 +287,11 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
     <${DetailHead} eye=${'DDA · Fase ' + r.fase} title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
     <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'sop', l: 'Sopralluogo', n: r.recs.length }, { k: 'camp', l: 'Campioni', n: allCamp(r).length }, firmeOn && { k: 'firme', l: 'Firme', n: (r.fogli || []).length }].filter(Boolean)} />
     ${T === 'anag' && html`<div class="card"><div class="grid2">
-      <${Inp} cls="full" label="Commessa - progetto" value=${r.commessa} set=${v => up({ commessa: v })} placeholder="es. 000/26" />
-      <${Inp} label="Cliente" req list="dl-cli" value=${r.cliente} set=${v => up({ cliente: v })} />
-      <${Inp} label="Città" value=${r.citta} set=${v => up({ citta: v })} />
-      <${Inp} cls="full" label="Indirizzo" value=${r.indirizzo} set=${v => up({ indirizzo: v })} placeholder="Via e numero civico" />
-      <${Inp} label="Sito / codice immobile" list="dl-siti" value=${r.sito} set=${v => up({ sito: v })} placeholder="Facoltativo" />
+      <${Inp} cls="full" label="Commessa - progetto" value=${r.commessa} set=${v => up({ commessa: v })} imp=${impOf(r, 'commessa')} placeholder="es. 000/26" />
+      <${Inp} label="Cliente" req list="dl-cli" value=${r.cliente} set=${v => up({ cliente: v })} imp=${impOf(r, 'cliente')} />
+      <${Inp} label="Città" value=${r.citta} set=${v => up({ citta: v })} imp=${impOf(r, 'citta')} />
+      <${Inp} cls="full" label="Indirizzo" value=${r.indirizzo} set=${v => up({ indirizzo: v })} imp=${impOf(r, 'indirizzo')} placeholder="Via e numero civico" />
+      <${Inp} label="Sito / codice immobile" list="dl-siti" value=${r.sito} set=${v => up({ sito: v })} imp=${impOf(r, 'sito')} placeholder="Facoltativo" />
       <${Inp} label="Data" type="date" value=${r.data} set=${v => up({ data: v })} />
       <${OraDurata} ora=${r.ora} durata=${r.durata} stato=${r.stato} tipo=${r.type} set=${p => up(p)} />
       <${Inp} label="Tecnico" value=${r.tecnico} set=${v => up({ tecnico: v })} />
@@ -307,12 +308,6 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
     <div class="card"><${FileList} items=${r.documenti}
       onAdd=${d => up(p => ({ ...p, documenti: [...p.documenti, d] }))}
       onRemove=${async d => { await removeBlob(d.blobId); up(p => ({ ...p, documenti: p.documenti.filter(x => x.id !== d.id) })); }} /></div>
-    <div class="sec-h"><h3>Archivio</h3></div>
-    <div class="stack">
-      ${allCamp(r).length > 0 && html`<button class="btn outline block" disabled=${busy === 'docx'} onClick=${riepilogo}>${busy === 'docx' ? html`<div class="spin" />` : html`<${Icon} n="file" s=${18} />`} Riepilogo campioni (Word)</button>`}
-      <button class="btn block" onClick=${() => exportRecords([r], settings)}><${Icon} n="archive" s=${18} /> Salva tutto in un file ZIP</button>
-      <button class="btn danger block" onClick=${() => onDelete(r)}><${Icon} n="trash" s=${18} /> Elimina indagine</button>
-    </div>
 `}
 
     ${T === 'sop' && html`
@@ -355,13 +350,6 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
       <div class="card"><textarea class="inp" rows="4" placeholder="Note sparse, promemoria…" value=${r.appunti || ''} onInput=${e => up({ appunti: e.target.value })} aria-label="Appunti Fase 1"></textarea>
         <${NotePhotos} rec=${r} field="fotoAppunti" up=${up} /></div>
 
-      <div class="sec-h"><h3>Importa da un DDA precedente</h3></div>
-      <div class="card tight">
-        <p class="lead" style="margin:2px 0 10px">Fatti preparare da Claude un file JSON a partire da un vecchio DDA o da documenti interni, poi caricalo qui: riempie solo i campi ancora vuoti di questa scheda.</p>
-        <div class="row"><button class="btn" style="flex:1" onClick=${() => importInp.current.click()}>Carica .json</button>
-          <button class="btn" style="flex:1" onClick=${downloadDda1Template}>Scarica modello</button></div>
-        <input ref=${importInp} type="file" accept="application/json,text/plain,application/octet-stream,.json" hidden onChange=${doImport1} />
-      </div>
 
       ${planSection}
     `}
@@ -380,7 +368,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
           </div>
           <div class="row" style="padding-left:28px">
             <input class="inp" placeholder="Cosa" value=${it.descrizione} onInput=${e => updCk(it.id, { descrizione: e.target.value })} />
-            <input class="inp" style="max-width:40%" placeholder="Dove" value=${it.ubicazione} onInput=${e => updCk(it.id, { ubicazione: e.target.value })} />
+            <div style="flex:0 0 42%"><${InpGrow} placeholder="Dove" value=${it.ubicazione} set=${v => updCk(it.id, { ubicazione: v })} /></div>
           </div></div>`)}
         <div class="row" style="margin-top:8px">
           <button class="btn dashed" style="flex:1" onClick=${() => addCk()}>+ Aggiungi voce</button>
@@ -423,14 +411,9 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
       ${planSection}
 
       ${(tab === 'mca' || tab === 'fav') && html`
-        <button class="btn outline block" style="margin-top:4px" disabled=${!camp.length || busy} onClick=${() => scheda(tab)}>
-          ${busy === tab ? html`<div class="spin" />` : html`<${Icon} n="file" s=${18} />`}
-          ${r.schede[tab] ? 'Rigenera' : 'Genera'} scheda campioni ${mat.l} · ${camp.length}</button>
         ${r.schede[tab] && html`<div class="lock" style="margin:8px 2px;color:var(--ok)">Scheda generata il ${new Date(r.schede[tab]).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}</div>`}
         ${!r.commessa && html`<div class="notice">Indica la commessa in alto: compare nell'intestazione della scheda.</div>`}
-        <button class="btn block" style="margin-top:8px" disabled=${!camp.length || busy} onClick=${() => xlsx(tab)}>
-          ${busy === 'x' + tab ? html`<div class="spin" />` : html`<${Icon} n="file" s=${18} />`} Scheda campioni ${mat.l} in Excel</button>
-        <div style="margin-top:6px"><button class="btn sm" onClick=${onSettings}><${Icon} n="gear" s=${15} /> Laboratorio, offerta, codici analisi</button></div>`}
+      `}
 
       ${risCamp.length > 0 && html`
         <div class="sec-h"><h3>Risultati vs CSC</h3>
@@ -451,11 +434,22 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
     `}
 
     ${T === 'firme' && html`<${FogliFirme} r=${r} up=${up} settings=${settings} />`}
-    ${T !== 'firme' && html`<${ActionBar}>
-      ${T === 'anag' ? html`<${OdBtn} r=${r} settings=${settings} />` : html`
-      <button class="btn-icon lg" aria-label="Planimetrie" title="Planimetrie" onClick=${() => scrollToId('plan-' + r.id)}><${Icon} n="map" s=${22} /></button>
-      ${T === 'sop' ? html`<button class="btn pri" onClick=${addRec}><${Icon} n="plus" s=${20} w=${2.4} /> Nuova area REC</button>`
-        : html`<button class="btn pri" onClick=${addCamp}><${Icon} n="plus" s=${20} w=${2.4} /> Nuovo campione ${mat.auto ? nextCode(tab) : mat.l}</button>`}`}
-    <//>`}
+    <input ref=${importInp} type="file" accept="application/json,text/plain,application/octet-stream,.json" hidden onChange=${doImport1} />
+    <${BarraAtt} r=${r} settings=${settings}
+      left=${html`<button class="btn-icon lg" aria-label="Planimetrie" title="Planimetrie" onClick=${() => { if (T === 'anag' || T === 'firme') setT(r.fase === 2 ? 'camp' : 'sop'); setTimeout(() => scrollToId('plan-' + r.id), 120); }}><${Icon} n="map" s=${22} /></button>`}
+      center=${T === 'sop' ? html`<button class="btn pri" onClick=${addRec}><${Icon} n="plus" s=${20} w=${2.4} /> Nuova area REC</button>`
+        : T === 'camp' ? html`<button class="btn pri" onClick=${addCamp}><${Icon} n="plus" s=${20} w=${2.4} /> Nuovo campione ${mat.auto ? nextCode(tab) : mat.l}</button>`
+        : html`<${OdBtn} r=${r} settings=${settings} />`}
+      gruppi=${[['Documenti', [
+        ...['mca', 'fav'].filter(k => r.campioni[k].length).flatMap(k => { const m = MATS.find(x => x.k === k); return [
+          { ic: 'file', l: (r.schede[k] ? 'Rigenera' : 'Genera') + ' la scheda campioni ' + m.l, s: r.campioni[k].length + ' campioni · PDF per il laboratorio', fn: () => scheda(k) },
+          { ic: 'file', l: 'Scheda campioni ' + m.l + ' in Excel', fn: () => xlsx(k) }]; }),
+        allCamp(r).length > 0 && { ic: 'file', l: 'Riepilogo campioni (Word)', fn: riepilogo },
+        (r.campioni.mca.length || r.campioni.fav.length) && { ic: 'gear', l: 'Laboratorio, offerta, codici analisi', fn: onSettings },
+        T !== 'anag' && { ic: 'share', l: OD.account ? 'Carica su OneDrive' : 'Invia a OneDrive', fn: () => OD.account ? odSync([r], settings) : sendToOneDrive(r, settings) }]],
+        ['Dati', [
+          { ic: 'file', l: 'Importa da un DDA precedente', s: 'File JSON: riempie solo i campi ancora vuoti', fn: () => importInp.current.click() },
+          { ic: 'paper', l: 'Scarica il modello JSON', fn: downloadDda1Template }]],
+        opzArchivio({ r, settings, onDelete, elimina: 'Elimina l’indagine', firme: !firmeOn && (() => { up(q => prepFirme({ ...q }, settings, true)); setT('firme'); }) })]} />
   </div>`;
 }

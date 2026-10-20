@@ -90,10 +90,10 @@ async function shareIcs(items, name) {
 const PIANO_TIPI = { ra: ['ra', {}], dda1: ['dda', { fase: 1 }], dda2: ['dda', { fase: 2 }], mappatura: ['mappatura', {}], radon: ['radon', {}],
   hsE: ['hs', { formato: 'esteso' }], hsS: ['hs', { formato: 'sintetico' }], vs: ['vs', {}], firme: ['firme', {}], aria: ['aria', {}] };
 const PIANO_MODELLO = { type: 'nembo-programmazione', attivita: [
-  { tipo: 'ra', data: '2026-11-03', ora: '09:00', durata: 120, stato: 'confermato', commessa: '000/26', cliente: 'Cliente', citta: 'Città', indirizzo: 'Via e numero civico', sito: '', note: 'senza manufatti: Nembo li riprende dall\'RA precedente dello stesso immobile (codice sito, oppure indirizzo + città)' },
+  { tipo: 'ra', data: '2026-11-03', ora: '09:00', durata: 120, stato: 'confermato', commessa: '000/26', cliente: 'Cliente', citta: 'Città', indirizzo: 'Via e numero civico', sito: '', firme: true, note: 'senza manufatti: Nembo li riprende dall\'RA precedente dello stesso immobile (codice sito, oppure indirizzo + città)' },
   { tipo: 'ra', data: '2026-11-04', ora: '09:00', durata: 120, commessa: '000/26', cliente: 'Cliente', citta: 'Città', indirizzo: 'Via e numero civico', sito: '', incaricoDal: '2026-04-01', incaricoAl: '2027-03-31', note: 'sito nuovo: manufatti come nel modello RA',
     manufatti: [{ codice: 'M1', ubicazione: 'Copertura', descrizione: 'Lastre in cemento-amianto', tipologia: 'compatto', quantita: '120 m²', statoPrecedente: '', notePrecedenti: '' }] },
-  { tipo: 'dda1', data: '2026-11-03', ora: '14:00', durata: 180, commessa: '', cliente: '', citta: '', indirizzo: '', sito: '', note: 'tipi: ra, dda1, dda2, mappatura, radon (posa), aria, hsE, hsS, vs, firme; stato (facoltativo): confermato, in_attesa, da_programmare, annullato' }] };
+  { tipo: 'dda1', data: '2026-11-03', ora: '14:00', durata: 180, commessa: '', cliente: '', citta: '', indirizzo: '', sito: '', firme: false, note: 'tipi: ra, dda1, dda2, mappatura, radon (posa), aria, hsE, hsS, vs, firme; stato (facoltativo): confermato, in_attesa, da_programmare, annullato; firme (facoltativo, per ra, dda1, dda2, mappatura, aria): true = foglio firme pronto con dati, attività e campioni o manufatti, false = nessuno, assente = come da anagrafica cliente' }] };
 function newOfType(tipo, all, s, extra = {}) {
   const [t, p] = PIANO_TIPI[tipo] || [tipo, {}];
   const base = t === 'dda' ? newDda(all, s) : t === 'mappatura' ? newMappatura(all, s) : t === 'ra' ? newRa(all, s) : t === 'hs' ? newHs(all, s, p.formato) : t === 'firme' ? newFirmeRec(all, s) : t === 'aria' ? newAria(all, s) : t === 'vs' ? newVerbale(all, s) : newRadon(s);
@@ -103,6 +103,7 @@ function newOfType(tipo, all, s, extra = {}) {
   const st = stato || progDi('', ora);
   if (t === 'radon') r.momenti = r.momenti.map((m, i) => i ? m : { ...m, data: data || '', ora: ora || '', durata, stato: st });
   else Object.assign(r, { data: data || r.data, ora: ora || '', durata, stato: st });
+  prepFirme(r, s, typeof extra.firme === 'boolean' ? extra.firme : null);
   return r;
 }
 // restituisce i record da salvare
@@ -119,7 +120,8 @@ async function agendaJson(text, slot, records, s) {
       if (dup) { saltate++; continue; }
       const stato = PROG.some(p => p[0] === x.stato) ? x.stato : progDi('', ora);
       const r = newOfType(x.tipo, all, s, { data: x.data, ora, stato, durata: +x.durata || durataBase(PIANO_TIPI[x.tipo][0], s),
-        commessa: str(x.commessa), cliente: str(x.cliente), citta: str(x.citta), indirizzo: str(x.indirizzo), sito: str(x.sito) });
+        commessa: str(x.commessa), cliente: str(x.cliente), citta: str(x.citta), indirizzo: str(x.indirizzo), sito: str(x.sito), firme: typeof x.firme === 'boolean' ? x.firme : undefined });
+      if (['dda', 'hs', 'ra'].includes(r.type)) markImp(r, r, IMP_ANAG); // anagrafica dal file (DDA, HSE, RA): bloccata, si sblocca col lucchetto
       if (x.note && 'appunti' in r) r.appunti = str(x.note);
       if (r.type === 'ra') {
         for (const k of ['fonte', 'incaricoDal', 'incaricoAl']) if (x[k]) r[k] = str(x[k]);

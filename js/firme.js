@@ -17,24 +17,62 @@ function firmeCtx(r) {
   return { committente: r.cliente || '', immobile: placeDoc(r) || '', indirizzo: r.indirizzo || '', citta: r.citta || '', commessa: r.commessa || '', data: fmtIt(r.data || today()) };
 }
 const fillTpl = (t, c) => String(t || '').replace(/\{(\w+)\}/g, (m, k) => (k in c ? c[k] : m));
-function newFoglio(r, s, mod) {
+function newFoglio(r, s, mod, opt = {}) {
   const rel = (s.prelevatoDa || `${s.tecnicoNome || ''} ${s.tecnicoCognome || ''}`).trim();
   const c = { ...firmeCtx({ ...r, data: today() }), relatore: rel };
-  return { id: uid('fg'), modello: mod.id, titolo: mod.titolo, sottotitolo: fillTpl(mod.sottotitolo, c), data: today(), luogo: r.citta || '', relatore: rel, responsabile: '',
+  const f = { id: uid('fg'), modello: mod.id, titolo: mod.titolo, sottotitolo: fillTpl(mod.sottotitolo, c), data: today(), luogo: r.citta || '', relatore: rel, responsabile: '',
     testo: fillTpl(mod.testo, c), documenti: (mod.documenti || []).map(t => ({ t: fillTpl(t, c), ok: true })), note: fillTpl(mod.note, c),
-    inclMan: !!mod.manufatti && r.type === 'ra', manSel: null, partecipanti: [], firmaRelatore: '', chiuso: null, createdAt: Date.now() };
+    inclMan: (!!mod.manufatti && r.type === 'ra') || !!opt.elenco, manSel: null, partecipanti: [], firmaRelatore: '', chiuso: null, createdAt: Date.now() };
+  // preparato alla creazione dell'attività: i testi si compilano con i dati di quando lo apri (cliente, commessa, data…)
+  if (opt.auto) Object.assign(f, { auto: true, tpl: { sottotitolo: mod.sottotitolo || '', testo: mod.testo || '', note: mod.note || '', documenti: mod.documenti || [] } });
+  return f;
+}
+function foglioAuto(r, f, s) {
+  if (!f || !f.auto || f.chiuso || !f.tpl) return f;
+  const c = { ...firmeCtx({ ...r, data: f.data || today() }), relatore: f.relatore || '' };
+  return { ...f, luogo: f.luogo || r.citta || '', sottotitolo: fillTpl(f.tpl.sottotitolo, c), testo: fillTpl(f.tpl.testo, c), note: fillTpl(f.tpl.note, c),
+    documenti: f.tpl.documenti.map(t => ({ t: fillTpl(t, c), ok: true })) };
+}
+// attività con il foglio firme pronto (dati di partenza, programmazione, preferenze del cliente)
+const FIRME_TIPI = ['dda', 'mappatura', 'ra', 'aria'];
+function prepFirme(r, s, flag) {
+  if (!FIRME_TIPI.includes(r.type)) return r;
+  const cli = clienteDi(r.cliente);
+  const on = flag == null ? !!(cli && cli.firme) : !!flag;
+  if (!on) return r;
+  r.firme = true;
+  if (!(r.fogli || []).length) {
+    const mods = firmeModelli(s);
+    const mod = (cli && cli.firmeModello && mods.find(m => m.id === cli.firmeModello)) || mods.find(m => (m.per || []).includes(r.type)) || mods.find(m => m.id === 'presenze') || mods[0];
+    r.fogli = [newFoglio(r, s, mod, { auto: true, elenco: true })];
+  }
+  return r;
+}
+// elenco da allegare al foglio: manufatti (RA), campioni (DDA, mappatura), punti di monitoraggio (aria)
+function foglioElenco(r) {
+  if (r.type === 'ra') return { titolo: 'Manufatti presenti in sito', nome: 'manufatti', cols: [{ t: 'Codice', w: 0.09 }, { t: 'Manufatto', w: 0.25 }, { t: 'Matrice', w: 0.12 }, { t: 'Ubicazione', w: 0.22 }, { t: 'Stato', w: 0.13 }, { t: 'Note', w: 0.19 }],
+    voci: (r.manufatti || []).map(m => { const x = typeof raStato === 'function' && raStato(m.stato); return { id: m.id, codice: m.codice, txt: [m.descrizione, m.ubicazione].filter(Boolean).join(' · '), row: [m.codice, m.descrizione, m.tipologia, m.ubicazione, x ? x.s : '', m.note || ''] }; }) };
+  if (r.type === 'dda' || r.type === 'mappatura') {
+    const mats = r.type === 'dda' ? MATS : MAP_MATS;
+    return { titolo: 'Campioni prelevati', nome: 'campioni', cols: [{ t: 'Codice', w: 0.09 }, { t: 'Campione', w: 0.3 }, { t: 'Matrice', w: 0.11 }, { t: 'Piano / ubicazione', w: 0.22 }, { t: 'Data', w: 0.12 }, { t: 'Quantità', w: 0.16 }],
+      voci: mats.flatMap(m => (r.campioni[m.k] || []).map(c => ({ id: c.id, codice: c.codice, txt: [m.l, c.descrizione, c.piano].filter(Boolean).join(' · '), row: [c.codice, c.descrizione, m.l, c.piano || '', fmtIt(c.data), c.quantita || ''] }))) };
+  }
+  if (r.type === 'aria' && typeof ariaOf === 'function') return { titolo: 'Punti di monitoraggio', nome: 'punti', cols: [{ t: 'Codice', w: 0.09 }, { t: 'Postazione', w: 0.38 }, { t: 'Metodica', w: 0.13 }, { t: 'Data', w: 0.12 }, { t: 'Esito del prelievo', w: 0.28 }],
+    voci: ariaOf(r).punti.map(p => ({ id: p.id, codice: p.codice, txt: [p.piano, p.postazione].filter(Boolean).join(' · '), row: [p.codice, [p.piano, p.postazione].filter(Boolean).join(' · '), p.metodica || '', fmtIt(p.data), p.stato === 'fatto' ? 'Eseguito' : p.stato ? 'Non effettuato' : ''] })) };
+  return null;
 }
 const foglioFirme = f => (f.partecipanti || []).filter(p => p.firma).length;
 // manufatti da riportare (solo RA): tutti o quelli scelti
 function foglioManufatti(r, f) {
-  if (r.type !== 'ra' || !f.inclMan) return [];
-  const st = k => { const x = typeof raStato === 'function' && raStato(k); return x ? x.s : ''; };
-  return (r.manufatti || []).filter(m => !f.manSel || f.manSel.includes(m.id))
-    .map(m => ({ codice: m.codice, descrizione: m.descrizione, tipologia: m.tipologia, ubicazione: m.ubicazione, stato: st(m.stato), note: m.note || '' }));
+  const E = foglioElenco(r); if (!E || !f.inclMan) return null;
+  const rows = E.voci.filter(v => !f.manSel || f.manSel.includes(v.id)).map(v => v.row);
+  return rows.length ? { titolo: E.titolo, cols: E.cols, rows } : null;
 }
 async function foglioPdf(r, f, s) {
-  return PdfGen.foglioFirmePdf({ ...f, manufatti: foglioManufatti(r, f) },
-    { ente: (s || _settings).firmeEnte || '', committente: r.cliente, sito: placeDoc(r), commessa: r.commessa, codice: r.codice });
+  const ff = foglioAuto(r, f, s);
+  return PdfGen.foglioFirmePdf({ ...ff, elenco: foglioManufatti(r, ff) },
+    { ente: (s || _settings).firmeEnte || '', committente: r.cliente, sito: placeDoc(r), commessa: r.commessa, codice: r.codice,
+      attivita: typeof TIPO_NOME === 'function' && r.type !== 'firme' ? TIPO_NOME(r) : '' });
 }
 const foglioNome = f => ['Firme', slug(f.titolo || 'foglio').slice(0, 30), f.data || ''].filter(Boolean).join('_');
 
@@ -47,14 +85,15 @@ function FogliFirme({ r, up, settings }) {
   const add = mod => { const f = newFoglio(r, settings, mod); up(p => ({ ...p, fogli: [...(p.fogli || []), f] })); setOpen(f.id); };
   const del = id => { if (!confirm('Eliminare il foglio firme e le firme raccolte?')) return; setOpen(null); up(p => ({ ...p, fogli: (p.fogli || []).filter(x => x.id !== id) })); };
   const cur = fogli.find(x => x.id === open);
+  useEffect(() => { if (cur && cur.auto && !cur.chiuso) setF(cur.id, x => ({ ...foglioAuto(r, x, settings), auto: false, tpl: undefined })); }, [open]);
   return html`<div class="sec-h" id=${'firme-' + r.id}><h3>Firme</h3><span class="hint">Presenze, informative, consegne</span></div>
     ${fogli.length > 0 && html`<div class="list" style="margin-bottom:8px">${fogli.map(f => { const n = foglioFirme(f); return html`<button class="rcard fg-card" key=${f.id} onClick=${() => setOpen(f.id)}>
       <div class="r1"><span class="ttl" style="margin:0">${f.titolo || 'Foglio firme'}</span>
         <span class=${'badge ' + (f.chiuso ? 'b-ok' : n ? 'b-f2' : 'b-grey')}>${f.chiuso ? 'Chiuso' : n ? 'In corso' : 'Da firmare'}</span><span class="dt">${fmtD(f.data)}</span></div>
-      <div class="sum">${n} ${n === 1 ? 'firma' : 'firme'}${f.firmaRelatore ? ' + relatore' : ''}${f.inclMan ? ' · con elenco manufatti' : ''}</div></button>`; })}</div>`}
+      <div class="sum">${n} ${n === 1 ? 'firma' : 'firme'}${f.firmaRelatore ? ' + relatore' : ''}${f.inclMan && foglioElenco(r) ? ' · con elenco ' + foglioElenco(r).nome : ''}</div></button>`; })}</div>`}
     <button class="btn dashed" onClick=${() => setPick(true)}><${Icon} n="sign" s=${18} /> Nuovo foglio firme</button>
     ${pick && html`<${FoglioModelli} r=${r} settings=${settings} onClose=${() => setPick(false)} onPick=${m => { setPick(false); setTimeout(() => add(m), 0); }} />`}
-    ${cur && html`<${FoglioSheet} r=${r} f=${cur} settings=${settings} set=${fn => setF(cur.id, fn)} onDelete=${() => del(cur.id)} onClose=${() => setOpen(null)} />`}`;
+    ${cur && html`<${FoglioSheet} r=${r} f=${foglioAuto(r, cur, settings)} settings=${settings} set=${fn => setF(cur.id, fn)} onDelete=${() => del(cur.id)} onClose=${() => setOpen(null)} />`}`;
 }
 
 function FoglioModelli({ r, settings, onPick, onClose }) {
@@ -84,7 +123,7 @@ function FoglioSheet({ r, f, settings, set, onDelete, onClose }) {
   const addP = () => set(x => ({ ...x, partecipanti: [...x.partecipanti, { id: uid('p'), nome: '', societa: '', ruolo: '', firma: '', ts: null }] }));
   const delP = p => { if ((p.firma || p.nome) && !confirm('Togliere ' + (p.nome || 'questa persona') + ' dal foglio?')) return; set(x => ({ ...x, partecipanti: x.partecipanti.filter(y => y.id !== p.id) })); };
   const setDoc = (i, patch) => set(x => ({ ...x, documenti: x.documenti.map((d, j) => j === i ? { ...d, ...patch } : d) }));
-  const man = r.type === 'ra' ? (r.manufatti || []) : [];
+  const E = foglioElenco(r); const man = E ? E.voci : [];
   const sel = id => !f.manSel || f.manSel.includes(id);
   const toggleMan = id => set(x => { const all = man.map(m => m.id); const cur = x.manSel || all; const nx = cur.includes(id) ? cur.filter(y => y !== id) : [...cur, id]; return { ...x, manSel: nx.length === all.length ? null : nx }; });
   const chiudi = () => {
@@ -134,12 +173,12 @@ function FoglioSheet({ r, f, settings, set, onDelete, onClose }) {
         ${!f.documenti.length && ro && html`<div class="hint-p" style="margin:0">Nessun documento</div>`}
       </div>
 
-      ${man.length > 0 && html`<div class="sec-h"><h3>Manufatti nel PDF</h3><span class="hint">${f.inclMan ? man.filter(m => sel(m.id)).length + ' di ' + man.length : 'non inclusi'}</span></div>
+      ${man.length > 0 && html`<div class="sec-h"><h3>${E.nome[0].toUpperCase() + E.nome.slice(1)} nel PDF</h3><span class="hint">${f.inclMan ? man.filter(m => sel(m.id)).length + ' di ' + man.length : 'non inclusi'}</span></div>
         <div class="card tight">
-          <label class="fg-sw"><span>Allega l'elenco dei manufatti dell’attività</span><${Toggle} on=${f.inclMan} label="Allega i manufatti" set=${v => !ro && set({ inclMan: v })} /></label>
+          <label class="fg-sw"><span>Allega l'elenco ${E && E.nome === 'campioni' ? 'dei campioni' : E && E.nome === 'punti' ? 'dei punti' : 'dei manufatti'} dell’attività</span><${Toggle} on=${f.inclMan} label=${'Allega l\'elenco ' + (E ? E.nome : '')} set=${v => !ro && set({ inclMan: v })} /></label>
           ${f.inclMan && html`<button class="btn link sm" onClick=${() => setShowMan(!showMan)}>${showMan ? 'Nascondi' : 'Scegli quali'}</button>
             ${showMan && man.map(m => html`<label class="fg-man" key=${m.id}><input type="checkbox" checked=${sel(m.id)} disabled=${ro} onChange=${() => toggleMan(m.id)} />
-              <span class="mono">${m.codice}</span><span>${[m.descrizione, m.ubicazione].filter(Boolean).join(' · ')}</span></label>`)}`}
+              <span class="mono">${m.codice}</span><span>${m.txt}</span></label>`)}`}
         </div>`}
 
       <div class="sec-h"><h3>Persone · ${f.partecipanti.length}</h3><span class="hint">${n} ${n === 1 ? 'firma' : 'firme'}</span></div>
@@ -249,28 +288,23 @@ function FirmeList({ records, open, activeId, acts }) {
 
 function FirmeForm({ rec: initial, records, settings, onSave, onDelete, embedded, onClose }) {
   const [r, up, saved] = useAutosave(initial, onSave);
-  const clienti = [...new Set(records.filter(x => x.cliente).map(x => x.cliente))];
+  const clienti = nomiClienti(records);
   const upload = () => OD.account ? odSync([r], settings) : sendToOneDrive(r, settings);
   return html`<div class="content form">
     <${DetailHead} eye="Fogli firme" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
     <div class="card"><div class="grid2">
-      <${Inp} cls="full" label="Commessa" value=${r.commessa} set=${v => up({ commessa: v })} />
-      <${Inp} label="Cliente" list="dl-cli-fir" value=${r.cliente} set=${v => up({ cliente: v })} />
-      <${Inp} label="Città" value=${r.citta} set=${v => up({ citta: v })} />
-      <${Inp} cls="full" label="Indirizzo" value=${r.indirizzo} set=${v => up({ indirizzo: v })} placeholder="Via e numero civico" />
-      <${Inp} label="Sito / codice immobile" value=${r.sito} set=${v => up({ sito: v })} placeholder="Facoltativo" />
+      <${Inp} cls="full" label="Commessa" value=${r.commessa} set=${v => up({ commessa: v })} imp=${impOf(r, 'commessa')} />
+      <${Inp} label="Cliente" list="dl-cli-fir" value=${r.cliente} set=${v => up({ cliente: v })} imp=${impOf(r, 'cliente')} />
+      <${Inp} label="Città" value=${r.citta} set=${v => up({ citta: v })} imp=${impOf(r, 'citta')} />
+      <${Inp} cls="full" label="Indirizzo" value=${r.indirizzo} set=${v => up({ indirizzo: v })} imp=${impOf(r, 'indirizzo')} placeholder="Via e numero civico" />
+      <${Inp} label="Sito / codice immobile" value=${r.sito} set=${v => up({ sito: v })} imp=${impOf(r, 'sito')} placeholder="Facoltativo" />
       <${Inp} label="Data" type="date" value=${r.data} set=${v => up({ data: v })} />
       <${OraDurata} ora=${r.ora} durata=${r.durata} stato=${r.stato} tipo=${r.type} set=${p => up(p)} />
     </div><datalist id="dl-cli-fir">${clienti.map(c => html`<option value=${c} />`)}</datalist></div>
     <${FogliFirme} r=${r} up=${up} settings=${settings} />
     <div class="sec-h"><h3>Appunti</h3><span class="hint">Testo libero</span></div>
     <div class="card"><textarea class="inp" rows="3" value=${r.appunti} onInput=${e => up({ appunti: e.target.value })} aria-label="Appunti"></textarea></div>
-    <div class="sec-h"><h3>Archivio</h3></div>
-    <div class="stack">
-      <button class="btn outline block" onClick=${upload}><${Icon} n="share" s=${18} /> ${OD.account ? 'Carica su OneDrive' : 'Invia PDF a OneDrive'}</button>
-      <button class="btn block" onClick=${() => exportRecords([r], settings)}><${Icon} n="archive" s=${18} /> Salva tutto in un file ZIP</button>
-      <button class="btn danger block" onClick=${() => onDelete(r)}><${Icon} n="trash" s=${18} /> Elimina</button>
-    </div>
+    <${BarraAtt} r=${r} settings=${settings} center=${html`<${OdBtn} r=${r} settings=${settings} />`} gruppi=${[opzArchivio({ r, settings, onDelete, elimina: 'Elimina' })]} />
   </div>`;
 }
 

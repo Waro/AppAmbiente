@@ -167,7 +167,7 @@ function HsGallery({ r, up, items }) {
       <div class="sec-h"><h3>${G.t} · ${L.length}</h3>
         <button class="btn link sm" onClick=${() => setAperti(a => ({ ...a, [G.g]: !a[G.g] }))}>${aperti[G.g] ? 'Chiudi' : 'Apri'}</button></div>
       ${aperti[G.g] && html`<div class="row" style="margin-bottom:10px">
-          ${G.g === 'new' && html`<button class="btn" style="flex:1" onClick=${() => { target.current = 'new'; cam.current.click(); }}><${Icon} n="camera" s=${18} /> Scatta</button>`}
+          ${G.g === 'new' && html`<button class="btn" style="flex:1" onClick=${() => { target.current = 'new'; camOpen(cam.current); }}><${Icon} n="camera" s=${18} /> Scatta</button>`}
           <button class="btn" style="flex:1" onClick=${() => { target.current = G.g; inp.current.click(); }}><${Icon} n="paper" s=${18} /> Dalla galleria</button></div>
         ${L.length > 0 && html`<div class="row" style="margin:-4px 0 8px;gap:4px"><span class="lock tb-grow">Nel report:</span>
           <button class="btn link sm" onClick=${() => up(q => ({ ...q, foto: q.foto.map(x => (x.g === 'prev') === (G.g === 'prev') ? { ...x, inc: true } : x) }))}>includi tutte</button>
@@ -196,7 +196,7 @@ function HsThumb({ id }) { const u = useBlobUrl(id); return u ? html`<img src=${
 // foto rapida (barra azioni o voce della checklist)
 function HsCam({ up, r, refId, big, label = 'Scatta una foto' }) {
   const inp = useRef();
-  return html`<button class=${'btn-icon' + (big ? ' lg' : '')} aria-label=${label} title=${label} onClick=${() => inp.current.click()}><${Icon} n="camera" s=${big ? 22 : 18} />
+  return html`<button class=${'btn-icon' + (big ? ' lg' : '')} aria-label=${label} title=${label} onClick=${() => camOpen(inp.current)}><${Icon} n="camera" s=${big ? 22 : 18} />
     <input ref=${inp} type="file" accept="image/*" capture="environment" hidden onClick=${e => e.stopPropagation()} onChange=${e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) hsAddPhotos(fs, 'new', refId, up, (r.foto || []).length).then(() => toast('Foto aggiunta' + (refId ? ' e collegata alla voce' : ''))); }} /></button>`;
 }
 
@@ -354,52 +354,46 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
     <div class="list">${secs.map(s => html`<button class="rcard hs-sec" key=${s.k} onClick=${() => setSec(s.k)}>
       <div class="r1"><span class="ttl" style="margin:0;font-size:16px">${s.l}</span><span class="dt">${hsSecStato(r, s)}</span></div></button>`)}</div>
 `;
-  const archivio = html`    <div class="sec-h"><h3>Word e archivio</h3></div>
+  const archivio = html`    <div class="sec-h"><h3>Word</h3></div>
     <div class="card">
       ${hasTpl === false && html`<div class="notice err" style="margin:0 0 10px">Manca il modello Word ${HS_FMT[r.formato]}: caricalo in Impostazioni → Modelli. <button class="btn link" onClick=${onSettings}>Apri</button></div>`}
       <div class="optline" style="padding-top:0"><div class="t"><b>Novità in rosso</b><small>Righe nuove o modificate in rosso, testo dell'anno precedente in nero</small></div><${Toggle} on=${grigio} set=${setGrigio} label="Testo precedente in grigio" /></div>
-      <div class="stack" style="margin-top:6px">
-        <button class="btn outline block" onClick=${upload}><${Icon} n="share" s=${18} /> ${OD.account ? 'Carica su OneDrive' : 'Invia foto e Word a OneDrive'}</button>
-        <button class="btn block" disabled=${busy === 'imp'} onClick=${() => imp.current.click()}><${Icon} n="paper" s=${18} /> Importa report precedente (Word o JSON)</button>
-        <button class="btn block" disabled=${busy === 'next'} onClick=${nextYear}><${Icon} n="plus" s=${18} /> Nuovo report per il prossimo sopralluogo</button>
-        <button class="btn block" onClick=${() => exportRecords([r], settings)}><${Icon} n="archive" s=${18} /> Salva tutto in un file ZIP</button>
-        <button class="btn danger block" onClick=${() => onDelete(r)}><${Icon} n="trash" s=${18} /> Elimina report</button>
-      </div></div>`;
+    </div>`;
 
   /* ---- singola sezione ---- */
   let body = null;
   if (S && S.k === 'dati') body = sint ? html`<div class="card"><div class="grid2">
-      <${Inp} label="Fondo" value=${r.meta.fondo} set=${v => setM({ fondo: v })} />
-      <${Inp} label="Nome immobile" value=${r.sito} set=${v => up({ sito: v })} placeholder="es. codice immobile" />
-      <${Inp} cls="full" label="Indirizzo" value=${r.indirizzo} set=${v => up({ indirizzo: v })} placeholder="Via, CAP Comune (Prov.)" />
-      <${Inp} label="Città" value=${r.citta} set=${v => up({ citta: v })} />
+      <${Inp} label="Fondo" value=${r.meta.fondo} set=${v => setM({ fondo: v })} imp=${impOf(r, 'meta.fondo')} />
+      <${Inp} label="Nome immobile" value=${r.sito} set=${v => up({ sito: v })} imp=${impOf(r, 'sito')} placeholder="es. codice immobile" />
+      <${Inp} cls="full" label="Indirizzo" value=${r.indirizzo} set=${v => up({ indirizzo: v })} imp=${impOf(r, 'indirizzo')} placeholder="Via, CAP Comune (Prov.)" />
+      <${Inp} label="Città" value=${r.citta} set=${v => up({ citta: v })} imp=${impOf(r, 'citta')} />
       <${Inp} label="Data sopralluogo" type="date" value=${r.data} set=${v => up({ data: v })} />
       <${OraDurata} ora=${r.ora} durata=${r.durata} stato=${r.stato} tipo=${r.type} set=${p => up(p)} />
-      <${Inp} label="Commessa" value=${r.commessa} set=${v => up({ commessa: v })} />
-      <${Inp} label="Committente" value=${r.cliente} set=${v => up({ cliente: v })} />
-      <${Inp} label="Emissione" value=${r.meta.emissione} set=${v => setM({ emissione: v })} placeholder=${'automatica: ' + meseAnno(r.data)} />
-      <${Inp} label="Revisione" value=${r.meta.revisione} set=${v => setM({ revisione: v })} />
-      <${Inp} label="Protocollo" value=${r.meta.protocollo} set=${v => setM({ protocollo: v })} />
-      <${Inp} label="Redatto da" value=${r.meta.redatto} set=${v => setM({ redatto: v })} />
-      <${Inp} label="Verificato da" value=${r.meta.verificato} set=${v => setM({ verificato: v })} />
-      <${Inp} label="Approvato da" value=${r.meta.approvato} set=${v => setM({ approvato: v })} />
-      <${Inp} cls="full" label="Il procuratore incaricato (firma)" value=${r.meta.firma} set=${v => setM({ firma: v })} />
+      <${Inp} label="Commessa" value=${r.commessa} set=${v => up({ commessa: v })} imp=${impOf(r, 'commessa')} />
+      <${Inp} label="Committente" value=${r.cliente} set=${v => up({ cliente: v })} imp=${impOf(r, 'cliente')} />
+      <${Inp} label="Emissione" value=${r.meta.emissione} set=${v => setM({ emissione: v })} imp=${impOf(r, 'meta.emissione')} placeholder=${'automatica: ' + meseAnno(r.data)} />
+      <${Inp} label="Revisione" value=${r.meta.revisione} set=${v => setM({ revisione: v })} imp=${impOf(r, 'meta.revisione')} />
+      <${Inp} label="Protocollo" value=${r.meta.protocollo} set=${v => setM({ protocollo: v })} imp=${impOf(r, 'meta.protocollo')} />
+      <${Inp} label="Redatto da" value=${r.meta.redatto} set=${v => setM({ redatto: v })} imp=${impOf(r, 'meta.redatto')} />
+      <${Inp} label="Verificato da" value=${r.meta.verificato} set=${v => setM({ verificato: v })} imp=${impOf(r, 'meta.verificato')} />
+      <${Inp} label="Approvato da" value=${r.meta.approvato} set=${v => setM({ approvato: v })} imp=${impOf(r, 'meta.approvato')} />
+      <${Inp} cls="full" label="Il procuratore incaricato (firma)" value=${r.meta.firma} set=${v => setM({ firma: v })} imp=${impOf(r, 'meta.firma')} />
     </div><div class="divider"></div><${ImgSlot} label="Foto di copertina" id=${(r.img || {}).copertina} set=${id => setImg('copertina', id)} crop /></div>`
   : html`<div class="card"><div class="grid2">
-      <${Inp} cls="full" label="Nome del sito" value=${r.sito} set=${v => up({ sito: v })} />
-      <${Inp} cls="full" label="Indirizzo immobile" value=${r.indirizzo} set=${v => up({ indirizzo: v })} />
-      <${Inp} label="Comune (piè di pagina)" value=${r.citta} set=${v => up({ citta: v })} />
+      <${Inp} cls="full" label="Nome del sito" value=${r.sito} set=${v => up({ sito: v })} imp=${impOf(r, 'sito')} />
+      <${Inp} cls="full" label="Indirizzo immobile" value=${r.indirizzo} set=${v => up({ indirizzo: v })} imp=${impOf(r, 'indirizzo')} />
+      <${Inp} label="Comune (piè di pagina)" value=${r.citta} set=${v => up({ citta: v })} imp=${impOf(r, 'citta')} />
       <${Inp} label="Data sopralluogo" type="date" value=${r.data} set=${v => up({ data: v })} />
       <${OraDurata} ora=${r.ora} durata=${r.durata} stato=${r.stato} tipo=${r.type} set=${p => up(p)} />
-      <${Inp} cls="full" label="Presenti al sopralluogo" value=${r.meta.presenti} set=${v => setM({ presenti: v })} />
-      <${Inp} label="Proprietà" value=${r.meta.proprieta} set=${v => setM({ proprieta: v })} />
-      <${Inp} label="Committente" value=${r.cliente} set=${v => up({ cliente: v })} />
-      <${Inp} label="Commessa" value=${r.commessa} set=${v => up({ commessa: v })} />
-      <${Inp} label="Protocollo" value=${r.meta.protocollo} set=${v => setM({ protocollo: v })} />
-      <${Inp} label="Redatto da" value=${r.meta.redatto} set=${v => setM({ redatto: v })} />
-      <${Inp} label="Verificato da" value=${r.meta.verificato} set=${v => setM({ verificato: v })} />
-      <${Inp} label="Revisione" value=${r.meta.revisione} set=${v => setM({ revisione: v })} />
-      <${Inp} label="Superficie immobile" value=${r.meta.superficie} set=${v => setM({ superficie: v })} placeholder="es. circa 30.000 mq" />
+      <${Inp} cls="full" label="Presenti al sopralluogo" value=${r.meta.presenti} set=${v => setM({ presenti: v })} imp=${impOf(r, 'meta.presenti')} />
+      <${Inp} label="Proprietà" value=${r.meta.proprieta} set=${v => setM({ proprieta: v })} imp=${impOf(r, 'meta.proprieta')} />
+      <${Inp} label="Committente" value=${r.cliente} set=${v => up({ cliente: v })} imp=${impOf(r, 'cliente')} />
+      <${Inp} label="Commessa" value=${r.commessa} set=${v => up({ commessa: v })} imp=${impOf(r, 'commessa')} />
+      <${Inp} label="Protocollo" value=${r.meta.protocollo} set=${v => setM({ protocollo: v })} imp=${impOf(r, 'meta.protocollo')} />
+      <${Inp} label="Redatto da" value=${r.meta.redatto} set=${v => setM({ redatto: v })} imp=${impOf(r, 'meta.redatto')} />
+      <${Inp} label="Verificato da" value=${r.meta.verificato} set=${v => setM({ verificato: v })} imp=${impOf(r, 'meta.verificato')} />
+      <${Inp} label="Revisione" value=${r.meta.revisione} set=${v => setM({ revisione: v })} imp=${impOf(r, 'meta.revisione')} />
+      <${Inp} label="Superficie immobile" value=${r.meta.superficie} set=${v => setM({ superficie: v })} imp=${impOf(r, 'meta.superficie')} placeholder="es. circa 30.000 mq" />
     </div><div class="divider"></div>
     <${ImgSlot} label="Foto di copertina" id=${(r.img || {}).copertina} set=${id => setImg('copertina', id)} />
     <div style="height:12px"></div><${ImgSlot} label="Firma / timbro (copertina)" id=${(r.img || {}).firma} set=${id => setImg('firma', id)} /></div>
@@ -411,11 +405,11 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
       <button class="btn dashed" onClick=${() => up(p => ({ ...p, visite: [...(p.visite || []), { data: '', presenti: '' }] }))}>+ Aggiungi sopralluogo precedente</button></div>`;
   else if (S && S.k === 'anag') body = sint ? html`<div class="card">${HS_SINT_AN.map((l, i) => i === 8 || i === 9
       ? html`<${HsText} key=${i} label=${l.replace(/:$/, '')} rows=${i === 8 ? 5 : 3} value=${r.anS[i]} base=${B['an.' + i]} set=${v => up(p => ({ ...p, anS: p.anS.map((x, j) => j === i ? v : x) }))} />`
-      : html`<label class="fld" key=${i} style="margin-bottom:10px"><span>${l.replace(/:$/, '')}</span><input value=${r.anS[i] || ''} placeholder=${i === 0 ? r.indirizzo : i === 7 ? fmtD(r.data) : ''} onInput=${e => { const v = e.target.value; up(p => ({ ...p, anS: p.anS.map((x, j) => j === i ? v : x) })); }} /></label>`)}</div>`
+      : html`<div key=${i} style="margin-bottom:10px"><${Inp} label=${l.replace(/:$/, '')} value=${r.anS[i] || ''} placeholder=${i === 0 ? r.indirizzo : i === 7 ? fmtD(r.data) : ''} imp=${impOf(r, 'anS.' + i)} set=${v => up(p => ({ ...p, anS: p.anS.map((x, j) => j === i ? v : x) }))} /></div>`)}</div>`
     : html`<div class="card"><div class="grid2">${HS_AN_KEYS.filter(([k]) => k !== 'descrizione').map(([k, l]) => HS_AN_OPT[k]
         ? html`<label class="fld" key=${k}><span>${l}</span><select value=${r.an[k] || ''} onChange=${e => up(p => ({ ...p, an: { ...p.an, [k]: e.target.value } }))}>
             ${[...new Set([...HS_AN_OPT[k], r.an[k] || ''])].map(o => html`<option value=${o}>${o || '—'}</option>`)}</select></label>`
-        : html`<${Inp} key=${k} label=${l} value=${r.an[k]} set=${v => up(p => ({ ...p, an: { ...p.an, [k]: v } }))} />`)}</div>
+        : html`<${Inp} key=${k} label=${l} value=${r.an[k]} imp=${impOf(r, 'an.' + k)} set=${v => up(p => ({ ...p, an: { ...p.an, [k]: v } }))} />`)}</div>
       <div class="divider"></div><${HsText} label="Descrizione sintetica dell'immobile" value=${r.an.descrizione} base=${B['an.descrizione']} set=${v => up(p => ({ ...p, an: { ...p.an, descrizione: v } }))} /></div>`;
   else if (S && S.k === 'inq') body = html`<div class="card"><${HsText} label="Inquadramento" value=${r.inquadramento} base=${B.inquadramento} set=${v => up({ inquadramento: v })} placeholder="Ubicazione, accessi, organizzazione del complesso…" />
       <div class="divider"></div><${ImgSlot} label="Ubicazione dell'immobile (estratto cartografico)" id=${(r.img || {}).mappa} set=${id => setImg('mappa', id)} />
@@ -505,11 +499,16 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
     ${S && html`<button class="btn link" style="margin:-8px 0 8px -4px" onClick=${() => setSec(null)}><${Icon} n="back" s=${18} /> Indice delle sezioni</button>`}
     ${S ? body : indice}`}
     <input ref=${imp} type="file" accept=".docx,.json,application/json,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden onChange=${doImport} />
-    <${ActionBar}>
-      <${HsCam} up=${up} r=${r} big />
-      ${S && T === 'main' ? html`<button class="btn-icon lg" aria-label="Sezione precedente" onClick=${() => go(-1)}><${Icon} n="back" s=${22} /></button>
-        <button class="btn pri" onClick=${() => go(1)}>${cur === secs.length - 1 ? 'Torna all\'indice' : 'Successiva'} <${Icon} n="right" s=${20} /></button>`
-      : html`<button class="btn pri" disabled=${busy === 'docx'} onClick=${word}>${busy === 'docx' ? html`<div class="spin" />` : html`<${Icon} n="file" s=${20} />`} Genera Word</button>`}
-    <//>
+    <${BarraAtt} r=${r} settings=${settings}
+      left=${html`<${HsCam} up=${up} r=${r} big />`}
+      center=${S && T === 'main' ? html`<button class="btn pri" onClick=${() => go(1)}>${cur === secs.length - 1 ? 'Torna all\'indice' : 'Successiva'} <${Icon} n="right" s=${20} /></button>`
+        : html`<button class="btn pri" disabled=${busy === 'docx'} onClick=${word}>${busy === 'docx' ? html`<div class="spin" />` : html`<${Icon} n="file" s=${20} />`} Genera Word</button>`}
+      gruppi=${[S && T === 'main' && ['Sezioni', [{ ic: 'back', l: 'Sezione precedente', fn: () => go(-1) }, { ic: 'list', l: 'Indice delle sezioni', fn: () => setSec(null) }]],
+        ['Documenti', [
+          S && T === 'main' && { ic: 'file', l: 'Genera Word', fn: word },
+          { ic: 'share', l: OD.account ? 'Carica su OneDrive' : 'Invia foto e Word a OneDrive', fn: upload },
+          { ic: 'paper', l: 'Importa report precedente', s: 'Word o JSON della vecchia app', fn: () => imp.current.click() },
+          { ic: 'plus', l: 'Nuovo report per il prossimo sopralluogo', fn: nextYear }]],
+        opzArchivio({ r, settings, onDelete, elimina: 'Elimina il report' })].filter(Boolean)} />
   </div>`;
 }

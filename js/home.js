@@ -186,6 +186,8 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
     </div>
     <div class="card" style="padding:0"><button class="prow" style="width:100%;border:0;background:none;text-align:left" onClick=${() => goList('agenda')}>
       <span class="sq"><${Icon} n="clock" s=${20} /></span><span class="t"><b>Programmazione</b><small>${agOggi.n ? `${agOggi.n} ${agOggi.n === 1 ? 'attività' : 'attività'} oggi${agOggi.first ? ' · la prima alle ' + agOggi.first : ''}` : 'Nessuna attività oggi'}</small></span><${Icon} n="right" s=${18} /></button></div>
+    <div class="card home-cli" style="padding:0"><button class="prow" style="width:100%;border:0;background:none;text-align:left" onClick=${() => goList('cliList')}>
+      <span class="sq"><${Icon} n="building" s=${20} /></span><span class="t"><b>Clienti</b><small>${_clienti.length ? _clienti.length + (_clienti.length === 1 ? ' cliente' : ' clienti') : 'Referenti e preferenze'}</small></span><${Icon} n="right" s=${18} /></button></div>
 
     <div class="card">
       <div class="card-h"><h4>Attività di oggi</h4>${!todays.length && html`<span class="wg-lbl">nessuna attività con data di oggi</span>`}</div>
@@ -274,11 +276,16 @@ function NewActivity({ records, onClose, onCreate, bu, preset }) {
   const [commessa, setCommessa] = useState('');
   const [citta, setCitta] = useState('');
   const [indirizzo, setIndirizzo] = useState('');
+  const [cliente, setCliente] = useState('');
+  const [firme, setFirme] = useState(null); // null = come da preferenza del cliente
   const opt = NEW_OPTS.find(o => o.k === k);
+  const cli = clienteDi(cliente);
+  const firmeOk = FIRME_TIPI.includes(opt.t);
+  const firmeOn = firme == null ? !!(cli && cli.firme) : firme;
   // prossima scadenza RA non critica (oltre 30 giorni): avviso sobrio sulla riga
   const raNext = records.filter(r => r.type === 'ra' && raOpen(r) && raScadenza(r) && raScadenza(r) >= today()).map(raScadenza).sort()[0];
   const raSoft = raNext && daysBetween(today(), raNext) > 30;
-  const start = () => onCreate(opt.t, { ...opt.patch, ...(preset || {}), commessa: commessa.trim(), citta: citta.trim(), indirizzo: indirizzo.trim() });
+  const start = () => onCreate(opt.t, { ...opt.patch, ...(preset || {}), commessa: commessa.trim(), cliente: cliente.trim(), citta: citta.trim(), indirizzo: indirizzo.trim(), ...(firmeOk ? { firme: firmeOn } : {}) });
   return html`<div class="sheet-ov" onClick=${e => e.target === e.currentTarget && onClose()}>
     <div class="sheet" role="dialog" aria-label="Nuova attività">
       <div class="sheet-grab"></div>
@@ -292,11 +299,17 @@ function NewActivity({ records, onClose, onCreate, bu, preset }) {
           </button>`)}`)}
         <div class="sec-h"><h3>Dati di partenza</h3><span class="hint">facoltativi</span></div>
         <div class="card tight">
-          <label class="fld"><span>Commessa</span><input class="mono" value=${commessa} onInput=${e => setCommessa(e.target.value)} placeholder="es. 000/26" /></label>
+          <div class="grid2">
+            <label class="fld"><span>Commessa</span><input class="mono" value=${commessa} onInput=${e => setCommessa(e.target.value)} placeholder="es. 000/26" /></label>
+            <label class="fld"><span>Cliente</span><input list="dl-cli-new" value=${cliente} onInput=${e => setCliente(e.target.value)} /></label>
+          </div>
+          <datalist id="dl-cli-new">${nomiClienti(records).map(c => html`<option value=${c} />`)}</datalist>
           <div class="grid2" style="margin-top:10px">
             <label class="fld"><span>Città</span><input value=${citta} onInput=${e => setCitta(e.target.value)} /></label>
             <label class="fld"><span>Indirizzo</span><input value=${indirizzo} onInput=${e => setIndirizzo(e.target.value)} placeholder="Via e civico" /></label>
           </div>
+          ${firmeOk && html`<label class="nw-firme"><input type="checkbox" checked=${firmeOn} onChange=${e => setFirme(e.target.checked)} />
+            <span><b>Foglio firme</b><small>${cli && cli.firme && firme == null ? 'Preferenza del cliente: pronto con dati, attività e ' : 'Pronto con dati, attività e '}${opt.t === 'ra' ? 'manufatti valutati' : opt.t === 'aria' ? 'punti di monitoraggio' : 'campioni prelevati'}</small></span></label>`}
         </div>
         <button class="btn pri block" style="margin-top:8px" onClick=${start}>Avvia ${opt.l.replace(' · verifica annuale', '')}</button>
       </div>

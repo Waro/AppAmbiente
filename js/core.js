@@ -2,7 +2,7 @@
 // Stessa stringa di VERSION in sw.js: aumentala insieme a quella ad ogni aggiornamento.
 // Essendo dentro un file JS servito dalla cache, se l'aggiornamento automatico fallisce
 // questa scritta mostra ancora la versione vecchia — è il modo per accorgersene.
-const APP_VERSION = 'nembo-v37';
+const APP_VERSION = 'nembo-v44';
 
 /* ---------------- tema grafico: "essenziale" (predefinito) o "originale" ----------------
    Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno. */
@@ -209,6 +209,7 @@ function Toast() {
 /* ---------------- icone ---------------- */
 const P = {
   leaf: 'M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10ZM2 21c0-3 1.85-5.36 5.08-6',
+  image: 'M4 5h16v14H4ZM4 16l4.5-4.5 4 4 3-3L20 17M15.5 8.5h.01',
   search: 'M11 4a7 7 0 1 0 0 14a7 7 0 0 0 0-14ZM21 21l-4.35-4.35',
   radon: 'M12 12.65m-1.3 0a1.3 1.3 0 1 0 2.6 0a1.3 1.3 0 1 0-2.6 0M7.2 4.34A9.6 9.6 0 0 1 16.8 4.34L14.15 8.93A4.3 4.3 0 0 0 9.85 8.93ZM21.6 12.65A9.6 9.6 0 0 1 16.8 20.96L14.15 16.37A4.3 4.3 0 0 0 16.3 12.65ZM7.2 20.96A9.6 9.6 0 0 1 2.4 12.65L7.7 12.65A4.3 4.3 0 0 0 9.85 16.37Z',
   plus: 'M12 5v14M5 12h14', back: 'M15 18l-6-6 6-6', chev: 'M6 9l6 6 6-6', right: 'M9 18l6-6-6-6',
@@ -225,6 +226,7 @@ const P = {
   building: 'M4 21V5l8-3v19M12 9h8v12M7 8h2M7 12h2M7 16h2M15 13h2M15 17h2M2 21h20',
   nav: 'M3 11l18-8-8 18-2-8-8-2z', check: 'M5 12l5 5 9-10', map: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14',
   more: 'M5 12h.01M12 12h.01M19 12h.01',
+  mail: 'M3 6h18v12H3zM3 7l9 6 9-6',
   mic: 'M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zM19 10v2a7 7 0 0 1-14 0v-2M12 19v3', stop: 'M6 6h12v12H6z',
   list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01', spark: 'M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z',
   helmet: 'M2 18h20v2H2zM4 18v-2a8 8 0 0 1 16 0v2M10 6.3V11M14 6.3V11M12 8v-3', x: 'M6 6l12 12M18 6 6 18', bell: 'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0',
@@ -237,14 +239,57 @@ const P = {
 const Icon = ({ n, s = 20, w = 2 }) => html`<svg width=${s} height=${s} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width=${w} stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d=${P[n]} /></svg>`;
 
 /* ---------------- campi form ---------------- */
-function Inp({ label, value, set, type = 'text', disabled, placeholder, list, req, cls = '', inputmode }) {
-  return html`<label class=${'fld ' + (req ? 'req ' : '') + cls}><span>${label}</span>
-    <input type=${type} value=${value ?? ''} disabled=${disabled} placeholder=${placeholder || ''} list=${list} inputmode=${inputmode}
-      onInput=${e => set(e.target.value)} /></label>`;
+/* Dati importati (PMC, anno precedente, mappatura, file JSON o Word): si vedono come testo con un lucchetto.
+   Toccando il lucchetto il campo si sblocca; se lo cambi, sotto resta il valore di partenza con «Ripristina».
+   imp = valore importato (undefined = campo libero). Gli originali stanno in rec.imp / manufatto.imp. */
+const impOf = (o, k) => (o && o.imp && Object.prototype.hasOwnProperty.call(o.imp, k) ? o.imp[k] : undefined);
+// registra come importati i campi non vuoti di src (chiavi elencate), con un prefisso facoltativo
+function markImp(target, src, keys, pre = '') {
+  const m = { ...(target.imp || {}) }; let n = 0;
+  for (const k of keys) { const v = src[k]; if (v != null && String(v).trim() !== '') { m[pre + k] = String(v); n++; } }
+  if (n) target.imp = m; return target;
 }
-function Area({ label, value, set, rows = 3, disabled, placeholder, cls = '' }) {
+const markImpSelf = (o, keys) => markImp(o, o, keys);
+const IMP_ANAG = ['commessa', 'cliente', 'citta', 'indirizzo', 'sito', 'insegna', 'provincia', 'incaricoDal', 'incaricoAl'];
+function useLock(imp, value, type) {
+  const [open, setOpen] = useState(false); const ref = useRef();
+  const locked = imp !== undefined && !open;
+  const changed = imp !== undefined && String(value ?? '') !== String(imp);
+  const show = v => (type === 'date' ? fmtD(v) : v) || '—';
+  const unlock = () => { setOpen(true); setTimeout(() => { const el = ref.current; if (el) { el.focus(); try { const n = String(el.value).length; el.setSelectionRange(n, n); } catch (e) { /* data */ } } }, 30); };
+  return { locked, changed, show, unlock, ref, open, lock: () => setOpen(false) };
+}
+function LockView({ label, value, L, cls = '', req }) {
+  return html`<div class=${'fld lockf ' + (req ? 'req ' : '') + cls}><span>${label}</span>
+    <div class="lockv"><span class="t">${L.show(value)}</span>
+      <button type="button" class="lockb" aria-label=${'Sblocca ' + (label || 'il campo')} title="Dato importato: tocca per modificarlo" onClick=${L.unlock}><${Icon} n="lock" s=${15} /></button></div>
+    ${L.changed && html`<small class="impd">Modificato</small>`}</div>`;
+}
+const ImpNote = ({ L, imp, set }) => L.changed ? html`<small class="impd">Valore importato: «${L.show(imp)}» <button type="button" class="btn link sm" onClick=${() => { set(imp); L.lock(); }}>Ripristina</button></small>` : null;
+function Inp({ label, value, set, type = 'text', disabled, placeholder, list, req, cls = '', inputmode, imp }) {
+  const L = useLock(imp, value, type);
+  if (L.locked) return html`<${LockView} label=${label} value=${value} L=${L} cls=${cls} req=${req} />`;
+  return html`<label class=${'fld ' + (req ? 'req ' : '') + cls}><span>${label}</span>
+    <input ref=${L.ref} type=${type} value=${value ?? ''} disabled=${disabled} placeholder=${placeholder || ''} list=${list} inputmode=${inputmode}
+      onInput=${e => set(e.target.value)} /><${ImpNote} L=${L} imp=${imp} set=${set} /></label>`;
+}
+// campo di una riga che va a capo e cresce col testo (ubicazioni lunghe leggibili sul telefono)
+function growFit(el) { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 2 + 'px'; } }
+function InpGrow({ label, value, set, disabled, placeholder, cls = '', list, imp }) {
+  const L = useLock(imp, value);
+  useEffect(() => growFit(L.ref.current), [value, L.locked]);
+  useEffect(() => { const f = () => growFit(L.ref.current); addEventListener('resize', f); return () => removeEventListener('resize', f); }, []);
+  if (L.locked) return html`<${LockView} label=${label} value=${value} L=${L} cls=${cls} />`;
+  return html`<label class=${'fld ' + cls}>${label && html`<span>${label}</span>`}
+    <textarea ref=${L.ref} class="grow" rows="1" disabled=${disabled} placeholder=${placeholder || ''} value=${value ?? ''}
+      onKeyDown=${e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } }}
+      onInput=${e => { set(e.target.value.replace(/\n/g, ' ')); growFit(e.target); }}></textarea><${ImpNote} L=${L} imp=${imp} set=${set} /></label>`;
+}
+function Area({ label, value, set, rows = 3, disabled, placeholder, cls = '', imp }) {
+  const L = useLock(imp, value);
+  if (L.locked) return html`<${LockView} label=${label} value=${value} L=${L} cls=${cls} />`;
   return html`<label class=${'fld ' + cls}><span>${label}</span>
-    <textarea rows=${rows} disabled=${disabled} placeholder=${placeholder || ''} value=${value || ''} onInput=${e => set(e.target.value)}></textarea></label>`;
+    <textarea ref=${L.ref} rows=${rows} disabled=${disabled} placeholder=${placeholder || ''} value=${value || ''} onInput=${e => set(e.target.value)}></textarea><${ImpNote} L=${L} imp=${imp} set=${set} /></label>`;
 }
 
 /* ---------------- foto ---------------- */
@@ -265,21 +310,25 @@ function PhotoStrip({ ids = [], max = 10, onAdd, onRemove, readonly, gallery, la
   };
   return html`<div class="photos">
     ${ids.map(id => html`<${Thumb} key=${id} id=${id} onOpen=${() => setView(Math.max(0, gal.indexOf(id)))} onRemove=${readonly ? null : () => { if (confirm('Eliminare la foto?')) onRemove(id); }} />`)}
-    ${!readonly && ids.length < max && html`<button class="addph" aria-label="Aggiungi foto" onClick=${() => inp.current.click()}>
+    ${!readonly && ids.length < max && html`<button class="addph" aria-label="Aggiungi foto" onClick=${() => camOpen(inp.current)}>
       ${busy ? html`<div style="display:grid;place-items:center;gap:3px"><div class="spin" />${typeof busy === 'string' && html`<small style="font-size:10.5px;font-weight:700">${busy}</small>`}</div>` : html`<${Icon} n="camera" s=${22} />`}</button>`}
     <input ref=${inp} type="file" accept="image/*" capture="environment" multiple hidden onChange=${pick} />
     ${view !== null && html`<${Viewer} ids=${gal} index=${view} labelOf=${labelOf} onClose=${() => setView(null)} />`}
   </div>`;
 }
-// Visualizzatore a schermo intero: scorri a destra/sinistra (o usa frecce e tastiera) per le altre foto
+// Visualizzatore a schermo intero: scorri a destra/sinistra (o usa frecce e tastiera) per le altre foto.
+// Zoom: due dita o doppio tocco sul telefono, rotella o doppio clic sul PC; con la foto ingrandita si trascina per muoversi.
 function Viewer({ ids, index = 0, onClose, labelOf }) {
   useBackClose(onClose);
   const n = ids.length;
   const [i, setI] = useState(Math.min(Math.max(index, 0), n - 1));
   const [dx, setDx] = useState(0);
-  const [drag, setDrag] = useState(false);
-  const t = useRef(null);
+  const [z, setZ] = useState({ s: 1, x: 0, y: 0 });
+  const [anim, setAnim] = useState(true);
+  const box = useRef(); const zr = useRef(z); zr.current = z;
+  const P = useRef(new Map()); const g = useRef(null); const lastTap = useRef({ t: 0, x: 0, y: 0 }); const moved = useRef(false);
   const go = d => setI(x => Math.min(n - 1, Math.max(0, x + d)));
+  useEffect(() => { setZ({ s: 1, x: 0, y: 0 }); }, [i]);
   useBlobUrl(ids[i]);                       // fa ridisegnare il componente quando l'immagine è pronta
   const src = urlCache.get(ids[i]) || null; // letta direttamente: niente foto "vecchia" che resta a schermo
   useEffect(() => { blobUrl(ids[i - 1]); blobUrl(ids[i + 1]); }, [i]); // precarica le vicine
@@ -287,29 +336,71 @@ function Viewer({ ids, index = 0, onClose, labelOf }) {
     const k = e => { if (e.key === 'ArrowLeft') go(-1); else if (e.key === 'ArrowRight') go(1); else if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k);
   }, [n]);
-  const ts = e => { const p = e.touches[0]; t.current = { x: p.clientX, y: p.clientY, lock: null }; setDrag(true); };
-  const tm = e => {
-    const s = t.current; if (!s) return;
-    const p = e.touches[0], ddx = p.clientX - s.x, ddy = p.clientY - s.y;
-    if (s.lock === null && (Math.abs(ddx) > 8 || Math.abs(ddy) > 8)) s.lock = Math.abs(ddx) > Math.abs(ddy) ? 'x' : 'y';
-    if (s.lock === 'x') setDx((ddx > 0 && i === 0) || (ddx < 0 && i === n - 1) ? ddx / 3 : ddx); // resistenza ai bordi
+  // coordinate rispetto al centro dello schermo
+  const rel = e => { const r = box.current.getBoundingClientRect(); return { x: e.clientX - r.left - r.width / 2, y: e.clientY - r.top - r.height / 2, w: r.width, h: r.height }; };
+  const clamp = q => {
+    const s = Math.min(6, Math.max(1, q.s)); if (s <= 1.01) return { s: 1, x: 0, y: 0 };
+    const r = box.current.getBoundingClientRect(), mx = (s - 1) * r.width / 2, my = (s - 1) * r.height / 2;
+    return { s, x: Math.max(-mx, Math.min(mx, q.x)), y: Math.max(-my, Math.min(my, q.y)) };
   };
-  const te = () => {
-    const s = t.current; t.current = null; setDrag(false);
-    if (s && s.lock === 'x') { if (dx < -60) go(1); else if (dx > 60) go(-1); }
+  const zoomAt = (m, s1) => { const q = zr.current; const k = s1 / q.s; return clamp({ s: s1, x: m.x - (m.x - q.x) * k, y: m.y - (m.y - q.y) * k }); };
+  const down = e => {
+    if (e.target.closest('button')) return;
+    box.current.setPointerCapture && box.current.setPointerCapture(e.pointerId);
+    P.current.set(e.pointerId, rel(e)); setAnim(false); moved.current = false;
+    const pts = [...P.current.values()];
+    if (pts.length === 2) { const [a, b] = pts; g.current = { pinch: true, d: Math.hypot(a.x - b.x, a.y - b.y) || 1, m: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, z: zr.current }; }
+    else if (pts.length === 1) g.current = { start: pts[0], z: zr.current, lock: null };
+  };
+  const move = e => {
+    if (!P.current.has(e.pointerId)) return;
+    P.current.set(e.pointerId, rel(e));
+    const G = g.current; if (!G) return;
+    const pts = [...P.current.values()];
+    if (G.pinch && pts.length >= 2) {
+      const [a, b] = pts, d = Math.hypot(a.x - b.x, a.y - b.y), m = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      const s1 = Math.min(6, Math.max(1, G.z.s * d / G.d)), k = s1 / G.z.s;
+      setZ(clamp({ s: s1, x: m.x - (G.m.x - G.z.x) * k, y: m.y - (G.m.y - G.z.y) * k })); moved.current = true; return;
+    }
+    if (pts.length !== 1 || G.pinch) return;
+    const p = pts[0], ddx = p.x - G.start.x, ddy = p.y - G.start.y;
+    if (Math.abs(ddx) > 6 || Math.abs(ddy) > 6) moved.current = true;
+    if (G.z.s > 1) { setZ(clamp({ s: G.z.s, x: G.z.x + ddx, y: G.z.y + ddy })); return; }
+    if (G.lock === null && (Math.abs(ddx) > 8 || Math.abs(ddy) > 8)) G.lock = Math.abs(ddx) > Math.abs(ddy) ? 'x' : 'y';
+    if (G.lock === 'x') setDx((ddx > 0 && i === 0) || (ddx < 0 && i === n - 1) ? ddx / 3 : ddx); // resistenza ai bordi
+  };
+  const up = e => {
+    const had = P.current.get(e.pointerId); P.current.delete(e.pointerId); setAnim(true);
+    const G = g.current;
+    if (G && G.pinch) { if (P.current.size === 1) { const p = [...P.current.values()][0]; g.current = { start: p, z: zr.current, lock: 'pan' }; } else g.current = null; return; }
+    g.current = null;
+    if (G && G.lock === 'x' && G.z.s === 1) { if (dx < -60) go(1); else if (dx > 60) go(-1); }
     setDx(0);
+    // doppio tocco: ingrandisce dove tocchi, oppure torna alla foto intera
+    if (had && !moved.current && e.pointerType !== 'mouse') {
+      const now = Date.now(), L = lastTap.current;
+      if (now - L.t < 300 && Math.hypot(had.x - L.x, had.y - L.y) < 30) { setZ(zr.current.s > 1 ? { s: 1, x: 0, y: 0 } : zoomAt(had, 2.5)); lastTap.current = { t: 0, x: 0, y: 0 }; moved.current = true; }
+      else lastTap.current = { t: now, x: had.x, y: had.y };
+    }
   };
+  const wheel = e => { e.preventDefault(); const m = rel(e); setAnim(false); setZ(zoomAt(m, zr.current.s * Math.exp(-e.deltaY * 0.0022))); };
+  const dbl = e => { e.preventDefault(); const m = rel(e); setAnim(true); setZ(zr.current.s > 1 ? { s: 1, x: 0, y: 0 } : zoomAt(m, 2.5)); };
+  useEffect(() => { const el = box.current; el.addEventListener('wheel', wheel, { passive: false }); return () => el.removeEventListener('wheel', wheel); }, [i]);
+  // tocco sullo sfondo (fuori dalla foto) chiude, solo con la foto intera e senza trascinare
+  // (con il pointer capture il clic arriva sempre allo sfondo: controllo cosa c'è davvero sotto il dito)
+  const click = e => { const el = document.elementFromPoint(e.clientX, e.clientY); if (el === box.current && !moved.current && zr.current.s === 1 && e.detail < 2) setTimeout(() => { if (zr.current.s === 1 && !moved.current) onClose(); }, 260); };
   const label = labelOf && labelOf(ids[i]);
   const stop = e => e.stopPropagation();
-  return html`<div class="viewer" onClick=${onClose} onTouchStart=${ts} onTouchMove=${tm} onTouchEnd=${te} onTouchCancel=${te}>
+  return html`<div class=${'viewer' + (z.s > 1 ? ' zoomed' : '')} ref=${box} onPointerDown=${down} onPointerMove=${move} onPointerUp=${up} onPointerCancel=${up} onDblClick=${dbl} onClick=${click}>
     <div class="vw-top" onClick=${stop}>
       ${n > 1 && html`<span class="vw-pill">${i + 1} / ${n}</span>`}
       ${label && html`<span class="vw-pill vw-lbl">${label}</span>`}
+      ${z.s > 1 && html`<button class="vw-pill vw-zoom" onClick=${() => { setAnim(true); setZ({ s: 1, x: 0, y: 0 }); }}>${Math.round(z.s * 10) / 10}× · Foto intera</button>`}
       <button class="vw-x" aria-label="Chiudi" onClick=${onClose}>×</button>
     </div>
-    ${src && html`<img key=${ids[i]} src=${src} alt="Foto ingrandita" draggable="false" onClick=${stop}
-      style=${`transform:translateX(${dx}px);transition:${drag ? 'none' : 'transform .2s ease'}`} />`}
-    ${n > 1 && html`<button class="vw-nav l" aria-label="Foto precedente" disabled=${i === 0} onClick=${e => { stop(e); go(-1); }}><${Icon} n="back" s=${24} /></button>
+    ${src && html`<img key=${ids[i]} src=${src} alt="Foto ingrandita" draggable="false"
+      style=${`transform:translate(${z.x + dx}px,${z.y}px) scale(${z.s});transition:${anim && !P.current.size ? 'transform .2s ease' : 'none'}`} />`}
+    ${n > 1 && z.s === 1 && html`<button class="vw-nav l" aria-label="Foto precedente" disabled=${i === 0} onClick=${e => { stop(e); go(-1); }}><${Icon} n="back" s=${24} /></button>
       <button class="vw-nav r" aria-label="Foto successiva" disabled=${i === n - 1} onClick=${e => { stop(e); go(1); }}><${Icon} n="right" s=${24} /></button>`}
   </div>`;
 }
@@ -376,6 +467,7 @@ const TEMPLATES = {
   'scheda_campioni.pdf': { key: 'tpl_scheda', label: 'Scheda di prelievo campioni massivi', bu: 'ambiente' },
   'hs_esteso.docx': { key: 'tpl_hs_esteso', label: 'Modello Word HSE Esteso', bu: 'hs', docx: true },
   'hs_sintetico.docx': { key: 'tpl_hs_sintetico', label: 'Modello Word HSE Sintetico', bu: 'hs', docx: true },
+  'vs.docx': { key: 'tpl_vs', label: 'Modello Word Verbale HSE', bu: 'hs', docx: true },
 };
 async function loadTemplate(name) {
   const t = TEMPLATES[name];
@@ -423,7 +515,7 @@ function errCode(e) {
 // le scritture sono in coda: due notifiche nello stesso istante non si sovrascrivono
 let notifQ = Promise.resolve();
 function notify(level, title, opt = {}) {
-  const n = { id: uid('n'), t: Date.now(), level, title, detail: opt.detail || '', code: opt.code || '', record: opt.record || '', items: (opt.items || []).slice(0, 100), read: false };
+  const n = { id: uid('n'), t: Date.now(), level, title, detail: opt.detail || '', code: opt.code || '', record: opt.record || '', ids: opt.ids || [], items: (opt.items || []).slice(0, 100), read: false };
   notifQ = notifQ.then(async () => {
     const list = (await DB.get('notifiche')) || [];
     list.unshift(n);
@@ -433,9 +525,9 @@ function notify(level, title, opt = {}) {
   return notifQ;
 }
 // errore mostrato a schermo e registrato nelle notifiche
-function fail(title, e, record) {
+function fail(title, e, record, ids) {
   toast(title + ': ' + (e && e.message || e));
-  notify('err', title, { detail: String(e && e.message || e), code: errCode(e), record });
+  notify('err', title, { detail: String(e && e.message || e), code: errCode(e), record, ids });
   if (e) console.error(e);
 }
 function useNotifiche() {
@@ -631,6 +723,43 @@ function OdBtn({ r, settings }) {
   return html`<button class="btn pri" onClick=${() => OD.account ? odSync([r], settings) : sendToOneDrive(r, settings)}><${Icon} n="share" s=${20} /> ${OD.account ? 'Carica su OneDrive' : 'Invia a OneDrive'}</button>`;
 }
 function ActionBar({ children }) { return html`<div class="abar">${children}</div>`; }
+/* Barra in basso delle attività, uguale ovunque: a sinistra uno strumento (planimetria, fotocamera…),
+   al centro l'azione principale, a destra «Opzioni» con tutte le azioni dell'attività raggruppate.
+   gruppi: [[titolo, [{ ic, l, s, fn, danger, hide }]]] */
+function BarraAtt({ left, center, gruppi, r, settings }) {
+  const [o, setO] = useState(false);
+  // il foglio sta fuori dalla barra: la barra ha un filtro di sfondo che farebbe da riferimento per position: fixed
+  return html`<${ActionBar}>${left || null}${center}
+    <button class="btn-icon lg" aria-label="Opzioni" title="Opzioni" onClick=${() => setO(true)}><${Icon} n="more" s=${24} w=${3} /></button><//>
+    ${o && html`<${OpzioniSheet} gruppi=${gruppi} r=${r} settings=${settings} onClose=${() => setO(false)} />`}`;
+}
+function OpzioniSheet({ gruppi, r, settings, onClose }) {
+  useBackClose(onClose);
+  const [riep, setRiep] = useState(false);
+  // il riepilogo via email e l'email al cliente ci sono in tutte le attività
+  const cli = r && typeof clienteDi === 'function' ? clienteDi(r.cliente) : null;
+  const condividi = r ? [r.type !== 'firme' && { ic: 'mail', l: 'Riepilogo via email', s: 'Valutazioni e foto da inviare per email', fn: () => setRiep(true), keep: true },
+    cli && cli.mail && (cli.mailA || cli.email) && { ic: 'share', l: 'Email al cliente', s: (cli.mailA || cli.email), fn: () => mailCliente(r, settings) }] : [];
+  const G = [['Condividi', condividi], ...gruppi].map(([t, L]) => [t, (L || []).filter(x => x && !x.hide)]).filter(([, L]) => L.length);
+  if (riep) return html`<${RiepilogoSheet} r=${r} settings=${settings} onClose=${() => { setRiep(false); onClose(); }} />`;
+  const run = x => { if (x.keep) { x.fn(); return; } onClose(); setTimeout(x.fn, 80); };
+  return html`<div class="sheet-ov" onClick=${e => e.target === e.currentTarget && onClose()}>
+    <div class="sheet" role="dialog" aria-label="Opzioni dell'attività">
+      <div class="sheet-grab"></div>
+      <div class="sheet-nav"><button class="btn link" onClick=${onClose}>Chiudi</button><b>Opzioni</b><span></span></div>
+      <div class="sheet-body">${G.map(([t, L], gi) => html`<div key=${t}>
+        <div class="sec-h" style=${gi ? '' : 'margin-top:4px'}><h3>${t}</h3></div>
+        <div class="opz">${L.map((x, i) => html`<button key=${i} class=${'opz-it' + (x.danger ? ' danger' : '')} disabled=${x.disabled} onClick=${() => run(x)}>
+          <span class="opz-ic"><${Icon} n=${x.ic || 'file'} s=${19} /></span><span class="t"><b>${x.l}</b>${x.s && html`<small>${x.s}</small>`}</span></button>`)}</div></div>`)}
+      </div></div></div>`;
+}
+// voci di archivio comuni: foglio firme, ZIP, elimina
+function opzArchivio({ r, settings, onDelete, firme, elimina = 'Elimina' }) {
+  return ['Archivio', [
+    firme && { ic: 'sign', l: 'Prepara il foglio firme', s: 'Con i dati dell’attività e l’elenco di campioni o manufatti', fn: firme },
+    { ic: 'archive', l: 'Salva tutto in un file ZIP', fn: () => exportRecords([r], settings) },
+    { ic: 'trash', l: elimina, danger: true, fn: () => onDelete(r) }]];
+}
 const scrollToId = id => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
 // Foto rapida dalla riga dell'elenco (segnaposto rosso "manca la foto")
 function QuickPhoto({ onAdd, label = 'Scatta la foto' }) {
@@ -639,7 +768,7 @@ function QuickPhoto({ onAdd, label = 'Scatta la foto' }) {
     const f = e.target.files[0]; e.target.value = ''; if (!f) return;
     setBusy(true); try { await onAdd([await saveImage(f)]); } catch (err) { fail('Foto non salvata', err); } setBusy(false);
   };
-  return html`<button class="ph-miss" aria-label=${label} onClick=${e => { e.stopPropagation(); inp.current.click(); }}>
+  return html`<button class="ph-miss" aria-label=${label} onClick=${e => { e.stopPropagation(); camOpen(inp.current); }}>
     ${busy ? html`<div class="spin" style="border-color:var(--sep);border-top-color:var(--danger)" />` : html`<${Icon} n="camera" s=${20} />`}
     <input ref=${inp} type="file" accept="image/*" capture="environment" hidden onClick=${e => e.stopPropagation()} onChange=${pick} /></button>`;
 }

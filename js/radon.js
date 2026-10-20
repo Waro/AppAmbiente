@@ -95,7 +95,7 @@ function PuntoCard({ p, n, open, toggle, lockPos, lockF2, onUpd, onDel, onScan }
     ${open && html`<div class="punto-b">
       <div class="grid2">
         <${Inp} label="Piano" value=${p.piano} set=${v => set({ piano: v })} disabled=${lockPos} list="dl-piani" />
-        <${Inp} label="Ubicazione" value=${p.ubicazione} set=${v => set({ ubicazione: v })} disabled=${lockPos} />
+        <${InpGrow} cls="full" label="Ubicazione" value=${p.ubicazione} set=${v => set({ ubicazione: v })} disabled=${lockPos} />
       </div>
       <div class="yn">${YN.map(([k, l]) => html`<span>${l}</span><div class="two">
         ${['si', 'no'].map(v => html`<button class=${p[k] === v ? 'on' : ''} disabled=${lockPos} onClick=${() => set({ [k]: p[k] === v ? null : v })}>${v === 'si' ? 'Sì' : 'No'}</button>`)}</div>`)}</div>
@@ -269,22 +269,17 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
       <${Toggle} on=${!!r.promemoria} set=${v => up({ promemoria: v })} label="Promemoria per il conduttore" /></div></div>`}
 
     <div class="card"><div class="grid2">
-      <${Inp} label="Commessa" req value=${r.commessa} set=${v => up({ commessa: v })} />
+      <${Inp} label="Commessa" req value=${r.commessa} set=${v => up({ commessa: v })} imp=${impOf(r, 'commessa')} />
       <${Inp} label="Codice" value=${r.codice} set=${v => up({ codice: v })} placeholder="es. codice punto vendita" />
-      <${Inp} cls="full" label="Cliente" req value=${r.cliente} set=${v => up({ cliente: v })} />
-      <${Inp} cls="full" label="Insegna" value=${r.insegna} set=${v => up({ insegna: v })} />
-      <${Inp} label="Città" req value=${r.citta} set=${v => up({ citta: v })} />
+      <${Inp} cls="full" label="Cliente" req value=${r.cliente} set=${v => up({ cliente: v })} imp=${impOf(r, 'cliente')} />
+      <${Inp} cls="full" label="Insegna" value=${r.insegna} set=${v => up({ insegna: v })} imp=${impOf(r, 'insegna')} />
+      <${Inp} label="Città" req value=${r.citta} set=${v => up({ citta: v })} imp=${impOf(r, 'citta')} />
       <${Inp} label="Provincia" value=${r.provincia} set=${v => up({ provincia: v.toUpperCase() })} />
-      <${Inp} cls="full" label="Indirizzo" value=${r.indirizzo} set=${v => up({ indirizzo: v })} />
+      <${Inp} cls="full" label="Indirizzo" value=${r.indirizzo} set=${v => up({ indirizzo: v })} imp=${impOf(r, 'indirizzo')} />
       <${Inp} label="Telefono" type="tel" value=${r.telefono} set=${v => up({ telefono: v })} />
       <${Inp} label="Altro" value=${r.altro} set=${v => up({ altro: v })} />
     </div></div>
-    <div class="sec-h"><h3>Documenti e archivio</h3></div>
-    <div class="stack">
-      <button class="btn outline block" disabled=${busy} onClick=${pdf}>${busy ? html`<div class="spin" />` : html`<${Icon} n="file" s=${18} />`} Scheda raccolta dati radon (PDF)</button>
-      <button class="btn block" onClick=${() => exportRecords([r], settings)}><${Icon} n="archive" s=${18} /> Salva tutto in un file ZIP</button>
-      <button class="btn danger block" onClick=${() => onDelete(r)}><${Icon} n="trash" s=${18} /> Elimina campagna</button>
-    </div>`}
+`}
 
     ${T === 'punti' && html`
     ${!lockPos && html`<div class="sec-h"><h3>Dosimetri per piano</h3><span class="hint">${r.punti.length} in tutto</span></div>
@@ -373,12 +368,14 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
     })}
 
     `}
-    <${ActionBar}>
-      ${T === 'punti' && (!lockF2 ? html`<button class="btn" onClick=${scanSeq}><${Icon} n="scan" s=${20} /> Scansiona</button>`
-        : html`<button class="btn-icon lg" aria-label="Planimetrie" onClick=${() => scrollToId('plan-' + r.id)}><${Icon} n="map" s=${22} /></button>`)}
-      ${T !== 'anag' && curMom >= 0 ? html`<button class="btn pri" onClick=${() => { setT('firme'); setTimeout(() => scrollToId('mom-cur-' + r.id), 80); }}><${Icon} n="sign" s=${19} /> Salva e firma</button>`
+    <${BarraAtt} r=${r} settings=${settings}
+      left=${T === 'punti' && !lockF2 ? html`<button class="btn-icon lg" aria-label="Scansiona i dosimetri" title="Scansiona i dosimetri" onClick=${scanSeq}><${Icon} n="scan" s=${22} /></button>`
+        : html`<button class="btn-icon lg" aria-label="Planimetrie" title="Planimetrie" onClick=${() => { if (T !== 'punti') setT('punti'); setTimeout(() => scrollToId('plan-' + r.id), 120); }}><${Icon} n="map" s=${22} /></button>`}
+      center=${T !== 'anag' && curMom >= 0 ? html`<button class="btn pri" onClick=${() => { setT('firme'); setTimeout(() => scrollToId('mom-cur-' + r.id), 80); }}><${Icon} n="sign" s=${19} /> Salva e firma</button>`
         : html`<${OdBtn} r=${r} settings=${settings} />`}
-    <//>
+      gruppi=${[['Documenti', [{ ic: 'file', l: 'Scheda raccolta dati radon (PDF)', fn: pdf },
+        T !== 'punti' && !lockF2 && { ic: 'scan', l: 'Scansiona i dosimetri', fn: () => { setT('punti'); scanSeq(); } }]],
+        opzArchivio({ r, settings, onDelete, elimina: 'Elimina la campagna' })]} />
 
     ${scan && html`<${Scanner} title=${scan.title} target=${scan.target} onCode=${scan.onCode} onClose=${() => { if (scan.onEnd) scan.onEnd(); setScan(null); }} />`}
     ${sig && html`<${SignaturePadOverlay} title=${sig.title} allowImage=${sig.who === 'firmaTecnico'} onClose=${() => setSig(null)} onDone=${url => setM(sig.i, { [sig.who]: url })} />`}

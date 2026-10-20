@@ -84,7 +84,7 @@ function AriaPuntoCard({ p, open, toggle, onUpd, onMet, onDel, onScan, settings 
       <div class="grid2">
         <${Inp} label="Codice" value=${p.codice} set=${v => set({ codice: v, codiceMano: true })} />
         <${Inp} label="Piano" value=${p.piano} set=${v => set({ piano: v })} placeholder="es. Piano 2°" />
-        <${Area} cls="full" label="Postazione di prelievo" rows=${2} value=${p.postazione} set=${v => set({ postazione: v })} placeholder="es. Area vendita c/o scale mobili" />
+        <${InpGrow} cls="full" label="Postazione di prelievo" value=${p.postazione} set=${v => set({ postazione: v })} placeholder="es. Area vendita c/o scale mobili" />
       </div>
       <div class="fld"><span>Prelievo</span></div>
       <div class="seg">${[['fatto', 'Eseguito'], ['non', 'Non eseguito']].map(([k, l]) => html`<button class=${p.stato === k ? 'on' : ''} onClick=${() => set({ stato: p.stato === k ? '' : k, ...(k === 'fatto' && !p.data ? { data: today() } : {}) })}>${l}</button>`)}</div>
@@ -218,29 +218,25 @@ function AriaList({ records, open, activeId, acts }) {
 
 function AriaForm({ rec: initial, records, settings, onSave, onDelete, embedded, onClose }) {
   const [r, up, saved] = useAutosave(initial, onSave);
-  const clienti = [...new Set(records.filter(x => x.cliente).map(x => x.cliente))];
+  const clienti = nomiClienti(records);
   const upload = () => OD.account ? odSync([r], settings) : sendToOneDrive(r, settings);
   const R = ariaRiepilogo(r);
-  const firmeOn = (initial.fogli || []).length > 0;
+  const firmeOn = !!r.firme || (r.fogli || []).length > 0;
   const [T, setT] = useSchede('aria', firmeOn ? ['anag', 'punti', 'firme'] : ['anag', 'punti'], initial._new, { 's-': 'punti', 'plan-': 'punti', 'aria-': 'punti' });
   return html`<div class="content form">
     <${DetailHead} eye="Monitoraggio aria" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
     <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'punti', l: 'Punti', n: R.tot }, firmeOn && { k: 'firme', l: 'Firme', n: (r.fogli || []).length }].filter(Boolean)} />
     ${T === 'anag' && html`    <div class="card"><div class="grid2">
-      <${Inp} cls="full" label="Commessa" value=${r.commessa} set=${v => up({ commessa: v })} />
-      <${Inp} label="Cliente" list="dl-cli-aria" value=${r.cliente} set=${v => up({ cliente: v })} />
-      <${Inp} label="Città" value=${r.citta} set=${v => up({ citta: v })} />
-      <${Inp} cls="full" label="Indirizzo" value=${r.indirizzo} set=${v => up({ indirizzo: v })} placeholder="Via e numero civico" />
-      <${Inp} label="Sito / codice immobile" value=${r.sito} set=${v => up({ sito: v })} placeholder="Facoltativo" />
+      <${Inp} cls="full" label="Commessa" value=${r.commessa} set=${v => up({ commessa: v })} imp=${impOf(r, 'commessa')} />
+      <${Inp} label="Cliente" list="dl-cli-aria" value=${r.cliente} set=${v => up({ cliente: v })} imp=${impOf(r, 'cliente')} />
+      <${Inp} label="Città" value=${r.citta} set=${v => up({ citta: v })} imp=${impOf(r, 'citta')} />
+      <${Inp} cls="full" label="Indirizzo" value=${r.indirizzo} set=${v => up({ indirizzo: v })} imp=${impOf(r, 'indirizzo')} placeholder="Via e numero civico" />
+      <${Inp} label="Sito / codice immobile" value=${r.sito} set=${v => up({ sito: v })} imp=${impOf(r, 'sito')} placeholder="Facoltativo" />
       <${Inp} label="Data" type="date" value=${r.data} set=${v => up({ data: v })} />
       <${OraDurata} ora=${r.ora} durata=${r.durata} stato=${r.stato} tipo=${r.type} set=${p => up(p)} />
       <${Inp} label="Tecnico" value=${r.tecnico} set=${v => up({ tecnico: v })} />
     </div><datalist id="dl-cli-aria">${clienti.map(c => html`<option value=${c} />`)}</datalist></div>
-    <div class="sec-h"><h3>Archivio</h3></div>
-    <div class="stack">
-      <button class="btn block" onClick=${() => exportRecords([r], settings)}><${Icon} n="archive" s=${18} /> Salva tutto in un file ZIP</button>
-      <button class="btn danger block" onClick=${() => onDelete(r)}><${Icon} n="trash" s=${18} /> Elimina</button>
-    </div>`}
+    `}
     ${T === 'punti' && html`
     <div class="card-navy"><div class="sum3">
       <div><b>${R.chiusi}<small>/${R.tot}</small></b><span>prelievi fatti</span></div>
@@ -257,13 +253,12 @@ function AriaForm({ rec: initial, records, settings, onSave, onDelete, embedded,
       <${NotePhotos} rec=${r} up=${up} /></div>
     `}
     ${T === 'firme' && html`<${FogliFirme} r=${r} up=${up} settings=${settings} />`}
-    ${T === 'anag' && html`<${ActionBar}><${OdBtn} r=${r} settings=${settings} /><//>`}
-    ${T === 'punti' && html`    <${ActionBar}>
-      <button class="btn-icon lg" aria-label="Planimetrie" title="Planimetrie" onClick=${() => scrollToId('plan-' + r.id)}><${Icon} n="map" s=${22} /></button>
-      ${R.chiusi < R.tot ? html`<button class="btn pri" onClick=${() => AriaSection.next && AriaSection.next()}>Prossimo punto · ${R.tot - R.chiusi}</button>`
+    <${BarraAtt} r=${r} settings=${settings}
+      left=${html`<button class="btn-icon lg" aria-label="Planimetrie" title="Planimetrie" onClick=${() => { if (T !== 'punti') setT('punti'); setTimeout(() => scrollToId('plan-' + r.id), 120); }}><${Icon} n="map" s=${22} /></button>`}
+      center=${T === 'punti' ? (R.chiusi < R.tot ? html`<button class="btn pri" onClick=${() => AriaSection.next && AriaSection.next()}>Prossimo punto · ${R.tot - R.chiusi}</button>`
         : R.tot ? html`<button class="btn pri" onClick=${upload}><${Icon} n="share" s=${19} /> Carica su OneDrive</button>`
-        : html`<button class="btn pri" onClick=${() => up(q => ({ ...q, aria: { ...ariaOf(q), punti: [...ariaOf(q).punti, newAriaPunto({ codice: ariaNextCode(ariaOf(q).punti, (ariaOf(q).punti.slice(-1)[0] || {}).metodica), metodica: (ariaOf(q).punti.slice(-1)[0] || {}).metodica || 'SEM' })] } }))}><${Icon} n="plus" s=${20} w=${2.4} /> Nuovo punto</button>`}
-    <//>`}
+        : html`<button class="btn pri" onClick=${() => up(q => ({ ...q, aria: { ...ariaOf(q), punti: [...ariaOf(q).punti, newAriaPunto({ codice: ariaNextCode(ariaOf(q).punti, (ariaOf(q).punti.slice(-1)[0] || {}).metodica), metodica: (ariaOf(q).punti.slice(-1)[0] || {}).metodica || 'SEM' })] } }))}><${Icon} n="plus" s=${20} w=${2.4} /> Nuovo punto</button>`) : html`<${OdBtn} r=${r} settings=${settings} />`}
+      gruppi=${[opzArchivio({ r, settings, onDelete, elimina: 'Elimina il monitoraggio', firme: !firmeOn && (() => { up(q => prepFirme({ ...q }, settings, true)); setT('firme'); }) })]} />
   </div>`;
 }
 

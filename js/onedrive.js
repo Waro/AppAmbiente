@@ -237,6 +237,8 @@ async function odRecordItems(r, settings) {
     items.push({ kind: 'pdf', segs: ['Scheda_radon_' + (r.commessa || 'campagna')], make: async () => PdfGen.radonPdf(await loadTemplate('radon.pdf'), r) });
   } else if (r.type === 'vs') {
     vsPhotos(r).forEach(x => photo(x.id, 'note', x.name));
+    Object.entries(r.img || {}).forEach(([k, v]) => v && photo(v, 'immagini', k));
+    if (await DB.get(TEMPLATES['vs.docx'].key)) items.push({ kind: 'office', type: DOCX_MIME, segs: [vsFileBase(r)], make: () => vsBuildDocx(r, s, {}) });
   } else if (r.type === 'firme' || r.type === 'aria' || r.type === 'app') {
     // solo fogli firme / monitoraggio aria: aggiunti sotto
   } else {
@@ -333,7 +335,7 @@ async function odSync(records, settings) {
   try { await OD.token(); }
   catch (e) {
     if (wake) try { wake.release(); } catch (_) {}
-    fail('OneDrive, accesso non riuscito', e, records.map(recordTitle).join(', '));
+    fail('OneDrive, accesso non riuscito', e, records.map(recordTitle).join(', '), records.map(r => r.id));
     return { done: 0, errors: [] };
   }
   let done = 0, errors = [];
@@ -378,13 +380,13 @@ async function odSync(records, settings) {
     toast(`Caricati ${ok} file, ${errors.length} con errori: dettagli in Notifiche`);
     const codes = [...new Set(errors.map(x => x.code).filter(Boolean))];
     notify('err', `OneDrive: ${errors.length} file non caricati`, {
-      record: rec, code: codes.join(', '),
+      record: rec, code: codes.join(', '), ids: records.filter(r => !synced[r.id].ok).map(r => r.id),
       detail: `Caricati ${ok} file su ${plan.length}. Primo errore: ${errors[0].msg}`,
       items: errors.map(x => `${x.path} — ${x.msg}${x.code ? ' [' + x.code + ']' : ''}`) });
   } else {
     const msg = stop ? `Interrotto: caricati ${done} file` : (plan.length ? `OneDrive aggiornato: ${done} file` : 'OneDrive già aggiornato: nessun file nuovo');
     toast(msg);
-    notify(stop ? 'warn' : 'ok', msg, { record: rec });
+    notify(stop ? 'warn' : 'ok', msg, { record: rec, ids: stop ? records.filter(r => !synced[r.id].ok).map(r => r.id) : [] });
   }
   return { done, errors };
 }
