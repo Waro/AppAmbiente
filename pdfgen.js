@@ -341,7 +341,7 @@
     if (f.sottotitolo) for (const l of wrap(f.sottotitolo, font, 10.5, CW)) { page.drawText(l, { x: M, y: y - 10.5, size: 10.5, font, color: mute }); y -= 14; }
     y -= 8;
     // dati
-    const info = [['Committente', ctx.committente], ['Immobile', ctx.sito], ['Commessa', ctx.commessa], ['Relatore', f.relatore], ['Responsabile di commessa', f.responsabile]].filter(x => x[1]);
+    const info = [['Committente', ctx.committente], ['Immobile', ctx.sito], ['Commessa', ctx.commessa], ['Attività', ctx.attivita], ['Relatore', f.relatore], ['Responsabile di commessa', f.responsabile]].filter(x => x[1]);
     for (const [k, v] of info) {
       const ls = wrap(v, font, 10, CW - 150); ensure(ls.length * 13 + 2);
       page.drawText(safe(k), { x: M, y: y - 10, size: 9, font: bold, color: mute });
@@ -355,7 +355,10 @@
     await table([{ t: '#', w: 0.05 }, { t: 'Nome e cognome', w: 0.27 }, { t: 'Società / ditta', w: 0.22 }, { t: 'Ruolo', w: 0.18 }, { t: 'Firma', w: 0.28, sig: true }],
       (pp.length ? pp : [{}, {}, {}]).map((p, i) => [String(i + 1), p.nome || '', p.societa || '', p.ruolo || '', p.firma || '']), { minH: 38 });
     const man = f.manufatti || [];
-    if (man.length) {
+    if (f.elenco && f.elenco.rows && f.elenco.rows.length) {
+      head(f.elenco.titolo || 'Elenco');
+      await table(f.elenco.cols, f.elenco.rows);
+    } else if (man.length) {
       head('Manufatti presenti in sito');
       await table([{ t: 'Codice', w: 0.09 }, { t: 'Manufatto', w: 0.25 }, { t: 'Matrice', w: 0.12 }, { t: 'Ubicazione', w: 0.22 }, { t: 'Stato', w: 0.13 }, { t: 'Note', w: 0.19 }],
         man.map(m => [m.codice, m.descrizione, m.tipologia, m.ubicazione, m.stato, m.note]));
