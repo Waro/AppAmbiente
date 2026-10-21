@@ -54,6 +54,12 @@ function useDictation(get, set) {
   };
   return [on, toggle];
 }
+// microfono dentro il campo di testo, in alto a destra
+function MicBtn({ rec, toggle }) {
+  if (!SR_API) return null;
+  return html`<button type="button" class=${'mic-in' + (rec ? ' rec' : '')} aria-label=${rec ? 'Ferma la dettatura' : 'Detta'} title=${rec ? 'Ferma la dettatura' : 'Detta'} aria-pressed=${rec}
+    onPointerDown=${e => e.preventDefault()} onClick=${toggle}><${Icon} n=${rec ? 'stop' : 'mic'} s=${18} /></button>`;
+}
 // frasi ricorrenti: predefinite + personali (salvate sul dispositivo)
 function FrasiSheet({ gruppo, onPick, onClose }) {
   useBackClose(onClose);
@@ -97,9 +103,8 @@ function HsText({ label, value, set, base, gruppo, rows = 4, onRiformula, placeh
   const [rec, toggleRec] = useDictation(() => value, set);
   const changed = base != null && base !== '' && (value || '') !== base;
   return html`<div class="fld hs-text"><span>${label}</span>
-    <textarea rows=${rows} value=${value || ''} placeholder=${placeholder || ''} onInput=${e => set(e.target.value)}></textarea>
+    <div class="mic-wrap"><textarea rows=${rows} value=${value || ''} placeholder=${placeholder || ''} onInput=${e => set(e.target.value)}></textarea><${MicBtn} rec=${rec} toggle=${toggleRec} /></div>
     <div class="hs-tools">
-      ${SR_API && html`<button class=${'chip-btn' + (rec ? ' rec' : '')} onClick=${toggleRec}><${Icon} n=${rec ? 'stop' : 'mic'} s=${15} /> ${rec ? 'Stop' : 'Detta'}</button>`}
       ${gruppo && html`<button class="chip-btn" onClick=${() => setFrasi(true)}><${Icon} n="list" s=${15} /> Frasi</button>`}
       ${onRiformula && html`<button class="chip-btn" onClick=${() => { const p = hsRiformula(value); if (!p) toast('Nessuna formulazione tecnica per questa nota'); else setRif(p); }}><${Icon} n="spark" s=${15} /> Riformula</button>`}
       ${base ? html`<span class="hs-base">${changed ? 'Modificato: le righe nuove escono in rosso' : 'Dal report precedente (nero nel Word)'}</span>` : null}
@@ -118,12 +123,13 @@ function ImgSlot({ label, id, set, crop }) {
   };
   return html`<div class="fld"><span>${label}</span>
     <div class="row" style="gap:10px">
-      ${id ? html`<button class="img-slot" onClick=${() => setView(true)}><${Thumb44} id=${id} /></button>` : html`<span class="img-slot empty"><${Icon} n="camera" s=${20} /></span>`}
-      <button class="btn sm" onClick=${() => inp.current.click()} disabled=${busy}>${busy ? html`<div class="spin" />` : id ? 'Sostituisci' : 'Aggiungi'}</button>
+      ${id ? html`<button class="img-slot" onClick=${() => setView(true)}><${Thumb44} id=${id} /></button>` : html`<button class="img-slot empty" aria-label="Scatta una foto" onClick=${() => camOpen(inp.current)}><${Icon} n="camera" s=${20} /></button>`}
+      <button class="btn sm" onClick=${() => camOpen(inp.current)} disabled=${busy}>${busy ? html`<div class="spin" />` : html`<${Icon} n="camera" s=${16} /> ${id ? 'Sostituisci' : 'Aggiungi'}`}</button>
+      <button class="btn sm" aria-label="Scegli dalla galleria" title="Scegli dalla galleria" onClick=${() => galOpen(inp.current)} disabled=${busy}><${Icon} n="image" s=${16} /></button>
       ${id && html`<button class="btn sm danger" onClick=${async () => { if (!confirm('Rimuovere l\'immagine?')) return; await removeBlob(id); set(null); }}>Rimuovi</button>`}
       ${crop && html`<span class="lock">ritagliata al formato della copertina</span>`}
     </div>
-    <input ref=${inp} type="file" accept="image/*" hidden onChange=${pick} />
+    <input ref=${inp} type="file" accept="image/*" capture="environment" hidden onChange=${pick} />
     ${view && html`<${Viewer} ids=${[id]} index=${0} onClose=${() => setView(false)} />`}
   </div>`;
 }
@@ -223,9 +229,8 @@ function HsCheck({ it, r, up, base }) {
       ${linked.map((p, i) => html`<button key=${p.id} class="ck-th" aria-label=${'Foto ' + (i + 1)} onClick=${() => setView(i)}><${Thumb44} id=${p.id} /></button>`)}
       ${!open && nota ? html`<button class="ck-nota" onClick=${() => setOpen(true)}>${nota}</button>` : null}</div>` : null}
     ${open && html`<div class="ck-ed">
-      <textarea ref=${ta} class="inp" rows="2" placeholder="Annotazioni" value=${nota} onInput=${e => setNota(e.target.value)}></textarea>
+      <div class="mic-wrap"><textarea ref=${ta} class="inp" rows="2" placeholder="Annotazioni" value=${nota} onInput=${e => setNota(e.target.value)}></textarea><${MicBtn} rec=${rec} toggle=${toggleRec} /></div>
       <div class="hs-tools">
-        ${SR_API && html`<button class=${'chip-btn' + (rec ? ' rec' : '')} onClick=${toggleRec}><${Icon} n=${rec ? 'stop' : 'mic'} s=${15} /> ${rec ? 'Stop' : 'Detta'}</button>`}
         ${base ? html`<span class="hs-base">${nota === base ? 'Dal report precedente (nero nel Word)' : 'Modificato: le righe nuove escono in rosso'}</span>` : null}
         <button class="btn link sm" style="margin-left:auto" onClick=${() => setOpen(false)}>Fatto</button>
       </div></div>`}

@@ -2,7 +2,7 @@
 // Stessa stringa di VERSION in sw.js: aumentala insieme a quella ad ogni aggiornamento.
 // Essendo dentro un file JS servito dalla cache, se l'aggiornamento automatico fallisce
 // questa scritta mostra ancora la versione vecchia — è il modo per accorgersene.
-const APP_VERSION = 'nembo-v44';
+const APP_VERSION = 'nembo-v45';
 
 /* ---------------- tema grafico: "essenziale" (predefinito) o "originale" ----------------
    Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno. */
@@ -234,6 +234,10 @@ const P = {
   note: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2zM8 9h8M8 13h5',
   clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2',
   lock: 'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4', sign: 'M3 17c3-4 5-9 7-9s-1 9 2 9 3-5 5-5 2 3 4 3M3 21h18',
+  pen: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z', hl: 'M9 11l-6 6v3h9l3-3M22 12l-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4',
+  line: 'M5 19 19 5', arrow: 'M5 19 19 5M10 5h9v9', rect: 'M4 6h16v12H4z', circle: 'M3 12a9 8 0 1 0 18 0a9 8 0 1 0-18 0', text: 'M5 6V4h14v2M12 4v16M9 20h6',
+  eraser: 'M7 21h13M5.5 15.5l9-9a2 2 0 0 1 2.8 0l2.2 2.2a2 2 0 0 1 0 2.8L12 19H8.5l-3-3a1 1 0 0 1 0-1.4zM10 11l5 5', tag: 'M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8zM7.5 7.5h.01',
+  undo: 'M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11', redo: 'M15 14l5-5-5-5M20 9H9.5a5.5 5.5 0 0 0 0 11H13',
   torch: 'M9 2h6v4l-2 3v13h-2V9L9 6z', trash: 'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6', paper: 'M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5',
 };
 const Icon = ({ n, s = 20, w = 2 }) => html`<svg width=${s} height=${s} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width=${w} stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d=${P[n]} /></svg>`;
@@ -311,7 +315,8 @@ function PhotoStrip({ ids = [], max = 10, onAdd, onRemove, readonly, gallery, la
   return html`<div class="photos">
     ${ids.map(id => html`<${Thumb} key=${id} id=${id} onOpen=${() => setView(Math.max(0, gal.indexOf(id)))} onRemove=${readonly ? null : () => { if (confirm('Eliminare la foto?')) onRemove(id); }} />`)}
     ${!readonly && ids.length < max && html`<button class="addph" aria-label="Aggiungi foto" onClick=${() => camOpen(inp.current)}>
-      ${busy ? html`<div style="display:grid;place-items:center;gap:3px"><div class="spin" />${typeof busy === 'string' && html`<small style="font-size:10.5px;font-weight:700">${busy}</small>`}</div>` : html`<${Icon} n="camera" s=${22} />`}</button>`}
+      ${busy ? html`<div style="display:grid;place-items:center;gap:3px"><div class="spin" />${typeof busy === 'string' && html`<small style="font-size:10.5px;font-weight:700">${busy}</small>`}</div>` : html`<${Icon} n="camera" s=${22} />`}</button>
+      ${!busy && html`<button class="addph gal" aria-label="Scegli dalla galleria" title="Scegli dalla galleria" onClick=${() => galOpen(inp.current)}><${Icon} n="image" s=${20} /></button>`}`}
     <input ref=${inp} type="file" accept="image/*" capture="environment" multiple hidden onChange=${pick} />
     ${view !== null && html`<${Viewer} ids=${gal} index=${view} labelOf=${labelOf} onClose=${() => setView(null)} />`}
   </div>`;

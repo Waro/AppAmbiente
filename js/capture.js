@@ -38,7 +38,7 @@ function Scanner({ title, target, onCode, onClose }) {
       try {
         const formats = await BarcodeDetector.getSupportedFormats();
         const det = new BarcodeDetector({ formats: formats.length ? formats : undefined });
-        stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } } });
+        stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 3840 }, height: { ideal: 2160 } } });
         if (!alive) return stream.getTracks().forEach(t => t.stop());
         const v = video.current; v.srcObject = stream; await v.play();
         const track = stream.getVideoTracks()[0]; st.current.track = track;
@@ -222,10 +222,26 @@ function SignaturePadOverlay({ title, onDone, onClose, allowImage }) {
 /* ---------------- Fotocamera di Nembo: anteprima, scatto e galleria in basso a sinistra ----------------
    camOpen(input) sostituisce input.click() sui campi foto con capture: le foto scattate o scelte dalla galleria
    arrivano all'input come se le avesse scelte il telefono (evento change), quindi i gestori esistenti non cambiano.
-   Senza fotocamera utilizzabile (PC, permesso negato) resta la fotocamera del telefono / la scelta file. */
+   Senza fotocamera utilizzabile (PC, permesso negato) resta la fotocamera del telefono / la scelta file.
+   Dalla v45 il tasto foto apre la fotocamera del telefono (qualità piena, tutte le lenti); la fotocamera di Nembo
+   si usa solo con «Scatti in serie» attivo (Impostazioni → Foto, scelta di questo dispositivo). */
 let _camSet = null;
+const camSerie = () => { try { return localStorage.getItem('nembo_cam_serie') === '1'; } catch (e) { return false; } };
+const setCamSerie = on => { try { localStorage.setItem('nembo_cam_serie', on ? '1' : '0'); } catch (e) { /* senza memoria */ } };
 const camUsable = () => !!(_camSet && navigator.mediaDevices && navigator.mediaDevices.getUserMedia && matchMedia('(pointer: coarse)').matches);
-function camOpen(input) { if (!input) return; if (!camUsable()) { input.click(); return; } _camSet({ input }); }
+function camOpen(input) { if (!input) return; if (!camSerie() || !camUsable()) { input.click(); return; } _camSet({ input }); }
+// galleria: le foto scelte arrivano allo stesso campo della fotocamera
+function galOpen(input) {
+  if (!input) return;
+  const g = document.createElement('input'); g.type = 'file'; g.accept = 'image/*'; g.multiple = !!input.multiple;
+  g.onchange = () => { const files = [...g.files]; if (files.length) camDeliver(input, files); };
+  g.click();
+}
+function CamSerieCard() {
+  const [on, set] = useState(camSerie);
+  return html`<div class="card"><label class="fg-sw"><span>Scatti in serie con la fotocamera di Nembo</span><${Toggle} on=${on} label="Scatti in serie" set=${v => { setCamSerie(v); set(v); }} /></label>
+    <p class="hint-p" style="margin:8px 0 0">Più foto di seguito senza uscire da Nembo. La fotocamera del telefono dà foto più nitide.</p></div>`;
+}
 function camDeliver(input, files) {
   if (!files.length) return;
   const dt = new DataTransfer(); files.forEach(f => dt.items.add(f));
@@ -248,7 +264,7 @@ function Camera({ input, onClose }) {
     let alive = true, stream;
     (async () => {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } } });
+        stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 3840 }, height: { ideal: 2160 } } });
         if (!alive) return stream.getTracks().forEach(t => t.stop());
         const v = video.current; v.srcObject = stream; await v.play();
         const track = stream.getVideoTracks()[0]; st.current.track = track;
@@ -263,7 +279,11 @@ function Camera({ input, onClose }) {
   const toggleTorch = () => { const t = st.current.track; if (!t) return; const on = !torch; t.applyConstraints({ advanced: [{ torch: on }] }).then(() => setTorch(on)).catch(() => {}); };
   const grab = async () => {
     const ic = st.current.ic;
-    if (ic) { try { return await ic.takePhoto(); } catch (e) { /* ripiego sul fotogramma */ } }
+    if (ic) {
+      // scatto alla risoluzione massima del sensore
+      try { const pc = await ic.getPhotoCapabilities(); const w = pc && pc.imageWidth && pc.imageWidth.max; return await ic.takePhoto(w ? { imageWidth: w } : undefined); }
+      catch (e) { try { return await ic.takePhoto(); } catch (e2) { /* ripiego sul fotogramma */ } }
+    }
     const v = video.current, c = document.createElement('canvas'); c.width = v.videoWidth; c.height = v.videoHeight;
     c.getContext('2d').drawImage(v, 0, 0);
     return await new Promise(r => c.toBlob(r, 'image/jpeg', .92));

@@ -326,6 +326,9 @@ function Settings({ settings, setSettings, onTemplates, go }) {
     <p class="lead" style="margin:6px 2px 0;font-size:12.5px">Puoi disegnarla o caricare una foto della tua firma su un foglio bianco: lo sfondo viene tolto da solo.</p>
     </div>
 
+    <div class="sec-h"><h3>Foto</h3></div>
+    <${CamSerieCard} />
+
     <div class="sec-h"><h3>Scheda campioni</h3></div>
     <div class="card"><div class="grid2">
       <${Inp} cls="full" label="Prelevato da" value=${s.prelevatoDa} set=${v => set({ prelevatoDa: v })} placeholder="es. Tec. Amb. Nome Cognome" />

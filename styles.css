@@ -396,6 +396,7 @@ input[type=checkbox] { accent-color: var(--blue); }
 .ph img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .ph .x { position: absolute; top: 3px; right: 3px; width: 24px; height: 24px; background: rgba(0,0,0,.55); color: #fff; font-size: 14px; }
 .addph { width: 68px; height: 68px; border-radius: 12px; border: 1.5px dashed var(--chev); background: transparent; color: var(--blue); display: grid; place-items: center; flex-shrink: 0; }
+.addph.gal { width: 46px; border-style: solid; border-color: var(--sep); color: var(--text2); }
 .geo { font-size: 13px; color: var(--ok); display: inline-flex; gap: 4px; align-items: center; }
 
 /* radon: punti, stepper per piano, momenti */
@@ -498,14 +499,28 @@ input[type=checkbox] { accent-color: var(--blue); }
 .plan-top { background: var(--bar-solid); padding: 8px 10px; display: flex; align-items: center; gap: 8px; border-bottom: .5px solid var(--sep); padding-top: calc(8px + env(safe-area-inset-top, 0px)); }
 .plan-top b { font-size: 16px; font-weight: 600; min-width: 0; }
 .plan-top .sq { width: 40px; height: 40px; font-size: 18px; font-weight: 700; }
-.plan-view { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; padding: 10px; }
-.plan-page { position: relative; margin: 0 auto; background: #fff; box-shadow: 0 6px 24px rgba(0,0,0,.35); }
+.plan-view { flex: 1; overflow: hidden; position: relative; touch-action: none; background: #3a3f47; overscroll-behavior: contain; }
+.plan-page { position: absolute; left: 0; top: 0; transform-origin: 0 0; background: #fff; box-shadow: 0 6px 24px rgba(0,0,0,.35); will-change: transform; }
 .plan-page canvas { position: absolute; left: 0; top: 0; }
-.plan-ov { z-index: 2; touch-action: auto; }
-.plan-ov.capture { touch-action: none; cursor: crosshair; }
+.plan-ov { z-index: 2; pointer-events: none; }
 .plan-lbl { position: absolute; z-index: 3; transform: translate(-50%, -50%); color: #fff; font-weight: 700; line-height: 1; padding: .25em .45em; border-radius: .3em; border: .12em solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.35); white-space: nowrap; user-select: none; -webkit-user-select: none; min-width: 1.6em; text-align: center; font-family: var(--mono); }
+.plan-lbl.drag { touch-action: none; cursor: grab; }
 .plan-lbl-x { position: absolute; top: -12px; right: -12px; width: 22px; height: 22px; border-radius: 50%; border: 0; background: #111; color: #fff; font-size: 14px; line-height: 1; display: grid; place-items: center; }
-.plan-bar { background: var(--bar-solid); padding: 10px 12px; border-top: .5px solid var(--sep); padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+.plan-txt { position: absolute; z-index: 4; width: auto; margin: 0; padding: 0 .1em; border: 1.5px dashed var(--blue); background: rgba(255,255,255,.85); font-family: Helvetica, Arial, sans-serif; font-weight: 600; line-height: 1.2; resize: none; outline: none; field-sizing: content; overflow: hidden; }
+.plan-bar { background: var(--bar-solid); padding: 8px 10px; border-top: .5px solid var(--sep); padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); position: relative; }
+.plan-tools { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; align-items: center; }
+.plan-tools::-webkit-scrollbar { display: none; }
+.plan-tools.sub { margin-top: 6px; }
+.plan-tool { position: relative; flex: 0 0 auto; width: 39px; height: 42px; border-radius: 12px; border: 0; background: transparent; color: var(--text); display: grid; place-items: center; }
+.plan-tool.on { background: var(--blue); color: #fff; }
+.plan-tool:disabled { opacity: .35; }
+.plan-n { position: absolute; top: 2px; right: 2px; min-width: 16px; height: 16px; border-radius: 8px; background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; display: grid; place-items: center; padding: 0 3px; }
+.plan-swatch { width: 24px; height: 24px; border-radius: 50%; border: 2.5px solid #fff; box-shadow: 0 0 0 1px var(--sep); }
+.plan-solo { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; white-space: nowrap; padding-right: 4px; }
+.plan-pop, .plan-tray { background: var(--card); border-radius: 14px; padding: 12px; margin-bottom: 8px; box-shadow: 0 4px 18px rgba(0,0,0,.12); }
+.plan-size { width: 42px; height: 42px; border-radius: 12px; border: 1px solid var(--sep); background: var(--card); display: grid; place-items: center; }
+.plan-size i { border-radius: 50%; display: block; }
+.plan-size.on { box-shadow: 0 0 0 2.5px var(--blue); border-color: transparent; }
 .pen { width: 34px; height: 34px; border-radius: 50%; border: 3px solid #fff; background: var(--pc); box-shadow: 0 0 0 1px var(--sep); }
 .pen.on { box-shadow: 0 0 0 2.5px var(--blue); }
 .chip { border: 0; color: #fff; font-family: var(--mono); font-weight: 600; font-size: 14px; padding: 8px 12px; border-radius: 8px; min-height: 36px; }
@@ -548,7 +563,7 @@ input[type=checkbox] { accent-color: var(--blue); }
 .chip-btn.rec { background: var(--danger-soft); color: var(--danger); }
 .hs-base { font-size: 12.5px; color: var(--muted); }
 .img-slot { width: 44px; height: 44px; border: 0; padding: 0; background: none; border-radius: 10px; flex-shrink: 0; }
-.img-slot.empty { display: grid; place-items: center; background: var(--fill-soft); color: var(--faint); }
+.img-slot.empty { display: grid; place-items: center; background: var(--fill-soft); color: var(--blue); }
 .hsg { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 165px), 1fr)); gap: 14px; margin-bottom: 8px; }
 .hsg-grp + .hsg-grp { margin-top: 26px; padding-top: 6px; border-top: .5px solid var(--sep); }
 .hsg-card { background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-card); padding: 10px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; min-width: 0; }
@@ -849,3 +864,11 @@ img.logo { background: none; object-fit: cover; }
 .rp-ph img, .rp-ph i { width: 100%; height: 100%; object-fit: cover; display: block; }
 .rp-ph span { position: absolute; left: 0; right: 0; bottom: 0; font-size: 10.5px; background: rgba(0,0,0,.55); color: #fff; padding: 2px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pill.nx { background: var(--blue-soft); color: var(--blue); font-weight: 600; margin-left: auto; }
+
+/* microfono dentro il campo (HSE) */
+.mic-wrap { position: relative; }
+.mic-wrap textarea { width: 100%; padding-right: 46px; }
+.mic-in { position: absolute; top: 6px; right: 6px; width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--fill-soft); color: var(--blue); display: grid; place-items: center; }
+.mic-in.rec { background: var(--danger); color: #fff; animation: micpulse 1.2s ease-in-out infinite; }
+@keyframes micpulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 45%, transparent); } 50% { box-shadow: 0 0 0 7px transparent; } }
+.hs-tools:empty { display: none; }

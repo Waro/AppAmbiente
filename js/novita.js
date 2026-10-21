@@ -3,6 +3,19 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
+  { v: 45, data: '2026-10-21', tipo: 'maggiore', titolo: 'Planimetrie e foto',
+    voci: [
+      'Planimetrie: nuova modalità di spostamento più fluida e scrittura più semplice.',
+      'Nuovi strumenti sulle planimetrie: penna, evidenziatore, linea, freccia, rettangolo, cerchio, testo e gomma, con colori e spessori a scelta. Le frecce indietro e avanti annullano e ripristinano.',
+      '«Solo penna»: con la penna del tablet il dito sposta la pianta e non lascia segni.',
+      'Foto: il tasto fotocamera apre la fotocamera del telefono, con la sua qualità e tutte le lenti. Per le foto già scattate c’è il tasto Galleria accanto.',
+      'La fotocamera di Nembo, per scattare più foto di seguito, si attiva in Impostazioni → Foto.',
+      'HSE: il microfono per dettare è dentro il campo di testo.',
+      'HSE: le foto di anagrafica, copertina e inquadramento si possono scattare con la fotocamera.' ],
+    slides: [
+      { t: 'Planimetrie: disegna e scrivi', s: 'Due dita per muoverti, un dito o la penna per disegnare. Linee, frecce, forme, testo e gomma.', img: 'novita/v45-planimetrie.webp' },
+      { t: 'Foto più nitide', s: 'Si scatta con la fotocamera del telefono, con tutte le sue lenti. La galleria è nel tasto accanto.', img: 'novita/v45-foto.webp' },
+    ] },
   { v: 44, data: '2026-10-20', tipo: 'minore', titolo: 'Nuovo logo',
     voci: ['Nuovo logo di Nembo: icona dell’app e menu laterale.'] },
   { v: 43, data: '2026-10-20', tipo: 'minore', titolo: 'Word del Verbale HSE',
