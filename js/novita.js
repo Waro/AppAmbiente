@@ -3,6 +3,25 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
+  { v: 46, data: '2026-10-26', tipo: 'maggiore', titolo: 'Scheda File, Home e tema scuro',
+    voci: [
+      'Nuova scheda «File» in ogni attività: schede campioni, riepiloghi, scheda radon, schede aria, Word HSE e fogli firme. Grigio da generare, verde generato (tocca per aprirlo), ambra se i dati sono cambiati dopo. «Rigenera» crea una nuova revisione senza cancellare la precedente. I file vanno anche su OneDrive.',
+      'Schede di prelievo campioni e aria dal modello aziendale, in Excel e in PDF uguali: 30 campioni per foglio, dal 31° un foglio in più, numero di pagina in fondo.',
+      'Campioni: Piano, Ubicazione e Descrizione. Nella scheda per il laboratorio la descrizione è «Piano - Ubicazione - Descrizione»; la quantità resta nei riepiloghi Word ed email.',
+      'Il campo Piano resta attivo mentre scrivi: il campione passa al nuovo gruppo quando esci dal campo.',
+      'Manufatti non campionati (NC1, NC2…) in Mappatura e DDA Fase 2, con il campione di riferimento: compaiono nei riepiloghi.',
+      'Planimetrie: ogni pianta ha il suo Piano; le etichette proposte sono quelle di quel piano, le altre in fondo sotto «Altri campioni». Un’etichetta già messa su un’altra pianta non viene più proposta.',
+      'Più planimetrie o foto insieme: tieni premuto il primo file e poi tocca gli altri.',
+      'Tasti foto tutti della stessa misura.',
+      'Home più semplice: prossimo sopralluogo, attività di oggi, «Da completare», strumenti e dati. Il tasto + in basso avvia un nuovo sopralluogo; a fine giornata compare «Giornata chiusa».',
+      'Tema scuro: in Impostazioni → Aspetto e avvio scegli tra sole (Essenziale), ciotola di ramen (Originale) e luna (Scuro).',
+      'Programmazione: spunta «Drone» per DDA, Mappatura e Sopralluogo RA, con l’icona del drone nel calendario e negli elenchi.',
+      'Nuova icona e nuova schermata di avvio.' ],
+    slides: [
+      { t: 'Scheda File', s: 'Tutti i documenti dell’attività in un posto: verde generato, ambra da rigenerare.', img: 'novita/v46-file.webp' },
+      { t: 'Home più semplice', s: 'Prossimo sopralluogo, attività di oggi e cose da completare. Il + in basso avvia un sopralluogo.', img: 'novita/v46-home.webp' },
+      { t: 'Tema scuro', s: 'Sole, ramen o luna: scegli in Impostazioni → Aspetto e avvio.', img: 'novita/v46-tema.webp' },
+    ] },
   { v: 45, data: '2026-10-21', tipo: 'maggiore', titolo: 'Planimetrie e foto',
     voci: [
       'Planimetrie: nuova modalità di spostamento più fluida e scrittura più semplice.',

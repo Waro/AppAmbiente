@@ -22,9 +22,11 @@ function riepilogoDati(r, s) {
     const mats = r.type === 'dda' ? MATS : MAP_MATS;
     if (r.type === 'dda') voci.push(...(r.recs || []).map(x => ({ t: x.nome || 'Area REC', stato: 'Area REC', righe: [x.descrizione].filter(Boolean), foto: x.foto || [] })));
     for (const m of mats) for (const c of (r.campioni[m.k] || [])) voci.push({ t: [c.codice, m.l].filter(Boolean).join(' – '), stato: 'Campione',
-      righe: [c.descrizione, [c.piano, c.quantita].filter(Boolean).join(' · ')].filter(Boolean), foto: c.foto || [] });
+      righe: [c.descrizione, [c.piano, c.ubicazione, c.quantita].filter(Boolean).join(' · ')].filter(Boolean), foto: c.foto || [] });
+    for (const x of ncOf(r)) { const m = MATS.find(y => y.k === x.k) || MATS[2], rc = ncRif(r, x); voci.push({ t: [x.codice, m.l].join(' – '), stato: 'Non campionato',
+      righe: [x.descrizione, [x.piano, x.ubicazione, x.quantita].filter(Boolean).join(' · '), rc && 'Come campione ' + rc].filter(Boolean), foto: x.foto || [] }); }
     const nc = mats.reduce((a, m) => a + (r.campioni[m.k] || []).length, 0);
-    sintesi = [r.type === 'dda' && r.recs.length && conta(r.recs.length, 'area REC', 'aree REC'), conta(nc, 'campione prelevato', 'campioni prelevati'),
+    sintesi = [r.type === 'dda' && r.recs.length && conta(r.recs.length, 'area REC', 'aree REC'), conta(nc, 'campione prelevato', 'campioni prelevati'), ncOf(r).length && conta(ncOf(r).length, 'manufatto non campionato', 'manufatti non campionati'),
       ...mats.filter(m => (r.campioni[m.k] || []).length).map(m => m.l + ' ' + r.campioni[m.k].length)].filter(Boolean).join(', ');
   } else if (r.type === 'aria') {
     voci = ariaVoci(r); const R = ariaRiepilogo(r);

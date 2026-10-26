@@ -2,14 +2,15 @@
 // Stessa stringa di VERSION in sw.js: aumentala insieme a quella ad ogni aggiornamento.
 // Essendo dentro un file JS servito dalla cache, se l'aggiornamento automatico fallisce
 // questa scritta mostra ancora la versione vecchia — è il modo per accorgersene.
-const APP_VERSION = 'nembo-v45';
+const APP_VERSION = 'nembo-v46';
 
-/* ---------------- tema grafico: "essenziale" (predefinito) o "originale" ----------------
-   Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno. */
-const THEMES = { essenziale: { l: 'Essenziale', bar: '#f2f2f7' }, originale: { l: 'Originale', bar: '#f7f2f0' } };
+/* ---------------- tema grafico: "essenziale" (predefinito), "originale" o "scuro" ----------------
+   Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno.
+   Selettore a 3 vie: sole = Essenziale, ciotola di ramen = Originale, luna = Scuro. */
+const THEMES = { essenziale: { l: 'Essenziale', bar: '#f2f2f7', ic: 'sun' }, originale: { l: 'Originale', bar: '#f7f2f0', ic: 'ramen' }, scuro: { l: 'Scuro', bar: '#0e1116', ic: 'moon' } };
 function getTheme() { try { const t = localStorage.getItem('nembo_theme'); if (THEMES[t]) return t; } catch (e) {} return 'essenziale'; }
 function applyTheme(t) {
-  if (t === 'originale') document.documentElement.dataset.theme = 'originale'; else delete document.documentElement.dataset.theme;
+  if (t === 'originale' || t === 'scuro') document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
   const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', THEMES[t].bar);
 }
 function setTheme(t) { try { localStorage.setItem('nembo_theme', t); } catch (e) {} applyTheme(t); }
@@ -238,6 +239,10 @@ const P = {
   line: 'M5 19 19 5', arrow: 'M5 19 19 5M10 5h9v9', rect: 'M4 6h16v12H4z', circle: 'M3 12a9 8 0 1 0 18 0a9 8 0 1 0-18 0', text: 'M5 6V4h14v2M12 4v16M9 20h6',
   eraser: 'M7 21h13M5.5 15.5l9-9a2 2 0 0 1 2.8 0l2.2 2.2a2 2 0 0 1 0 2.8L12 19H8.5l-3-3a1 1 0 0 1 0-1.4zM10 11l5 5', tag: 'M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8zM7.5 7.5h.01',
   undo: 'M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11', redo: 'M15 14l5-5-5-5M20 9H9.5a5.5 5.5 0 0 0 0 11H13',
+  drone: 'M10 10h4v4h-4zM10 10 7.6 7.6M14 10l2.4-2.4M10 14l-2.4 2.4M14 14l2.4 2.4M3 5.5a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0M16 5.5a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0M3 18.5a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0M16 18.5a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0',
+  sun: 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
+  moon: 'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z',
+  ramen: 'M3 12h18a9 7.5 0 0 1-18 0zM9 21h6M13 11.5 17 3M15.5 11.5 21 4.5M6 9c0-1.2 1.2-1.2 1.2-2.4S6 5.4 6 4.2M9.5 9c0-1.2 1.2-1.2 1.2-2.4S9.5 5.4 9.5 4.2',
   torch: 'M9 2h6v4l-2 3v13h-2V9L9 6z', trash: 'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6', paper: 'M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5',
 };
 const Icon = ({ n, s = 20, w = 2 }) => html`<svg width=${s} height=${s} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width=${w} stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d=${P[n]} /></svg>`;
@@ -469,7 +474,8 @@ const DEFAULT_SETTINGS = {
 // I modelli PDF non sono nel codice pubblicato: si caricano una volta dalle Impostazioni
 const TEMPLATES = {
   'radon.pdf': { key: 'tpl_radon', label: 'Scheda raccolta dati radon (PDF compilabile)', bu: 'ambiente' },
-  'scheda_campioni.pdf': { key: 'tpl_scheda', label: 'Scheda di prelievo campioni massivi', bu: 'ambiente' },
+  'scheda_campioni.pdf': { key: 'tpl_scheda', label: 'Schede di prelievo campioni massivi e aria (PDF)', bu: 'ambiente' },
+  'scheda_campioni.xlsx': { key: 'tpl_scheda_xlsx', label: 'Schede di prelievo campioni massivi e aria (Excel)', bu: 'ambiente', xlsx: true },
   'hs_esteso.docx': { key: 'tpl_hs_esteso', label: 'Modello Word HSE Esteso', bu: 'hs', docx: true },
   'hs_sintetico.docx': { key: 'tpl_hs_sintetico', label: 'Modello Word HSE Sintetico', bu: 'hs', docx: true },
   'vs.docx': { key: 'tpl_vs', label: 'Modello Word Verbale HSE', bu: 'hs', docx: true },
@@ -482,13 +488,18 @@ async function loadTemplate(name) {
 }
 async function checkTemplate(name, bytes) {
   if (/\.docx$/.test(name)) return hsCheckTemplate(name, bytes);
+  if (/\.xlsx$/.test(name)) {
+    const z = await JSZip.loadAsync(bytes).catch(() => null); const wb = z && z.file('xl/workbook.xml') && await z.file('xl/workbook.xml').async('string');
+    if (!wb || !/name="[^"]*MASSIVI/i.test(wb)) throw new Error('non è il modello Excel atteso (serve il foglio MASSIVI, e ARIA per il monitoraggio dell\'aria)');
+    return;
+  }
   await needLib('pdflib');
   const doc = await PDFLib.PDFDocument.load(bytes);
   if (name === 'radon.pdf') {
     const names = doc.getForm().getFields().map(f => f.getName());
     if (doc.getPageCount() !== 2 || !names.includes('Commessa') || !names.includes('Fase 1_20'))
       throw new Error('non è il modulo radon compilabile atteso (2 pagine con i campi R1–R20)');
-  } else if (doc.getPageCount() !== 1) throw new Error('la scheda campioni deve essere di una sola pagina');
+  } else if (![1, 2].includes(doc.getPageCount())) throw new Error('le schede di prelievo devono avere 1 pagina (solo massivi) o 2 pagine (massivi e aria)');
 }
 
 /* ---------------- luoghi: città e indirizzo prima del codice sito ---------------- */

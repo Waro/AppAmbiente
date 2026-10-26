@@ -229,44 +229,37 @@ async function odRecordItems(r, settings) {
     (r.cgFoto || []).forEach((o, k) => photo(o.id, 'immagini', `inquadramento_${k + 1}`));
     Object.entries(r.img || {}).forEach(([k, v]) => photo(v, 'immagini', k));
     (r.documenti || []).forEach(d => photo(d.blobId, 'documenti', d.nome));
-    const tk = TEMPLATES[r.formato === 'sintetico' ? 'hs_sintetico.docx' : 'hs_esteso.docx'].key;
-    if (await DB.get(tk)) items.push({ kind: 'office', type: DOCX_MIME, segs: [hsFileBase(r)], make: () => hsBuildDocx(r, s, {}) });
   } else if (r.type === 'radon') {
     r.punti.forEach((p, i) => p.foto.forEach((f, k) => photo(f, 'foto', `R${i + 1}_${k + 1}`)));
     r.rapporti.forEach(d => photo(d.blobId, 'rapporti', d.nome));
-    items.push({ kind: 'pdf', segs: ['Scheda_radon_' + (r.commessa || 'campagna')], make: async () => PdfGen.radonPdf(await loadTemplate('radon.pdf'), r) });
   } else if (r.type === 'vs') {
     vsPhotos(r).forEach(x => photo(x.id, 'note', x.name));
     Object.entries(r.img || {}).forEach(([k, v]) => v && photo(v, 'immagini', k));
-    if (await DB.get(TEMPLATES['vs.docx'].key)) items.push({ kind: 'office', type: DOCX_MIME, segs: [vsFileBase(r)], make: () => vsBuildDocx(r, s, {}) });
   } else if (r.type === 'firme' || r.type === 'aria' || r.type === 'app') {
     // solo fogli firme / monitoraggio aria: aggiunti sotto
   } else {
     r.recs.forEach(x => x.foto.forEach((f, k) => photo(f, 'foto', `${x.nome}_${k + 1}`)));
     MATS.forEach(m => r.campioni[m.k].forEach(c => (c.foto || []).forEach((f, k) => photo(f, 'foto', `${m.l}_${c.codice || 'campione'}_${k + 1}`))));
+    ncOf(r).forEach(x => (x.foto || []).forEach((f, k) => photo(f, 'foto', `${x.codice}_${k + 1}`)));
     r.documenti.forEach(d => photo(d.blobId, 'documenti', d.nome));
-    ['mca', 'fav'].forEach(k => {
-      if (!r.campioni[k].length) return;
-      items.push({ kind: 'office', type: XLSX_MIME, segs: ['Scheda_campioni_' + k.toUpperCase()], make: () => schedaCampioniXlsx(r, k, s) });
-      items.push({ kind: 'pdf', segs: ['Scheda_campioni_' + k.toUpperCase()], make: async () => PdfGen.schedaCampioniPdf(await loadTemplate('scheda_campioni.pdf'), {
-        commessa: r.commessa, sito: placeDoc(r), campioni: r.campioni[k],
-        analisi: k === 'mca' ? { codice: s.mcaCodice, desc: s.mcaDesc } : { codice: s.favCodice, desc: s.favDesc },
-        lab: { nome: s.labNome, r1: s.labR1, r2: s.labR2 }, offerta: s.offerta, offertaRev: s.offertaRev, email: s.emailReferti,
-        prelevatoDa: s.prelevatoDa, verificatoDa: s.verificatoDa }) });
-    });
   }
   (r.fotoAppunti || []).forEach((f, k) => photo(f, 'foto', `Appunti_${k + 1}`));
   (r.fotoAppunti2 || []).forEach((f, k) => photo(f, 'foto', `Appunti_Fase2_${k + 1}`));
-  if ((r.type === 'dda' || r.type === 'mappatura') && allCamp(r).length) items.push({ kind: 'office', type: DOCX_MIME, segs: ['Riepilogo_campioni'], make: () => riepilogoCampioniDocx(r, s) });
   // planimetrie: la versione annotata viene rigenerata a ogni modifica, quindi va sostituita (non è nel registro "una volta sola")
   for (const p of (r.planimetrie || [])) {
     const id = p.mergedBlobId || p.blobId;
     items.push({ kind: 'pdfblob', blobId: id, segs: ['planimetrie', p.nome + (p.mergedBlobId ? '_annotata' : '')] });
   }
-  for (const f of (r.fogli || [])) if (foglioFirme(f)) items.push({ kind: 'pdf', segs: ['firme', foglioNome(f)], make: () => foglioPdf(r, f, s) });
   ariaPhotos(r).forEach(x => photo(x.id, 'aria', x.name));
   ariaRapporti(r).forEach(d => photo(d.blobId, 'aria', d.nome));
-  ariaOutputs(r, s).forEach(o => items.push(o.kind === 'office' ? { kind: 'office', type: o.type, segs: ['aria', o.name], make: o.make } : { kind: 'pdf', segs: ['aria', o.name], make: o.make }));
+  // documenti: quelli generati dalla scheda File vanno su così come sono (tutte le revisioni non ancora caricate);
+  // quelli mai generati vengono preparati al momento, come prima
+  for (const d of recDocs(r, s)) {
+    const L = fileRevs(r, d);
+    if (L.length) { for (const e of L) if (e.blobId) items.push({ kind: 'fileblob', blobId: e.blobId, type: d.type, segs: fileSegs(d, e.rev) }); continue; }
+    if (d.tpl && !(await DB.get(d.tpl))) continue;
+    items.push(d.type === PDF_MIME ? { kind: 'pdf', segs: fileSegs(d, 0), make: async () => new Uint8Array(await (await d.make()).arrayBuffer()) } : { kind: 'office', type: d.type, segs: fileSegs(d, 0), make: d.make });
+  }
   const { _new, ...data } = r;
   items.push({ kind: 'json', segs: ['dati'], make: async () => JSON.stringify({ app: 'nembo', version: 1, record: data }, null, 1) });
   return items;
@@ -280,7 +273,7 @@ function Progress() {
   const pct = p.total ? Math.round(p.done / p.total * 100) : 0;
   return html`<div class="ov"><div class="modal" role="status" aria-live="polite">
     <h4>${p.title}</h4><p>${p.text}</p>
-    <div style="height:8px;background:#e7edf3;border-radius:6px;overflow:hidden"><div style=${'height:100%;background:var(--primary);width:' + pct + '%'}></div></div>
+    <div style="height:8px;background:var(--track);border-radius:6px;overflow:hidden"><div style=${'height:100%;background:var(--primary);width:' + pct + '%'}></div></div>
     <div class="lock" style="margin-top:8px">${p.done} / ${p.total}</div>
     ${p.onStop && html`<button class="btn block" style="margin-top:12px" onClick=${p.onStop}>Interrompi</button>`}
   </div></div>`;
@@ -325,7 +318,7 @@ async function odSync(records, settings) {
   for (const r of records) {
     if (!folders[r.id]) folders[r.id] = recordLabel(r) || r.id;
     for (const it of await odRecordItems(r, settings)) {
-      if (it.kind === 'blob' && sent[it.blobId]) continue;
+      if ((it.kind === 'blob' || it.kind === 'fileblob') && sent[it.blobId]) continue;
       plan.push({ ...it, folder: folders[r.id], recId: r.id });
     }
   }
@@ -350,6 +343,9 @@ async function odSync(records, settings) {
         type = await OD.sniff(b.blob);
         if (!type) { errors.push({ path: it.folder + '/' + it.segs.join('/'), msg: 'tipo di file non ammesso, saltato', code: 'TIPO' }); done++; continue; }
         blob = b.blob; replace = false;
+      } else if (it.kind === 'fileblob') {
+        const b = await DB.getBlob(it.blobId); if (!b) { it._ok = true; done++; continue; }
+        blob = b.blob; type = it.type; replace = true;
       } else if (it.kind === 'pdfblob') {
         const b = await DB.getBlob(it.blobId); if (!b) { it._ok = true; done++; continue; }
         blob = b.blob; type = 'application/pdf'; replace = true;
@@ -359,6 +355,7 @@ async function odSync(records, settings) {
       else { blob = new Blob([await it.make()], { type: 'application/json' }); type = 'application/json'; replace = true; }
       const res = await OD.upload([it.folder, ...it.segs], blob, { type, replace });
       if (it.kind === 'blob') { sent[it.blobId] = res.path; await DB.set('od_sent', sent); }
+      if (it.kind === 'fileblob') { await fileMarkSent(it.blobId, res); sent[it.blobId] = res.path; }
       await odLog({ path: res.path, size: blob.size });
       it._ok = true;
     } catch (e) {

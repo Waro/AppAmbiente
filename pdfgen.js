@@ -268,6 +268,75 @@
     return await doc.save();
   }
 
+  /* ---------- SCHEDE DI PRELIEVO dal modello v46 (2 pagine: 1 = MASSIVI, 2 = ARIA), uguali all'Excel ----------
+     Coordinate ricavate dal modello: 30 righe per pagina, dal campione 31 una pagina in più; piè di pagina «pag. n di n». */
+  const SP = {
+    massivi: { page: 0, rows: [572.5, 556.7, 540.9, 525.2, 509.4, 493.6, 477.8, 462.1, 446.3, 430.5, 414.8, 399.0, 383.2, 367.4, 351.7, 335.9, 320.1, 304.3, 288.6, 272.8, 257.0, 241.2, 225.5, 209.7, 193.9, 178.1, 162.4, 146.6, 130.8, 115.0, 99.3],
+      cols: { n: [35.5, 60.9], data: [60.9, 104.3], desc: [104.3, 408.3], tip: [408.3, 559.5] },
+      comm: [219.6, 559.5, 703.0, 742.0], sito: [219.6, 559.5, 658.7, 703.0], email: [35.5, 559.5, 632.6], lab: [219.6, 408.3, 595.6, 627.7], off: [408.3, 559.5, 595.6, 627.7],
+      firme: [{ x: 92.5, y: 87.0, k: 'prelevatoDa' }, { x: 93.0, y: 77.1, k: 'verificatoDa' }], fs: 8.5 },
+    aria: { page: 1, rows: [595.4, 576.4, 561.0, 545.6, 530.3, 514.9, 499.5, 484.1, 468.7, 453.3, 438.0, 422.6, 407.2, 391.8, 376.4, 361.0, 345.6, 330.3, 314.9, 299.5, 284.1, 268.7, 253.3, 238.0, 222.6, 207.2, 191.8, 176.4, 161.0, 145.6, 130.3],
+      cols: { n: [41.9, 66.7], data: [66.7, 109.1], post: [109.1, 221.5], camp: [221.5, 312.1], vol: [312.1, 358.8], fl: [358.8, 405.5], tip: [405.5, 553.0] },
+      comm: [221.5, 553.0, 710.8, 742.2], sito: [221.5, 553.0, 679.4, 710.8], email: [41.9, 553.0, 657.0], lab: [221.5, 405.5, 617.9, 649.2], off: [405.5, 553.0, 617.9, 649.2],
+      firme: [{ x: 148.8, y: 103.6, k: 'taratura' }, { x: 97.5, y: 94.0, k: 'prelevatoDa' }, { x: 98.2, y: 84.4, k: 'verificatoDa' }], fs: 8.3 },
+  };
+  const isSchedeV46 = async bytes => { if (root.needLib) await root.needLib('pdflib'); const { PDFDocument } = lib(); const d = await PDFDocument.load(bytes); return d.getPageCount() === 2; };
+  // kind: 'massivi' (info come schedaCampioniPdf) | 'aria' (info come ariaInfo)
+  async function schedePdf(templateBytes, kind, info) {
+    if (root.needLib) await root.needLib('pdflib');
+    const { PDFDocument, StandardFonts, rgb } = lib();
+    const L = SP[kind];
+    const tpl = await PDFDocument.load(templateBytes);
+    const doc = await PDFDocument.create();
+    const font = await doc.embedFont(StandardFonts.Helvetica), bold = await doc.embedFont(StandardFonts.HelveticaBold), ital = await doc.embedFont(StandardFonts.HelveticaOblique);
+    const black = rgb(0, 0, 0);
+    const nRows = L.rows.length - 1;
+    const items = kind === 'aria' ? (info.prelievi || []) : (info.campioni || []);
+    const nPages = Math.max(1, Math.ceil(items.length / nRows));
+    const center = (page, f, t, size, x0, x1, y) => { t = safe(t); const w = f.widthOfTextAtSize(t, size); page.drawText(t, { x: x0 + (x1 - x0 - w) / 2, y, size, font: f, color: black }); };
+    const fitC = (page, f, t, size, min, x0, x1, y) => { const q = fitText(f, safe(t), x1 - x0 - 6, size, min); center(page, f, q.text, q.size, x0, x1, y); };
+    const fitL = (page, f, t, size, min, x0, x1, y) => { const q = fitText(f, safe(t), x1 - x0 - 8, size, min); page.drawText(q.text, { x: x0 + 4, y, size: q.size, font: f, color: black }); };
+    // blocco di righe centrato verticalmente in un riquadro
+    const block = (page, lines, f, size, [x0, x1, y0, y1], left) => {
+      lines = lines.map(l => String(l || '').trim()).filter(Boolean); if (!lines.length) return;
+      const lh = size * 1.18, top = (y0 + y1) / 2 + (lines.length * lh) / 2 - size * 0.82;
+      lines.forEach((l, i) => left ? fitL(page, f, l, size, size * 0.7, x0 + 4, x1, top - i * lh) : fitC(page, i === 0 && !left ? f : font, l, size, size * 0.7, x0, x1, top - i * lh));
+    };
+    const lab = typeof info.lab === 'string' ? info.lab.split('\n') : [info.lab && info.lab.nome, info.lab && info.lab.r1, info.lab && info.lab.r2];
+    const off = info.offertaRev !== undefined ? [info.offerta, info.offertaRev] : String(info.offerta || '').split(' - ');
+    const an = info.analisi || {};
+    for (let p = 0; p < nPages; p++) {
+      const [page] = await doc.copyPages(tpl, [L.page]);
+      doc.addPage(page);
+      block(page, [kind === 'aria' ? [info.commessa, info.cliente].filter(Boolean).join(' · ') : info.commessa], bold, 12, L.comm, true);
+      block(page, String(info.sito || '').split('\n'), font, 10.5, L.sito, true);
+      center(page, ital, info.email || '', 8.4, L.email[0], L.email[1], L.email[2]);
+      block(page, lab, bold, 8.2, L.lab);
+      block(page, off, font, 7.6, L.off);
+      for (const fm of L.firme) page.drawText(safe(info[fm.k] || ''), { x: fm.x, y: fm.y, size: L.fs, font, color: black });
+      center(page, font, 'pag. ' + (p + 1) + ' di ' + nPages, 7, 0, 595.3, 24.5);
+      for (let r = 0; r < nRows; r++) {
+        const s = items[p * nRows + r]; if (!s) break;
+        const top = L.rows[r], bot = L.rows[r + 1], y = bot + (top - bot) / 2 - 3;
+        const C = L.cols;
+        fitC(page, bold, s.codice || '', 9.5, 6, C.n[0], C.n[1], y - 0.4);
+        fitC(page, font, fmtData(s.data), 7.6, 5.5, C.data[0], C.data[1], y);
+        if (kind === 'aria') {
+          fitC(page, font, String(s.postazione || '').replace(/\n/g, ' - '), 7.4, 5, C.post[0], C.post[1], y);
+          fitC(page, font, s.campionatore || '', 7.4, 5, C.camp[0], C.camp[1], y);
+          fitC(page, font, s.volume == null ? '' : Number(s.volume).toLocaleString('it-IT'), 7.6, 5.5, C.vol[0], C.vol[1], y);
+          fitC(page, font, s.flusso == null ? '' : Number(s.flusso).toLocaleString('it-IT', { maximumFractionDigits: 2 }), 7.6, 5.5, C.fl[0], C.fl[1], y);
+          fitC(page, font, s.analisi || '', 7.2, 4.8, C.tip[0], C.tip[1], y);
+        } else {
+          fitL(page, font, s.descrizione || '', 7.8, 5.2, C.desc[0], C.desc[1], y);
+          fitC(page, font, (an.codice || '') + (an.desc ? ' (' + an.desc + ')' : ''), 7.2, 4.8, C.tip[0], C.tip[1], y);
+        }
+      }
+    }
+    doc.setTitle((kind === 'aria' ? 'Scheda di prelievo campioni fibre aerodisperse ' : 'Scheda di prelievo campioni massivi ') + (info.commessa || ''));
+    return await doc.save();
+  }
+
   /* ---------- foglio firme: impaginazione propria (A4), nessun modello da caricare ----------
      f: { titolo, sottotitolo, data, luogo, relatore, responsabile, testo, documenti:[{t, ok}], partecipanti:[{nome, societa, ruolo, firma, ts}],
           firmaRelatore, note, manufatti:[{codice, descrizione, tipologia, ubicazione, stato, note}] }
@@ -466,6 +535,6 @@
     return await doc.save();
   }
 
-  const api = { radonPdf, schedaCampioniPdf, foglioFirmePdf, ariaPdf, RADON_ROWS };
+  const api = { radonPdf, schedaCampioniPdf, schedePdf, isSchedeV46, foglioFirmePdf, ariaPdf, RADON_ROWS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.PdfGen = api;
 })(typeof window !== 'undefined' ? window : globalThis);

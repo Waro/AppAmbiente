@@ -53,7 +53,7 @@ const ariaRecode = (punti, id, k) => punti.map(x => x.id !== id ? x : (x.ripreso
   : { ...x, metodica: k, codice: ariaNextCode(punti.filter(y => y.id !== id), k) });
 const ariaProfilo = (s, k) => { const m = ariaMet(k); const c = ((s && s.ariaProfili) || {})[k] || ''; return c ? `${c} (${m.desc})` : m.desc; };
 const ariaCampionatori = s => (Array.isArray(s.ariaCampionatori) ? s.ariaCampionatori : String(s.ariaCampionatori || '').split('\n')).map(x => String(x).trim()).filter(Boolean);
-const ariaLabels = r => ariaOn(r) ? ariaOf(r).punti.map(p => { const e = ariaEsito(p); return { ref: p.id, text: p.codice || ariaPref(p.metodica), color: e && e.over ? '#be222a' : '#0a6ebd' }; }) : [];
+const ariaLabels = r => ariaOn(r) ? ariaOf(r).punti.map(p => { const e = ariaEsito(p); return { ref: p.id, text: p.codice || ariaPref(p.metodica), color: e && e.over ? '#be222a' : '#0a6ebd', piano: p.piano || '' }; }) : [];
 
 /* ---------------- attività a sé ---------------- */
 function newAria(records, s) {
@@ -145,21 +145,8 @@ function AriaSection({ r, up, settings, inRa }) {
       updP(p.id, { membrana: code }); return { msg: `${p.codice}: ${code}`, close: true };
     },
   });
-  const out = async (kind, fmt) => {
-    if (!P.some(p => p.stato === 'fatto' || p.stato === 'non')) { toast('Segna almeno un punto come eseguito o non eseguito'); return; }
-    if (kind === 'scheda' && !P.some(p => p.stato === 'fatto')) { toast('Nella scheda di prelievo vanno solo i punti eseguiti: non ce ne sono'); return; }
-    const name = ariaFileName(r, kind) + (fmt === 'xlsx' ? '.xlsx' : '.pdf');
-    const h = fmt === 'xlsx' ? await pickSave(name, 'Foglio Excel', XLSX_MIME, '.xlsx') : null; if (h === 'cancel') return;
-    setBusy(kind + fmt);
-    try {
-      if (fmt === 'xlsx') await saveOffice(h, kind === 'scheda' ? await ariaSchedaXlsx(r, settings) : await ariaRiepilogoXlsx(r, settings), name);
-      else await shareFiles([{ blob: new Blob([kind === 'scheda' ? await ariaSchedaPdf(r, settings) : await ariaRiepilogoPdf(r, settings)], { type: 'application/pdf' }), name }], name);
-    } catch (e) { fail((kind === 'scheda' ? 'Scheda di prelievo' : 'Riepilogo') + ' non creato', e); }
-    setBusy('');
-  };
   const nextP = () => { const p = P.find(x => !x.stato); if (!p) return; setOpenP({ [p.id]: true }); setTimeout(() => scrollToId('s-' + p.id), 80); };
   AriaSection.next = nextP;
-  const btn = (kind, fmt, l) => html`<button class="btn" style="flex:1" disabled=${!!busy} onClick=${() => out(kind, fmt)}>${busy === kind + fmt ? html`<div class="spin" />` : html`<${Icon} n="file" s=${16} />`} ${l}</button>`;
   return html`<div id=${'aria-' + r.id}>
     <div class="sec-h"><h3>${inRa ? 'Monitoraggio aria' : 'Punti di monitoraggio'} · ${R.tot}</h3><span class="hint">${R.chiusi} di ${R.tot} fatti${R.esiti ? ' · ' + R.esiti + ' esiti' : ''}</span></div>
     ${R.tot > 0 && html`<div class="track" style="margin:0 2px 12px"><i style=${'background:var(--ok);width:' + Math.round(R.chiusi / R.tot * 100) + '%'}></i></div>`}
@@ -174,11 +161,8 @@ function AriaSection({ r, up, settings, inRa }) {
       onRemove=${async d => { await removeBlob(d.blobId); upA(a => ({ rapporti: (a.rapporti || []).filter(x => x.id !== d.id) })); }} /></div>
 
     <div class="sec-h"><h3>Schede aria</h3></div>
-    <div class="card tight">
-      <div class="fld"><span>Scheda di prelievo (da inviare con le membrane)</span></div>
-      <div class="row" style="margin:6px 0 12px">${btn('scheda', 'xlsx', 'Excel')}${btn('scheda', 'pdf', 'PDF')}</div>
-      <div class="fld"><span>Riepilogo esiti (tabella per la relazione)</span></div>
-      <div class="row" style="margin-top:6px">${btn('riep', 'xlsx', 'Excel')}${btn('riep', 'pdf', 'PDF')}</div>
+    <div class="card"><p class="lead" style="margin:2px 0 10px">Scheda di prelievo ed esiti, in Excel e PDF, si generano nella scheda File.</p>
+      <button class="btn" onClick=${() => dispatchEvent(new CustomEvent('nembo-goto', { detail: 'tab:file' }))}><${Icon} n="file" s=${16} /> Vai a File</button>
       ${!ariaCampionatori(settings).length && html`<p class="lead" style="margin:10px 2px 0;font-size:13px">L'elenco dei campionatori e i codici d'analisi si impostano in Impostazioni → Monitoraggio aria.</p>`}
     </div>
     ${scan && html`<${Scanner} title=${scan.title} target=${scan.target} onCode=${scan.onCode} onClose=${() => setScan(null)} />`}
@@ -222,10 +206,10 @@ function AriaForm({ rec: initial, records, settings, onSave, onDelete, embedded,
   const upload = () => OD.account ? odSync([r], settings) : sendToOneDrive(r, settings);
   const R = ariaRiepilogo(r);
   const firmeOn = !!r.firme || (r.fogli || []).length > 0;
-  const [T, setT] = useSchede('aria', firmeOn ? ['anag', 'punti', 'firme'] : ['anag', 'punti'], initial._new, { 's-': 'punti', 'plan-': 'punti', 'aria-': 'punti' });
+  const [T, setT] = useSchede('aria', firmeOn ? ['anag', 'punti', 'firme', 'file'] : ['anag', 'punti', 'file'], initial._new, { 's-': 'punti', 'plan-': 'punti', 'aria-': 'punti' });
   return html`<div class="content form">
     <${DetailHead} eye="Monitoraggio aria" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
-    <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'punti', l: 'Punti', n: R.tot }, firmeOn && { k: 'firme', l: 'Firme', n: (r.fogli || []).length }].filter(Boolean)} />
+    <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'punti', l: 'Punti', n: R.tot }, firmeOn && { k: 'firme', l: 'Firme', n: (r.fogli || []).length }, { k: 'file', l: 'File' }].filter(Boolean)} />
     ${T === 'anag' && html`    <div class="card"><div class="grid2">
       <${Inp} cls="full" label="Commessa" value=${r.commessa} set=${v => up({ commessa: v })} imp=${impOf(r, 'commessa')} />
       <${Inp} label="Cliente" list="dl-cli-aria" value=${r.cliente} set=${v => up({ cliente: v })} imp=${impOf(r, 'cliente')} />
@@ -253,6 +237,7 @@ function AriaForm({ rec: initial, records, settings, onSave, onDelete, embedded,
       <${NotePhotos} rec=${r} up=${up} /></div>
     `}
     ${T === 'firme' && html`<${FogliFirme} r=${r} up=${up} settings=${settings} />`}
+    ${T === 'file' && html`<${FileTab} r=${r} up=${up} settings=${settings} />`}
     <${BarraAtt} r=${r} settings=${settings}
       left=${html`<button class="btn-icon lg" aria-label="Planimetrie" title="Planimetrie" onClick=${() => { if (T !== 'punti') setT('punti'); setTimeout(() => scrollToId('plan-' + r.id), 120); }}><${Icon} n="map" s=${22} /></button>`}
       center=${T === 'punti' ? (R.chiusi < R.tot ? html`<button class="btn pri" onClick=${() => AriaSection.next && AriaSection.next()}>Prossimo punto · ${R.tot - R.chiusi}</button>`
@@ -288,7 +273,12 @@ function ariaInfo(r, s) {
       non: p.stato === 'non', data: p.data || r.data, metodica: m.l, membrana: p.membrana, rdp: p.rdp, volume: ariaVol(p), limite: m.lim, conc: p.conc || '', over: !!(e && e.over) }; }),
   };
 }
-async function ariaSchedaPdf(r, s) { return PdfGen.ariaPdf('scheda', ariaInfo(r, s)); }
+// con il modello delle schede di prelievo a 2 pagine la scheda aria è la pagina ARIA del modello; altrimenti l'impaginazione di Nembo
+async function ariaSchedaPdf(r, s) {
+  let tpl = null; try { tpl = await loadTemplate('scheda_campioni.pdf'); } catch (e) { /* modello assente */ }
+  if (tpl && await PdfGen.isSchedeV46(tpl)) return PdfGen.schedePdf(tpl, 'aria', ariaInfo(r, s));
+  return PdfGen.ariaPdf('scheda', ariaInfo(r, s));
+}
 async function ariaRiepilogoPdf(r, s) { return PdfGen.ariaPdf('riepilogo', ariaInfo(r, s)); }
 
 async function ariaXlsxBase(title, cols) {
@@ -312,6 +302,8 @@ const lines = t => Math.max(1, String(t || '').split('\n').length);
 
 async function ariaSchedaXlsx(r, s) {
   const I = ariaInfo(r, s);
+  const tpl = await schedaTplXlsx();
+  if (tpl) { const z = await JSZip.loadAsync(tpl); if (/name="[^"]*ARIA/i.test(await z.file('xl/workbook.xml').async('string'))) return schedeXlsx(tpl, 'aria', I); }
   const { wb, ws, row, full, head, th, box } = await ariaXlsxBase('Scheda prelievo aria', [7, 13, 34, 30, 13, 13, 30]);
   full('SCHEDA DI PRELIEVO: CAMPIONI FIBRE AERODISPERSE', { b: true, sz: 14, center: true, h: 26 });
   row([]);

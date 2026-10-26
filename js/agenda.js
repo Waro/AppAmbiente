@@ -4,7 +4,7 @@
 const DURATE_BASE = { dda: 180, mappatura: 180, ra: 120, radon: 60, aria: 300, hs: 180, vs: 120, firme: 60 };
 const TIPI_AG = {
   dda: { l: 'DDA', c: 'var(--warn)' }, mappatura: { l: 'Mappatura', c: 'var(--mca)' }, ra: { l: 'RA', c: '#7a3db8' },
-  radon: { l: 'Radon', c: 'var(--ok)' }, aria: { l: 'Aria', c: '#0a6ebd' }, hs: { l: 'HSE', c: 'var(--blue)' }, vs: { l: 'Verbale HSE', c: '#2f7d5b' }, firme: { l: 'Firme', c: 'var(--navy)' },
+  radon: { l: 'Radon', c: 'var(--ok)' }, aria: { l: 'Aria', c: '#0a6ebd' }, hs: { l: 'HSE', c: 'var(--blue)' }, vs: { l: 'Verbale HSE', c: '#2f7d5b' }, firme: { l: 'Firme', c: 'var(--ring2)' },
   app: { l: 'Appuntamento', c: '#64748b' },
 };
 // appuntamento: impegno in agenda che non è un sopralluogo (riunione, consegna, telefonata…)
@@ -21,8 +21,15 @@ const progL = k => (PROG.find(x => x[0] === k) || PROG[2])[1];
 // quando cambia l'ora, "da programmare" e "in attesa" si aggiornano da soli; confermato e annullato restano
 const progPatch = (p, cur) => ('ora' in p && !('stato' in p) && cur !== 'confermato' && cur !== 'annullato') ? { ...p, stato: hm2m(p.ora) != null ? 'in_attesa' : 'da_programmare' } : p;
 
+// drone: solo per DDA, Mappatura e Sopralluogo RA (non per radon e monitoraggio aria)
+const DRONE_TIPI = ['dda', 'mappatura', 'ra'];
+const DroneIc = ({ s = 16 }) => html`<span class="drone-ic" title="Drone" aria-label="Con drone"><${Icon} n="drone" s=${s} w=${1.8} /></span>`;
+function DroneSw({ on, set, disabled }) {
+  return html`<label class="fld full drone-sw"><span class="row" style="gap:8px;align-items:center"><${Icon} n="drone" s=${18} /> Drone</span>
+    <${Toggle} on=${!!on} label="Drone" set=${v => !disabled && set(v)} /></label>`;
+}
 // campi Ora + Durata, da mettere accanto alla Data nelle schede
-function OraDurata({ ora, durata, tipo, set, disabled, stato }) {
+function OraDurata({ ora, durata, tipo, set, disabled, stato, drone }) {
   const d = durata || durataBase(tipo);
   const st = progDi(stato, ora);
   const fine = hm2m(ora) != null ? m2hm(Math.min(hm2m(ora) + d, 24 * 60 - 1)) : '';
@@ -32,7 +39,8 @@ function OraDurata({ ora, durata, tipo, set, disabled, stato }) {
       <select value=${String(d)} disabled=${disabled} onChange=${e => set({ durata: +e.target.value })}>
         ${[...new Set([...DUR_OPT, d])].sort((a, b) => a - b).map(m => html`<option value=${m}>${fmtDur(m)}</option>`)}</select></label>
     <label class="fld"><span>Stato <i class="mdot" style=${'background:' + (PROG.find(x => x[0] === st) || PROG[2])[2]}></i></span>
-      <select value=${st} disabled=${disabled} onChange=${e => set({ stato: e.target.value })}>${PROG.map(([k, l]) => html`<option value=${k}>${l}</option>`)}</select></label>`;
+      <select value=${st} disabled=${disabled} onChange=${e => set({ stato: e.target.value })}>${PROG.map(([k, l]) => html`<option value=${k}>${l}</option>`)}</select></label>
+    ${DRONE_TIPI.includes(tipo) && html`<${DroneSw} on=${drone} disabled=${disabled} set=${v => set({ drone: v })} />`}`;
 }
 
 /* ---------------- elementi in agenda ---------------- */
@@ -53,7 +61,7 @@ function agendaItems(records, s) {
     } else if (r.type === 'app') {
       if (r.data) out.push({ key: r.id, rec: r, i: null, data: r.data, ora: r.ora || '', durata: r.durata || 60, tipo: 'app', stato: progDi(r.stato, r.ora), titolo: r.titolo || 'Appuntamento', sub: r.luogo || '' });
     } else if (r.data && TIPI_AG[r.type]) {
-      out.push({ key: r.id, rec: r, i: null, data: r.data, ora: r.ora || '', durata: r.durata || durataBase(r.type, s), tipo: r.type, stato: progDi(r.stato, r.ora),
+      out.push({ key: r.id, rec: r, i: null, data: r.data, ora: r.ora || '', durata: r.durata || durataBase(r.type, s), tipo: r.type, stato: progDi(r.stato, r.ora), drone: DRONE_TIPI.includes(r.type) && !!r.drone,
         titolo: [TIPI_AG[r.type].l + (r.type === 'dda' ? ' F' + r.fase : r.type === 'hs' ? ' ' + (r.formato === 'sintetico' ? 'Sintetico' : 'Esteso') : ''), r.commessa || r.codice].filter(Boolean).join(' · '),
         sub: [r.cliente, placeLabel(r)].filter(Boolean).join(' · ') });
     }
@@ -90,10 +98,10 @@ async function shareIcs(items, name) {
 const PIANO_TIPI = { ra: ['ra', {}], dda1: ['dda', { fase: 1 }], dda2: ['dda', { fase: 2 }], mappatura: ['mappatura', {}], radon: ['radon', {}],
   hsE: ['hs', { formato: 'esteso' }], hsS: ['hs', { formato: 'sintetico' }], vs: ['vs', {}], firme: ['firme', {}], aria: ['aria', {}] };
 const PIANO_MODELLO = { type: 'nembo-programmazione', attivita: [
-  { tipo: 'ra', data: '2026-11-03', ora: '09:00', durata: 120, stato: 'confermato', commessa: '000/26', cliente: 'Cliente', citta: 'Città', indirizzo: 'Via e numero civico', sito: '', firme: true, note: 'senza manufatti: Nembo li riprende dall\'RA precedente dello stesso immobile (codice sito, oppure indirizzo + città)' },
+  { tipo: 'ra', data: '2026-11-03', ora: '09:00', durata: 120, stato: 'confermato', commessa: '000/26', cliente: 'Cliente', citta: 'Città', indirizzo: 'Via e numero civico', sito: '', firme: true, drone: false, note: 'senza manufatti: Nembo li riprende dall\'RA precedente dello stesso immobile (codice sito, oppure indirizzo + città)' },
   { tipo: 'ra', data: '2026-11-04', ora: '09:00', durata: 120, commessa: '000/26', cliente: 'Cliente', citta: 'Città', indirizzo: 'Via e numero civico', sito: '', incaricoDal: '2026-04-01', incaricoAl: '2027-03-31', note: 'sito nuovo: manufatti come nel modello RA',
     manufatti: [{ codice: 'M1', ubicazione: 'Copertura', descrizione: 'Lastre in cemento-amianto', tipologia: 'compatto', quantita: '120 m²', statoPrecedente: '', notePrecedenti: '' }] },
-  { tipo: 'dda1', data: '2026-11-03', ora: '14:00', durata: 180, commessa: '', cliente: '', citta: '', indirizzo: '', sito: '', firme: false, note: 'tipi: ra, dda1, dda2, mappatura, radon (posa), aria, hsE, hsS, vs, firme; stato (facoltativo): confermato, in_attesa, da_programmare, annullato; firme (facoltativo, per ra, dda1, dda2, mappatura, aria): true = foglio firme pronto con dati, attività e campioni o manufatti, false = nessuno, assente = come da anagrafica cliente' }] };
+  { tipo: 'dda1', data: '2026-11-03', ora: '14:00', durata: 180, commessa: '', cliente: '', citta: '', indirizzo: '', sito: '', firme: false, note: 'tipi: ra, dda1, dda2, mappatura, radon (posa), aria, hsE, hsS, vs, firme; stato (facoltativo): confermato, in_attesa, da_programmare, annullato; firme (facoltativo, per ra, dda1, dda2, mappatura, aria): true = foglio firme pronto con dati, attività e campioni o manufatti, false = nessuno, assente = come da anagrafica cliente; drone (facoltativo, per ra, dda1, dda2, mappatura): true = sopralluogo con il drone' }] };
 function newOfType(tipo, all, s, extra = {}) {
   const [t, p] = PIANO_TIPI[tipo] || [tipo, {}];
   const base = t === 'dda' ? newDda(all, s) : t === 'mappatura' ? newMappatura(all, s) : t === 'ra' ? newRa(all, s) : t === 'hs' ? newHs(all, s, p.formato) : t === 'firme' ? newFirmeRec(all, s) : t === 'aria' ? newAria(all, s) : t === 'vs' ? newVerbale(all, s) : newRadon(s);
@@ -121,6 +129,7 @@ async function agendaJson(text, slot, records, s) {
       const stato = PROG.some(p => p[0] === x.stato) ? x.stato : progDi('', ora);
       const r = newOfType(x.tipo, all, s, { data: x.data, ora, stato, durata: +x.durata || durataBase(PIANO_TIPI[x.tipo][0], s),
         commessa: str(x.commessa), cliente: str(x.cliente), citta: str(x.citta), indirizzo: str(x.indirizzo), sito: str(x.sito), firme: typeof x.firme === 'boolean' ? x.firme : undefined });
+      if (DRONE_TIPI.includes(r.type)) r.drone = x.drone === true;
       if (['dda', 'hs', 'ra'].includes(r.type)) markImp(r, r, IMP_ANAG); // anagrafica dal file (DDA, HSE, RA): bloccata, si sblocca col lucchetto
       if (x.note && 'appunti' in r) r.appunti = str(x.note);
       if (r.type === 'ra') {
@@ -258,7 +267,7 @@ function Agenda({ records, settings, saveRec, openRec, removeRec, bell }) {
   const pickJson = s => { pendingSlot.current = s || null; setSlot(null); setAdd(null); setTimeout(() => fileRef.current.click(), 0); };
   const openIt = it => { if (it.tipo === 'app') { setAdd({ rec: it.rec, tab: 'app' }); return; } openRec(it.rec); };
   const chip = (it, showDate) => html`<div key=${it.key} class=${'ag-chip' + (place && place.key === it.key ? ' on' : '')} style=${'--c:' + TIPI_AG[it.tipo].c}>
-    <button class="ag-chip-main" onClick=${() => openIt(it)}><b>${it.titolo}</b><small>${it.stato === 'annullato' ? 'Annullato · ' : ''}${showDate ? fmtD(it.data) + (it.previsto ? ' (previsto)' : '') + ' · ' : it.previsto ? 'ritiro previsto · ' : ''}${it.sub}</small></button>
+    <button class="ag-chip-main" onClick=${() => openIt(it)}><b>${it.drone && html`<${DroneIc} />`}${it.titolo}</b><small>${it.stato === 'annullato' ? 'Annullato · ' : ''}${showDate ? fmtD(it.data) + (it.previsto ? ' (previsto)' : '') + ' · ' : it.previsto ? 'ritiro previsto · ' : ''}${it.sub}</small></button>
     <button class="ag-chip-put" title="Dai un orario" aria-label=${'Dai un orario a ' + it.titolo} onClick=${() => { setPlace(it); if (view === 'month') setView('day'); }}><${Icon} n="clock" s=${17} /></button></div>`;
   const plusBtn = html`<button class="btn-icon pri" aria-label="Nuovo appuntamento o attività da programmare" onClick=${() => setAdd({ data: day, ora: '', tab: 'app' })}><${Icon} n="plus" s=${22} w=${2.4} /></button>`;
 
@@ -269,7 +278,7 @@ function Agenda({ records, settings, saveRec, openRec, removeRec, bell }) {
     return html`<div key=${it.key} class=${'ag-ev st-' + it.stato + (dg ? ' drag' : '') + (sel && sel.key === it.key ? ' on' : '') + (view === 'week' ? ' sm' : '')} role="button" tabindex="0"
       style=${`--c:${TIPI_AG[it.tipo].c};top:${(s - top0) / SLOT * PX + 1}px;height:${d / SLOT * PX - 2}px;left:calc(${LEFT}px + ${cw} * ${ci} + ${cw} * ${col / n});width:calc(${cw} / ${n} - 2px)`}
       onPointerDown=${e => startDrag(e, it, 'move')} onClick=${e => { e.stopPropagation(); if (!drag && !dragged.current) setSel(it); }} onKeyDown=${e => e.key === 'Enter' && setSel(it)}>
-      <b>${it.stato === 'confermato' ? '✓ ' : ''}${view === 'week' ? '' : m2hm(s) + ' · '}${it.titolo}</b>${view === 'day' && d >= 60 && html`<small>${it.sub}</small>`}
+      <b>${it.stato === 'confermato' ? '✓ ' : ''}${it.drone && html`<${DroneIc} s=${12} />`}${view === 'week' ? '' : m2hm(s) + ' · '}${it.titolo}</b>${view === 'day' && d >= 60 && html`<small>${it.sub}</small>`}
       ${view === 'day' && html`<small class="ag-dur">${it.stato === 'confermato' ? '' : progL(it.stato) + ' · '}${fmtDur(d)}</small>`}
       ${view === 'day' && html`<span class="ag-rs" onPointerDown=${e => startDrag(e, it, 'size')}></span>`}</div>`;
   };
@@ -290,7 +299,7 @@ function Agenda({ records, settings, saveRec, openRec, removeRec, bell }) {
       ${days.slice(0, rows * 7).map(d => { const L = items.filter(it => it.data === d).sort((a, b) => (a.ora || '99').localeCompare(b.ora || '99')); const out = d < mFrom || d >= mTo;
         return html`<button key=${d} class=${'ag-mc' + (out ? ' out' : '') + (d === today() ? ' today' : '') + (d === day ? ' on' : '')} onClick=${() => { if (swDay.swiped.current) return; setDay(d); setView('day'); }}>
           <span class="ag-mn">${new Date(d + 'T12:00:00').getDate()}</span>
-          ${L.slice(0, 3).map(it => html`<span key=${it.key} class=${'ag-mi st-' + it.stato} style=${'--c:' + TIPI_AG[it.tipo].c}>${it.ora ? it.ora + ' ' : ''}${it.titolo}</span>`)}
+          ${L.slice(0, 3).map(it => html`<span key=${it.key} class=${'ag-mi st-' + it.stato} style=${'--c:' + TIPI_AG[it.tipo].c}>${it.drone && html`<${DroneIc} s=${10} />`}${it.ora ? it.ora + ' ' : ''}${it.titolo}</span>`)}
           ${L.length > 3 && html`<span class="ag-more">+${L.length - 3}</span>`}</button>`; })}
     </div>`;
   };
@@ -374,11 +383,11 @@ function AgSlotSheet({ slot, senza, onPut, onAdd, onJson, onModello, onClose }) 
     <div class="sheet-nav"><button class="btn link" onClick=${onClose}>Annulla</button><b>${slot.ora}</b><span></span></div>
     <div class="sheet-body">
       <div class="fg-hero"><div class="lt-eye">${giornoL(slot.data)}</div><b>Fascia delle ${slot.ora}</b></div>
-      <button class="opt" onClick=${() => onAdd('app')}><span class="oi" style="background:var(--fill-soft);color:var(--navy)"><${Icon} n="today" s=${21} /></span>
+      <button class="opt" onClick=${() => onAdd('app')}><span class="oi" style="background:var(--fill-soft);color:var(--navy-ink)"><${Icon} n="today" s=${21} /></span>
         <span class="ot"><b>Appuntamento</b><small>Riunione, consegna, telefonata: un impegno in agenda</small></span></button>
       <button class="opt" onClick=${() => onAdd('att')}><span class="oi" style="background:var(--blue-soft);color:var(--blue)"><${Icon} n="clock" s=${21} /></span>
         <span class="ot"><b>Programma un'attività</b><small>Un sopralluogo in questa fascia, da aprire quando parti</small></span></button>
-      <button class="opt" onClick=${onJson}><span class="oi" style="background:var(--fill-soft);color:var(--navy)"><${Icon} n="file" s=${21} /></span>
+      <button class="opt" onClick=${onJson}><span class="oi" style="background:var(--fill-soft);color:var(--navy-ink)"><${Icon} n="file" s=${21} /></span>
         <span class="ot"><b>Carica JSON</b><small>Mappatura/PMC → sopralluogo RA in questa fascia; piano → più attività nei loro giorni</small></span></button>
       ${senza.length > 0 && html`<div class="sec-h"><h3>Metti qui un'attività senza ora</h3></div>
         <div class="list">${senza.map(it => html`<button key=${it.key} class="prow" style="width:100%;border:0;background:none;text-align:left" onClick=${() => onPut(it)}>
@@ -395,7 +404,7 @@ function AgAddSheet({ start, records, settings, onSave, onDelete, onJson, onClos
   const ed = start.rec || null;
   const [tab, setTab] = useState(ed ? 'app' : start.tab || 'app');
   const [f, setF] = useState(() => ed ? { titolo: ed.titolo, luogo: ed.luogo, note: ed.note, data: ed.data, ora: ed.ora, durata: ed.durata || 60, stato: ed.stato || '' }
-    : { tipo: 'ra', titolo: '', luogo: '', note: '', data: start.data || today(), ora: start.ora || '', durata: 0, stato: '', commessa: '', cliente: '', citta: '', indirizzo: '' });
+    : { tipo: 'ra', titolo: '', luogo: '', note: '', data: start.data || today(), ora: start.ora || '', durata: 0, stato: '', commessa: '', cliente: '', citta: '', indirizzo: '', drone: false });
   const set = p => setF(x => ({ ...x, ...p }));
   const tipoT = (PIANO_TIPI[f.tipo] || ['ra'])[0];
   const dur = f.durata || (tab === 'app' ? 60 : durataBase(tipoT, settings));
@@ -410,6 +419,7 @@ function AgAddSheet({ start, records, settings, onSave, onDelete, onJson, onClos
       return;
     }
     let r = newOfType(f.tipo, records, settings, { data: f.data, ora: f.ora, durata: dur, stato: st, commessa: f.commessa.trim(), cliente: f.cliente.trim(), citta: f.citta.trim(), indirizzo: f.indirizzo.trim() });
+    if (DRONE_TIPI.includes(r.type)) r.drone = !!f.drone;
     if (r.type === 'ra') { const prev = raPrecedente(records, r); if (prev) r = { ...r, ...(await raRiprendi(prev, r)) }; }
     onSave([r], `${(AG_TIPI_NUOVI.find(x => x[0] === f.tipo) || [, 'Attività'])[1]} programmato per il ${fmtD(f.data)}${f.ora ? ' alle ' + f.ora : ''}`);
   };
@@ -431,7 +441,8 @@ function AgAddSheet({ start, records, settings, onSave, onDelete, onJson, onClos
         ${tab === 'app' ? html`<${Inp} cls="full" label="Luogo" value=${f.luogo} set=${v => set({ luogo: v })} placeholder="Facoltativo" />
           <${Area} cls="full" label="Note" rows=${3} value=${f.note} set=${v => set({ note: v })} />`
           : html`<${Inp} label="Commessa" value=${f.commessa} set=${v => set({ commessa: v })} /><${Inp} label="Cliente" value=${f.cliente} set=${v => set({ cliente: v })} />
-          <${Inp} label="Città" value=${f.citta} set=${v => set({ citta: v })} /><${Inp} label="Indirizzo" value=${f.indirizzo} set=${v => set({ indirizzo: v })} />`}
+          <${Inp} label="Città" value=${f.citta} set=${v => set({ citta: v })} /><${Inp} label="Indirizzo" value=${f.indirizzo} set=${v => set({ indirizzo: v })} />
+          ${DRONE_TIPI.includes(tipoT) && html`<${DroneSw} on=${f.drone} set=${v => set({ drone: v })} />`}`}
       </div></div>
       <div class="stack" style="margin-top:14px">
         <button class="btn pri block" onClick=${save}>${tab === 'app' ? (ed ? 'Salva l\'appuntamento' : 'Aggiungi l\'appuntamento') : 'Programma l\'attività'}</button>

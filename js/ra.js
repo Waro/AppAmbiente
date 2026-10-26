@@ -111,7 +111,7 @@ async function raDaCampioni(src, r) {
     const codice = (c.codice || '').trim() || 'M' + (r.manufatti.length + add.length + 1);
     if (known.has(codice.toLowerCase())) continue; known.add(codice.toLowerCase());
     const fotoPrec = []; for (const f of (c.foto || []).slice(0, 3)) { const n = await dupBlob(f); if (n) fotoPrec.push(n); }
-    add.push(markImpSelf(newManufatto({ codice, ubicazione: c.piano || c.ubicazione || '', descrizione: c.descrizione || '', tipologia: c.tipo || '', quantita: c.quantita || '',
+    add.push(markImpSelf(newManufatto({ codice, ubicazione: [c.piano, c.ubicazione].filter(Boolean).join(' - '), descrizione: c.descrizione || '', tipologia: c.tipo || '', quantita: c.quantita || '',
       notePrec: c.note || '', fotoPrec, fonte: fonteNome(src) }), ['codice', 'ubicazione', 'descrizione', 'tipologia', 'quantita']));
   }
   const patch = { manufatti: [...r.manufatti, ...add], fonte: r.fonte || fonteNome(src) };
@@ -177,7 +177,7 @@ function RaList({ records, open, create, activeId, acts }) {
         ${rs.map(r => {
           const tot = r.manufatti.length, fatti = r.manufatti.filter(m => m.stato).length, dann = r.manufatti.filter(m => m.stato === 'danneggiato').length;
           return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r)} key=${r.id} onClick=${() => open(r.id)}>
-            <div class="r1"><span class="id">${r.codice}</span>
+            <div class="r1"><span class="id">${r.codice}</span>${r.drone && html`<${DroneIc} />`}
               <span class=${'badge ' + (tot && fatti === tot ? 'b-ok' : 'b-f2')}>${tot ? `${fatti}/${tot} verificati` : 'Da impostare'}</span><span class="dt">${fmtD(r.data)}</span></div>
             ${r.commessa && html`<div class="ttl">${r.commessa}</div>`}
             <div class="sum">${r.tecnico ? r.tecnico + ' · ' : ''}${tot} manufatti${r.fonte ? ' · ' + r.fonte : ''}</div>
@@ -229,7 +229,7 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
   useEffect(() => { const h = () => setF('tutti'); addEventListener('nembo-goto', h); return () => removeEventListener('nembo-goto', h); }, []);
   const imp = useRef();
   const firmeOn = !!r.firme || (r.fogli || []).length > 0;
-  const [T, setT] = useSchede('ra', firmeOn ? ['anag', 'man', 'firme'] : ['anag', 'man'], initial._new, { 'm-': 'man', 's-': 'man', 'plan-': 'man' });
+  const [T, setT] = useSchede('ra', firmeOn ? ['anag', 'man', 'firme', 'file'] : ['anag', 'man', 'file'], initial._new, { 'm-': 'man', 's-': 'man', 'plan-': 'man' });
 
   const clienti = nomiClienti(records);
   const updM = (id, patch) => up(p => ({ ...p, manufatti: p.manufatti.map(x => x.id === id ? { ...x, ...patch } : x) }));
@@ -282,7 +282,7 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
 
   return html`<div class="content form">
     <${DetailHead} eye="Sopralluogo RA" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
-    <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'man', l: 'Manufatti', n: tot }, firmeOn && { k: 'firme', l: 'Firme', n: (r.fogli || []).length }].filter(Boolean)} />
+    <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'man', l: 'Manufatti', n: tot }, firmeOn && { k: 'firme', l: 'Firme', n: (r.fogli || []).length }, { k: 'file', l: 'File' }].filter(Boolean)} />
     ${T === 'anag' && html`<div class="card"><div class="grid2">
       <${Inp} cls="full" label="Commessa" value=${r.commessa} set=${v => up({ commessa: v })} imp=${impOf(r, 'commessa')} />
       <${Inp} label="Cliente" req list="dl-cli-ra" value=${r.cliente} set=${v => up({ cliente: v })} imp=${impOf(r, 'cliente')} />
@@ -290,7 +290,7 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
       <${Inp} cls="full" label="Indirizzo" value=${r.indirizzo} set=${v => up({ indirizzo: v })} imp=${impOf(r, 'indirizzo')} placeholder="Via e numero civico" />
       <${Inp} label="Sito / codice immobile" value=${r.sito} set=${v => up({ sito: v })} imp=${impOf(r, 'sito')} placeholder="Facoltativo" />
       <${Inp} label="Data" type="date" value=${r.data} set=${v => up({ data: v })} />
-      <${OraDurata} ora=${r.ora} durata=${r.durata} stato=${r.stato} tipo=${r.type} set=${p => up(p)} />
+      <${OraDurata} ora=${r.ora} durata=${r.durata} stato=${r.stato} tipo=${r.type} drone=${r.drone} set=${p => up(p)} />
       <${Inp} label="Tecnico" value=${r.tecnico} set=${v => up({ tecnico: v })} />
       <${Inp} label="Incarico RA dal" type="date" value=${r.incaricoDal || ''} set=${v => up({ incaricoDal: v, ...(v && !r.incaricoAl ? { incaricoAl: dayBefore(addMonths(v, 12)) } : {}) })} imp=${impOf(r, 'incaricoDal')} />
       <${Inp} label="Incarico RA al" type="date" value=${r.incaricoAl || ''} set=${v => up({ incaricoAl: v })} imp=${impOf(r, 'incaricoAl')} />
@@ -339,6 +339,7 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
 
     `}
     ${T === 'firme' && html`<${FogliFirme} r=${r} up=${up} settings=${settings} />`}
+    ${T === 'file' && html`<${FileTab} r=${r} up=${up} settings=${settings} />`}
     <input ref=${imp} type="file" accept="application/json,text/plain,application/octet-stream,.json" hidden onChange=${doImport} />
     <${BarraAtt} r=${r} settings=${settings}
       left=${html`<button class="btn-icon lg" aria-label="Planimetrie" title="Planimetrie" onClick=${() => { setT('man'); setTimeout(() => scrollToId('plan-' + r.id), 120); }}><${Icon} n="map" s=${22} /></button>`}

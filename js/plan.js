@@ -162,9 +162,26 @@ const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v == n
 const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* senza memoria */ } };
 const DRAW_TOOLS = ['pen', 'hl', 'line', 'arrow', 'rect', 'ell', 'eraser'];
 
-// plan: { id, nome, blobId, annot, mergedBlobId }
-// labels: [{ ref, text, color }] disponibili (campioni o punti R)
-function PlanViewer({ plan, labels, onChange, onClose }) {
+// piano di una planimetria proposto dal nome del file (modificabile); prima i piani già usati nei campioni
+const pianoNorm = x => String(x || '').trim().toLowerCase().replace(/\s+/g, ' ');
+function pianoDaNome(nome, noti = []) {
+  const n = ' ' + String(nome || '').replace(/[_.\-]+/g, ' ').toLowerCase() + ' ';
+  const k = noti.filter(Boolean).sort((a, b) => b.length - a.length).find(p => n.includes(' ' + pianoNorm(p) + ' '));
+  if (k) return k;
+  if (/sottotetto/.test(n)) return 'Sottotetto';
+  if (/copertura|\btetto\b/.test(n)) return 'Copertura';
+  if (/interrat|\bs ?1\b|\bp ?- ?1\b|piano ?- ?1/.test(n)) return 'Piano interrato';
+  if (/terra|\bpt\b|\bp ?0\b|piano ?0\b/.test(n)) return 'Piano terra';
+  const m = n.match(/\b(?:piano|p) ?(\d{1,2})\b/); if (m) return 'Piano ' + +m[1];
+  const o = ['primo', 'secondo', 'terzo', 'quarto', 'quinto'].findIndex(w => n.includes(' ' + w + ' ')); if (o >= 0) return 'Piano ' + (o + 1);
+  if (/estern/.test(n)) return 'Esterno';
+  return '';
+}
+
+// plan: { id, nome, piano, blobId, annot, mergedBlobId }
+// labels: [{ ref, text, color, piano }] disponibili (campioni o punti R); altrove: etichette già posizionate su altre planimetrie
+// Nel vassoio: prima le etichette dello stesso piano della planimetria, poi «Altri campioni» (piano diverso o vuoto).
+function PlanViewer({ plan, labels, altrove, onChange, onClose }) {
   useBackClose(() => close());
   const [doc, setDoc] = useState(null);
   const [err, setErr] = useState(null);
@@ -429,7 +446,10 @@ function PlanViewer({ plan, labels, onChange, onClose }) {
   const removeLabel = i => commit(cur => ({ ...cur, labels: cur.labels.filter((_, j) => j !== i) }));
 
   const placedRefs = new Set(Object.values(annot).flatMap(a => (a.labels || []).map(l => l.ref)));
-  const tray = labels.filter(l => !placedRefs.has(l.ref));
+  const pp = pianoNorm(plan.piano);
+  const avail = labels.filter(l => !placedRefs.has(l.ref) && !(altrove && altrove.has(l.ref)));
+  const tray = pp ? avail.filter(l => l.piano === undefined || pianoNorm(l.piano) === pp) : avail;
+  const altri = pp ? avail.filter(l => !tray.includes(l)) : [];
   const byRef = Object.fromEntries(labels.map(l => [l.ref, l]));
 
   async function close() {
@@ -489,9 +509,11 @@ function PlanViewer({ plan, labels, onChange, onClose }) {
     <div class="plan-bar">
       ${tool === 'label' && html`<div class="plan-tray">
         ${!labels.length ? html`<div class="lock">Nessun campione da etichettare: aggiungine uno nella scheda.</div>`
-          : !tray.length ? html`<div class="lock">Tutte le etichette sono posizionate. Trascinale per spostarle, × per toglierle.</div>`
+          : !tray.length && !altri.length ? html`<div class="lock">Tutte le etichette sono posizionate. Trascinale per spostarle, × per toglierle.</div>`
           : html`<div class="lock" style="margin-bottom:6px">${sel ? 'Tocca la planimetria dove posizionare ' + sel.text : 'Scegli un\'etichetta, poi tocca la planimetria'}</div>
-            <div class="row wrap" style="gap:6px">${tray.map(l => html`<button class=${'chip' + (sel && sel.ref === l.ref ? ' on' : '')} style=${'background:' + l.color} onClick=${() => setSel(sel && sel.ref === l.ref ? null : l)}>${l.text}</button>`)}</div>`}
+            <div class="row wrap" style="gap:6px">${tray.map(l => html`<button class=${'chip' + (sel && sel.ref === l.ref ? ' on' : '')} style=${'background:' + l.color} onClick=${() => setSel(sel && sel.ref === l.ref ? null : l)}>${l.text}</button>`)}</div>
+            ${altri.length > 0 && html`<div class="lock" style="margin:8px 0 6px">Altri campioni</div>
+            <div class="row wrap" style="gap:6px">${altri.map(l => html`<button class=${'chip altro' + (sel && sel.ref === l.ref ? ' on' : '')} style=${'background:' + l.color} onClick=${() => setSel(sel && sel.ref === l.ref ? null : l)}>${l.text}${l.piano ? ' · ' + l.piano : ''}</button>`)}</div>`}`}
       </div>`}
       ${pop && html`<div class="plan-pop">
         <div class="row wrap" style="gap:8px">${PLAN_COLORS.map(c => html`<button key=${c} class=${'pen' + (color === c ? ' on' : '')} aria-label=${'Colore ' + c} style=${'--pc:' + c} onPointerDown=${e => e.preventDefault()} onClick=${() => { setColor(c); if (editRef.current) { const v = { ...editRef.current, c }; editRef.current = v; setEdit(v); } }}></button>`)}</div>
@@ -519,28 +541,37 @@ function PlanViewer({ plan, labels, onChange, onClose }) {
 /* ---------------- sezione nelle schede ---------------- */
 function PlanList({ items = [], labels, onUpdate, onAdd, onRemove }) {
   const inp = useRef(); const [open, setOpen] = useState(null);
+  const noti = [...new Set([...(labels || []).map(l => l.piano).filter(Boolean), ...PIANI_COMUNI])];
   const pick = async e => {
     for (const f of [...e.target.files]) {
       const head = new Uint8Array(await f.slice(0, 5).arrayBuffer());
       if (String.fromCharCode(...head) !== '%PDF-') { toast(f.name + ': non è un PDF'); continue; }
-      onAdd({ id: uid('pl'), nome: f.name.replace(/\.pdf$/i, ''), blobId: await saveFile(f), annot: {}, mergedBlobId: null });
+      const nome = f.name.replace(/\.pdf$/i, '');
+      onAdd({ id: uid('pl'), nome, piano: pianoDaNome(nome, noti), blobId: await saveFile(f), annot: {}, mergedBlobId: null });
     }
     e.target.value = '';
   };
   const cur = open && items.find(p => p.id === open);
+  const refsOf = p => Object.values(p.annot || {}).flatMap(a => (a.labels || []).map(l => l.ref));
+  const altrove = cur ? new Set(items.filter(p => p.id !== cur.id).flatMap(refsOf)) : null;
   return html`<div class="stack">
     ${items.map(p => {
       const nl = Object.values(p.annot || {}).reduce((a, x) => a + (x.labels || []).length, 0);
       const ns = Object.values(p.annot || {}).reduce((a, x) => a + (x.strokes || []).length, 0);
-      return html`<div class="row" key=${p.id}>
-        <span class="sq plain"><${Icon} n="file" s=${18} /></span>
-        <button class="tb-grow" style="background:none;border:0;text-align:left;padding:0" onClick=${() => setOpen(p.id)}>
-          <div style="font-size:13.5px;font-weight:600">${p.nome}</div>
-          <div class="lock">${ns || nl ? `${ns} tratti · ${nl} etichette${p.mergedBlobId ? ' · PDF annotato pronto' : ''}` : 'Tocca per aprire e annotare'}</div></button>
+      return html`<div class="row" key=${p.id} style="align-items:flex-start">
+        <span class="sq plain" style="margin-top:2px"><${Icon} n="file" s=${18} /></span>
+        <div class="tb-grow" style="min-width:0">
+          <button style="background:none;border:0;text-align:left;padding:0;width:100%" onClick=${() => setOpen(p.id)}>
+            <div style="font-size:13.5px;font-weight:600">${p.nome}</div>
+            <div class="lock">${ns || nl ? `${ns} tratti · ${nl} etichette${p.mergedBlobId ? ' · PDF annotato pronto' : ''}` : 'Tocca per aprire e annotare'}</div></button>
+          <input class="inp sm" style="margin-top:6px;max-width:220px" list="dl-piani-pl" placeholder="Piano" aria-label=${'Piano di ' + p.nome} defaultValue=${p.piano || ''}
+            onChange=${e => onUpdate(p.id, { piano: e.target.value.trim() })} onKeyDown=${e => { if (e.key === 'Enter') e.target.blur(); }} /></div>
         <button class="x" aria-label=${'Rimuovi ' + p.nome} onClick=${() => { if (confirm('Rimuovere ' + p.nome + ' e le sue annotazioni?')) onRemove(p); }}>×</button></div>`;
     })}
-    <button class="btn dashed" onClick=${() => inp.current.click()}><${Icon} n="paper" s=${17} /> Aggiungi planimetria (PDF)</button>
+    <datalist id="dl-piani-pl">${noti.map(x => html`<option value=${x} />`)}</datalist>
+    <button class="btn dashed" onClick=${() => inp.current.click()}><${Icon} n="paper" s=${17} /> Aggiungi planimetrie (PDF)</button>
+    <div class="lock" style="margin:-4px 2px 0">Per sceglierne più di una, tieni premuto il primo file e poi tocca gli altri.</div>
     <input ref=${inp} type="file" accept="application/pdf,.pdf" multiple hidden onChange=${pick} />
-    ${cur && html`<${PlanViewer} key=${cur.id} plan=${cur} labels=${labels} onChange=${patch => onUpdate(cur.id, patch)} onClose=${() => setOpen(null)} />`}
+    ${cur && html`<${PlanViewer} key=${cur.id} plan=${cur} labels=${labels} altrove=${altrove} onChange=${patch => onUpdate(cur.id, patch)} onClose=${() => setOpen(null)} />`}
   </div>`;
 }

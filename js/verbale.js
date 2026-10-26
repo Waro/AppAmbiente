@@ -32,7 +32,7 @@ function VerbaleList({ records, open, activeId, acts }) {
 function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedded, onClose }) {
   const [r, up, saved] = useAutosave(initial, onSave);
   const [filtro, setFiltro] = useState(null);
-  const [T, setT] = useSchede('vs', ['anag', 'note'], initial._new, { 'n-': 'note' });
+  const [T, setT] = useSchede('vs', ['anag', 'note', 'file'], initial._new, { 'n-': 'note' });
   const clienti = nomiClienti(records);
   const upload = () => OD.account ? odSync([r], settings) : sendToOneDrive(r, settings);
   const note = r.note || [];
@@ -52,7 +52,7 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
   useEffect(() => { DB.get(TEMPLATES['vs.docx'].key).then(b => setTplOk(!!b)); }, []);
   return html`<div class="content form">
     <${DetailHead} eye="Verbale HSE" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
-    <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'note', l: 'Note', n: note.length }]} />
+    <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'note', l: 'Note', n: note.length }, { k: 'file', l: 'File' }]} />
     ${T === 'anag' && html`    <div class="card"><div class="grid2">
       <${Inp} cls="full" label="Commessa" value=${r.commessa} set=${v => up({ commessa: v })} imp=${impOf(r, 'commessa')} />
       <${Inp} label="Cliente" list="dl-cli-vs" value=${r.cliente} set=${v => up({ cliente: v })} imp=${impOf(r, 'cliente')} />
@@ -113,12 +113,12 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
     <div class="card"><textarea class="inp" rows="3" value=${r.appunti} onInput=${e => up({ appunti: e.target.value })} aria-label="Appunti"></textarea>
       <${NotePhotos} rec=${r} up=${up} /></div>
     `}
+    ${T === 'file' && html`<${FileTab} r=${r} up=${up} settings=${settings} />`}
     <${BarraAtt} r=${r} settings=${settings}
       left=${html`<${VsCam} onAdd=${ids => { const nn = { ...newNotaVs(), foto: ids }; setT('note'); up(q => ({ ...q, note: [...(q.note || []), nn] })); setFiltro(null); setTimeout(() => scrollToId('n-' + nn.id), 80); }} />`}
       center=${T === 'note' ? html`<button class="btn pri" onClick=${addN}><${Icon} n="plus" s=${20} w=${2.4} /> Nuova nota</button>`
-        : html`<button class="btn pri" onClick=${() => vsWord(r, settings)}><${Icon} n="file" s=${20} /> Genera Word</button>`}
-      gruppi=${[['Documenti', [T === 'note' && { ic: 'file', l: 'Genera Word', s: 'Ogni nota diventa una scheda del verbale', fn: () => vsWord(r, settings) },
-        { ic: 'share', l: OD.account ? 'Carica su OneDrive' : 'Invia a OneDrive', fn: upload }]], opzArchivio({ r, settings, onDelete, elimina: 'Elimina il verbale' })]} />
+        : html`<${DocBtn} r=${r} up=${up} settings=${settings} k="vs_docx" />`}
+      gruppi=${[['Documenti', [{ ic: 'share', l: OD.account ? 'Carica su OneDrive' : 'Invia a OneDrive', fn: upload }]], opzArchivio({ r, settings, onDelete, elimina: 'Elimina il verbale' })]} />
   </div>`;
 }
 

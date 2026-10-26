@@ -1,13 +1,13 @@
 // Cache dell'app per l'uso offline. Aumenta VERSION a ogni aggiornamento dei file.
-const VERSION = 'nembo-v45';
+const VERSION = 'nembo-v46';
 const FILES = [
   './', 'index.html', 'styles.css', 'manifest.webmanifest', 'pdfgen.js',
-  'js/core.js', 'js/capture.js', 'js/plan.js', 'js/office.js', 'js/dda.js', 'js/mappatura.js', 'js/radon.js', 'js/ra.js', 'js/hs-data.js', 'js/hs-word.js', 'js/hs.js', 'js/verbale.js', 'js/vs-word.js', 'js/clienti.js', 'js/novita.js', 'js/riepilogo.js', 'js/cerca.js', 'js/firme.js', 'js/aria.js', 'js/agenda.js', 'js/onedrive.js', 'js/sync.js', 'js/home.js', 'js/app.js',
+  'js/core.js', 'js/capture.js', 'js/plan.js', 'js/office.js', 'js/dda.js', 'js/mappatura.js', 'js/radon.js', 'js/ra.js', 'js/hs-data.js', 'js/hs-word.js', 'js/hs.js', 'js/verbale.js', 'js/vs-word.js', 'js/clienti.js', 'js/novita.js', 'js/riepilogo.js', 'js/cerca.js', 'js/firme.js', 'js/aria.js', 'js/file.js', 'js/agenda.js', 'js/onedrive.js', 'js/sync.js', 'js/home.js', 'js/app.js',
   'vendor/preact.min.umd.js', 'vendor/hooks.umd.js', 'vendor/htm.umd.js', 'vendor/pdf-lib.min.js',
   'vendor/jszip.min.js', 'vendor/signature_pad.umd.min.js', 'vendor/msal-browser.min.js', 'vendor/pdfjs.min.js', 'vendor/pdfjs.worker.min.js', 'vendor/exceljs.min.js', 'vendor/docx.umd.min.js',
   'fonts/ibm-plex-sans-latin-400-normal.woff2', 'fonts/ibm-plex-sans-latin-500-normal.woff2', 'fonts/ibm-plex-sans-latin-600-normal.woff2', 'fonts/ibm-plex-sans-latin-700-normal.woff2',
   'fonts/ibm-plex-mono-latin-500-normal.woff2', 'fonts/ibm-plex-mono-latin-600-normal.woff2',
-  'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png', 'splash/bg-desktop.webp', 'splash/bg-phone.webp', 'fonts/poppins-700-nembo.woff2', 'novita/v41-zoom.webp', 'novita/v41-lucchetto.webp', 'novita/v41-clienti.webp', 'novita/v42-opzioni.webp', 'novita/v42-riepilogo.webp', 'novita/v45-planimetrie.webp', 'novita/v45-foto.webp', 'README.md',
+  'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png', 'splash/bg-desktop.webp', 'splash/bg-phone.webp', 'novita/v41-zoom.webp', 'novita/v41-lucchetto.webp', 'novita/v41-clienti.webp', 'novita/v42-opzioni.webp', 'novita/v42-riepilogo.webp', 'novita/v45-planimetrie.webp', 'novita/v45-foto.webp', 'novita/v46-file.webp', 'novita/v46-home.webp', 'novita/v46-tema.webp', 'README.md',
 ];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));

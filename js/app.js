@@ -53,6 +53,7 @@ async function buildZip(records, settings, withSettings) {
     } else {
       for (const x of r.recs) for (const [k, f] of x.foto.entries()) await addBlob(f, `${dir}foto/${slug(x.nome)}_${k + 1}.jpg`);
       for (const m of MATS) for (const c of r.campioni[m.k]) for (const [k, f] of (c.foto || []).entries()) await addBlob(f, `${dir}foto/${m.l}_${slug(c.codice) || 'campione'}_${k + 1}.jpg`);
+      for (const x of ncOf(r)) for (const [k, f] of (x.foto || []).entries()) await addBlob(f, `${dir}foto/${x.codice}_${k + 1}.jpg`);
       for (const d of r.documenti) await addBlob(d.blobId, `${dir}documenti/${d.nome}`);
       try {
         for (const k of ['mca', 'fav']) if (r.campioni[k].length) zip.file(uniq(`${dir}Scheda_campioni_${k.toUpperCase()}.xlsx`), await schedaCampioniXlsx(r, k, settings));
@@ -61,11 +62,7 @@ async function buildZip(records, settings, withSettings) {
       for (const k of ['mca', 'fav']) if (r.campioni[k].length) {
         try {
           const s = settings;
-          const bytes = await PdfGen.schedaCampioniPdf(await loadTemplate('scheda_campioni.pdf'), {
-            commessa: r.commessa, sito: placeDoc(r), campioni: r.campioni[k],
-            analisi: k === 'mca' ? { codice: s.mcaCodice, desc: s.mcaDesc } : { codice: s.favCodice, desc: s.favDesc },
-            lab: { nome: s.labNome, r1: s.labR1, r2: s.labR2 }, offerta: s.offerta, offertaRev: s.offertaRev, email: s.emailReferti,
-            prelevatoDa: s.prelevatoDa, verificatoDa: s.verificatoDa });
+          const bytes = await schedaCampioniPdfBytes(r, k, s);
           zip.file(uniq(`${dir}Scheda_campioni_${k.toUpperCase()}.pdf`), bytes);
         } catch (e) { console.warn(e); }
       }
@@ -125,13 +122,10 @@ async function recordFiles(r, settings) {
   } else if (r.type === 'firme' || r.type === 'aria' || r.type === 'app') {
     // solo fogli firme / monitoraggio aria
   } else {
-    for (const k of ['mca', 'fav']) if (r.campioni[k].length) pdf(await PdfGen.schedaCampioniPdf(await loadTemplate('scheda_campioni.pdf'), {
-      commessa: r.commessa, sito: placeDoc(r), campioni: r.campioni[k],
-      analisi: k === 'mca' ? { codice: s.mcaCodice, desc: s.mcaDesc } : { codice: s.favCodice, desc: s.favDesc },
-      lab: { nome: s.labNome, r1: s.labR1, r2: s.labR2 }, offerta: s.offerta, offertaRev: s.offertaRev, email: s.emailReferti,
-      prelevatoDa: s.prelevatoDa, verificatoDa: s.verificatoDa }), 'Scheda_campioni_' + k.toUpperCase());
+    for (const k of ['mca', 'fav']) if (r.campioni[k].length) pdf(await schedaCampioniPdfBytes(r, k, s), 'Scheda_campioni_' + k.toUpperCase());
     for (const x of r.recs) for (const [k, f] of x.foto.entries()) await add(f, `${x.nome}_${k + 1}`);
     for (const m of MATS) for (const c of r.campioni[m.k]) for (const [k, f] of (c.foto || []).entries()) await add(f, `${m.l}_${c.codice || 'campione'}_${k + 1}`);
+    for (const x of ncOf(r)) for (const [k, f] of (x.foto || []).entries()) await add(f, `${x.codice}_${k + 1}`);
     for (const d of r.documenti) await add(d.blobId, d.nome.replace(/\.[^.]+$/, ''));
   }
   for (const [k, f] of (r.fotoAppunti || []).entries()) await add(f, `Appunti_${k + 1}`);
@@ -269,7 +263,7 @@ function TemplateRow({ name, t, onChange }) {
     <div class="tb-grow"><div style="font-size:15px;font-weight:600;white-space:normal">${t.label}</div>
       <div class=${'lock'} style=${has ? 'color:var(--ok)' : 'color:var(--nc)'}>${has === null ? '' : has ? 'Caricato su questo dispositivo' : 'Da caricare'}</div></div>
     <button class="btn sm" onClick=${() => inp.current.click()}>${has ? 'Sostituisci' : 'Carica'}</button>
-    <input ref=${inp} type="file" accept=${t.docx ? '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'application/pdf'} hidden onChange=${pick} /></div>`;
+    <input ref=${inp} type="file" accept=${t.docx ? '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document' : t.xlsx ? '.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'application/pdf'} hidden onChange=${pick} /></div>`;
 }
 
 function Settings({ settings, setSettings, onTemplates, go }) {
@@ -295,7 +289,7 @@ function Settings({ settings, setSettings, onTemplates, go }) {
     <div class="sec-h" style="margin-top:6px"><h3>Aspetto e avvio</h3></div>
     <div class="card">
       <div class="fld"><span>Tema grafico (solo su questo dispositivo)</span></div>
-      <div class="seg" style="margin-top:6px">${Object.entries(THEMES).map(([t, x]) => html`<button class=${theme === t ? 'on' : ''} onClick=${() => { setTheme(t); setThemeSt(t); }}>${x.l}</button>`)}</div>
+      <div class="seg tall theme-seg" style="margin-top:6px" role="radiogroup" aria-label="Tema grafico">${Object.entries(THEMES).map(([t, x]) => html`<button role="radio" aria-checked=${theme === t} class=${theme === t ? 'on' : ''} onClick=${() => { setTheme(t); setThemeSt(t); }}><${Icon} n=${x.ic} s=${22} /><small>${x.l}</small></button>`)}</div>
       <div class="fld" style="margin-top:14px"><span>Business unit mostrata in Oggi</span></div>
       <div class="seg" style="margin-top:6px">${BUS.map(([k2, l]) => html`<button class=${(s.buDefault || 'ambiente') === k2 ? 'on' : ''} onClick=${() => set({ buDefault: k2 })}>${l}</button>`)}</div>
     </div>
@@ -595,8 +589,8 @@ function useNavMin() {
 const SN_COL = {
   home: ['var(--blue-soft)', 'var(--blue)'], ddaList: ['var(--warn-soft)', 'var(--warn)'], mappaturaList: ['color-mix(in srgb, var(--mca) 12%, var(--card))', 'var(--mca)'],
   raList: ['color-mix(in srgb, var(--mca) 12%, var(--card))', 'var(--mca)'], radonList: ['var(--ok-soft)', 'var(--ok)'], ariaList: ['var(--blue-soft)', '#0a6ebd'],
-  hsList: ['var(--blue-soft)', 'var(--blue)'], vsList: ['var(--ok-soft)', 'var(--ok)'], agenda: ['var(--fill-soft)', 'var(--navy)'], firmeList: ['var(--fill-soft)', 'var(--blue)'],
-  cerca: ['var(--fill-soft)', 'var(--navy)'], cliList: ['var(--warn-soft)', 'var(--warn)'], backup: ['var(--fill-soft)', 'var(--text2)'], settings: ['var(--fill-soft)', 'var(--text2)'],
+  hsList: ['var(--blue-soft)', 'var(--blue)'], vsList: ['var(--ok-soft)', 'var(--ok)'], agenda: ['var(--fill-soft)', 'var(--navy-ink)'], firmeList: ['var(--fill-soft)', 'var(--blue)'],
+  cerca: ['var(--fill-soft)', 'var(--navy-ink)'], cliList: ['var(--warn-soft)', 'var(--warn)'], backup: ['var(--fill-soft)', 'var(--text2)'], settings: ['var(--fill-soft)', 'var(--text2)'],
 };
 function SideNav({ route, go, counts, settings, min, toggle }) {
   const nav = v => { if (route.v !== v) go({ v }); };
@@ -661,7 +655,7 @@ function App() {
     const rs = await DB.all(); setRecords(rs);
     const s = await DB.get('settings'); const st = { ...DEFAULT_SETTINGS, ...(s || {}) }; setSettingsState(st); _settings = st;
     setLastBackup(await DB.get('lastBackup'));
-    const t = await Promise.all(Object.values(TEMPLATES).filter(x => x.bu === 'ambiente').map(x => DB.get(x.key)));
+    const t = await Promise.all(Object.values(TEMPLATES).filter(x => x.bu === 'ambiente' && !x.xlsx).map(x => DB.get(x.key)));
     setTplOk(t.every(Boolean));
     OD.init(st).catch(e => console.warn('OneDrive', e));
     return rs;

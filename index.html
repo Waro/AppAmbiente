@@ -12,16 +12,20 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="stylesheet" href="styles.css">
 <style>
-  @font-face{font-family:'Nembo Splash';font-weight:700;src:url(fonts/poppins-700-nembo.woff2) format('woff2');font-display:block}
-  #splash{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
-    background:#030d24 url('splash/bg-desktop.webp') center 62%/cover no-repeat;transition:opacity .5s ease;}
-  @media (orientation:portrait){#splash{background-image:url('splash/bg-phone.webp');background-position:center 60%}}
-  #splash .w{font:700 clamp(54px,9vmin,128px)/1 'Nembo Splash',Arial,sans-serif;color:#fff;letter-spacing:.5px;margin-top:-14vh;text-shadow:0 2px 24px rgba(0,20,60,.5)}
+  @font-face{font-family:'Nembo Splash';font-weight:700;src:url(fonts/ibm-plex-sans-latin-700-normal.woff2) format('woff2');font-display:block}
+  /* immagine "cover" in un riquadro con le proporzioni del disegno: la scritta resta nel punto previsto su ogni schermo */
+  #splash{position:fixed;inset:0;z-index:9999;overflow:hidden;background:#030d24;transition:opacity .5s ease;}
+  #splash .b{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);container-type:size;
+    width:max(100vw,calc(100vh*1672/941));height:max(100vh,calc(100vw*941/1672));background:url('splash/bg-desktop.webp') center/100% 100% no-repeat}
+  #splash .w{position:absolute;left:0;right:0;text-align:center;font:700 8.57cqw/1 'Nembo Splash',Arial,sans-serif;top:39.01cqh;color:#fff}
+  @media (orientation:portrait){
+    #splash .b{width:max(100vw,calc(100vh*940/1672));height:max(100vh,calc(100vw*1672/940));background-image:url('splash/bg-phone.webp')}
+    #splash .w{font-size:13.13cqw;top:44.11cqh}}
   #splash.hide{opacity:0;pointer-events:none;}
 </style>
 </head>
 <body>
-<div id="splash"><div class="w">Nembo</div></div>
+<div id="splash"><div class="b"><div class="w">Nembo</div></div></div>
 <div id="root"></div>
 <script src="vendor/preact.min.umd.js"></script>
 <script src="vendor/hooks.umd.js"></script>
@@ -49,6 +53,7 @@
 <script src="js/cerca.js"></script>
 <script src="js/firme.js"></script>
 <script src="js/aria.js"></script>
+<script src="js/file.js"></script>
 <script src="js/agenda.js"></script>
 <script src="js/onedrive.js"></script>
 <script src="js/sync.js"></script>

@@ -124,8 +124,8 @@ function ImgSlot({ label, id, set, crop }) {
   return html`<div class="fld"><span>${label}</span>
     <div class="row" style="gap:10px">
       ${id ? html`<button class="img-slot" onClick=${() => setView(true)}><${Thumb44} id=${id} /></button>` : html`<button class="img-slot empty" aria-label="Scatta una foto" onClick=${() => camOpen(inp.current)}><${Icon} n="camera" s=${20} /></button>`}
-      <button class="btn sm" onClick=${() => camOpen(inp.current)} disabled=${busy}>${busy ? html`<div class="spin" />` : html`<${Icon} n="camera" s=${16} /> ${id ? 'Sostituisci' : 'Aggiungi'}`}</button>
-      <button class="btn sm" aria-label="Scegli dalla galleria" title="Scegli dalla galleria" onClick=${() => galOpen(inp.current)} disabled=${busy}><${Icon} n="image" s=${16} /></button>
+      <button class="btn sm imgb" onClick=${() => camOpen(inp.current)} disabled=${busy}>${busy ? html`<div class="spin" />` : html`<${Icon} n="camera" s=${16} /> ${id ? 'Sostituisci' : 'Scatta'}`}</button>
+      <button class="btn sm imgb" aria-label="Scegli dalla galleria" title="Scegli dalla galleria" onClick=${() => galOpen(inp.current)} disabled=${busy}><${Icon} n="image" s=${16} /> Galleria</button>
       ${id && html`<button class="btn sm danger" onClick=${async () => { if (!confirm('Rimuovere l\'immagine?')) return; await removeBlob(id); set(null); }}>Rimuovi</button>`}
       ${crop && html`<span class="lock">ritagliata al formato della copertina</span>`}
     </div>
@@ -174,7 +174,7 @@ function HsGallery({ r, up, items }) {
         <button class="btn link sm" onClick=${() => setAperti(a => ({ ...a, [G.g]: !a[G.g] }))}>${aperti[G.g] ? 'Chiudi' : 'Apri'}</button></div>
       ${aperti[G.g] && html`<div class="row" style="margin-bottom:10px">
           ${G.g === 'new' && html`<button class="btn" style="flex:1" onClick=${() => { target.current = 'new'; camOpen(cam.current); }}><${Icon} n="camera" s=${18} /> Scatta</button>`}
-          <button class="btn" style="flex:1" onClick=${() => { target.current = G.g; inp.current.click(); }}><${Icon} n="paper" s=${18} /> Dalla galleria</button></div>
+          <button class="btn" style="flex:1" onClick=${() => { target.current = G.g; inp.current.click(); }}><${Icon} n="image" s=${18} /> Dalla galleria</button></div>
         ${L.length > 0 && html`<div class="row" style="margin:-4px 0 8px;gap:4px"><span class="lock tb-grow">Nel report:</span>
           <button class="btn link sm" onClick=${() => up(q => ({ ...q, foto: q.foto.map(x => (x.g === 'prev') === (G.g === 'prev') ? { ...x, inc: true } : x) }))}>includi tutte</button>
           <button class="btn link sm" onClick=${() => up(q => ({ ...q, foto: q.foto.map(x => (x.g === 'prev') === (G.g === 'prev') ? { ...x, inc: false } : x) }))}>escludi tutte</button>
@@ -289,11 +289,11 @@ async function hsNextYear(r, records, settings) {
 function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings, embedded, onClose, onOpenNew }) {
   const [r, up, saved] = useAutosave(initial, onSave);
   const [sec, setSec] = useState(null);
-  const [grigio, setGrigio] = useState(true);
+  const grigio = r.novitaRosso !== false; const setGrigio = v => up({ novitaRosso: v });
   const [busy, setBusy] = useState(null);
   const [hasTpl, setHasTpl] = useState(null);
   const root = useRef(); const imp = useRef();
-  const [T, setT] = useSchede('hs', ['anag', 'main'], initial._new);
+  const [T, setT] = useSchede('hs', ['anag', 'main', 'file'], initial._new);
   const secsAll = hsSections(r);
   const secs = secsAll.filter(s => s.k !== 'dati');
   const cur = secs.findIndex(s => s.k === sec);
@@ -324,16 +324,6 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
       up(() => n);
       toast(`Importato: ${(n.foto || []).filter(p => p.g === 'prev').length} foto nel sopralluogo precedente`);
     } catch (err) { _progress(null); fail('Import non riuscito', err, recordTitle(r)); }
-    setBusy(null);
-  };
-  const word = async () => {
-    const name = hsFileBase(r) + '.docx';
-    const h = await pickSave(name, 'Documento Word', DOCX_MIME, '.docx'); if (h === 'cancel') return;
-    setBusy('docx');
-    try {
-      const blob = await hsBuildDocx(r, settings, { grigio, onStep: (n, t) => _progress({ title: 'Preparo il Word', text: `Foto ${n} di ${t}`, done: n, total: t }) });
-      _progress(null); await saveOffice(h, blob, name);
-    } catch (e) { _progress(null); fail('Word non creato', e, recordTitle(r)); }
     setBusy(null);
   };
   const nextYear = async () => {
@@ -499,18 +489,17 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
 
   return html`<div class="content form" ref=${root}>
     <${DetailHead} eye=${'HSE · ' + HS_FMT[r.formato]} title=${S0 && T === 'main' ? S0.l : r.codice} sub=${S0 && T === 'main' ? [r.codice, r.sito].filter(Boolean).join(' · ') : [r.commessa, r.cliente, placeAddr(r) || r.sito].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
-    <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'main', l: 'Sezioni' }]} />
-    ${T === 'anag' ? html`${body}${archivio}` : html`
+    <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'main', l: 'Sezioni' }, { k: 'file', l: 'File' }]} />
+    ${T === 'anag' ? html`${body}${archivio}` : T === 'file' ? html`<${FileTab} r=${r} up=${up} settings=${settings} />` : html`
     ${S && html`<button class="btn link" style="margin:-8px 0 8px -4px" onClick=${() => setSec(null)}><${Icon} n="back" s=${18} /> Indice delle sezioni</button>`}
     ${S ? body : indice}`}
     <input ref=${imp} type="file" accept=".docx,.json,application/json,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden onChange=${doImport} />
     <${BarraAtt} r=${r} settings=${settings}
       left=${html`<${HsCam} up=${up} r=${r} big />`}
       center=${S && T === 'main' ? html`<button class="btn pri" onClick=${() => go(1)}>${cur === secs.length - 1 ? 'Torna all\'indice' : 'Successiva'} <${Icon} n="right" s=${20} /></button>`
-        : html`<button class="btn pri" disabled=${busy === 'docx'} onClick=${word}>${busy === 'docx' ? html`<div class="spin" />` : html`<${Icon} n="file" s=${20} />`} Genera Word</button>`}
+        : html`<${DocBtn} r=${r} up=${up} settings=${settings} k="hs_docx" />`}
       gruppi=${[S && T === 'main' && ['Sezioni', [{ ic: 'back', l: 'Sezione precedente', fn: () => go(-1) }, { ic: 'list', l: 'Indice delle sezioni', fn: () => setSec(null) }]],
         ['Documenti', [
-          S && T === 'main' && { ic: 'file', l: 'Genera Word', fn: word },
           { ic: 'share', l: OD.account ? 'Carica su OneDrive' : 'Invia foto e Word a OneDrive', fn: upload },
           { ic: 'paper', l: 'Importa report precedente', s: 'Word o JSON della vecchia app', fn: () => imp.current.click() },
           { ic: 'plus', l: 'Nuovo report per il prossimo sopralluogo', fn: nextYear }]],

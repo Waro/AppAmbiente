@@ -119,7 +119,7 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
   const [scan, setScan] = useState(null);
   const [sig, setSig] = useState(null);
   const [busy, setBusy] = useState(false);
-  const [T, setT] = useSchede('radon', ['anag', 'punti', 'firme'], initial._new, { 'p-': 'punti', 'plan-': 'punti', 'mom-': 'firme' });
+  const [T, setT] = useSchede('radon', ['anag', 'punti', 'firme', 'file'], initial._new, { 'p-': 'punti', 'plan-': 'punti', 'mom-': 'firme' });
   const stato = radonStato(r);
 
   const m = r.momenti;
@@ -216,16 +216,6 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
     setM(i, { confermato: false, firmaTecnico: '', firmaReferente: '' });
   };
 
-  const pdf = async () => {
-    setBusy(true);
-    try {
-      const bytes = await PdfGen.radonPdf(await loadTemplate('radon.pdf'), r);
-      const name = `Scheda_radon_${slug(r.commessa || r.cliente || 'campagna')}.pdf`;
-      await shareFiles([{ blob: new Blob([bytes], { type: 'application/pdf' }), name }], name);
-    } catch (e) { fail('PDF non creato', e); }
-    setBusy(false);
-  };
-
   const scad = radonScadenza(r);
   const best = mediaMax(r);
   // anello: giorni di esposizione della fase in corso
@@ -252,7 +242,7 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
 
   return html`<div class="content form">
     <${DetailHead} eye=${'Campagna radon · ' + STATI[stato][0]} title=${r.commessa || 'Nuova campagna'} sub=${[[r.cliente, r.insegna].filter(Boolean).join(' · '), placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
-    <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'punti', l: 'Punti', n: r.punti.length }, { k: 'firme', l: 'Firme', n: m.filter(x => x.confermato).length }]} />
+    <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'punti', l: 'Punti', n: r.punti.length }, { k: 'firme', l: 'Firme', n: m.filter(x => x.confermato).length }, { k: 'file', l: 'File' }]} />
     ${T === 'anag' && html`    <div class="card-navy"><div class="row" style="gap:18px;align-items:center">
       <div class="ring-wrap" style="width:112px;height:112px">
         <${Ring} p=${gTot ? gNow / gTot : stato === 'esiti' || stato === 'terminata' ? 1 : 0} size=${112} w=${10} color="#38a3f0" track="rgba(255,255,255,.14)" />
@@ -313,7 +303,7 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
       </div>`}
 
     <div class="sec-h" id=${'plan-' + r.id}><h3>Planimetrie</h3><span class="hint">Disegno ed etichette dei punti</span></div>
-    <div class="card"><${PlanList} items=${r.planimetrie || []} labels=${r.punti.map((p, i) => ({ ref: p.id, text: 'R' + (i + 1), color: '#0061c5' }))}
+    <div class="card"><${PlanList} items=${r.planimetrie || []} labels=${r.punti.map((p, i) => ({ ref: p.id, text: 'R' + (i + 1), color: '#0061c5', piano: p.piano || '' }))}
       onAdd=${p => up(q => ({ ...q, planimetrie: [...(q.planimetrie || []), p] }))}
       onUpdate=${(id, patch) => up(q => ({ ...q, planimetrie: (q.planimetrie || []).map(x => x.id === id ? { ...x, ...patch } : x) }))}
       onRemove=${async p => { for (const b of blobIds(p)) await removeBlob(b); up(q => ({ ...q, planimetrie: (q.planimetrie || []).filter(x => x.id !== p.id) })); }} /></div>
@@ -368,12 +358,13 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
     })}
 
     `}
+    ${T === 'file' && html`<${FileTab} r=${r} up=${up} settings=${settings} />`}
     <${BarraAtt} r=${r} settings=${settings}
       left=${T === 'punti' && !lockF2 ? html`<button class="btn-icon lg" aria-label="Scansiona i dosimetri" title="Scansiona i dosimetri" onClick=${scanSeq}><${Icon} n="scan" s=${22} /></button>`
         : html`<button class="btn-icon lg" aria-label="Planimetrie" title="Planimetrie" onClick=${() => { if (T !== 'punti') setT('punti'); setTimeout(() => scrollToId('plan-' + r.id), 120); }}><${Icon} n="map" s=${22} /></button>`}
       center=${T !== 'anag' && curMom >= 0 ? html`<button class="btn pri" onClick=${() => { setT('firme'); setTimeout(() => scrollToId('mom-cur-' + r.id), 80); }}><${Icon} n="sign" s=${19} /> Salva e firma</button>`
         : html`<${OdBtn} r=${r} settings=${settings} />`}
-      gruppi=${[['Documenti', [{ ic: 'file', l: 'Scheda raccolta dati radon (PDF)', fn: pdf },
+      gruppi=${[['Documenti', [
         T !== 'punti' && !lockF2 && { ic: 'scan', l: 'Scansiona i dosimetri', fn: () => { setT('punti'); scanSeq(); } }]],
         opzArchivio({ r, settings, onDelete, elimina: 'Elimina la campagna' })]} />
 

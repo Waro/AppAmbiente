@@ -55,7 +55,7 @@ function foglioElenco(r) {
   if (r.type === 'dda' || r.type === 'mappatura') {
     const mats = r.type === 'dda' ? MATS : MAP_MATS;
     return { titolo: 'Campioni prelevati', nome: 'campioni', cols: [{ t: 'Codice', w: 0.09 }, { t: 'Campione', w: 0.3 }, { t: 'Matrice', w: 0.11 }, { t: 'Piano / ubicazione', w: 0.22 }, { t: 'Data', w: 0.12 }, { t: 'Quantità', w: 0.16 }],
-      voci: mats.flatMap(m => (r.campioni[m.k] || []).map(c => ({ id: c.id, codice: c.codice, txt: [m.l, c.descrizione, c.piano].filter(Boolean).join(' · '), row: [c.codice, c.descrizione, m.l, c.piano || '', fmtIt(c.data), c.quantita || ''] }))) };
+      voci: mats.flatMap(m => (r.campioni[m.k] || []).map(c => ({ id: c.id, codice: c.codice, txt: [m.l, c.descrizione, c.piano, c.ubicazione].filter(Boolean).join(' · '), row: [c.codice, c.descrizione, m.l, [c.piano, c.ubicazione].filter(Boolean).join(' - '), fmtIt(c.data), c.quantita || ''] }))) };
   }
   if (r.type === 'aria' && typeof ariaOf === 'function') return { titolo: 'Punti di monitoraggio', nome: 'punti', cols: [{ t: 'Codice', w: 0.09 }, { t: 'Postazione', w: 0.38 }, { t: 'Metodica', w: 0.13 }, { t: 'Data', w: 0.12 }, { t: 'Esito del prelievo', w: 0.28 }],
     voci: ariaOf(r).punti.map(p => ({ id: p.id, codice: p.codice, txt: [p.piano, p.postazione].filter(Boolean).join(' · '), row: [p.codice, [p.piano, p.postazione].filter(Boolean).join(' · '), p.metodica || '', fmtIt(p.data), p.stato === 'fatto' ? 'Eseguito' : p.stato ? 'Non effettuato' : ''] })) };

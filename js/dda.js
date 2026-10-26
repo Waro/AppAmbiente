@@ -80,7 +80,7 @@ function newDda(records, settings) {
     campioni: emptyCampioni(), congelati: {}, schede: {}, risultati: [], colonna: 'B', checklist: [],
   };
 }
-const ddaIsEmpty = r => !r.commessa && !r.cliente && !r.sito && !r.citta && !r.indirizzo && !(r.fotoAppunti || []).length && !(r.fotoAppunti2 || []).length && !r.recs.length && !Object.keys(r.check).length && !MATS.some(m => r.campioni[m.k].length) && !r.usoAttuale && !r.interviste && !r.appunti && !r.appunti2 && !(r.checklist && r.checklist.length) && !(r.planimetrie && r.planimetrie.length) && !(r.fogli || []).length;
+const ddaIsEmpty = r => !r.commessa && !r.cliente && !r.sito && !r.citta && !r.indirizzo && !(r.fotoAppunti || []).length && !(r.fotoAppunti2 || []).length && !r.recs.length && !Object.keys(r.check).length && !MATS.some(m => r.campioni[m.k].length) && !r.usoAttuale && !r.interviste && !r.appunti && !r.appunti2 && !(r.checklist && r.checklist.length) && !(r.planimetrie && r.planimetrie.length) && !(r.fogli || []).length && !ncOf(r).length;
 const allCamp = r => MATS.flatMap(m => (r.campioni[m.k] || []).map(c => ({ ...c, k: m.k })));
 
 function superamenti(r) {
@@ -117,10 +117,60 @@ function CampSummary({ r, mats, todo = 0 }) {
       ${rows.map(x => html`<div class="mbar"><span class="nm"><i class="mdot" style=${'background:' + x.m.c}></i>${x.m.l}</span>
         <div class="track"><i style=${'width:' + Math.round(x.n / max * 100) + '%'}></i></div><b>${x.n}</b></div>`)}</div>`}`;
 }
+// etichette per le planimetrie: campioni e NC, con il piano per il vassoio
+const campPlanLabels = (r, mats) => [...mats.flatMap(m => (r.campioni[m.k] || []).map(c => ({ ref: c.id, text: c.codice || m.l, color: m.h, piano: c.piano || '' }))),
+  ...ncOf(r).map(x => ({ ref: x.id, text: x.codice, color: (MATS.find(m => m.k === x.k) || MATS[2]).h, piano: x.piano || '' }))];
+// descrizione completa per schede e riepiloghi: «Piano - Ubicazione - Descrizione»
+const campDesc = c => [c.piano, c.ubicazione, c.descrizione].map(x => String(x || '').trim()).filter(Boolean).join(' - ');
+// campo Piano: il gruppo cambia solo a fine modifica (uscendo dal campo o con Invio), così il campo non perde il fuoco
+function PianoInp({ value, set, list }) {
+  return html`<input class="inp" list=${list} placeholder="Piano" defaultValue=${value || ''} aria-label="Piano"
+    onChange=${e => { const v = e.target.value.trim(); if (v !== (value || '')) set(v); }} onKeyDown=${e => { if (e.key === 'Enter') e.target.blur(); }} />`;
+}
+// campi comuni del campione: Piano, Ubicazione, Descrizione
+function CampFields({ c, upd, list, codice }) {
+  return html`<div class="row">${codice}<${PianoInp} value=${c.piano} list=${list} set=${v => upd({ piano: v })} /></div>
+    <input class="inp" placeholder="Ubicazione" value=${c.ubicazione || ''} onInput=${e => upd({ ubicazione: e.target.value })} aria-label="Ubicazione" />
+    <textarea class="inp" rows="2" placeholder="Descrizione" value=${c.descrizione} onInput=${e => upd({ descrizione: e.target.value })} aria-label="Descrizione"></textarea>`;
+}
+
+/* ---------------- NC: manufatti non campionati (MCA e FAV, numerazione unica NC1, NC2…) ----------------
+   r.nc = [{ id, codice, k: 'mca'|'fav', piano, ubicazione, descrizione, quantita, rif (id del campione di riferimento), foto }] */
+const ncOf = r => r.nc || [];
+const ncRenum = list => list.map((x, i) => ({ ...x, codice: 'NC' + (i + 1) }));
+const ncRif = (r, x) => { const c = x.rif && (r.campioni[x.k] || []).find(y => y.id === x.rif); return c ? c.codice : ''; };
+function NcSection({ r, up, mat, list }) {
+  const [openN, setOpenN] = useState({});
+  const L = ncOf(r).filter(x => x.k === mat.k);
+  const camp = r.campioni[mat.k] || [];
+  const setNc = fn => up(p => ({ ...p, nc: ncRenum(fn(ncOf(p))) }));
+  const upd = (id, patch) => setNc(l => l.map(x => x.id === id ? { ...x, ...patch } : x));
+  const add = () => { const id = uid('nc'); const last = L[L.length - 1];
+    setNc(l => [...l, { id, codice: '', k: mat.k, piano: last ? last.piano : '', ubicazione: '', descrizione: '', quantita: '', rif: '', foto: [] }]);
+    setOpenN({ [id]: true }); setTimeout(() => scrollToId('s-' + id), 80); };
+  const del = async x => { if (!confirm('Eliminare ' + x.codice + '?')) return; for (const b of blobIds(x)) await removeBlob(b); setNc(l => l.filter(y => y.id !== x.id)); };
+  const next = 'NC' + (ncOf(r).length + 1);
+  return html`<div class="sec-h" style="margin-top:18px"><h3>Manufatti non campionati</h3><span class="hint">NC1, NC2… unica per MCA e FAV</span></div>
+    ${L.length > 0 && html`<div class="list">${L.map(x => { const rc = ncRif(r, x); const cx = { ...x, descrizione: x.descrizione, quantita: [x.quantita, rc && 'come ' + rc].filter(Boolean).join(' · ') };
+      return html`<${SampleRow} key=${x.id} c=${cx} mat=${mat} open=${!!openN[x.id]} toggle=${() => setOpenN(o => ({ ...o, [x.id]: !o[x.id] }))}
+        onPhoto=${ids => upd(x.id, { foto: [...(x.foto || []), ...ids] })}>
+        <${CampFields} c=${x} list=${list} upd=${patch => upd(x.id, patch)} codice=${html`<div class="code-auto" style=${'width:64px;flex-shrink:0;color:' + mat.c}>${x.codice}</div>`} />
+        <div class="row">
+          <input class="inp" placeholder="Quantità (es. 180 mq)" value=${x.quantita || ''} onInput=${e => upd(x.id, { quantita: e.target.value })} aria-label="Quantità" />
+          <select class="inp" value=${x.rif || ''} onChange=${e => upd(x.id, { rif: e.target.value })} aria-label="Campione di riferimento">
+            <option value="">Nessun campione di riferimento</option>${camp.map(c => html`<option value=${c.id}>Come ${c.codice}${c.descrizione ? ' · ' + c.descrizione.slice(0, 40) : ''}</option>`)}</select>
+        </div>
+        <${PhotoStrip} ids=${x.foto || []} max=${4} onAdd=${ids => upd(x.id, { foto: [...(x.foto || []), ...ids] })}
+          onRemove=${async id => { await removeBlob(id); upd(x.id, { foto: x.foto.filter(f => f !== id) }); }} />
+        <button class="btn sm danger" style="justify-self:start" onClick=${() => del(x)}>Elimina ${x.codice}</button>
+      <//>`; })}</div>`}
+    <button class="btn dashed" style="margin-top:10px" onClick=${add}>+ Aggiungi manufatto non campionato ${next}</button>`;
+}
+
 // riga campione: miniatura (o segnaposto rosso se manca la foto), sigla, descrizione; si apre per modificare
 function SampleRow({ c, mat, open, toggle, onPhoto, children }) {
   const has = (c.foto || []).length > 0;
-  const sub = [c.quantita, c.tipo, c.data && c.data !== today() ? fmtD(c.data) : ''].filter(Boolean).join(' · ');
+  const sub = [c.ubicazione, c.quantita, c.tipo, c.data && c.data !== today() ? fmtD(c.data) : ''].filter(Boolean).join(' · ');
   return html`<div class="srow" id=${'s-' + c.id}>
     <div class="srow-h" role="button" tabindex="0" aria-expanded=${open} onClick=${toggle} onKeyDown=${e => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), toggle())}>
       ${has ? html`<${Thumb44} id=${c.foto[0]} dot=${mat.c} />` : html`<${QuickPhoto} onAdd=${onPhoto} label=${'Scatta la foto di ' + (c.codice || 'questo campione')} />`}
@@ -160,7 +210,7 @@ function DdaList({ records, open, create, activeId, acts }) {
       if (sch.length) lines.push(html`<div class="l" style="color:var(--ok)"><span class="dot" style="background:var(--ok)"></span><span>Scheda campioni: ${sch.join(', ')}</span></div>`);
     }
     return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r)} key=${r.id} onClick=${() => open(r.id)}>
-      <div class="r1"><span class="id">${r.codice}</span><span class=${'badge ' + (r.fase === 1 ? 'b-f1' : 'b-f2')}>Fase ${r.fase}</span><span class="dt">${fmtD(r.data)}</span></div>
+      <div class="r1"><span class="id">${r.codice}</span>${r.drone && html`<${DroneIc} />`}<span class=${'badge ' + (r.fase === 1 ? 'b-f1' : 'b-f2')}>Fase ${r.fase}</span><span class="dt">${fmtD(r.data)}</span></div>
       ${r.commessa && html`<div class="ttl">${r.commessa}</div>`}
       <div class="sum">${r.tecnico ? r.tecnico + ' · ' : ''}${sum}</div>${lines}<${OdBadge} map=${od} r=${r} /></button>`;
   };
@@ -182,13 +232,13 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
   const [busy, setBusy] = useState(null);
   const [openS, setOpenS] = useState({});
   const firmeOn = !!r.firme || (r.fogli || []).length > 0;
-  const [T, setT] = useSchede('dda', firmeOn ? ['anag', 'sop', 'camp', 'firme'] : ['anag', 'sop', 'camp'], initial._new, { 's-': 'camp', 'rec-': 'sop' });
+  const [T, setT] = useSchede('dda', firmeOn ? ['anag', 'sop', 'camp', 'firme', 'file'] : ['anag', 'sop', 'camp', 'file'], initial._new, { 's-': 'camp', 'rec-': 'sop' });
   // dalla ricerca: apre la matrice del campione trovato
   useEffect(() => { const h = e => { const c = allCamp(r).find(x => 's-' + x.id === e.detail); if (c) setTab(c.k); }; addEventListener('nembo-goto', h); return () => removeEventListener('nembo-goto', h); }, [r]);
   const importInp = useRef();
   const planLabels = [
     ...r.recs.map(x => ({ ref: x.id, text: x.nome || 'REC', color: '#b7791f' })),
-    ...MATS.flatMap(m => (r.campioni[m.k] || []).map(c => ({ ref: c.id, text: c.codice || m.l, color: m.h }))),
+    ...campPlanLabels(r, MATS),
   ];
   const plans = r.planimetrie || [];
   const planSection = html`<div class="sec-h" id=${'plan-' + r.id}><h3>Planimetrie</h3><span class="hint">Disegno ed etichette dei campioni</span></div>
@@ -212,7 +262,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
   const setCamp = (k, fn) => up(p => ({ ...p, campioni: { ...p.campioni, [k]: fn(p.campioni[k]) } }));
   const updCamp = (id, patch) => setCamp(tab, l => l.map(c => c.id === id ? { ...c, ...patch } : c));
   const lastPiano = () => { const l = r.campioni[tab] || []; return l.length ? l[l.length - 1].piano || '' : ''; };
-  const addCamp = () => { const id = uid('c'); setCamp(tab, l => [...l, { id, codice: nextCode(tab), descrizione: '', tipo: '', quantita: '', piano: lastPiano(), data: today(), foto: [] }]); setOpenS({ [id]: true }); setTimeout(() => scrollToId('s-' + id), 80); };
+  const addCamp = () => { const id = uid('c'); setCamp(tab, l => [...l, { id, codice: nextCode(tab), descrizione: '', tipo: '', quantita: '', piano: lastPiano(), ubicazione: '', data: today(), foto: [] }]); setOpenS({ [id]: true }); setTimeout(() => scrollToId('s-' + id), 80); };
   const delCamp = async c => {
     if (!confirm('Eliminare il campione ' + (c.codice || '') + '?')) return;
     for (const b of blobIds(c)) await removeBlob(b);
@@ -232,7 +282,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
     setTab(it.matrice); addCamp2(it.matrice, it.descrizione, it.ubicazione);
     updCk(it.id, { fatto: true });
   };
-  const addCamp2 = (k, descrizione, ubicazione) => { const id = uid('c'); setCamp(k, l => [...l, { id, codice: nextCode2(k), descrizione, piano: ubicazione || '', tipo: '', quantita: '', data: today(), foto: [] }]); setOpenS({ [id]: true }); };
+  const addCamp2 = (k, descrizione, ubicazione) => { const id = uid('c'); setCamp(k, l => [...l, { id, codice: nextCode2(k), descrizione, piano: '', ubicazione: ubicazione || '', tipo: '', quantita: '', data: today(), foto: [] }]); setOpenS({ [id]: true }); };
   const nextCode2 = k => { const m = MATS.find(x => x.k === k); if (!m.auto) return ''; const l = r.campioni[k]; if (!r.congelati[k]) return m.auto + (l.length + 1); return m.auto + (l.map(c => +c.codice.slice(1) || 0).reduce((a, b) => Math.max(a, b), 0) + 1); };
 
   const doImport1 = e => {
@@ -245,39 +295,6 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
     rd.readAsText(f);
   };
 
-  const scheda = async k => {
-    const list = r.campioni[k]; if (!list.length) return;
-    setBusy(k);
-    try {
-      const s = settings;
-      const bytes = await PdfGen.schedaCampioniPdf(await loadTemplate('scheda_campioni.pdf'), {
-        commessa: r.commessa, sito: placeDoc(r), campioni: list,
-        analisi: k === 'mca' ? { codice: s.mcaCodice, desc: s.mcaDesc } : { codice: s.favCodice, desc: s.favDesc },
-        lab: { nome: s.labNome, r1: s.labR1, r2: s.labR2 }, offerta: s.offerta, offertaRev: s.offertaRev, email: s.emailReferti,
-        prelevatoDa: s.prelevatoDa, verificatoDa: s.verificatoDa,
-      });
-      up(p => ({ ...p, congelati: { ...p.congelati, [k]: true }, schede: { ...p.schede, [k]: Date.now() } }));
-      const name = `Scheda_campioni_${k.toUpperCase()}_${slug(r.commessa || r.codice)}.pdf`;
-      await shareFiles([{ blob: new Blob([bytes], { type: 'application/pdf' }), name }], name);
-    } catch (e) { fail('PDF non creato', e); }
-    setBusy(null);
-  };
-
-  const xlsx = async k => {
-    const name = `Scheda_campioni_${k.toUpperCase()}_${slug(r.commessa || r.codice)}.xlsx`;
-    const h = await pickSave(name, 'Cartella di lavoro Excel', XLSX_MIME, '.xlsx'); if (h === 'cancel') return;
-    setBusy('x' + k);
-    try { await saveOffice(h, await schedaCampioniXlsx(r, k, settings), name); } catch (e) { fail('Excel non creato', e); }
-    setBusy(null);
-  };
-  const riepilogo = async () => {
-    const name = `Riepilogo_campioni_${slug(r.commessa || r.codice)}.docx`;
-    const h = await pickSave(name, 'Documento Word', DOCX_MIME, '.docx'); if (h === 'cancel') return;
-    setBusy('docx'); toast('Preparo il riepilogo con le foto…');
-    try { await saveOffice(h, await riepilogoCampioniDocx(r, settings), name); } catch (e) { fail('Word non creato', e); }
-    setBusy(null);
-  };
-
   const risCamp = allCamp(r).filter(c => (c.k === 'terreni' || c.k === 'acque') && c.codice);
   const addRis = () => up(p => ({ ...p, risultati: [...(p.risultati || []), { id: uid('x'), campione: risCamp[0] ? risCamp[0].codice : '', parametro: CSC[0].p, valore: '' }] }));
   const updRis = (id, patch) => up(p => ({ ...p, risultati: p.risultati.map(x => x.id === id ? { ...x, ...patch } : x) }));
@@ -285,7 +302,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
 
   return html`<div class="content form">
     <${DetailHead} eye=${'DDA · Fase ' + r.fase} title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
-    <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'sop', l: 'Sopralluogo', n: r.recs.length }, { k: 'camp', l: 'Campioni', n: allCamp(r).length }, firmeOn && { k: 'firme', l: 'Firme', n: (r.fogli || []).length }].filter(Boolean)} />
+    <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'sop', l: 'Sopralluogo', n: r.recs.length }, { k: 'camp', l: 'Campioni', n: allCamp(r).length }, firmeOn && { k: 'firme', l: 'Firme', n: (r.fogli || []).length }, { k: 'file', l: 'File' }].filter(Boolean)} />
     ${T === 'anag' && html`<div class="card"><div class="grid2">
       <${Inp} cls="full" label="Commessa - progetto" value=${r.commessa} set=${v => up({ commessa: v })} imp=${impOf(r, 'commessa')} placeholder="es. 000/26" />
       <${Inp} label="Cliente" req list="dl-cli" value=${r.cliente} set=${v => up({ cliente: v })} imp=${impOf(r, 'cliente')} />
@@ -293,7 +310,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
       <${Inp} cls="full" label="Indirizzo" value=${r.indirizzo} set=${v => up({ indirizzo: v })} imp=${impOf(r, 'indirizzo')} placeholder="Via e numero civico" />
       <${Inp} label="Sito / codice immobile" list="dl-siti" value=${r.sito} set=${v => up({ sito: v })} imp=${impOf(r, 'sito')} placeholder="Facoltativo" />
       <${Inp} label="Data" type="date" value=${r.data} set=${v => up({ data: v })} />
-      <${OraDurata} ora=${r.ora} durata=${r.durata} stato=${r.stato} tipo=${r.type} set=${p => up(p)} />
+      <${OraDurata} ora=${r.ora} durata=${r.durata} stato=${r.stato} tipo=${r.type} drone=${r.drone} set=${p => up(p)} />
       <${Inp} label="Tecnico" value=${r.tecnico} set=${v => up({ tecnico: v })} />
     </div>
     <datalist id="dl-cli">${clienti.map(c => html`<option value=${c} />`)}</datalist>
@@ -385,13 +402,9 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
         <div class="sec-h" style="margin-top:14px"><h3>${piano}</h3><span class="hint">${list.length}</span></div>
         <div class="list">${list.map(c => html`<${SampleRow} key=${c.id} c=${c} mat=${mat} open=${!!openS[c.id]} toggle=${() => setOpenS(o => ({ ...o, [c.id]: !o[c.id] }))}
           onPhoto=${ids => updCamp(c.id, { foto: [...(c.foto || []), ...ids] })}>
-          <div class="row">
-            ${mat.auto ? html`<div class="code-auto" style=${'width:64px;flex-shrink:0;color:' + mat.c}>${c.codice}</div>`
-              : html`<input class="inp code-free" style="width:90px;flex-shrink:0" value=${c.codice} placeholder="Codice" onInput=${e => updCamp(c.id, { codice: e.target.value })} aria-label="Codice campione" />`}
-            <input class="inp" list="dl-piani-c" placeholder="Piano" value=${c.piano || ''} onInput=${e => updCamp(c.id, { piano: e.target.value })} aria-label="Piano" />
-          </div>
+          <${CampFields} c=${c} list="dl-piani-c" upd=${patch => updCamp(c.id, patch)} codice=${mat.auto ? html`<div class="code-auto" style=${'width:64px;flex-shrink:0;color:' + mat.c}>${c.codice}</div>`
+              : html`<input class="inp code-free" style="width:90px;flex-shrink:0" value=${c.codice} placeholder="Codice" onInput=${e => updCamp(c.id, { codice: e.target.value })} aria-label="Codice campione" />`} />
           ${tab === 'altro' && html`<input class="inp" placeholder="Tipo di campione (es. rifiuto, aria, sedimento)" value=${c.tipo} onInput=${e => updCamp(c.id, { tipo: e.target.value })} />`}
-          <textarea class="inp" rows="2" placeholder="Descrizione campione" value=${c.descrizione} onInput=${e => updCamp(c.id, { descrizione: e.target.value })}></textarea>
           <div class="row">
             <input class="inp" type="date" style="max-width:180px" value=${c.data || ''} onInput=${e => updCamp(c.id, { data: e.target.value })} aria-label="Data prelievo" />
             ${(tab === 'mca' || tab === 'fav') && html`<input class="inp" placeholder="Quantità (es. 180 mq)" value=${c.quantita || ''} onInput=${e => updCamp(c.id, { quantita: e.target.value })} aria-label="Quantità" />`}
@@ -402,6 +415,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
         <//>`)}</div></div>`)}
       <datalist id="dl-piani-c">${[...new Set([...allCamp(r).map(c => c.piano).filter(Boolean), ...PIANI_COMUNI])].map(x => html`<option value=${x} />`)}</datalist>
       <button class="btn dashed" style="margin-top:10px" onClick=${addCamp}>+ Aggiungi campione ${mat.auto ? nextCode(tab) : ''}</button>
+      ${(tab === 'mca' || tab === 'fav') && html`<${NcSection} r=${r} up=${up} mat=${mat} list="dl-piani-c" />`}
       <div style="height:10px"></div>
 
       <div class="sec-h"><h3>Appunti Fase 2</h3><span class="hint">Testo libero</span></div>
@@ -411,7 +425,6 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
       ${planSection}
 
       ${(tab === 'mca' || tab === 'fav') && html`
-        ${r.schede[tab] && html`<div class="lock" style="margin:8px 2px;color:var(--ok)">Scheda generata il ${new Date(r.schede[tab]).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}</div>`}
         ${!r.commessa && html`<div class="notice">Indica la commessa in alto: compare nell'intestazione della scheda.</div>`}
       `}
 
@@ -419,7 +432,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
         <div class="sec-h"><h3>Risultati vs CSC</h3>
           <div class="seg" style="width:150px">${['A', 'B'].map(c => html`<button class=${r.colonna === c ? 'on' : ''} style="padding:6px" onClick=${() => up({ colonna: c })}>Col. ${c}</button>`)}</div></div>
         <div class="card tight">
-          ${r.risultati.length ? html`<div class=${'notice' + (sup.length ? ' err' : '')} style="margin:0 0 10px;${sup.length ? '' : 'background:#e9f7ef;border-color:#b7e2c8;color:#0b5a33'}">
+          ${r.risultati.length ? html`<div class=${'notice' + (sup.length ? ' err' : '')} style="margin:0 0 10px;${sup.length ? '' : 'background:var(--ok-soft);border-color:var(--ok);color:var(--ok)'}">
             ${sup.length ? `${sup.length} superamenti rispetto alla colonna ${r.colonna}` : `Nessun superamento rispetto alla colonna ${r.colonna}`}</div>` : html`<p class="lead" style="margin:4px 0 10px">Inserisci i valori dai rapporti di prova del laboratorio.</p>`}
           ${r.risultati.map(x => {
             const p = CSC.find(c => c.p === x.parametro) || CSC[0]; const v = num(x.valore); const over = v != null && v > p[r.colonna];
@@ -434,6 +447,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
     `}
 
     ${T === 'firme' && html`<${FogliFirme} r=${r} up=${up} settings=${settings} />`}
+    ${T === 'file' && html`<${FileTab} r=${r} up=${up} settings=${settings} />`}
     <input ref=${importInp} type="file" accept="application/json,text/plain,application/octet-stream,.json" hidden onChange=${doImport1} />
     <${BarraAtt} r=${r} settings=${settings}
       left=${html`<button class="btn-icon lg" aria-label="Planimetrie" title="Planimetrie" onClick=${() => { if (T === 'anag' || T === 'firme') setT(r.fase === 2 ? 'camp' : 'sop'); setTimeout(() => scrollToId('plan-' + r.id), 120); }}><${Icon} n="map" s=${22} /></button>`}
@@ -441,10 +455,6 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
         : T === 'camp' ? html`<button class="btn pri" onClick=${addCamp}><${Icon} n="plus" s=${20} w=${2.4} /> Nuovo campione ${mat.auto ? nextCode(tab) : mat.l}</button>`
         : html`<${OdBtn} r=${r} settings=${settings} />`}
       gruppi=${[['Documenti', [
-        ...['mca', 'fav'].filter(k => r.campioni[k].length).flatMap(k => { const m = MATS.find(x => x.k === k); return [
-          { ic: 'file', l: (r.schede[k] ? 'Rigenera' : 'Genera') + ' la scheda campioni ' + m.l, s: r.campioni[k].length + ' campioni · PDF per il laboratorio', fn: () => scheda(k) },
-          { ic: 'file', l: 'Scheda campioni ' + m.l + ' in Excel', fn: () => xlsx(k) }]; }),
-        allCamp(r).length > 0 && { ic: 'file', l: 'Riepilogo campioni (Word)', fn: riepilogo },
         (r.campioni.mca.length || r.campioni.fav.length) && { ic: 'gear', l: 'Laboratorio, offerta, codici analisi', fn: onSettings },
         T !== 'anag' && { ic: 'share', l: OD.account ? 'Carica su OneDrive' : 'Invia a OneDrive', fn: () => OD.account ? odSync([r], settings) : sendToOneDrive(r, settings) }]],
         ['Dati', [
