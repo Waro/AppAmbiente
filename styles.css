@@ -951,12 +951,29 @@ img.logo { background: none; object-fit: cover; }
 .card.stale { box-shadow: inset 0 3px 0 var(--blue-sky); }
 .fab { position: absolute; right: 20px; bottom: calc(100px + env(safe-area-inset-bottom, 0px)); z-index: 7; width: 60px; height: 60px; border-radius: 20px; border: 0; background: var(--grad-pri); color: #fff; display: grid; place-items: center; box-shadow: 0 8px 22px var(--pri-shadow); }
 .home-scad { display: none; }
+/* tablet: una colonna, le scadenze subito sotto «Prossimo sopralluogo», a tutta larghezza */
 @media (min-width: 700px) {
   .home-scad { display: block; }
-  .home-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 0 var(--gap); align-items: start; }
+  .home-grid { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: "n" "d" "r" "c" "s"; gap: 0 var(--gap); align-items: start; }
+  .hg-n { grid-area: n; } .hg-r { grid-area: r; } .hg-c { grid-area: c; } .hg-s { grid-area: s; } .hg-d { grid-area: d; margin-bottom: var(--gap); }
+  .home-scad .home-h { margin-top: 4px; }
+}
+/* PC: tutta la larghezza, scadenze in una colonna a parte */
+@media (min-width: 1000px) {
+  .frame.wide > .shell:not(.split) > .content.home2 { max-width: none; }
+  .home-grid { grid-template-columns: minmax(0, 1fr) minmax(280px, 340px); grid-template-areas: "n d" "r d" "c d" "s d"; }
   .home-scad .widgets { grid-template-columns: 1fr; }
+  .home-scad .home-h { margin-top: 0; }
+}
+@media (min-width: 1300px) {
+  .home-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(300px, 360px); grid-template-areas: "n r d" "c s d"; }
+  .hg-n, .hg-r { align-self: stretch; display: flex; flex-direction: column; }
+  .hg-r .card, .hg-n .card-navy { flex: 1; }
+  .hg-r .card { display: flex; align-items: center; }
+  .hg-r .rings { width: 100%; }
+  .home-scad .widgets { grid-template-columns: 1fr; }
+  .home-scad .home-h { margin-top: 0; }
 }
 @media (min-width: 1000px) { .fab { display: none; } }
-.home-scad .home-h { margin-top: 0; }
 [data-theme="scuro"] .btn-icon:not(.pri):not(.glass) { color: var(--text); }
 .r1 .drone-ic { margin: 0 0 0 6px; }

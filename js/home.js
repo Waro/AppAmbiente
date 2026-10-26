@@ -181,8 +181,8 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
     <${PrimiPassi} settings=${settings} tplOk=${tplOk} goSettings=${goSettings} installEvt=${installEvt} onInstall=${onInstall} />
 
     ${bu === 'sicurezza' ? html`<div class="card"><div class="empty" style="padding:28px 10px"><b>Nessuna attività Sicurezza in Nembo</b>Per ora l'app gestisce le attività Ambiente e HSE. Puoi scegliere la business unit predefinita in Impostazioni.</div></div>` : html`
-    <div class="home-grid"><div class="home-main">
-    <div class="card-navy">
+    <div class="home-grid">
+    <div class="hg-n"><div class="card-navy">
       ${chiusa ? html`
         <div class="row" style="justify-content:space-between;gap:12px">
           <span class="t"><span class="next-addr" style="margin:0">Giornata chiusa</span>
@@ -205,9 +205,9 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
         <div class="next-addr">Nessun sopralluogo in programma</div>
         <div class="next-line">Le attività con data da oggi in poi e i ritiri radon compaiono qui.</div>
         <div class="next-acts"><button class="btn pri" onClick=${newAct}>Nuova attività</button></div>`}
-    </div>
+    </div></div>
 
-    <div class="card">
+    <div class="hg-r"><div class="card">
       <div class="rings">
         <div class="ring-wrap" style="width:96px;height:96px">
           <${Ring} p=${rings[0].b ? rings[0].a / rings[0].b : 0} size=${96} w=${9} color=${rings[0].c} />
@@ -216,13 +216,14 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
         </div>
         <div class="legend"><span class="lg-h">${todays.length ? 'Attività di oggi' : 'Nessuna attività oggi'}</span>${rings.map(x => html`<div><i class="mdot" style=${'background:' + x.c}></i><span>${x.l}</span><b>${x.a}/${x.b}</b></div>`)}</div>
       </div>
-    </div>
+    </div></div>
 
-    <div class="sec-h home-h"><h2>Da completare${sosp.length > 0 && html` <span class="n">${sosp.length}</span>`}</h2>${sosp.length > 3 && html`<button class="btn link" onClick=${() => setTutte(!tutte)}>${tutte ? 'Meno' : 'Tutte'}</button>`}</div>
+    <div class="hg-c"><div class="sec-h home-h"><h2>Da completare${sosp.length > 0 && html` <span class="n">${sosp.length}</span>`}</h2>${sosp.length > 3 && html`<button class="btn link" onClick=${() => setTutte(!tutte)}>${tutte ? 'Meno' : 'Tutte'}</button>`}</div>
     ${!sosp.length ? html`<div class="card ok-card"><span class="t"><b>Niente in sospeso</b><small>Tutte le attività sono complete e caricate.</small></span><span class="ok-ic" aria-label="Niente in sospeso"><${Icon} n="check" s=${20} w=${2.4} /></span></div>`
       : html`<div class="card" style="padding:0">${(tutte ? sosp : sosp.slice(0, 3)).map(x => riga(x.ic, placeLabel(x.r), x.sub, () => open(x.r), { crit: x.crit, blu: !x.crit }))}</div>`}
 
-    <div class="sec-h home-h"><h2>Strumenti e dati</h2></div>
+    </div>
+    <div class="hg-s"><div class="sec-h home-h"><h2>Strumenti e dati</h2></div>
     <div class=${'card' + (stale ? ' stale' : '')} style="padding:0">
       ${riga('clock', 'Programmazione', agT.length ? `${agT.length} ${agT.length === 1 ? 'attività' : 'attività'} oggi${agT.map(it => it.ora).filter(Boolean).sort()[0] ? ' · la prima alle ' + agT.map(it => it.ora).filter(Boolean).sort()[0] : ''}` : 'Nessuna attività oggi', () => goList('agenda'))}
       ${riga('building', 'Clienti', _clienti.length ? _clienti.length + (_clienti.length === 1 ? ' cliente' : ' clienti') : 'Referenti e preferenze', () => goList('cliList'))}
@@ -230,10 +231,9 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
       ${allRecords.some(r => r.type === 'firme') && riga('sign', 'Fogli firme', allRecords.filter(r => r.type === 'firme').length + ' fuori dalle attività', () => goList('firmeList'))}
       ${riga('archive', 'Backup', giorni == null ? (records.length ? 'Mai fatto · fanne uno ora' : 'Copia dei dati su OneDrive') : giorni === 0 ? 'Fatto oggi' : `Ultimo ${giorni === 1 ? 'ieri' : giorni + ' giorni fa'}${stale ? ' · fanne uno ora' : ''}`, goBackup, { blu: stale })}
       ${riga('gear', 'Impostazioni', 'Tecnico, modelli, OneDrive', goSettings)}
-    </div>
-    </div>
+    </div></div>
 
-    <div class="home-scad">
+    <div class="home-scad hg-d">
       <div class="sec-h home-h"><h2>Scadenze</h2></div>
       ${bu === 'hs' ? html`<div class="widgets">
       <button class="card" onClick=${() => goList('hsList')}>
