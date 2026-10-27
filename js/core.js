@@ -663,7 +663,7 @@ function collectTags(o, cnt = {}) {
   }
   return cnt;
 }
-// colore del tag: tavolozza di colori diversi tra loro e da quelli dei tipi di attività (MCA, FAV, radon, aria, RA, HSE).
+// colore del tag (il testo tende verso --text, così resta leggibile anche nel tema Scuro): tavolozza di colori diversi tra loro e da quelli dei tipi di attività (MCA, FAV, radon, aria, RA, HSE).
 // Ogni tag ha il suo colore: si parte dal nome e, se il colore è già preso da un altro tag, si passa al successivo.
 const TAG_PAL = ['#0f8b8d', '#5b4fd6', '#c2416b', '#6b8e23', '#8b5e3c', '#e07a5f', '#3d5a80', '#0ca678', '#e5007d', '#b08968', '#5e548e', '#495057', '#2b9348', '#d1495b', '#00798c', '#9a6324'];
 let _tagCol = {};
@@ -678,7 +678,7 @@ function setTagList(list) {
   });
 }
 function tagColor(t) { return _tagCol[String(t).toLowerCase()] || TAG_PAL[tagHash(t) % TAG_PAL.length]; }
-const tagStyle = (t, on) => { const c = tagColor(t); return on ? `background:${c};color:var(--on-dark)` : `background:color-mix(in srgb, ${c} 14%, var(--card));color:${c}`; };
+const tagStyle = (t, on) => { const c = tagColor(t); return on ? `background:color-mix(in srgb, ${c} 75%, #000);color:var(--on-dark)` : `background:color-mix(in srgb, ${c} 14%, var(--card));color:color-mix(in srgb, ${c} 60%, var(--text))`; };
 async function knownTags() { const cnt = collectTags(await DB.all()); const L = Object.keys(cnt); setTagList(L); return L.sort((a, b) => cnt[b] - cnt[a] || a.localeCompare(b, 'it')); }
 function TagPicker({ tags = [], set, label = 'Tag' }) {
   const [open, setOpen] = useState(false); const [q, setQ] = useState(''); const [known, setKnown] = useState([]);

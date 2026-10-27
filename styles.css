@@ -946,7 +946,7 @@ img.logo { background: none; object-fit: cover; }
   --tgl-off: #3a4150; --tgl-on: var(--blue); --grab: #4a5160; --stp-sep: #3a4150;
   --bar-bg: rgba(16,19,25,.9); --bar-solid: #10131a; --bar-line: rgba(255,255,255,.09);
 }
-[data-theme="scuro"] .fbtn .fic { background: var(--btn2); }
+[data-theme="scuro"] .fbtn:not(.green):not(.amber) .fic { background: var(--btn2); }
 [data-theme="scuro"] img.dark-inv { filter: invert(1); }
 .theme-seg button { gap: 3px; }
 .theme-seg button small { color: inherit; }
