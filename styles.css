@@ -8,7 +8,7 @@
 @font-face { font-family: 'IBM Plex Mono'; font-weight: 500; font-style: normal; font-display: swap; src: url(fonts/ibm-plex-mono-latin-500-normal.woff2) format('woff2'); }
 @font-face { font-family: 'IBM Plex Mono'; font-weight: 600; font-style: normal; font-display: swap; src: url(fonts/ibm-plex-mono-latin-600-normal.woff2) format('woff2'); }
 
-/* Rilievo, il design system di Nembo: tutti i valori stanno qui. Nelle regole e negli stili scritti dal codice
+/* Rilievo, il design system di Nembo: tutti i valori sono qui. Nelle regole e negli stili scritti dal codice
    si usano solo questi token (colori, dimensioni del testo, raggi, spazi), mai valori a mano.
    Eccezioni volute: i colori di stampa di planimetrie e PDF (PRINT in js/core.js) e la palette dei tag. */
 :root {

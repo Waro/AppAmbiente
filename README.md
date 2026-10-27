@@ -339,7 +339,7 @@ Se cambia la scheda campioni, vanno ricontrollate le coordinate `SC_LINES` / `SC
 
 ## Design system: Rilievo
 
-Il design system di Nembo si chiama **Rilievo**. Tutti i valori grafici stanno all'inizio di `styles.css`: colori dei tre temi (Essenziale, Originale, Scuro),
+Il design system di Nembo si chiama **Rilievo**. Tutti i valori grafici sono all'inizio di `styles.css`: colori dei tre temi (Essenziale, Originale, Scuro),
 scala del testo (`--fs-2xs` … `--fs-5xl`, solo IBM Plex), raggi (`--r-*`), spazi (`--sp-*`) e i colori dei tipi di attività (`--t-*`).
 Nelle regole CSS e negli stili scritti dal codice non si mettono colori, dimensioni del testo o raggi a mano: si usano i token.
 
