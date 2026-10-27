@@ -272,7 +272,8 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
     ${bu === 'hs' && hsTplOk === false && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goSettings}>Per generare i report carica i modelli Word HSE (Esteso e Sintetico) in Impostazioni → Modelli.</button>`}
     ${bu === 'ambiente' && onbHidden() && (!tplOk || !settings.tecnicoCognome) && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goSettings}>Prima di iniziare: in Impostazioni inserisci i tuoi dati e carica i modelli.</button>`}
     ${installEvt && html`<button class="btn block" style="margin-top:12px" onClick=${onInstall}><${Icon} n="plus" s=${18} /> Installa l'app</button>`}
-    <button class="fab" aria-label="Nuovo sopralluogo" onClick=${newAct}><${Icon} n="plus" s=${26} w=${2.4} /></button>
+    ${/* senza sopralluoghi in programma il blocco navy ha già «Nuova attività»: niente + doppione */ ''}
+    ${(bu === 'sicurezza' || chiusa || nx) && html`<button class="fab" aria-label="Nuovo sopralluogo" onClick=${newAct}><${Icon} n="plus" s=${26} w=${2.4} /></button>`}
   </div>`;
 }
 
