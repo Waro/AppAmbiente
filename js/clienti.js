@@ -42,7 +42,7 @@ function ClientiList({ records, clienti, open, activeId, acts, onImport }) {
       ${daAttivita.length === 1 ? 'Un cliente delle attività non è' : daAttivita.length + ' clienti delle attività non sono'} in anagrafica: tocca per aggiungerli.</button>`}
     ${!clienti.length && html`<div class="empty"><b>Nessun cliente</b>Tocca + per aggiungerne uno. Qui salvi referenti e preferenze: foglio firme già pronto, email per l'invio dei documenti.</div>`}
     <div class="list">${list.map(c => { const k = att(c); return html`<button class=${'rcard' + (activeId === c.id ? ' on' : '')} key=${c.id} onClick=${() => open(c.id)}>
-      <div class="r1"><span class="ttl" style="margin:0;font-size:16px">${c.nome || 'Cliente senza nome'}</span><span class="dt">${k} ${k === 1 ? 'attività' : 'attività'}</span></div>
+      <div class="r1"><span class="ttl" style="margin:0;font-size:var(--fs-lg)">${c.nome || 'Cliente senza nome'}</span><span class="dt">${k} ${k === 1 ? 'attività' : 'attività'}</span></div>
       ${(c.referente || c.sede) && html`<div class="sum">${[c.referente, c.sede].filter(Boolean).join(' · ')}</div>`}
       ${(c.firme || c.mail) && html`<div class="sum" style="color:var(--blue)">${[c.firme && 'Foglio firme', c.mail && 'Invio email'].filter(Boolean).join(' · ')}</div>`}
     </button>`; })}</div>
@@ -88,7 +88,7 @@ function ClienteForm({ rec: initial, records, settings, onSave, onDelete, embedd
 
     <div class="sec-h"><h3>Attività · ${att.length}</h3></div>
     ${att.length ? html`<div class="list">${att.slice(0, 30).map(r => html`<button class="rcard" key=${r.id} onClick=${() => openRec(r)}>
-      <div class="r1"><span class="id">${r.codice || TIPO_NOME(r)}</span><span class="t" style="flex:1;font-size:13px;color:var(--text2)">${TIPO_NOME(r)}</span><span class="dt">${fmtD(r.data)}</span></div>
+      <div class="r1"><span class="id">${r.codice || TIPO_NOME(r)}</span><span class="t" style="flex:1;font-size:var(--fs-sm);color:var(--text2)">${TIPO_NOME(r)}</span><span class="dt">${fmtD(r.data)}</span></div>
       ${(r.commessa || placeLabel(r)) && html`<div class="sum">${[r.commessa, placeLabel(r)].filter(Boolean).join(' · ')}</div>`}</button>`)}</div>`
       : html`<div class="card"><div class="empty" style="padding:14px">Nessuna attività con questo nome cliente.</div></div>`}
 

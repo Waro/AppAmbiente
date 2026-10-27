@@ -3,9 +3,9 @@
 
 const DURATE_BASE = { dda: 180, mappatura: 180, ra: 120, radon: 60, aria: 300, hs: 180, vs: 120, firme: 60 };
 const TIPI_AG = {
-  dda: { l: 'DDA', c: 'var(--warn)' }, mappatura: { l: 'Mappatura', c: 'var(--mca)' }, ra: { l: 'RA', c: '#7a3db8' },
-  radon: { l: 'Radon', c: 'var(--ok)' }, aria: { l: 'Aria', c: '#0a6ebd' }, hs: { l: 'HSE', c: 'var(--blue)' }, vs: { l: 'Verbale HSE', c: '#2f7d5b' }, firme: { l: 'Firme', c: 'var(--ring2)' },
-  app: { l: 'Appuntamento', c: '#64748b' },
+  dda: { l: 'DDA', c: TIPO_COL.dda }, mappatura: { l: 'Mappatura', c: TIPO_COL.mappatura }, ra: { l: 'RA', c: TIPO_COL.ra },
+  radon: { l: 'Radon', c: TIPO_COL.radon }, aria: { l: 'Aria', c: TIPO_COL.aria }, hs: { l: 'HSE', c: TIPO_COL.hs }, vs: { l: 'Verbale HSE', c: TIPO_COL.vs }, firme: { l: 'Firme', c: TIPO_COL.firme },
+  app: { l: 'Appuntamento', c: TIPO_COL.app },
 };
 // appuntamento: impegno in agenda che non è un sopralluogo (riunione, consegna, telefonata…)
 const newApp = (x = {}) => ({ id: uid('ap'), type: 'app', codice: '', titolo: '', luogo: '', note: '', data: today(), ora: '', durata: 60, stato: '', createdAt: Date.now(), updatedAt: Date.now(), ...x });

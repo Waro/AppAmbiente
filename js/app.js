@@ -260,7 +260,7 @@ function TemplateRow({ name, t, onChange }) {
     } catch (err) { fail('Modello non valido', err); }
   };
   return html`<div class="row" style="padding:10px 0;border-top:.5px solid var(--sep)">
-    <div class="tb-grow"><div style="font-size:15px;font-weight:600;white-space:normal">${t.label}</div>
+    <div class="tb-grow"><div style="font-size:var(--fs-base);font-weight:600;white-space:normal">${t.label}</div>
       <div class=${'lock'} style=${has ? 'color:var(--ok)' : 'color:var(--nc)'}>${has === null ? '' : has ? 'Caricato su questo dispositivo' : 'Da caricare'}</div></div>
     <button class="btn sm" onClick=${() => inp.current.click()}>${has ? 'Sostituisci' : 'Carica'}</button>
     <input ref=${inp} type="file" accept=${t.docx ? '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document' : t.xlsx ? '.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'application/pdf'} hidden onChange=${pick} /></div>`;
@@ -317,7 +317,7 @@ function Settings({ settings, setSettings, onTemplates, go }) {
     <button class=${'sigbox' + (s.firmaTecnico ? ' has' : '')} onClick=${() => setSig(true)}>${s.firmaTecnico ? html`<img src=${s.firmaTecnico} alt="Firma salvata" />` : 'Tocca per salvare la tua firma'}</button>
     <div style="display:flex;margin-top:8px;gap:8px;flex-wrap:wrap"><${SigImageButton} onDone=${url => set({ firmaTecnico: url })} />
       ${s.firmaTecnico && html`<button class="btn sm" onClick=${() => set({ firmaTecnico: '' })}>Rimuovi firma salvata</button>`}</div>
-    <p class="lead" style="margin:6px 2px 0;font-size:12.5px">Puoi disegnarla o caricare una foto della tua firma su un foglio bianco: lo sfondo viene tolto da solo.</p>
+    <p class="lead" style="margin:6px 2px 0;font-size:var(--fs-sm)">Puoi disegnarla o caricare una foto della tua firma su un foglio bianco: lo sfondo viene tolto da solo.</p>
     </div>
 
     <div class="sec-h"><h3>Foto</h3></div>
@@ -378,13 +378,13 @@ function Settings({ settings, setSettings, onTemplates, go }) {
     <div class="sec-h"><h3>Novità</h3></div>
     <${NovitaCard} go=${go} />
     <div class="sec-h"><h3>Info app</h3></div>
-    <div class="card tight" style="font-size:14.5px;color:var(--text2)">
+    <div class="card tight" style="font-size:var(--fs-base);color:var(--text2)">
       <div style="display:flex;justify-content:space-between;padding:9px 2px"><span>Versione app</span><b class="mono" style="color:var(--text)">${APP_VERSION}</b></div>
       <div style="display:flex;justify-content:space-between;padding:9px 2px;border-top:.5px solid var(--sep)">
         <span>Cache offline attiva</span>
-        <b style="color:${cacheVer && cacheVer !== APP_VERSION ? 'var(--warn, #9a5a00)' : 'var(--text)'}">${cacheVer || '…'}</b>
+        <b style="color:${cacheVer && cacheVer !== APP_VERSION ? 'var(--warn)' : 'var(--text)'}">${cacheVer || '…'}</b>
       </div>
-      ${cacheVer && cacheVer !== APP_VERSION && html`<p style="margin:8px 2px 2px;color:var(--warn, #9a5a00)">Diverse dalla versione app: l'aggiornamento è a metà, chiudi e riapri l'app (o svuota la cache del sito) per completarlo.</p>`}
+      ${cacheVer && cacheVer !== APP_VERSION && html`<p style="margin:8px 2px 2px;color:var(--warn)">Diverse dalla versione app: l'aggiornamento è a metà, chiudi e riapri l'app (o svuota la cache del sito) per completarlo.</p>`}
     </div>
   </div>`;
 }
@@ -403,9 +403,9 @@ function Boundary({ children }) {
   const [err, reset] = useErrorBoundary(e => reportAppError(e, 'schermata'));
   if (!err) return children;
   return html`<div class="content" style="padding:28px 20px;max-width:560px;margin:0 auto">
-    <div class="lt-title" style="font-size:26px">Qualcosa non ha funzionato</div>
+    <div class="lt-title" style="font-size:var(--fs-4xl)">Qualcosa non ha funzionato</div>
     <p class="lead">I tuoi dati sono salvati. L'errore è stato registrato nelle Notifiche con il codice APP-JS.</p>
-    <div class="mono" style="font-size:12.5px;background:var(--fill-soft);border-radius:8px;padding:8px;word-break:break-word;margin:10px 0 16px">${String(err && err.message || err)}</div>
+    <div class="mono" style="font-size:var(--fs-sm);background:var(--fill-soft);border-radius:var(--r-sm);padding:8px;word-break:break-word;margin:10px 0 16px">${String(err && err.message || err)}</div>
     <button class="btn pri block" onClick=${() => { location.hash = ''; reset(); }}>Torna a Oggi</button>
     <button class="btn block" style="margin-top:8px" onClick=${() => location.reload()}>Ricarica l'app</button>
     <button class="btn block" style="margin-top:8px" onClick=${() => DB.get('settings').then(s => reportIssue(s))}>Segnala un problema</button>
@@ -446,7 +446,7 @@ function WipeCard() {
   useEffect(() => { wipeStatus().then(setW); }, []);
   return html`<div class="card tight">
     <p class="lead" style="margin:6px 0 10px">Per cambiare dispositivo, restituirlo o prima della migrazione dell'account Microsoft: toglie da qui attività, foto, configurazione, modelli, firma e accesso a Microsoft. Quello che è su OneDrive resta.</p>
-    ${w && html`<p style=${'margin:0 2px 10px;font-size:14px;font-weight:600;color:' + (w.pending.length || w.del ? 'var(--danger)' : 'var(--ok)')}>
+    ${w && html`<p style=${'margin:0 2px 10px;font-size:var(--fs-md);font-weight:600;color:' + (w.pending.length || w.del ? 'var(--danger)' : 'var(--ok)')}>
       ${!w.total ? 'Nessuna attività su questo dispositivo.' : w.pending.length || w.del ? (w.syncOn ? `${w.pending.length} attività su ${w.total} non ancora su OneDrive.` : `Sincronizzazione non attiva: le ${w.total} attività sono solo qui.`) : `Tutte le ${w.total} attività sono su OneDrive.`}</p>`}
     <button class="btn danger block" onClick=${wipeDevice}><${Icon} n="trash" s=${17} /> Rimuovi i dati da questo dispositivo</button>
   </div>`;
@@ -479,18 +479,18 @@ function Notifiche({ settings, records = [], openRec }) {
     ${!shown.length && html`<div class="empty"><b>Nessuna notifica</b>${list.length ? 'Niente in questa categoria.' : 'Qui compariranno gli esiti dei caricamenti e gli eventuali errori.'}</div>`}
     <div>${shown.map(n => html`<div class="card tight" key=${n.id} style=${'box-shadow:inset 4px 0 0 ' + COL[n.level] + ';padding:12px 14px 12px 18px'}>
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline">
-        <b style=${'font-size:13px;font-weight:600;color:' + COL[n.level]}>${LBL[n.level]}</b>
-        <span style="font-size:12px;color:var(--muted)">${new Date(n.t).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}</span></div>
+        <b style=${'font-size:var(--fs-sm);font-weight:600;color:' + COL[n.level]}>${LBL[n.level]}</b>
+        <span style="font-size:var(--fs-xs);color:var(--muted)">${new Date(n.t).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}</span></div>
       <div style="font-weight:700;margin-top:3px">${n.title}</div>
-      ${n.record && html`<div style="font-size:12.5px;color:var(--text2);margin-top:2px">${n.record}</div>`}
+      ${n.record && html`<div style="font-size:var(--fs-sm);color:var(--text2);margin-top:2px">${n.record}</div>`}
       ${(() => { const rs = (n.ids || []).map(id => records.find(r => r.id === id)).filter(Boolean); if (!rs.length || n.level === 'ok') return null;
         return html`<div class="ntf-act">
           ${html`<button class="btn sm pri" onClick=${() => odSync(rs, settings)}><${Icon} n="share" s=${15} /> Ricarica${rs.length > 1 ? ' tutte' : ''}</button>`}
           ${rs.map(r => html`<button class="btn sm" key=${r.id} onClick=${() => openRec(r)}>Apri ${rs.length > 1 ? r.codice || recordTitle(r) : 'attività'}</button>`)}</div>`; })()}
-      ${n.detail && html`<div style="font-size:13px;margin-top:6px;word-break:break-word">${n.detail}</div>`}
-      ${n.code && html`<div style="margin-top:8px"><span class="mono" style="font-size:13px;background:var(--fill-soft);border-radius:6px;padding:2px 8px">Codice: ${n.code}</span></div>`}
+      ${n.detail && html`<div style="font-size:var(--fs-sm);margin-top:6px;word-break:break-word">${n.detail}</div>`}
+      ${n.code && html`<div style="margin-top:8px"><span class="mono" style="font-size:var(--fs-sm);background:var(--fill-soft);border-radius:var(--r-xs);padding:2px 8px">Codice: ${n.code}</span></div>`}
       ${(n.items || []).length > 0 && html`<button class="btn sm" style="margin-top:8px" onClick=${() => setOpen(o => ({ ...o, [n.id]: !o[n.id] }))}>${open[n.id] ? 'Nascondi' : 'Mostra'} dettaglio file (${n.items.length})</button>
-        ${open[n.id] && html`<div class="mono" style="margin-top:8px;font-size:12.5px;font-weight:500;background:var(--fill-soft);border-radius:8px;padding:8px;max-height:260px;overflow:auto;word-break:break-word">${n.items.map(x => html`<div style="padding:3px 0;border-bottom:1px dashed var(--border)">${x}</div>`)}</div>`}`}
+        ${open[n.id] && html`<div class="mono" style="margin-top:8px;font-size:var(--fs-sm);font-weight:500;background:var(--fill-soft);border-radius:var(--r-sm);padding:8px;max-height:260px;overflow:auto;word-break:break-word">${n.items.map(x => html`<div style="padding:3px 0;border-bottom:1px dashed var(--border)">${x}</div>`)}</div>`}`}
       ${(n.level === 'err' || n.level === 'warn') && html`<div style="margin-top:8px"><button class="btn sm" onClick=${() => copy(n)}>Copia dettagli</button></div>`}
     </div>`)}</div>
     ${list.length > 0 && html`<button class="btn danger block" style="margin-top:16px" onClick=${() => { if (confirm('Cancellare tutte le notifiche?')) notifClear(); }}><${Icon} n="trash" s=${17} /> Svuota notifiche</button>`}
@@ -525,14 +525,14 @@ function Backup({ records, all, settings, reload, lastBackup }) {
   return html`<div class="content form">
     <${LargeTitle} top title="Backup" />
     <div class="card">
-      <h2 style="font-size:17px;font-weight:600">Backup su OneDrive</h2>
+      <h2 style="font-size:var(--fs-xl);font-weight:600">Backup su OneDrive</h2>
       <p class="lead" style="margin:6px 0 12px">Un unico file ZIP con tutte le indagini e campagne, anche con centinaia di foto: cartelle con foto, allegati e PDF, più i dati in manifest.json per il ripristino. Nella finestra di salvataggio scegli OneDrive; se non compare, il file va in Download e lo carichi dall'app OneDrive.</p>
       <button class="btn pri block" disabled=${busy || !records.length} onClick=${doExport}>${busy ? html`<div class="spin" />` : html`<${Icon} n="archive" s=${18} />`} Crea backup completo</button>
       ${OD.account && html`<button class="btn outline block" style="margin-top:8px" disabled=${busy || !records.length} onClick=${async () => { setBusy(true); await odSync(records.filter(r => !r._new), settings); setBusy(false); }}><${Icon} n="share" s=${18} /> Carica tutto su OneDrive</button>`}
       <div class="lock" style="margin-top:8px">${lastBackup ? 'Ultimo backup: ' + new Date(lastBackup).toLocaleString('it-IT', { dateStyle: 'medium', timeStyle: 'short' }) : 'Nessun backup ancora'}</div>
     </div>
     <div class="card">
-      <h2 style="font-size:17px;font-weight:600">Ripristina da backup</h2>
+      <h2 style="font-size:var(--fs-xl);font-weight:600">Ripristina da backup</h2>
       <p class="lead" style="margin:6px 0 12px">Scegli lo ZIP da OneDrive o dal telefono. I record già presenti vengono sostituiti solo se quelli del backup sono più recenti.</p>
       <button class="btn block" disabled=${busy} onClick=${() => inp.current.click()}>Scegli file ZIP</button>
       <input ref=${inp} type="file" accept="application/zip,application/x-zip-compressed,application/octet-stream,.zip" hidden onChange=${doImport} />
@@ -587,10 +587,9 @@ function useNavMin() {
 }
 // colori delle icone nel menu laterale esteso: gli stessi del foglio "Nuova attività"
 const SN_COL = {
-  home: ['var(--blue-soft)', 'var(--blue)'], ddaList: ['var(--warn-soft)', 'var(--warn)'], mappaturaList: ['color-mix(in srgb, var(--mca) 12%, var(--card))', 'var(--mca)'],
-  raList: ['color-mix(in srgb, var(--mca) 12%, var(--card))', 'var(--mca)'], radonList: ['var(--ok-soft)', 'var(--ok)'], ariaList: ['var(--blue-soft)', '#0a6ebd'],
-  hsList: ['var(--blue-soft)', 'var(--blue)'], vsList: ['var(--ok-soft)', 'var(--ok)'], agenda: ['var(--fill-soft)', 'var(--navy-ink)'], firmeList: ['var(--fill-soft)', 'var(--blue)'],
-  cerca: ['var(--fill-soft)', 'var(--navy-ink)'], cliList: ['var(--warn-soft)', 'var(--warn)'], backup: ['var(--fill-soft)', 'var(--text2)'], settings: ['var(--fill-soft)', 'var(--text2)'],
+  home: 'var(--blue)', ddaList: TIPO_COL.dda, mappaturaList: TIPO_COL.mappatura, raList: TIPO_COL.ra, radonList: TIPO_COL.radon, ariaList: TIPO_COL.aria,
+  hsList: TIPO_COL.hs, vsList: TIPO_COL.vs, agenda: 'var(--navy-ink)', firmeList: TIPO_COL.firme, cerca: 'var(--navy-ink)', cliList: TIPO_COL.dda,
+  backup: 'var(--text2)', settings: 'var(--text2)',
 };
 function SideNav({ route, go, counts, settings, min, toggle }) {
   const nav = v => { if (route.v !== v) go({ v }); };
@@ -598,7 +597,7 @@ function SideNav({ route, go, counts, settings, min, toggle }) {
     const on = route.v === x.v || route.v === x.d;
     const col = SN_COL[x.v];
     return html`<button class=${'sn-it' + (on ? ' on' : '')} title=${min ? x.l : null} aria-current=${on ? 'page' : null} onClick=${() => nav(x.v)}>
-      ${!min && col ? html`<span class="sn-ic" style=${'background:' + col[0] + ';color:' + col[1]}><${Icon} n=${x.ic} s=${19} /></span>` : html`<${Icon} n=${x.ic} s=${21} />`}<span class="l">${x.l}</span>${n > 0 && html`<span class="n">${n}</span>`}</button>`;
+      ${!min && col ? html`<span class="sn-ic tint" style=${'--c:' + col}><${Icon} n=${x.ic} s=${19} /></span>` : html`<${Icon} n=${x.ic} s=${21} />`}<span class="l">${x.l}</span>${n > 0 && html`<span class="n">${n}</span>`}</button>`;
   };
   const name = `${settings.tecnicoNome || ''} ${settings.tecnicoCognome || ''}`.trim();
   const initials = (((settings.tecnicoNome || '')[0] || '') + ((settings.tecnicoCognome || '')[0] || '')).toUpperCase();

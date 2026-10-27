@@ -336,3 +336,14 @@ Se cambia la scheda campioni, vanno ricontrollate le coordinate `SC_LINES` / `SC
 - **Codici MCA/FAV**: si rinumerano eliminando un campione finché non generi la scheda campioni; da lì restano fissi.
 - **Radon**: "Conferma e blocca" richiede data e firma del tecnico; blocca i dati di posa. "Sblocca" cancella le firme di quel momento.
   La media per punto è pesata sui giorni di esposizione di Fase 1 e Fase 2.
+
+## Design system
+
+Tutti i valori grafici stanno all'inizio di `styles.css`: colori dei tre temi (Essenziale, Originale, Scuro),
+scala del testo (`--fs-2xs` … `--fs-5xl`, solo IBM Plex), raggi (`--r-*`), spazi (`--sp-*`) e i colori dei tipi di attività (`--t-*`).
+Nelle regole CSS e negli stili scritti dal codice non si mettono colori, dimensioni del testo o raggi a mano: si usano i token.
+
+- **Tipi di attività**: `TIPO_COL` in `js/core.js` dà lo stesso colore a menu, «Nuova attività», programmazione e home.
+- **Colori di stampa**: `PRINT` in `js/core.js` raccoglie i colori fissi di planimetrie, PDF, Word, Excel ed email (non cambiano col tema).
+- **Testo sui colori pieni**: `--on-accent` (bianco nei temi chiari, inchiostro scuro nel tema Scuro) e `--on-dark` (sempre bianco).
+- **Contrasto**: testo almeno 4,5:1 su fondo e card in tutti e tre i temi.

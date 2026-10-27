@@ -273,7 +273,7 @@ function Progress() {
   const pct = p.total ? Math.round(p.done / p.total * 100) : 0;
   return html`<div class="ov"><div class="modal" role="status" aria-live="polite">
     <h4>${p.title}</h4><p>${p.text}</p>
-    <div style="height:8px;background:var(--track);border-radius:6px;overflow:hidden"><div style=${'height:100%;background:var(--primary);width:' + pct + '%'}></div></div>
+    <div style="height:8px;background:var(--track);border-radius:var(--r-xs);overflow:hidden"><div style=${'height:100%;background:var(--primary);width:' + pct + '%'}></div></div>
     <div class="lock" style="margin-top:8px">${p.done} / ${p.total}</div>
     ${p.onStop && html`<button class="btn block" style="margin-top:12px" onClick=${p.onStop}>Interrompi</button>`}
   </div></div>`;
@@ -404,7 +404,7 @@ function OneDriveSettings({ settings, set }) {
       <${Inp} cls="full" label="ID directory (tenant)" value=${settings.msTenantId} set=${v => set({ msTenantId: v.trim() })} placeholder="xxxxxxxx-xxxx-…" />
     </div>
     ${ok && html`<div style="margin-top:12px">
-      ${OD.account ? html`<div class="row"><div class="tb-grow"><div style="font-size:13.5px;font-weight:600">Collegato</div><div class="lock">${who}</div></div>
+      ${OD.account ? html`<div class="row"><div class="tb-grow"><div style="font-size:var(--fs-md);font-weight:600">Collegato</div><div class="lock">${who}</div></div>
           <button class="btn sm" onClick=${() => confirm('Scollegare OneDrive?') && OD.logout()}>Esci</button></div>`
         : html`<button class="btn pri block" onClick=${() => OD.login().catch(e => toast(e.message))}>Accedi con Microsoft 365</button>`}
       ${OD.error && html`<div class="notice err">${OD.error}</div>`}

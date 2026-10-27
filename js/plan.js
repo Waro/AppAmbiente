@@ -483,7 +483,7 @@ function PlanViewer({ plan, labels, altrove, onChange, onClose }) {
       <button class="btn sm" onClick=${() => history.back()} disabled=${saving}>${saving ? html`<div class="spin" />` : 'Fine'}</button>
       <b class="tb-grow"><div>${plan.nome}</div></b>
       ${nPages > 1 && html`<div class="row" style="gap:4px"><button class="sq plain" aria-label="Pagina precedente" disabled=${pageN === 0} onClick=${() => setPageN(pageN - 1)}>‹</button>
-        <span style="font-size:13px;font-weight:700;min-width:44px;text-align:center">${pageN + 1}/${nPages}</span>
+        <span style="font-size:var(--fs-sm);font-weight:700;min-width:44px;text-align:center">${pageN + 1}/${nPages}</span>
         <button class="sq plain" aria-label="Pagina successiva" disabled=${pageN >= nPages - 1} onClick=${() => setPageN(pageN + 1)}>›</button></div>`}
       <button class="sq plain" aria-label="Riduci" onClick=${() => zoomBtn(1 / 1.5)}>−</button>
       <button class="sq plain" aria-label="Ingrandisci" onClick=${() => zoomBtn(1.5)}>+</button>
@@ -562,7 +562,7 @@ function PlanList({ items = [], labels, onUpdate, onAdd, onRemove }) {
         <span class="sq plain" style="margin-top:2px"><${Icon} n="file" s=${18} /></span>
         <div class="tb-grow" style="min-width:0">
           <button style="background:none;border:0;text-align:left;padding:0;width:100%" onClick=${() => setOpen(p.id)}>
-            <div style="font-size:13.5px;font-weight:600">${p.nome}</div>
+            <div style="font-size:var(--fs-md);font-weight:600">${p.nome}</div>
             <div class="lock">${ns || nl ? `${ns} tratti · ${nl} etichette${p.mergedBlobId ? ' · PDF annotato pronto' : ''}` : 'Tocca per aprire e annotare'}</div></button>
           <input class="inp sm" style="margin-top:6px;max-width:220px" list="dl-piani-pl" placeholder="Piano" aria-label=${'Piano di ' + p.nome} defaultValue=${p.piano || ''}
             onChange=${e => onUpdate(p.id, { piano: e.target.value.trim() })} onKeyDown=${e => { if (e.key === 'Enter') e.target.blur(); }} /></div>

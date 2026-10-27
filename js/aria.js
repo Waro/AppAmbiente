@@ -53,7 +53,7 @@ const ariaRecode = (punti, id, k) => punti.map(x => x.id !== id ? x : (x.ripreso
   : { ...x, metodica: k, codice: ariaNextCode(punti.filter(y => y.id !== id), k) });
 const ariaProfilo = (s, k) => { const m = ariaMet(k); const c = ((s && s.ariaProfili) || {})[k] || ''; return c ? `${c} (${m.desc})` : m.desc; };
 const ariaCampionatori = s => (Array.isArray(s.ariaCampionatori) ? s.ariaCampionatori : String(s.ariaCampionatori || '').split('\n')).map(x => String(x).trim()).filter(Boolean);
-const ariaLabels = r => ariaOn(r) ? ariaOf(r).punti.map(p => { const e = ariaEsito(p); return { ref: p.id, text: p.codice || ariaPref(p.metodica), color: e && e.over ? '#be222a' : '#0a6ebd', piano: p.piano || '' }; }) : [];
+const ariaLabels = r => ariaOn(r) ? ariaOf(r).punti.map(p => { const e = ariaEsito(p); return { ref: p.id, text: p.codice || ariaPref(p.metodica), color: e && e.over ? PRINT.ariaOver : PRINT.aria, piano: p.piano || '' }; }) : [];
 
 /* ---------------- attività a sé ---------------- */
 function newAria(records, s) {
@@ -76,7 +76,7 @@ function AriaPuntoCard({ p, open, toggle, onUpd, onMet, onDel, onScan, settings 
     : st === 'prelevato' ? html`<span class="badge b-f2">Attesa esito</span>` : html`<span class="badge st-none">Da prelevare</span>`;
   return html`<div class="punto" id=${'s-' + p.id}>
     <button class="punto-h" aria-expanded=${open} onClick=${toggle}>
-      <span class="rtag" style="background:#0a6ebd1f;color:#0a6ebd">${p.codice || ariaPref(p.metodica)}</span>
+      <span class="rtag tint" style="--c:var(--t-aria)">${p.codice || ariaPref(p.metodica)}</span>
       <div class="t"><b>${[p.piano, p.postazione].filter(Boolean).join(' · ') || 'Postazione da indicare'}</b>
         <small>${st === 'non' ? 'Monitoraggio non eseguito' : p.stato === 'fatto' ? [fmtD(p.data), m.l, p.membrana && 'membrana ' + p.membrana].filter(Boolean).join(' · ') : 'Tocca per compilare'}</small></div>
       ${badge}<span class=${'chev' + (open ? ' open' : '')}><${Icon} n="chev" s=${18} /></span></button>
@@ -102,7 +102,7 @@ function AriaPuntoCard({ p, open, toggle, onUpd, onMet, onDel, onScan, settings 
         <${Inp} label="Flusso (l/min)" inputmode="decimal" value=${p.flusso} set=${v => set({ flusso: v })} />
         <${Inp} label="Litri prelevati" inputmode="decimal" value=${p.volume} set=${v => set({ volume: v })} placeholder=${vAuto != null ? fmtNum(vAuto) + ' (calcolato)' : 'flusso × durata'} />
       </div>
-      ${min != null && html`<p class="lead" style="margin:-2px 2px 6px;font-size:13px">Durata ${Math.floor(min / 60)} h ${min % 60} min${vAuto != null ? ` · ${fmtNum(numIt(p.flusso))} l/min × ${min} min = ${fmtNum(vAuto)} litri` : ''}</p>`}
+      ${min != null && html`<p class="lead" style="margin:-2px 2px 6px;font-size:var(--fs-sm)">Durata ${Math.floor(min / 60)} h ${min % 60} min${vAuto != null ? ` · ${fmtNum(numIt(p.flusso))} l/min × ${min} min = ${fmtNum(vAuto)} litri` : ''}</p>`}
       <div class="fld"><span>Esito di laboratorio</span></div>
       <div class="grid2">
         <${Inp} label="Rapporto di prova" value=${p.rdp} set=${v => set({ rdp: v })} placeholder="es. RdP 24/000123150" />
@@ -163,7 +163,7 @@ function AriaSection({ r, up, settings, inRa }) {
     <div class="sec-h"><h3>Schede aria</h3></div>
     <div class="card"><p class="lead" style="margin:2px 0 10px">Scheda di prelievo ed esiti, in Excel e PDF, si generano nella scheda File.</p>
       <button class="btn" onClick=${() => dispatchEvent(new CustomEvent('nembo-goto', { detail: 'tab:file' }))}><${Icon} n="file" s=${16} /> Vai a File</button>
-      ${!ariaCampionatori(settings).length && html`<p class="lead" style="margin:10px 2px 0;font-size:13px">L'elenco dei campionatori e i codici d'analisi si impostano in Impostazioni → Monitoraggio aria.</p>`}
+      ${!ariaCampionatori(settings).length && html`<p class="lead" style="margin:10px 2px 0;font-size:var(--fs-sm)">L'elenco dei campionatori e i codici d'analisi si impostano in Impostazioni → Monitoraggio aria.</p>`}
     </div>
     ${scan && html`<${Scanner} title=${scan.title} target=${scan.target} onCode=${scan.onCode} onClose=${() => setScan(null)} />`}
   </div>`;

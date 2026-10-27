@@ -90,7 +90,7 @@ function PrimiPassi({ settings, tplOk, goSettings, installEvt, onInstall }) {
     ${steps.map(x => html`<button class=${'onb-it' + (x.ok ? ' ok' : '')} disabled=${x.ok || !x.go} onClick=${x.go}>
       <span class="onb-ck">${x.ok && html`<${Icon} n="check" s=${14} w=${2.6} />`}</span>
       <span class="t"><b>${x.l}</b>${!x.ok && html`<small>${x.s}</small>`}</span>${!x.ok && x.go && html`<${Icon} n="right" s=${16} />`}</button>`)}
-    <button class="btn link" style="margin-top:4px;font-size:13px" onClick=${close}>Nascondi</button>
+    <button class="btn link" style="margin-top:4px;font-size:var(--fs-sm)" onClick=${close}>Nascondi</button>
   </div>`;
 }
 
@@ -190,12 +190,12 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
           <span class="day-ok" aria-label="Giornata conclusa"><${Icon} n="check" s=${22} w=${2.6} /></span></div>
         ${dom && html`<div class="nv-sep"></div>
           <span class="nv-eye">${whenLabel(dom.d).l}${dom.o ? ' · ' + dom.o : ''}</span>
-          <div class="next-addr" style="font-size:18px">${domAddr || 'Indirizzo da indicare'}</div>
+          <div class="next-addr" style="font-size:var(--fs-xl)">${domAddr || 'Indirizzo da indicare'}</div>
           <div class="next-line">${[recLine(dom.r), dom.r.cliente].filter(Boolean).join(' · ')}</div>
           <div class="next-acts"><button class="btn glass" onClick=${() => open(dom.r)}>Prepara ${whenLabel(dom.d).l === 'Domani' ? 'domani' : 'il prossimo'}</button>${navBtn(domAddr)}</div>`}`
       : nx ? html`
         <div class="row" style="justify-content:space-between"><span class="nv-eye">Prossimo sopralluogo</span>
-          <span class=${'nv-eye' + (when.crit ? ' crit' : '')} style="text-transform:none;letter-spacing:0;font-size:14px">${when.l}${nx.o ? ' · ' + nx.o : ''}</span></div>
+          <span class=${'nv-eye' + (when.crit ? ' crit' : '')} style="text-transform:none;letter-spacing:0;font-size:var(--fs-md)">${when.l}${nx.o ? ' · ' + nx.o : ''}</span></div>
         <div class="next-addr">${nx.r.drone && html`<${DroneIc} s=${18} />`}${nxAddr || 'Indirizzo da indicare'}</div>
         <div class="next-line">${[recLine(nx.r), nx.r.cliente, nx.r.type !== 'radon' && nx.r.stato && progL(progDi(nx.r.stato, nx.r.ora))].filter(Boolean).join(' · ')}</div>
         <div class="next-acts">
@@ -277,17 +277,18 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
 }
 
 /* ---------------- foglio "Nuova attività" ---------------- */
+// colore dell'icona: TIPO_COL del tipo (Fase 2 e Sintetico con un colore proprio, come nei badge)
 const NEW_OPTS = [
-  { k: 'dda1', t: 'dda', patch: { fase: 1 }, l: 'DDA Fase 1', s: 'Sopralluogo, aree REC e documenti', ic: 'leaf', bg: 'var(--warn-soft)', fg: 'var(--warn)' },
-  { k: 'dda2', t: 'dda', patch: { fase: 2 }, l: 'DDA Fase 2', s: 'Campionamento e scheda campioni', ic: 'leaf', bg: 'var(--blue-soft)', fg: 'var(--blue)' },
-  { k: 'map', t: 'mappatura', patch: {}, l: 'Mappatura MCA e FAV', s: 'Censimento e campioni', ic: 'pin', bg: 'color-mix(in srgb, var(--mca) 12%, white)', fg: 'var(--mca)' },
-  { k: 'ra', t: 'ra', patch: {}, l: 'RA · verifica annuale', s: 'Manufatti da mappatura o PMC', ic: 'shield', bg: 'color-mix(in srgb, var(--mca) 12%, white)', fg: 'var(--mca)' },
-  { k: 'radon', t: 'radon', patch: {}, l: 'Campagna radon', s: 'Posa e ritiro dosimetri', ic: 'radon', bg: 'var(--ok-soft)', fg: 'var(--ok)' },
-  { k: 'aria', t: 'aria', patch: {}, l: 'Monitoraggio aria', s: 'Fibre aerodisperse: prelievi, scheda ed esiti', ic: 'air', bg: 'var(--blue-soft)', fg: '#0a6ebd' },
-  { k: 'hsE', t: 'hs', bu: 'hs', patch: { formato: 'esteso' }, l: 'HSE · Esteso', s: '13 schede, rischio e priorità, documentazione fotografica', ic: 'helmet', bg: 'var(--blue-soft)', fg: 'var(--blue)' },
-  { k: 'firme', t: 'firme', bu: 'altro', patch: {}, l: 'Foglio firme', s: 'Presenze, informative, consegne fuori da un’attività', ic: 'sign', bg: 'var(--fill-soft)', fg: 'var(--blue)' },
-  { k: 'hsS', t: 'hs', bu: 'hs', patch: { formato: 'sintetico' }, l: 'HSE · Sintetico', s: 'Checklist Sì/No/N.A., azioni consigliate, rilievo fotografico', ic: 'helmet', bg: 'var(--fill-soft)', fg: 'var(--navy-ink)' },
-  { k: 'vs', t: 'vs', bu: 'hs', patch: {}, l: 'Verbale HSE', s: 'Note con titolo, testo, foto e tag', ic: 'note', bg: 'var(--ok-soft)', fg: 'var(--ok)' },
+  { k: 'dda1', t: 'dda', patch: { fase: 1 }, l: 'DDA Fase 1', s: 'Sopralluogo, aree REC e documenti', ic: 'leaf', c: TIPO_COL.dda },
+  { k: 'dda2', t: 'dda', patch: { fase: 2 }, l: 'DDA Fase 2', s: 'Campionamento e scheda campioni', ic: 'leaf', c: 'var(--blue)' },
+  { k: 'map', t: 'mappatura', patch: {}, l: 'Mappatura MCA e FAV', s: 'Censimento e campioni', ic: 'pin', c: TIPO_COL.mappatura },
+  { k: 'ra', t: 'ra', patch: {}, l: 'RA · verifica annuale', s: 'Manufatti da mappatura o PMC', ic: 'shield', c: TIPO_COL.ra },
+  { k: 'radon', t: 'radon', patch: {}, l: 'Campagna radon', s: 'Posa e ritiro dosimetri', ic: 'radon', c: TIPO_COL.radon },
+  { k: 'aria', t: 'aria', patch: {}, l: 'Monitoraggio aria', s: 'Fibre aerodisperse: prelievi, scheda ed esiti', ic: 'air', c: TIPO_COL.aria },
+  { k: 'hsE', t: 'hs', bu: 'hs', patch: { formato: 'esteso' }, l: 'HSE · Esteso', s: '13 schede, rischio e priorità, documentazione fotografica', ic: 'helmet', c: TIPO_COL.hs },
+  { k: 'firme', t: 'firme', bu: 'altro', patch: {}, l: 'Foglio firme', s: 'Presenze, informative, consegne fuori da un’attività', ic: 'sign', c: TIPO_COL.firme },
+  { k: 'hsS', t: 'hs', bu: 'hs', patch: { formato: 'sintetico' }, l: 'HSE · Sintetico', s: 'Checklist Sì/No/N.A., azioni consigliate, rilievo fotografico', ic: 'helmet', c: 'var(--navy-ink)' },
+  { k: 'vs', t: 'vs', bu: 'hs', patch: {}, l: 'Verbale HSE', s: 'Note con titolo, testo, foto e tag', ic: 'note', c: TIPO_COL.vs },
 ];
 function NewActivity({ records, onClose, onCreate, bu, preset }) {
   useBackClose(onClose);
@@ -316,7 +317,7 @@ function NewActivity({ records, onClose, onCreate, bu, preset }) {
       <div class="sheet-body">
         ${gruppi.map(([gl, opts], gi) => html`<div class="sec-h" style=${gi ? '' : 'margin-top:6px'}><h3>${gl}</h3></div>
         ${opts.map(o => html`<button class=${'opt' + (k === o.k ? ' on' : '') + (o.k === 'ra' && raSoft && k !== 'ra' ? ' alert-soft' : '')} onClick=${() => setK(o.k)} aria-pressed=${k === o.k}>
-          <span class="oi" style=${`background:${o.bg};color:${o.fg}`}><${Icon} n=${o.ic} s=${21} /></span>
+          <span class="oi tint" style=${'--c:' + o.c}><${Icon} n=${o.ic} s=${21} /></span>
           <span class="ot"><b>${o.l}</b><small>${o.k === 'ra' && raNext ? html`${o.s} · <span style=${k === 'ra' ? '' : 'color:var(--blue)'}>prossima scadenza ${new Date(raNext + 'T12:00:00').toLocaleDateString('it-IT', { month: 'short', year: 'numeric' })}</span>` : o.s}</small></span>
           </button>`)}`)}
         <div class="sec-h"><h3>Dati di partenza</h3><span class="hint">facoltativi</span></div>

@@ -101,7 +101,7 @@ function RiepilogoSheet({ r, settings, onClose }) {
   const copiaTF = async () => {
     const parts = [`<p><b>${escH(D.tit)}</b><br>${D.testa.map(escH).join('<br>')}</p><p><b>Sintesi:</b> ${escH(D.sintesi)}</p>`];
     for (const v of D.voci) {
-      parts.push(`<p><b>${escH(v.t)}</b>${v.stato ? ' — <b style="color:' + (v.crit ? '#be222a' : '#1c1c1e') + '">' + escH(v.stato) + '</b>' : ''}${v.righe.map(x => '<br>' + escH(x)).join('')}</p>`);
+      parts.push(`<p><b>${escH(v.t)}</b>${v.stato ? ' — <b style="color:' + (v.crit ? PRINT.critico : PRINT.testo) + '">' + escH(v.stato) + '</b>' : ''}${v.righe.map(x => '<br>' + escH(x)).join('')}</p>`);
       for (const id of v.foto.filter(x => sel.has(x))) { const b = await fotoMail(id, 800); if (b) parts.push(`<p><img src="${await blobDataUrl(b)}" width="400" alt="${escH(nomi[id])}"></p>`); }
     }
     if (D.appunti) parts.push(`<p><b>Appunti:</b> ${escH(D.appunti)}</p>`);

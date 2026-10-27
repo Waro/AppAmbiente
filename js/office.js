@@ -204,7 +204,7 @@ async function riepilogoCampioniDocx(r, s) {
   let tot = 0;
   const NC = ncOf(r);
   const gruppi = [...MATS.map(m => ({ m, list: r.campioni[m.k] || [], titolo: `${m.l} · ${(r.campioni[m.k] || []).length} ${(r.campioni[m.k] || []).length === 1 ? 'campione' : 'campioni'}` })),
-    { m: { l: 'NC', h: '#52555B' }, nc: true, list: NC, titolo: `Manufatti non campionati · ${NC.length}` }];
+    { m: { l: 'NC', h: PRINT.nc }, nc: true, list: NC, titolo: `Manufatti non campionati · ${NC.length}` }];
   for (const { m, list, titolo, nc } of gruppi) {
     if (!list.length) continue;
     tot += list.length;

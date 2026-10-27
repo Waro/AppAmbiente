@@ -149,7 +149,7 @@ function FoglioSheet({ r, f, settings, set, onDelete, onClose }) {
   return html`<div class="sheet-ov" onClick=${e => e.target === e.currentTarget && onClose()}><div class="sheet tall" role="dialog" aria-label=${f.titolo}>
     <div class="sheet-grab"></div>
     <div class="sheet-nav"><button class="btn link" onClick=${onClose}>Fine</button><b>${ro ? 'Foglio chiuso' : 'Foglio firme'}</b>
-      <button class="btn link" style="justify-self:end;font-size:15px" onClick=${scarica}>PDF</button></div>
+      <button class="btn link" style="justify-self:end;font-size:var(--fs-base)" onClick=${scarica}>PDF</button></div>
     <div class="sheet-body">
       ${ro && html`<div class="notice" style="margin-top:0">Chiuso il ${new Date(f.chiuso).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}: i dati e le firme non si modificano più.</div>`}
       <div class="card tight"><div class="grid2">
