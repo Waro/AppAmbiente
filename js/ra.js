@@ -3,11 +3,11 @@
 
 // Classi del DM 06/09/1994, più due casi pratici del sopralluogo periodico
 const RA_STATI = [
-  { k: 'integro', l: 'Integro, non suscettibile di danneggiamento', s: 'Integro', b: 'b-ok', c: '#007e46' },
-  { k: 'suscettibile', l: 'Integro, suscettibile di danneggiamento', s: 'Suscettibile', b: 'b-f1', c: '#a45f00' },
-  { k: 'danneggiato', l: 'Danneggiato', s: 'Danneggiato', b: 'b-nc', c: '#be222a' },
-  { k: 'nonispez', l: 'Non ispezionabile', s: 'Non ispez.', b: 'b-grey', c: '#6f7278' },
-  { k: 'rimosso', l: 'Rimosso o bonificato', s: 'Rimosso', b: 'b-viol', c: '#5b3cb0' },
+  { k: 'integro', l: 'Integro, non suscettibile di danneggiamento', s: 'Integro', b: 'b-ok', c: PRINT.integro, v: 'var(--ok)' },
+  { k: 'suscettibile', l: 'Integro, suscettibile di danneggiamento', s: 'Suscettibile', b: 'b-f1', c: PRINT.suscettibile, v: 'var(--warn)' },
+  { k: 'danneggiato', l: 'Danneggiato', s: 'Danneggiato', b: 'b-nc', c: PRINT.danneggiato, v: 'var(--danger)' },
+  { k: 'nonispez', l: 'Non ispezionabile', s: 'Non ispez.', b: 'b-grey', c: PRINT.nonIspez, v: 'var(--muted)' },
+  { k: 'rimosso', l: 'Rimosso o bonificato', s: 'Rimosso', b: 'b-viol', c: PRINT.rimosso, v: 'var(--t-ra)' },
 ];
 const raStato = k => RA_STATI.find(x => x.k === k);
 // anno di incarico: dal 01/04 al 31/03 dell'anno dopo
@@ -194,7 +194,7 @@ function ManufattoCard({ m, open, toggle, onUpd, onDel }) {
   const set = patch => onUpd(m.id, patch);
   return html`<div class="punto" id=${'m-' + m.id}>
     <button class="punto-h" aria-expanded=${open} onClick=${toggle}>
-      <span class="rtag" style=${st ? `background:${st.c}1f;color:${st.c}` : ''}>${m.codice || '—'}</span>
+      <span class=${'rtag' + (st ? ' tint' : '')} style=${st ? '--c:' + st.v : ''}>${m.codice || '—'}</span>
       <div class="t"><b>${m.ubicazione || 'Ubicazione da indicare'}</b><small>${m.stato && !(m.foto || []).length ? html`<span class="crit">Scatta la foto prima di uscire</span>` : m.descrizione || 'Descrizione da indicare'}</small></div>
       ${st ? html`<span class=${'badge ' + st.b}>${st.s}</span>` : html`<span class="badge st-none">Da verificare</span>`}
       <span class=${'chev' + (open ? ' open' : '')}><${Icon} n="chev" s=${18} /></span></button>
@@ -212,7 +212,7 @@ function ManufattoCard({ m, open, toggle, onUpd, onDel }) {
         ${m.fotoPrec?.length > 0 && html`<div style="margin-top:${(m.statoPrec || m.notePrec) ? '8px' : '0'}">
           <${PhotoStrip} ids=${m.fotoPrec} readonly gallery=${gal(m)} labelOf=${lab(m)} /></div>`}</div>`}
       <div class="fld"><span>Stato di conservazione</span></div>
-      <div class="stati">${RA_STATI.map(s => html`<button class=${m.stato === s.k ? 'on' : ''} style=${'--sc:' + s.c} title=${s.l} onClick=${() => set({ stato: m.stato === s.k ? '' : s.k })}>${s.l}</button>`)}</div>
+      <div class="stati">${RA_STATI.map(s => html`<button class=${m.stato === s.k ? 'on' : ''} style=${'--sc:' + s.v} title=${s.l} onClick=${() => set({ stato: m.stato === s.k ? '' : s.k })}>${s.l}</button>`)}</div>
       <${Area} label="Note" rows=${3} value=${m.note} set=${v => set({ note: v })} placeholder="Condizioni rilevate, interventi consigliati…" />
       <div><div class="fld"><span>Foto (fino a 3)</span></div>
         <${PhotoStrip} ids=${m.foto} max=${3} gallery=${gal(m)} labelOf=${lab(m)} onAdd=${ids => set({ foto: [...m.foto, ...ids] })} onRemove=${async id => { await removeBlob(id); set({ foto: m.foto.filter(f => f !== id) }); }} /></div>
@@ -278,7 +278,7 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
     setF('tutti'); setOpenM({ [m.id]: true }); setTimeout(() => scrollToId('m-' + m.id), 80);
   };
   const upload = () => OD.account ? odSync([r], settings) : sendToOneDrive(r, settings);
-  const labels = [...r.manufatti.map(m => { const st = raStato(m.stato); return { ref: m.id, text: m.codice || 'M', color: st ? st.c : '#52555b' }; }), ...ariaLabels(r)];
+  const labels = [...r.manufatti.map(m => { const st = raStato(m.stato); return { ref: m.id, text: m.codice || 'M', color: st ? st.c : PRINT.nc }; }), ...ariaLabels(r)];
 
   return html`<div class="content form">
     <${DetailHead} eye="Sopralluogo RA" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
@@ -303,8 +303,8 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
         <div><b>${fatti}<small>/${tot}</small></b><span>verificati</span></div>
         <div><b class=${dann ? 'crit' : ''}>${dann}</b><span>danneggiati</span></div>
         <div><b class=${noFoto ? 'crit' : ''}>${noFoto}</b><span>senza foto</span></div></div>
-      ${scad && html`<div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.14);font-size:14px" class="nv2">
-        Verifica entro <b style="color:#fff">${fmtD(scad)}</b> · <span class=${gScad <= 30 && fatti < tot ? 'crit' : ''}>${gScad < 0 ? 'scaduta da ' + -gScad + ' gg' : gScad === 0 ? 'oggi' : 'tra ' + gScad + ' gg'}</span> (fine anno di incarico)</div>`}
+      ${scad && html`<div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.14);font-size:var(--fs-md)" class="nv2">
+        Verifica entro <b style="color:var(--on-dark)">${fmtD(scad)}</b> · <span class=${gScad <= 30 && fatti < tot ? 'crit' : ''}>${gScad < 0 ? 'scaduta da ' + -gScad + ' gg' : gScad === 0 ? 'oggi' : 'tra ' + gScad + ' gg'}</span> (fine anno di incarico)</div>`}
     </div>
 
     ${!r.manufatti.length && prec && html`<div class="card tight alert-soft" style="margin-top:12px">

@@ -94,7 +94,7 @@ function Scanner({ title, target, onCode, onClose }) {
       ${last && html`<div class="scan-last" style=${last.bad ? 'background:rgba(160,20,30,.85)' : ''}>${last.text}</div>`}
     </div>
     <div class="scan-bar">
-      ${zoom && html`<label style="color:#ccc;font-size:12px">Zoom ${zoom.v.toFixed(1)}×
+      ${zoom && html`<label style="color:var(--on-dark);opacity:.8;font-size:var(--fs-xs)">Zoom ${zoom.v.toFixed(1)}×
         <input type="range" min=${zoom.min} max=${zoom.max} step=${zoom.step} value=${zoom.v} onInput=${e => setZ(+e.target.value)} /></label>`}
       <div class="row"><input placeholder="Oppure scrivi il codice" value=${manual} onInput=${e => setManual(e.target.value)} onKeyDown=${e => e.key === 'Enter' && sendManual()} />
         <button class="btn" onClick=${sendManual}>OK</button></div>
@@ -194,7 +194,7 @@ function SignaturePadOverlay({ title, onDone, onClose, allowImage }) {
       const c = cv.current, r = c.getBoundingClientRect(), dpr = Math.max(window.devicePixelRatio || 1, 1);
       const data = pad.current ? pad.current.toData() : null;
       c.width = r.width * dpr; c.height = r.height * dpr; c.getContext('2d').scale(dpr, dpr);
-      if (!pad.current) pad.current = new SignaturePad(c, { penColor: '#0b1f6b', minWidth: 1.2, maxWidth: 3.2, velocityFilterWeight: 0.6 });
+      if (!pad.current) pad.current = new SignaturePad(c, { penColor: PRINT.firma, minWidth: 1.2, maxWidth: 3.2, velocityFilterWeight: 0.6 });
       pad.current.clear(); if (data) pad.current.fromData(data);
     };
     const t = setTimeout(fit, 250); window.addEventListener('resize', fit);

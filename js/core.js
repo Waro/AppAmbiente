@@ -2,19 +2,33 @@
 // Stessa stringa di VERSION in sw.js: aumentala insieme a quella ad ogni aggiornamento.
 // Essendo dentro un file JS servito dalla cache, se l'aggiornamento automatico fallisce
 // questa scritta mostra ancora la versione vecchia — è il modo per accorgersene.
-const APP_VERSION = 'nembo-v46';
+const APP_VERSION = 'nembo-v47';
 
 /* ---------------- tema grafico: "essenziale" (predefinito), "originale" o "scuro" ----------------
    Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno.
    Selettore a 3 vie: sole = Essenziale, ciotola di ramen = Originale, luna = Scuro. */
-const THEMES = { essenziale: { l: 'Essenziale', bar: '#f2f2f7', ic: 'sun' }, originale: { l: 'Originale', bar: '#f7f2f0', ic: 'ramen' }, scuro: { l: 'Scuro', bar: '#0e1116', ic: 'moon' } };
+const THEMES = { essenziale: { l: 'Essenziale', ic: 'sun' }, originale: { l: 'Originale', ic: 'ramen' }, scuro: { l: 'Scuro', ic: 'moon' } };
 function getTheme() { try { const t = localStorage.getItem('nembo_theme'); if (THEMES[t]) return t; } catch (e) {} return 'essenziale'; }
 function applyTheme(t) {
   if (t === 'originale' || t === 'scuro') document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
-  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', THEMES[t].bar);
+  // il colore della barra di sistema è il fondo del tema (--bg in styles.css)
+  const m = document.querySelector('meta[name="theme-color"]'); const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(); if (m && bg) m.setAttribute('content', bg);
 }
 function setTheme(t) { try { localStorage.setItem('nembo_theme', t); } catch (e) {} applyTheme(t); }
 applyTheme(getTheme());
+
+/* ---------------- design system (Rilievo) ----------------
+   Sullo schermo si usano solo i token di styles.css (colori, testo, raggi, spazi).
+   TIPO_COL: il colore di ogni tipo di attività, uguale in menu, «Nuova attività», programmazione e home.
+   PRINT: i colori fissi scritti su planimetrie, PDF, Word, Excel ed email; non cambiano con il tema. */
+const TIPO_COL = { dda: 'var(--t-dda)', mappatura: 'var(--t-map)', ra: 'var(--t-ra)', radon: 'var(--t-radon)', aria: 'var(--t-aria)',
+  hs: 'var(--t-hse)', vs: 'var(--t-vs)', firme: 'var(--t-firme)', app: 'var(--t-app)' };
+const PRINT = {
+  integro: '#007e46', suscettibile: '#a45f00', danneggiato: '#be222a', nonIspez: '#6f7278', rimosso: '#5b3cb0', nc: '#52555b',
+  aria: '#0a6ebd', ariaOver: '#be222a', radon: '#0061c5', rec: '#b7791f',
+  terreni: '#855831', acque: '#00708e', mca: '#a21f8f', fav: '#a45f00', altro: '#0076d3',
+  firma: '#0b1f6b', testo: '#1c1c1e', critico: '#be222a',
+};
 const { h, render } = preact;
 const { useState, useEffect, useRef, useMemo, useCallback, useErrorBoundary } = preactHooks;
 const html = htm.bind(h);
@@ -320,7 +334,7 @@ function PhotoStrip({ ids = [], max = 10, onAdd, onRemove, readonly, gallery, la
   return html`<div class="photos">
     ${ids.map(id => html`<${Thumb} key=${id} id=${id} onOpen=${() => setView(Math.max(0, gal.indexOf(id)))} onRemove=${readonly ? null : () => { if (confirm('Eliminare la foto?')) onRemove(id); }} />`)}
     ${!readonly && ids.length < max && html`<button class="addph" aria-label="Aggiungi foto" onClick=${() => camOpen(inp.current)}>
-      ${busy ? html`<div style="display:grid;place-items:center;gap:3px"><div class="spin" />${typeof busy === 'string' && html`<small style="font-size:10.5px;font-weight:700">${busy}</small>`}</div>` : html`<${Icon} n="camera" s=${22} />`}</button>
+      ${busy ? html`<div style="display:grid;place-items:center;gap:3px"><div class="spin" />${typeof busy === 'string' && html`<small style="font-size:var(--fs-2xs);font-weight:700">${busy}</small>`}</div>` : html`<${Icon} n="camera" s=${22} />`}</button>
       ${!busy && html`<button class="addph gal" aria-label="Scegli dalla galleria" title="Scegli dalla galleria" onClick=${() => galOpen(inp.current)}><${Icon} n="image" s=${20} /></button>`}`}
     <input ref=${inp} type="file" accept="image/*" capture="environment" multiple hidden onChange=${pick} />
     ${view !== null && html`<${Viewer} ids=${gal} index=${view} labelOf=${labelOf} onClose=${() => setView(null)} />`}
@@ -426,7 +440,7 @@ function FileList({ items = [], onAdd, onRemove, accept = '*/*', label = 'Allega
   return html`<div class="stack">
     ${items.map(it => html`<div class="row" key=${it.id}>
       <span class="sq plain"><${Icon} n="file" s=${18} /></span>
-      <button class="tb-grow" style="background:none;border:0;text-align:left;font-size:13.5px;padding:0" onClick=${() => open(it)}><div>${it.nome}</div></button>
+      <button class="tb-grow" style="background:none;border:0;text-align:left;font-size:var(--fs-md);padding:0" onClick=${() => open(it)}><div>${it.nome}</div></button>
       <button class="x" aria-label="Rimuovi" onClick=${() => { if (confirm('Rimuovere ' + it.nome + '?')) onRemove(it); }}>×</button></div>`)}
     <button class="btn dashed" onClick=${() => inp.current.click()}><${Icon} n="paper" s=${17} /> ${label}</button>
     <input ref=${inp} type="file" accept=${accept} multiple hidden onChange=${pick} />
@@ -649,7 +663,7 @@ function collectTags(o, cnt = {}) {
   }
   return cnt;
 }
-// colore del tag: tavolozza di colori diversi tra loro e da quelli dei tipi di attività (MCA, FAV, radon, aria, RA, HSE).
+// colore del tag (il testo tende verso --text, così resta leggibile anche nel tema Scuro): tavolozza di colori diversi tra loro e da quelli dei tipi di attività (MCA, FAV, radon, aria, RA, HSE).
 // Ogni tag ha il suo colore: si parte dal nome e, se il colore è già preso da un altro tag, si passa al successivo.
 const TAG_PAL = ['#0f8b8d', '#5b4fd6', '#c2416b', '#6b8e23', '#8b5e3c', '#e07a5f', '#3d5a80', '#0ca678', '#e5007d', '#b08968', '#5e548e', '#495057', '#2b9348', '#d1495b', '#00798c', '#9a6324'];
 let _tagCol = {};
@@ -664,7 +678,7 @@ function setTagList(list) {
   });
 }
 function tagColor(t) { return _tagCol[String(t).toLowerCase()] || TAG_PAL[tagHash(t) % TAG_PAL.length]; }
-const tagStyle = (t, on) => { const c = tagColor(t); return on ? `background:${c};color:#fff` : `background:color-mix(in srgb, ${c} 14%, var(--card));color:${c}`; };
+const tagStyle = (t, on) => { const c = tagColor(t); return on ? `background:color-mix(in srgb, ${c} 75%, #000);color:var(--on-dark)` : `background:color-mix(in srgb, ${c} 14%, var(--card));color:color-mix(in srgb, ${c} 60%, var(--text))`; };
 async function knownTags() { const cnt = collectTags(await DB.all()); const L = Object.keys(cnt); setTagList(L); return L.sort((a, b) => cnt[b] - cnt[a] || a.localeCompare(b, 'it')); }
 function TagPicker({ tags = [], set, label = 'Tag' }) {
   const [open, setOpen] = useState(false); const [q, setQ] = useState(''); const [known, setKnown] = useState([]);
@@ -702,8 +716,8 @@ function DetailHead({ eye, title, sub, saved, onClose }) {
 function Ring({ p = 0, size = 96, w = 9, color = 'var(--blue)', track, children }) {
   const r = (size - w) / 2, c = 2 * Math.PI * r, v = Math.max(0, Math.min(1, p || 0));
   return html`<svg width=${size} height=${size} viewBox=${`0 0 ${size} ${size}`} style="transform:rotate(-90deg);display:block" aria-hidden="true">
-    <circle cx=${size / 2} cy=${size / 2} r=${r} fill="none" stroke=${track || `color-mix(in srgb, ${color} 14%, transparent)`} stroke-width=${w} />
-    ${v > 0 && html`<circle cx=${size / 2} cy=${size / 2} r=${r} fill="none" stroke=${color} stroke-width=${w} stroke-linecap="round" stroke-dasharray=${`${c * v} ${c}`} />`}${children}</svg>`;
+    <circle cx=${size / 2} cy=${size / 2} r=${r} fill="none" style=${'stroke:' + (track || `color-mix(in srgb, ${color} 14%, transparent)`)} stroke-width=${w} />
+    ${v > 0 && html`<circle cx=${size / 2} cy=${size / 2} r=${r} fill="none" style=${'stroke:' + color} stroke-width=${w} stroke-linecap="round" stroke-dasharray=${`${c * v} ${c}`} />`}${children}</svg>`;
 }
 function Toggle({ on, set, label }) {
   return html`<button class=${'tgl' + (on ? ' on' : '')} role="switch" aria-checked=${!!on} aria-label=${label} onClick=${() => set(!on)}></button>`;

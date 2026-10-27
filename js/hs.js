@@ -74,7 +74,7 @@ function FrasiSheet({ gruppo, onPick, onClose }) {
     <div class="sheet-body">
       <div class="sec-h" style="margin-top:4px"><h3>${gruppo}</h3><span class="hint">tocca per aggiungere</span></div>
       <div class="list">${[...(HS_FRASI[gruppo] || []), ...lista].map((f, i) => html`<div class="prow" key=${i}>
-        <button class="t" style="background:none;border:0;text-align:left;padding:0;font-size:15px" onClick=${() => { onPick(f); onClose(); }}>${f}</button>
+        <button class="t" style="background:none;border:0;text-align:left;padding:0;font-size:var(--fs-base)" onClick=${() => { onPick(f); onClose(); }}>${f}</button>
         ${i >= (HS_FRASI[gruppo] || []).length && html`<button class="x" aria-label="Elimina frase" onClick=${() => salva({ ...mie, [gruppo]: lista.filter(x => x !== f) })}>×</button>`}</div>`)}</div>
       <div class="sec-h"><h3>Aggiungi una tua frase</h3></div>
       <div class="card tight"><textarea class="inp" rows="2" value=${nuova} onInput=${e => setNuova(e.target.value)} placeholder="Resta su questo dispositivo"></textarea>
@@ -90,7 +90,7 @@ function RiformulaSheet({ prop, testo, onApply, onClose }) {
     <div class="sheet-nav"><button class="btn link" onClick=${onClose}>Annulla</button><b>Riformulazione</b><span></span></div>
     <div class="sheet-body">
       ${!prop.sicura && html`<div class="notice" style="margin-top:0">La nota è ambigua: controlla che descriva davvero una criticità prima di applicare.</div>`}
-      <div class="card tight" style="margin-top:12px"><div class="lt-eye" style="margin-bottom:4px">La tua nota</div><div style="font-size:15px">${testo}</div></div>
+      <div class="card tight" style="margin-top:12px"><div class="lt-eye" style="margin-bottom:4px">La tua nota</div><div style="font-size:var(--fs-base)">${testo}</div></div>
       <label class="fld"><span>Situazione rilevata</span><textarea rows="5" value=${sit} onInput=${e => setSit(e.target.value)}></textarea></label>
       ${prop.mig && html`<label class="fld" style="margin-top:12px"><span>Attività di miglioramento (in coda a quella presente)</span><textarea rows="5" value=${mig} onInput=${e => setMig(e.target.value)}></textarea></label>`}
       <button class="btn pri block" style="margin-top:14px" onClick=${() => { onApply(sit.trim(), (mig || '').trim()); onClose(); }}>Applica</button>
@@ -347,7 +347,7 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
       <button class="btn sm" disabled=${busy === 'imp'} onClick=${() => imp.current.click()}>${busy === 'imp' ? html`<div class="spin" />` : 'Importa'}</button></div></div>`}
     <div class="sec-h"><h3>Sezioni</h3><span class="hint">${HS_FMT[r.formato]}</span></div>
     <div class="list">${secs.map(s => html`<button class="rcard hs-sec" key=${s.k} onClick=${() => setSec(s.k)}>
-      <div class="r1"><span class="ttl" style="margin:0;font-size:16px">${s.l}</span><span class="dt">${hsSecStato(r, s)}</span></div></button>`)}</div>
+      <div class="r1"><span class="ttl" style="margin:0;font-size:var(--fs-lg)">${s.l}</span><span class="dt">${hsSecStato(r, s)}</span></div></button>`)}</div>
 `;
   const archivio = html`    <div class="sec-h"><h3>Word</h3></div>
     <div class="card">
@@ -459,7 +459,7 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
     <div class="sec-h"><h3>Foto di inquadramento</h3><span class="hint">Sotto il capitolo 8</span></div>
     <div class="card"><${PhotoStrip} ids=${(r.cgFoto || []).map(o => o.id)} max=${8} onAdd=${ids => up(q => ({ ...q, cgFoto: [...(q.cgFoto || []), ...ids.map(id => ({ id, w: 16, h: 11 }))] }))}
       onRemove=${async id => { await removeBlob(id); up(q => ({ ...q, cgFoto: (q.cgFoto || []).filter(o => o.id !== id) })); }} />
-      <p class="lead" style="margin:8px 0 0;font-size:13px">Restano nel report anche nei sopralluoghi successivi.</p></div>`;
+      <p class="lead" style="margin:8px 0 0;font-size:var(--fs-sm)">Restano nel report anche nei sopralluoghi successivi.</p></div>`;
   else if (S && S.k === 'azioni') body = html`<div>
     ${(r.azioni || []).map((a, i) => { const set = patch => up(p => ({ ...p, azioni: p.azioni.map((x, j) => j === i ? { ...x, ...patch } : x) })); return html`<div class="card" key=${i}>
       <div class="row"><label class="fld" style="max-width:120px"><span>Codice</span><input class="mono" list="hs-codes" value=${a.cod} onInput=${e => set({ cod: e.target.value })} placeholder="es. 3.2" /></label>

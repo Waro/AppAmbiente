@@ -7,11 +7,11 @@ const DDA_CHECK = [
 ];
 const CHECK_ST = { presente: ['Presente', 'st-pres'], assente: ['Assente', 'st-ass'], nv: ['Non verificabile', 'st-nv'] };
 const MATS = [
-  { k: 'terreni', l: 'Terreni', c: 'var(--terreni)', h: '#855831', auto: null },
-  { k: 'acque', l: 'Acque', c: 'var(--acque)', h: '#00708e', auto: null },
-  { k: 'mca', l: 'MCA', c: 'var(--mca)', h: '#a21f8f', auto: 'A' },
-  { k: 'fav', l: 'FAV', c: 'var(--fav)', h: '#a45f00', auto: 'F' },
-  { k: 'altro', l: 'Altro', c: 'var(--altro)', h: '#0076d3', auto: null },
+  { k: 'terreni', l: 'Terreni', c: 'var(--terreni)', h: PRINT.terreni, auto: null },
+  { k: 'acque', l: 'Acque', c: 'var(--acque)', h: PRINT.acque, auto: null },
+  { k: 'mca', l: 'MCA', c: 'var(--mca)', h: PRINT.mca, auto: 'A' },
+  { k: 'fav', l: 'FAV', c: 'var(--fav)', h: PRINT.fav, auto: 'F' },
+  { k: 'altro', l: 'Altro', c: 'var(--altro)', h: PRINT.altro, auto: null },
 ];
 const CSC = [
   { p: 'Idrocarburi C>12', u: 'mg/kg', A: 50, B: 750, m: 'terreni' },
@@ -193,7 +193,7 @@ function DdaList({ records, open, create, activeId, acts }) {
     let sum, lines = [];
     if (r.fase === 1) {
       sum = `${r.recs.length} ${r.recs.length === 1 ? 'area' : 'aree'} REC · ${r.documenti.length} documenti`;
-      lines = r.recs.slice(0, 3).map(x => html`<div class="l"><span class="dot" style="background:#dfa11a"></span><span><b>${x.nome}</b>${x.descrizione ? ': ' + x.descrizione : ''}</span></div>`);
+      lines = r.recs.slice(0, 3).map(x => html`<div class="l"><span class="dot" style="background:var(--rec)"></span><span><b>${x.nome}</b>${x.descrizione ? ': ' + x.descrizione : ''}</span></div>`);
     } else {
       const cs = allCamp(r);
       const byM = MATS.filter(m => r.campioni[m.k].length).map(m => r.campioni[m.k].length + ' ' + m.l).join(', ');
@@ -237,7 +237,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
   useEffect(() => { const h = e => { const c = allCamp(r).find(x => 's-' + x.id === e.detail); if (c) setTab(c.k); }; addEventListener('nembo-goto', h); return () => removeEventListener('nembo-goto', h); }, [r]);
   const importInp = useRef();
   const planLabels = [
-    ...r.recs.map(x => ({ ref: x.id, text: x.nome || 'REC', color: '#b7791f' })),
+    ...r.recs.map(x => ({ ref: x.id, text: x.nome || 'REC', color: PRINT.rec })),
     ...campPlanLabels(r, MATS),
   ];
   const plans = r.planimetrie || [];
@@ -349,7 +349,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
 
       <div class="sec-h"><h3>Aree di potenziale contaminazione · ${r.recs.length}</h3></div>
       ${r.recs.map(x => html`<div class="card" key=${x.id} id=${'rec-' + x.id}>
-        <div class="row" style="margin-bottom:8px"><span class="mdot" style="background:#dfa11a"></span>
+        <div class="row" style="margin-bottom:8px"><span class="mdot" style="background:var(--rec)"></span>
           <input class="inp" style="font-weight:700" value=${x.nome} onInput=${e => updRec(x.id, { nome: e.target.value })} aria-label="Nome area" />
           <button class="x" aria-label="Elimina area" onClick=${() => delRec(x)}>×</button></div>
         <textarea class="inp" rows="2" placeholder="Descrizione" value=${x.descrizione} onInput=${e => updRec(x.id, { descrizione: e.target.value })}></textarea>

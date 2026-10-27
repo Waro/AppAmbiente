@@ -245,8 +245,8 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
     <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'punti', l: 'Punti', n: r.punti.length }, { k: 'firme', l: 'Firme', n: m.filter(x => x.confermato).length }, { k: 'file', l: 'File' }]} />
     ${T === 'anag' && html`    <div class="card-navy"><div class="row" style="gap:18px;align-items:center">
       <div class="ring-wrap" style="width:112px;height:112px">
-        <${Ring} p=${gTot ? gNow / gTot : stato === 'esiti' || stato === 'terminata' ? 1 : 0} size=${112} w=${10} color="#38a3f0" track="rgba(255,255,255,.14)" />
-        <div class="ring-c">${gTot ? html`<b>${gNow}</b><span>di ${gTot} gg</span>` : html`<b style="font-size:16px">${stato === 'da_iniziare' ? 'Da posare' : stato === 'esiti' ? 'Esiti' : 'Fine'}</b>`}</div>
+        <${Ring} p=${gTot ? gNow / gTot : stato === 'esiti' || stato === 'terminata' ? 1 : 0} size=${112} w=${10} color="var(--blue-sky)" track="rgba(255,255,255,.14)" />
+        <div class="ring-c">${gTot ? html`<b>${gNow}</b><span>di ${gTot} gg</span>` : html`<b style="font-size:var(--fs-lg)">${stato === 'da_iniziare' ? 'Da posare' : stato === 'esiti' ? 'Esiti' : 'Fine'}</b>`}</div>
       </div>
       <div class="kv" style="flex:1;min-width:0">
         <div><span class="nv-eye">${scad ? 'Ritiro previsto' : stato === 'da_iniziare' ? 'Posa' : 'Stato'}</span><b class=${scad && daysBetween(today(), scad) < 0 ? 'crit' : ''}>${scad ? fmtD(scad) : stato === 'da_iniziare' ? (m[0].data ? fmtD(m[0].data) : 'da programmare') : STATI[stato][0]}</b></div>
@@ -254,8 +254,8 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
       </div></div></div>
     ${scad && html`<div class="card tight alert-soft"><div class="row" style="gap:12px">
       <span class="sq" style="width:36px;height:36px"><${Icon} n="bell" s=${18} /></span>
-      <div class="tb-grow"><div style="font-size:15.5px;font-weight:600;white-space:normal">Avviso al conduttore il ${fmtD(avviso)}</div>
-        <div style="font-size:13.5px;color:var(--muted);white-space:normal">Una settimana prima del ritiro, nelle notifiche</div></div>
+      <div class="tb-grow"><div style="font-size:var(--fs-lg);font-weight:600;white-space:normal">Avviso al conduttore il ${fmtD(avviso)}</div>
+        <div style="font-size:var(--fs-md);color:var(--muted);white-space:normal">Una settimana prima del ritiro, nelle notifiche</div></div>
       <${Toggle} on=${!!r.promemoria} set=${v => up({ promemoria: v })} label="Promemoria per il conduttore" /></div></div>`}
 
     <div class="card"><div class="grid2">
@@ -303,7 +303,7 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
       </div>`}
 
     <div class="sec-h" id=${'plan-' + r.id}><h3>Planimetrie</h3><span class="hint">Disegno ed etichette dei punti</span></div>
-    <div class="card"><${PlanList} items=${r.planimetrie || []} labels=${r.punti.map((p, i) => ({ ref: p.id, text: 'R' + (i + 1), color: '#0061c5', piano: p.piano || '' }))}
+    <div class="card"><${PlanList} items=${r.planimetrie || []} labels=${r.punti.map((p, i) => ({ ref: p.id, text: 'R' + (i + 1), color: PRINT.radon, piano: p.piano || '' }))}
       onAdd=${p => up(q => ({ ...q, planimetrie: [...(q.planimetrie || []), p] }))}
       onUpdate=${(id, patch) => up(q => ({ ...q, planimetrie: (q.planimetrie || []).map(x => x.id === id ? { ...x, ...patch } : x) }))}
       onRemove=${async p => { for (const b of blobIds(p)) await removeBlob(b); up(q => ({ ...q, planimetrie: (q.planimetrie || []).filter(x => x.id !== p.id) })); }} /></div>
@@ -327,7 +327,7 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
           <div class="grid2">
             <${Inp} label="Data" type="date" value=${mm.data} disabled=${ro} set=${v => setM(i, { data: v })} />
             <${OraDurata} ora=${mm.ora} durata=${mm.durata} stato=${mm.stato} tipo="radon" disabled=${ro} set=${p => setM(i, p)} />
-            <div class="fld"><span>${prevista ? 'Previsto' : ''}</span>${prevista && html`<div style="padding:10px 0;font-size:14px">${fmtD(prevista)}</div>`}</div>
+            <div class="fld"><span>${prevista ? 'Previsto' : ''}</span>${prevista && html`<div style="padding:10px 0;font-size:var(--fs-md)">${fmtD(prevista)}</div>`}</div>
           </div>
           <div class="who">TECNICO</div>
           <div class="grid2">
