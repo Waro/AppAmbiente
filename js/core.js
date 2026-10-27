@@ -17,7 +17,7 @@ function applyTheme(t) {
 function setTheme(t) { try { localStorage.setItem('nembo_theme', t); } catch (e) {} applyTheme(t); }
 applyTheme(getTheme());
 
-/* ---------------- design system ----------------
+/* ---------------- design system (Rilievo) ----------------
    Sullo schermo si usano solo i token di styles.css (colori, testo, raggi, spazi).
    TIPO_COL: il colore di ogni tipo di attività, uguale in menu, «Nuova attività», programmazione e home.
    PRINT: i colori fissi scritti su planimetrie, PDF, Word, Excel ed email; non cambiano con il tema. */
