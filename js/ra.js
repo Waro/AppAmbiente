@@ -357,7 +357,7 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
       center=${html`<${OdBtn} r=${r} settings=${settings} />`}
       gruppi=${[['Manufatti', [
         prec && { ic: 'clock', l: 'Riprendi dall’anno precedente', s: prec.codice + ' · ' + fmtD(prec.data), fn: riprendi },
-        { ic: 'file', l: 'Carica file JSON', s: 'Mappatura o PMC: si aggiungono solo i codici nuovi', fn: () => imp.current.click() },
+        { ic: 'file', l: 'Carica file JSON', s: 'Mappatura, PMC o DDA Fase 2: si aggiungono solo i codici nuovi', fn: () => imp.current.click() },
         { ic: 'paper', l: 'Scarica il modello JSON', fn: () => downloadBlob(new Blob([JSON.stringify(RA_TEMPLATE, null, 1)], { type: 'application/json' }), 'Nembo_modello_RA.json') },
         ...fonti.slice(0, 4).map(x => ({ ic: 'pin', l: 'Manufatti dai campioni MCA di ' + fonteNome(x), s: [x.cliente, placeLabel(x), x.campioni.mca.length + ' MCA'].filter(Boolean).join(' · '), fn: () => { setT('man'); daCampioni(x); } }))]],
         opzArchivio({ r, settings, onDelete, elimina: 'Elimina il sopralluogo', firme: !firmeOn && (() => { up(q => prepFirme({ ...q }, settings, true)); setT('firme'); }) })]} />
