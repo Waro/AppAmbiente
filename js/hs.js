@@ -488,7 +488,7 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
       onRemove=${async d => { await removeBlob(d.blobId); up(p => ({ ...p, documenti: p.documenti.filter(x => x.id !== d.id) })); }} /></div>`;
 
   return html`<div class="content form" ref=${root}>
-    <${DetailHead} eye=${'HSE · ' + HS_FMT[r.formato]} title=${S0 && T === 'main' ? S0.l : r.codice} sub=${S0 && T === 'main' ? [r.codice, r.sito].filter(Boolean).join(' · ') : [r.commessa, r.cliente, placeAddr(r) || r.sito].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
+    <${DetailHead} conclusa=${r.conclusa} eye=${'HSE · ' + HS_FMT[r.formato]} title=${S0 && T === 'main' ? S0.l : r.codice} sub=${S0 && T === 'main' ? [r.codice, r.sito].filter(Boolean).join(' · ') : [r.commessa, r.cliente, placeAddr(r) || r.sito].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
     <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'main', l: 'Sezioni' }, { k: 'file', l: 'File' }]} />
     ${T === 'anag' ? html`${body}${archivio}` : T === 'file' ? html`<${FileTab} r=${r} up=${up} settings=${settings} />` : html`
     ${S && html`<button class="btn link" style="margin:-8px 0 8px -4px" onClick=${() => setSec(null)}><${Icon} n="back" s=${18} /> Indice delle sezioni</button>`}
@@ -503,6 +503,6 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
           { ic: 'share', l: OD.account ? 'Carica su OneDrive' : 'Invia foto e Word a OneDrive', fn: upload },
           { ic: 'paper', l: 'Importa report precedente', s: 'Word o JSON della vecchia app', fn: () => imp.current.click() },
           { ic: 'plus', l: 'Nuovo report per il prossimo sopralluogo', fn: nextYear }]],
-        opzArchivio({ r, settings, onDelete, elimina: 'Elimina il report' })].filter(Boolean)} />
+        opzArchivio({ r, settings, onDelete, up, elimina: 'Elimina il report' })].filter(Boolean)} />
   </div>`;
 }

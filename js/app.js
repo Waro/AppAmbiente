@@ -875,6 +875,7 @@ function App() {
     ${!wide && isTop && html`<${TabBar} route=${route} tab=${tab} bu=${settings.buDefault} />`}
     ${sheet && html`<${NewActivity} records=${records} preset=${preset} bu=${sheet === 'hs' ? 'hs' : settings.buDefault} onClose=${() => { setSheet(false); setPreset(null); }} onCreate=${(t, patch) => { window.addEventListener('popstate', () => setTimeout(() => create(t, patch), 0), { once: true }); setSheet(false); }} />`}
     <${ShareAsk} />
+    <${ConcludiAsk} />
     <${Progress} />
     <${CameraHost} />
     ${novita && html`<${NovitaSheet} list=${novita} go=${go} onClose=${() => setNovita(null)} />`}

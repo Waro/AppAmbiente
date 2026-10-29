@@ -241,7 +241,7 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
   const over = r.punti.filter(p => { const v = mediaPunto(r, p); return v != null && v > settings.livelloRif; }).length;
 
   return html`<div class="content form">
-    <${DetailHead} eye=${'Campagna radon · ' + STATI[stato][0]} title=${r.commessa || 'Nuova campagna'} sub=${[[r.cliente, r.insegna].filter(Boolean).join(' · '), placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
+    <${DetailHead} conclusa=${r.conclusa} eye=${'Campagna radon · ' + STATI[stato][0]} title=${r.commessa || 'Nuova campagna'} sub=${[[r.cliente, r.insegna].filter(Boolean).join(' · '), placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
     <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'punti', l: 'Punti', n: r.punti.length }, { k: 'firme', l: 'Firme', n: m.filter(x => x.confermato).length }, { k: 'file', l: 'File' }]} />
     ${T === 'anag' && html`    <div class="card-navy"><div class="row" style="gap:18px;align-items:center">
       <div class="ring-wrap" style="width:112px;height:112px">
@@ -366,7 +366,7 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
         : html`<${OdBtn} r=${r} settings=${settings} />`}
       gruppi=${[['Documenti', [
         T !== 'punti' && !lockF2 && { ic: 'scan', l: 'Scansiona i dosimetri', fn: () => { setT('punti'); scanSeq(); } }]],
-        opzArchivio({ r, settings, onDelete, elimina: 'Elimina la campagna' })]} />
+        opzArchivio({ r, settings, onDelete, up, elimina: 'Elimina la campagna' })]} />
 
     ${scan && html`<${Scanner} title=${scan.title} target=${scan.target} onCode=${scan.onCode} onClose=${() => { if (scan.onEnd) scan.onEnd(); setScan(null); }} />`}
     ${sig && html`<${SignaturePadOverlay} title=${sig.title} allowImage=${sig.who === 'firmaTecnico'} onClose=${() => setSig(null)} onDone=${url => setM(sig.i, { [sig.who]: url })} />`}

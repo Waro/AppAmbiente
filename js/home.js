@@ -6,6 +6,7 @@ const isoDay = d => { const z = new Date(d); z.setMinutes(z.getMinutes() - z.get
 
 // l’attività ha già dati raccolti sul campo?
 function recDone(r) {
+  if (r.conclusa) return true; // conclusa con «Concludi l'attività», anche se manca qualcosa
   if (r.type === 'dda') return r.fase === 1 ? (r.recs.length > 0 || Object.keys(r.check || {}).length > 0) : allCamp(r).length > 0;
   if (r.type === 'mappatura') return allCampMap(r).length > 0;
   if (r.type === 'ra') return r.manufatti.length > 0 && r.manufatti.every(m => m.stato);
@@ -29,7 +30,7 @@ function photoItems(r) {
 }
 // scadenza della verifica RA: fine dell'anno di incarico, non la data del sopralluogo precedente
 function raScadenza(r) { return r.incaricoAl || ''; }
-const raOpen = r => !(r.manufatti.length && r.manufatti.every(m => m.stato));
+const raOpen = r => !r.conclusa && !(r.manufatti.length && r.manufatti.every(m => m.stato));
 
 function recLine(r) {
   if (r.type === 'dda') {
@@ -51,6 +52,7 @@ function recLine(r) {
 function nextVisit(records, od) {
   const t = today(), c = [];
   for (const r of records) {
+    if (r.conclusa) continue;
     if (r.type === 'radon') {
       const s = radonStato(r);
       if (s !== 'da_iniziare' && s !== 'fase1' && s !== 'fase2') continue;
@@ -102,7 +104,7 @@ function daCompletare(records, od) {
     const d = r.type === 'radon' ? ((r.momenti || []).filter(m => m.confermato && m.data <= t).map(m => m.data).sort().pop() || '') : r.data;
     if (!d || d > t || d < from) continue;
     const ph = photoItems(r), miss = ph.tot - ph.ok, st = odStatus(od, r);
-    if (r.type !== 'hs' && miss > 0) out.push({ r, d, crit: true, ic: 'camera', sub: `${TIPO_NOME(r)} · ${miss} ${miss === 1 ? 'elemento' : 'elementi'} senza foto` });
+    if (r.type !== 'hs' && miss > 0 && !r.conclusa) out.push({ r, d, crit: true, ic: 'camera', sub: `${TIPO_NOME(r)} · ${miss} ${miss === 1 ? 'elemento' : 'elementi'} senza foto` });
     else if (st !== 'ok' && (recDone(r) || r.data < t)) out.push({ r, d, ic: 'share', sub: `${TIPO_NOME(r)} · ${st === 'stale' ? 'modificata dopo l\'invio: da ricaricare' : st === 'err' ? 'invio incompleto: riprova' : 'da caricare su OneDrive'}` });
     else if (!recDone(r) && r.data < t) out.push({ r, d, ic: 'file', sub: `${TIPO_NOME(r)} · ${recLine(r)}` });
   }

@@ -105,7 +105,7 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
       onRemove=${async p => { for (const b of blobIds(p)) await removeBlob(b); up(q => ({ ...q, planimetrie: (q.planimetrie || []).filter(x => x.id !== p.id) })); }} /></div>`;
 
   return html`<div class="content form">
-    <${DetailHead} eye="Mappatura MCA e FAV" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
+    <${DetailHead} conclusa=${r.conclusa} eye="Mappatura MCA e FAV" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
     <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'camp', l: 'Campioni', n: allCampMap(r).length }, firmeOn && { k: 'firme', l: 'Firme', n: (r.fogli || []).length }, { k: 'file', l: 'File' }].filter(Boolean)} />
     ${T === 'anag' && html`<div class="card"><div class="grid2">
       <${Inp} cls="full" label="Commessa - progetto" value=${r.commessa} set=${v => up({ commessa: v })} imp=${impOf(r, 'commessa')} placeholder="es. 000/26" />
@@ -171,6 +171,6 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
         ['Dati', [
           { ic: 'file', l: 'Importa l’indagine precedente', s: 'JSON di Fase 2 o di mappatura: campioni MCA e FAV, NC e planimetrie', fn: () => importInp.current.click() },
           { ic: 'paper', l: 'Scarica il modello JSON', fn: downloadDda2Template }]],
-        opzArchivio({ r, settings, onDelete, elimina: 'Elimina la mappatura', firme: !firmeOn && (() => { up(q => prepFirme({ ...q }, settings, true)); setT('firme'); }) })]} />
+        opzArchivio({ r, settings, onDelete, up, elimina: 'Elimina la mappatura', firme: !firmeOn && (() => { up(q => prepFirme({ ...q }, settings, true)); setT('firme'); }) })]} />
   </div>`;
 }

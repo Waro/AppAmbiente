@@ -442,7 +442,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
   const sup = superamenti(r);
 
   return html`<div class="content form">
-    <${DetailHead} eye=${'DDA · Fase ' + r.fase} title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
+    <${DetailHead} conclusa=${r.conclusa} eye=${'DDA · Fase ' + r.fase} title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
     <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'sop', l: 'Sopralluogo', n: r.recs.length }, { k: 'camp', l: 'Campioni', n: allCamp(r).length }, firmeOn && { k: 'firme', l: 'Firme', n: (r.fogli || []).length }, { k: 'file', l: 'File' }].filter(Boolean)} />
     ${T === 'anag' && html`<div class="card"><div class="grid2">
       <${Inp} cls="full" label="Commessa - progetto" value=${r.commessa} set=${v => up({ commessa: v })} imp=${impOf(r, 'commessa')} placeholder="es. 000/26" />
@@ -604,6 +604,6 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
           { ic: 'file', l: 'Importa da un DDA precedente', s: 'JSON di Fase 1 o Fase 2: riempie solo i campi ancora vuoti', fn: () => importInp.current.click() },
           { ic: 'paper', l: 'Scarica il modello JSON Fase 1', fn: downloadDda1Template },
           { ic: 'paper', l: 'Scarica il modello JSON Fase 2', fn: downloadDda2Template }]],
-        opzArchivio({ r, settings, onDelete, elimina: 'Elimina l’indagine', firme: !firmeOn && (() => { up(q => prepFirme({ ...q }, settings, true)); setT('firme'); }) })]} />
+        opzArchivio({ r, settings, onDelete, up, elimina: 'Elimina l’indagine', firme: !firmeOn && (() => { up(q => prepFirme({ ...q }, settings, true)); setT('firme'); }) })]} />
   </div>`;
 }

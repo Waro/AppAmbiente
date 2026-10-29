@@ -292,7 +292,7 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
   const labels = [...r.manufatti.map(m => { const st = raStato(m.stato); return { ref: m.id, text: m.codice || 'M', color: st ? st.c : PRINT.nc }; }), ...ariaLabels(r)];
 
   return html`<div class="content form">
-    <${DetailHead} eye="Sopralluogo RA" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
+    <${DetailHead} conclusa=${r.conclusa} eye="Sopralluogo RA" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
     <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'man', l: 'Manufatti', n: tot }, firmeOn && { k: 'firme', l: 'Firme', n: (r.fogli || []).length }, { k: 'file', l: 'File' }].filter(Boolean)} />
     ${T === 'anag' && html`<div class="card"><div class="grid2">
       <${Inp} cls="full" label="Commessa" value=${r.commessa} set=${v => up({ commessa: v })} imp=${impOf(r, 'commessa')} />
@@ -360,6 +360,6 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
         { ic: 'file', l: 'Carica file JSON', s: 'Mappatura, PMC o DDA Fase 2: si aggiungono solo i codici nuovi', fn: () => imp.current.click() },
         { ic: 'paper', l: 'Scarica il modello JSON', fn: () => downloadBlob(new Blob([JSON.stringify(RA_TEMPLATE, null, 1)], { type: 'application/json' }), 'Nembo_modello_RA.json') },
         ...fonti.slice(0, 4).map(x => ({ ic: 'pin', l: 'Manufatti dai campioni MCA di ' + fonteNome(x), s: [x.cliente, placeLabel(x), x.campioni.mca.length + ' MCA'].filter(Boolean).join(' · '), fn: () => { setT('man'); daCampioni(x); } }))]],
-        opzArchivio({ r, settings, onDelete, elimina: 'Elimina il sopralluogo', firme: !firmeOn && (() => { up(q => prepFirme({ ...q }, settings, true)); setT('firme'); }) })]} />
+        opzArchivio({ r, settings, onDelete, up, elimina: 'Elimina il sopralluogo', firme: !firmeOn && (() => { up(q => prepFirme({ ...q }, settings, true)); setT('firme'); }) })]} />
   </div>`;
 }

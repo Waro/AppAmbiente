@@ -178,6 +178,33 @@ function ShareAsk() {
       <button class="btn pri" style="flex:2" onClick=${() => done(true)}><${Icon} n="share" s=${17} /> Condividi</button></div>
   </div></div>`;
 }
+// «Concludi l'attività»: conferma esplicita, con l'elenco di ciò che manca e un motivo facoltativo
+let _concAsk = null;
+function askConcludi(info) { return new Promise(res => _concAsk ? _concAsk({ ...info, res }) : res(null)); }
+function ConcludiAsk() {
+  const [q, setQ] = useState(null); const [motivo, setMotivo] = useState('');
+  _concAsk = x => { setMotivo(''); setQ(x); };
+  if (!q) return null;
+  const done = v => { setQ(null); q.res(v); };
+  return html`<div class="ov" onClick=${e => e.target === e.currentTarget && done(null)}><div class="modal" role="dialog" aria-label="Concludi l'attività">
+    <h4>Concludere l'attività?</h4>
+    <p>${q.mancanze.length ? 'Restano ' + q.mancanze.join(', ') + '. ' : ''}Nembo non la segnalerà più come incompleta. Potrai riaprirla dalle Opzioni.</p>
+    <textarea class="inp" rows="2" placeholder="Motivo (facoltativo), es. copertura non accessibile" value=${motivo} onInput=${e => setMotivo(e.target.value)} aria-label="Motivo" style="margin-bottom:16px"></textarea>
+    <div class="row"><button class="btn" style="flex:1" onClick=${() => done(null)}>Annulla</button>
+      <button class="btn pri" style="flex:2" onClick=${() => done({ motivo: motivo.trim() })}><${Icon} n="check" s=${17} /> Concludi</button></div>
+  </div></div>`;
+}
+// cosa manca a un'attività (per la conferma di «Concludi l'attività»)
+function mancanzeDi(r) {
+  const out = []; const n = (k, s, p) => k + ' ' + (k === 1 ? s : p);
+  if (r.type === 'ra') { const k = r.manufatti.filter(m => !m.stato).length; if (k) out.push(n(k, 'manufatto non visionato', 'manufatti non visionati')); }
+  if (r.type === 'aria' || (r.type === 'ra' && r.aria && r.aria.attivo)) { try { const R = ariaRiepilogo(r); if (R.tot - R.chiusi > 0) out.push(n(R.tot - R.chiusi, 'punto di monitoraggio aperto', 'punti di monitoraggio aperti')); } catch (e) { /* senza monitoraggio */ } }
+  // nell'RA contano le foto dei manufatti visionati (come nel riepilogo in alto); quelli non visionati sono già nell'elenco
+  const ph = photoItems(r), miss = r.type === 'ra' ? r.manufatti.filter(m => m.stato && !(m.foto || []).length).length : ph.tot - ph.ok;
+  if (miss > 0) out.push(r.type === 'hs' ? 'nessuna foto' : n(miss, 'elemento senza foto', 'elementi senza foto'));
+  if (!out.length && !recDone({ ...r, conclusa: null })) out.push('nessun dato raccolto');
+  return out;
+}
 function bufToB64(buf) {
   const u = new Uint8Array(buf); let s = '';
   for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
@@ -706,10 +733,11 @@ function LargeTitle({ eye, title, sub, acts, top }) {
     ${acts && html`<div class="lt-acts">${acts}</div>`}</div></div>`;
 }
 // Intestazione delle schede di dettaglio (stessa sul telefono e nel pannello affiancato)
-function DetailHead({ eye, title, sub, saved, onClose }) {
+function DetailHead({ eye, title, sub, saved, onClose, conclusa }) {
   return html`<div class="dh"><div>
-      <div class="lt-eye">${eye}${saved !== undefined && html` · <span class="saved">${saved ? 'Salvato' : 'Salvataggio…'}</span>`}</div>
-      <div class="dh-title">${title}</div>${sub && html`<div class="dh-sub">${sub}</div>`}</div>
+      <div class="lt-eye">${eye}${conclusa && ' · Conclusa'}${saved !== undefined && html` · <span class="saved">${saved ? 'Salvato' : 'Salvataggio…'}</span>`}</div>
+      <div class="dh-title">${title}</div>${sub && html`<div class="dh-sub">${sub}</div>`}
+      ${conclusa && html`<div class="dh-sub">Conclusa il ${fmtD(conclusa.il)}${conclusa.motivo ? ' · ' + conclusa.motivo : ''}${(conclusa.mancanze || []).length ? ' · ' + conclusa.mancanze.join(', ') : ''}</div>`}</div>
     ${onClose && html`<button class="btn-icon" aria-label="Chiudi" onClick=${onClose}><${Icon} n="x" s=${18} /></button>`}</div>`;
 }
 // Anello di avanzamento in SVG (p da 0 a 1)
@@ -784,8 +812,14 @@ function OpzioniSheet({ gruppi, r, settings, onClose }) {
       </div></div></div>`;
 }
 // voci di archivio comuni: foglio firme, ZIP, elimina
-function opzArchivio({ r, settings, onDelete, firme, elimina = 'Elimina' }) {
+function opzArchivio({ r, settings, onDelete, firme, elimina = 'Elimina', up }) {
+  const concludi = up && (r.conclusa
+    ? { ic: 'undo', l: 'Riapri l’attività', s: 'Conclusa il ' + fmtD(r.conclusa.il) + (r.conclusa.motivo ? ' · ' + r.conclusa.motivo : ''), fn: () => { if (confirm('Riaprire l’attività? Tornerà tra quelle da completare se manca qualcosa.')) { up({ conclusa: null }); toast('Attività riaperta'); } } }
+    : { ic: 'check', l: 'Concludi l’attività', s: 'Anche con manufatti non visionati o foto mancanti', fn: async () => {
+      const mancanze = mancanzeDi(r); const x = await askConcludi({ mancanze });
+      if (x) { up({ conclusa: { il: today(), motivo: x.motivo, mancanze } }); toast('Attività conclusa'); } } });
   return ['Archivio', [
+    concludi,
     firme && { ic: 'sign', l: 'Prepara il foglio firme', s: 'Con i dati dell’attività e l’elenco di campioni o manufatti', fn: firme },
     { ic: 'archive', l: 'Salva tutto in un file ZIP', fn: () => exportRecords([r], settings) },
     { ic: 'trash', l: elimina, danger: true, fn: () => onDelete(r) }]];
