@@ -8,6 +8,8 @@ const NOVITA = [
       'I file JSON preparati dai documenti (PMC, mappature, DDA Fase 1 e Fase 2) possono contenere le planimetrie: pagine o immagini con ubicazioni, sigle e perimetri. Nembo le aggiunge da sole alla sezione Planimetrie, pronte da annotare.',
       'Le planimetrie prese da un documento precedente hanno l’indicazione «Storica» e, sotto il nome, la spiegazione dei segni (es. «Fabbricato A», «S1 = sondaggio»).',
       'Nuovo import DDA Fase 2: i campioni e gli NC dell’indagine precedente compaiono in «Indagine precedente», con esito e foto. Sono di riferimento e non entrano nella scheda per il laboratorio; «Ricampiona» li aggiunge ai punti da campionare.',
+      'Anche la Mappatura MCA e FAV importa l’indagine precedente (⋯ → Importa l’indagine precedente), con «Ricampiona» che crea il nuovo campione con piano, ubicazione e descrizione.',
+      'I campioni integrativi proseguono la numerazione dell’indagine precedente: dopo A1…A6 il primo nuovo è A7, dopo NC3 il primo NC è NC4. Un NC può riferirsi anche a un campione precedente.',
       'Lo stesso JSON di Fase 2 si può importare in un Sopralluogo RA: i campioni MCA non negativi e gli NC MCA diventano manufatti.' ] },
   { v: 46, data: '2026-10-26', tipo: 'maggiore', titolo: 'Scheda File, Home e tema scuro',
     voci: [

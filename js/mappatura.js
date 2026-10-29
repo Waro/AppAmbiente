@@ -14,6 +14,20 @@ function newMappatura(records, settings) {
   };
 }
 const mappaturaIsEmpty = r => !r.commessa && !r.cliente && !r.sito && !r.citta && !r.indirizzo && !(r.fotoAppunti || []).length && !MAP_MATS.some(m => (r.campioni[m.k] || []).length) && !(r.planimetrie || []).length && !r.appunti && !(r.fogli || []).length && !ncOf(r).length;
+// import di un'indagine precedente (JSON "dda-fase2", anche da una relazione di mappatura): solo MCA e FAV
+async function importMappatura(json, rec) {
+  let data;
+  try { data = JSON.parse(json); } catch (e) { throw new Error('il file non è un JSON valido'); }
+  if (data.type && data.type !== 'dda-fase2') throw new Error('il file non è un\'indagine precedente (DDA Fase 2 o mappatura)');
+  const patch = {}; let n = 0;
+  for (const k of ['commessa', 'cliente', 'citta', 'indirizzo', 'sito', 'appunti']) if (data[k] && !rec[k]) { patch[k] = String(data[k]); n++; }
+  { const t = markImp({ imp: rec.imp }, patch, IMP_ANAG); if (t.imp) patch.imp = t.imp; }
+  const x = await importPrecedente(data, rec, MAP_MATS); Object.assign(patch, x.patch);
+  const pl = await importPlanimetrie(data.planimetrie, rec.planimetrie || []);
+  if (pl.length) patch.planimetrie = [...(rec.planimetrie || []), ...pl];
+  if (!n && !x.camp && !x.nc && !pl.length) throw new Error('nessun dato nuovo da importare (i campi già compilati non vengono toccati)');
+  return { patch, msg: 'Importati ' + [n && `${n} campi`, x.camp && `${x.camp} campioni precedenti`, x.nc && `${x.nc} NC`, pl.length && `${pl.length} ${pl.length === 1 ? 'planimetria' : 'planimetrie'}`].filter(Boolean).join(', ') };
+}
 const allCampMap = r => MAP_MATS.flatMap(m => (r.campioni[m.k] || []).map(c => ({ ...c, k: m.k })));
 
 /* ---------------- elenco ---------------- */
@@ -62,8 +76,8 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
   const mat = MAP_MATS.find(m => m.k === tab);
   const camp = r.campioni[tab] || [];
 
-  const renum = (k, list) => { const m = MAP_MATS.find(x => x.k === k); return (!m.auto || r.congelati[k]) ? list : list.map((c, i) => ({ ...c, codice: m.auto + (i + 1) })); };
-  const nextCode = k => { const m = MAP_MATS.find(x => x.k === k); const l = r.campioni[k] || []; if (!r.congelati[k]) return m.auto + (l.length + 1); return m.auto + (l.map(c => +c.codice.slice(1) || 0).reduce((a, b) => Math.max(a, b), 0) + 1); };
+  const renum = (k, list) => renumCamp(r, MAP_MATS.find(x => x.k === k), list);
+  const nextCode = k => nextCampCode(r, MAP_MATS.find(x => x.k === k));
   const setCamp = (k, fn) => up(p => ({ ...p, campioni: { ...p.campioni, [k]: fn(p.campioni[k] || []) } }));
   const updCamp = (id, patch) => setCamp(tab, l => l.map(c => c.id === id ? { ...c, ...patch } : c));
   const lastPiano = () => { const l = r.campioni[tab] || []; return l.length ? l[l.length - 1].piano || '' : ''; };
@@ -72,6 +86,14 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
     if (!confirm('Eliminare il campione ' + (c.codice || '') + '?')) return;
     for (const b of blobIds(c)) await removeBlob(b);
     setCamp(tab, l => renum(tab, l.filter(x => x.id !== c.id)));
+  };
+
+  const importInp = useRef();
+  const doImport = e => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => importMappatura(rd.result, r).then(({ patch, msg }) => { up(patch); toast(msg); }).catch(err => fail('Import non riuscito', err));
+    rd.readAsText(f);
   };
 
   const planLabels = campPlanLabels(r, MAP_MATS);
@@ -100,7 +122,10 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
     `}
     ${T === 'camp' && html`
 
-    <div class="sec-h"><h3>Campioni</h3><span class="hint">${r.congelati[tab] ? 'Codici bloccati dalla scheda' : `Codici automatici ${mat.auto}1, ${mat.auto}2…`}</span></div>
+    <${PrecSection} r=${r} onRicampiona=${c => { const m = MAP_MATS.find(x => x.k === c.k) || mat; const id = uid('c'); if (tab !== m.k) setTab(m.k);
+      setCamp(m.k, l => [...l, { id, codice: nextCode(m.k), descrizione: c.descrizione || '', quantita: c.quantita || '', piano: c.piano || '', ubicazione: c.ubicazione || '', data: today(), foto: [] }]);
+      setOpenS({ [id]: true }); setTimeout(() => scrollToId('s-' + id), 120); toast('Nuovo campione ' + nextCode(m.k) + ' da ' + c.codice); }} />
+    <div class="sec-h"><h3>Campioni</h3><span class="hint">${r.congelati[tab] ? 'Codici bloccati dalla scheda' : precBase(r, mat.auto) ? `Prosegue dopo ${mat.auto}${precBase(r, mat.auto)}` : `Codici automatici ${mat.auto}1, ${mat.auto}2…`}</span></div>
     <${CampSummary} r=${r} mats=${MAP_MATS} />
     <div class="seg" style="margin-bottom:6px">${MAP_MATS.map(m => html`
       <button class=${tab === m.k ? 'on' : ''} onClick=${() => setTab(m.k)}><i class="mdot" style=${'background:' + m.c}></i>${m.l}<span class="n">${(r.campioni[m.k] || []).length}</span></button>`)}</div>
@@ -135,12 +160,16 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
     `}
     ${T === 'firme' && html`<${FogliFirme} r=${r} up=${up} settings=${settings} />`}
     ${T === 'file' && html`<${FileTab} r=${r} up=${up} settings=${settings} />`}
+    <input ref=${importInp} type="file" accept="application/json,text/plain,application/octet-stream,.json" hidden onChange=${doImport} />
     <${BarraAtt} r=${r} settings=${settings}
       left=${html`<button class="btn-icon lg" aria-label="Planimetrie" title="Planimetrie" onClick=${() => { if (T !== 'camp') setT('camp'); setTimeout(() => scrollToId('plan-' + r.id), 120); }}><${Icon} n="map" s=${22} /></button>`}
       center=${T === 'camp' ? html`<button class="btn pri" onClick=${addCamp}><${Icon} n="plus" s=${20} w=${2.4} /> Nuovo campione ${nextCode(tab)}</button>` : html`<${OdBtn} r=${r} settings=${settings} />`}
       gruppi=${[['Documenti', [
         { ic: 'gear', l: 'Laboratorio, offerta, codici analisi', fn: onSettings },
         T !== 'anag' && { ic: 'share', l: OD.account ? 'Carica su OneDrive' : 'Invia a OneDrive', fn: () => OD.account ? odSync([r], settings) : sendToOneDrive(r, settings) }]],
+        ['Dati', [
+          { ic: 'file', l: 'Importa l’indagine precedente', s: 'JSON di Fase 2 o di mappatura: campioni MCA e FAV, NC e planimetrie', fn: () => importInp.current.click() },
+          { ic: 'paper', l: 'Scarica il modello JSON', fn: downloadDda2Template }]],
         opzArchivio({ r, settings, onDelete, elimina: 'Elimina la mappatura', firme: !firmeOn && (() => { up(q => prepFirme({ ...q }, settings, true)); setT('firme'); }) })]} />
   </div>`;
 }

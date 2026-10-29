@@ -62,31 +62,8 @@ async function importDda(json, rec) {
   if (data.type === 'dda-fase2') {
     if (data.appunti && !rec.appunti2) { patch.appunti2 = String(data.appunti); n++; }
     if (rec.fase !== 2) patch.fase = 2;
-    const s = v => (v == null ? '' : String(v)).trim();
-    const fotoDi = async x => { const ids = []; if (Array.isArray(x.foto)) for (const ph of x.foto.slice(0, 3)) { if (typeof ph !== 'string' || !ph.trim()) continue; try { ids.push(await saveImage(dataUriToBlob(ph))); } catch (e) { /* immagine non valida */ } } return ids; };
-    const prev = rec.precedente || { fonte: '', campioni: [], nc: [] };
-    const out = { fonte: prev.fonte || s(data.fonte), campioni: [...(prev.campioni || [])], nc: [...(prev.nc || [])] };
-    const keyC = new Set(out.campioni.map(c => c.k + '|' + c.codice.toLowerCase()));
-    for (const x of (Array.isArray(data.campioni) ? data.campioni : [])) {
-      if (!x || typeof x !== 'object') continue;
-      const k = s(x.matrice).toLowerCase(); if (!MATS.some(m => m.k === k)) continue;
-      const codice = s(x.codice) || (MATS.find(m => m.k === k).auto || 'C') + (out.campioni.filter(c => c.k === k).length + 1);
-      if (keyC.has(k + '|' + codice.toLowerCase())) continue; keyC.add(k + '|' + codice.toLowerCase());
-      const esito = s(x.esito).toLowerCase();
-      out.campioni.push({ id: uid('cp'), k, codice, piano: s(x.piano), ubicazione: s(x.ubicazione), descrizione: s(x.descrizione), tipologia: s(x.tipologia), quantita: s(x.quantita),
-        data: /^\d{4}-\d{2}-\d{2}$/.test(s(x.data)) ? s(x.data) : '', esito: esito === 'positivo' || esito === 'negativo' ? esito : '', esitoDettaglio: s(x.esitoDettaglio), note: s(x.note), foto: await fotoDi(x) });
-      camp++;
-    }
-    const keyN = new Set(out.nc.map(c => c.codice.toLowerCase()));
-    for (const x of (Array.isArray(data.nc) ? data.nc : [])) {
-      if (!x || typeof x !== 'object') continue;
-      const k = s(x.matrice).toLowerCase() === 'fav' ? 'fav' : 'mca';
-      const codice = s(x.codice) || 'NC' + (out.nc.length + 1);
-      if (keyN.has(codice.toLowerCase())) continue; keyN.add(codice.toLowerCase());
-      out.nc.push({ id: uid('cp'), k, codice, piano: s(x.piano), ubicazione: s(x.ubicazione), descrizione: s(x.descrizione), quantita: s(x.quantita), riferimento: s(x.riferimento), note: s(x.note), foto: await fotoDi(x) });
-      nc++;
-    }
-    if (camp || nc) { patch.precedente = out; n += camp + nc; }
+    const x = await importPrecedente(data, rec, MATS);
+    Object.assign(patch, x.patch); camp = x.camp; nc = x.nc; n += camp + nc;
   } else {
     ['usoAttuale', 'usoStorico', 'interviste', 'appunti'].forEach(str);
     if (data.check && typeof data.check === 'object') {
@@ -116,7 +93,61 @@ function downloadDda2Template() {
   downloadBlob(new Blob([JSON.stringify(DDA2_TEMPLATE, null, 1)], { type: 'application/json' }), 'Nembo_modello_Fase2.json');
 }
 
-/* ---------------- indagine precedente (Fase 2 importata) ---------------- */
+/* ---------------- indagine precedente (Fase 2 o mappatura importata) ----------------
+   I campioni e gli NC importati sono di riferimento; i nuovi campioni e NC proseguono la loro numerazione
+   (es. dopo A1…A6 il primo campione integrativo è A7, dopo NC3 il primo NC è NC4). */
+async function importPrecedente(data, rec, mats) {
+  const s = v => (v == null ? '' : String(v)).trim();
+  const fotoDi = async x => { const ids = []; if (Array.isArray(x.foto)) for (const ph of x.foto.slice(0, 3)) { if (typeof ph !== 'string' || !ph.trim()) continue; try { ids.push(await saveImage(dataUriToBlob(ph))); } catch (e) { /* immagine non valida */ } } return ids; };
+  const prev = rec.precedente || { fonte: '', campioni: [], nc: [] };
+  const out = { fonte: prev.fonte || s(data.fonte), campioni: [...(prev.campioni || [])], nc: [...(prev.nc || [])] };
+  const keyC = new Set(out.campioni.map(c => c.k + '|' + c.codice.toLowerCase()));
+  let camp = 0, nc = 0;
+  for (const x of (Array.isArray(data.campioni) ? data.campioni : [])) {
+    if (!x || typeof x !== 'object') continue;
+    const k = s(x.matrice).toLowerCase(); if (!mats.some(m => m.k === k)) continue;
+    const codice = s(x.codice) || (MATS.find(m => m.k === k).auto || 'C') + (out.campioni.filter(c => c.k === k).length + 1);
+    if (keyC.has(k + '|' + codice.toLowerCase())) continue; keyC.add(k + '|' + codice.toLowerCase());
+    const esito = s(x.esito).toLowerCase();
+    out.campioni.push({ id: uid('cp'), k, codice, piano: s(x.piano), ubicazione: s(x.ubicazione), descrizione: s(x.descrizione), tipologia: s(x.tipologia), quantita: s(x.quantita),
+      data: /^\d{4}-\d{2}-\d{2}$/.test(s(x.data)) ? s(x.data) : '', esito: esito === 'positivo' || esito === 'negativo' ? esito : '', esitoDettaglio: s(x.esitoDettaglio), note: s(x.note), foto: await fotoDi(x) });
+    camp++;
+  }
+  const keyN = new Set(out.nc.map(c => c.codice.toLowerCase()));
+  for (const x of (Array.isArray(data.nc) ? data.nc : [])) {
+    if (!x || typeof x !== 'object') continue;
+    const k = s(x.matrice).toLowerCase() === 'fav' ? 'fav' : 'mca';
+    const codice = s(x.codice) || 'NC' + (out.nc.length + 1);
+    if (keyN.has(codice.toLowerCase())) continue; keyN.add(codice.toLowerCase());
+    out.nc.push({ id: uid('cp'), k, codice, piano: s(x.piano), ubicazione: s(x.ubicazione), descrizione: s(x.descrizione), quantita: s(x.quantita), riferimento: s(x.riferimento), note: s(x.note), foto: await fotoDi(x) });
+    nc++;
+  }
+  const patch = {};
+  if (camp || nc) {
+    patch.precedente = out;
+    // campioni e NC già inseriti in questa attività: rinumerati dopo quelli importati (solo se i codici non sono bloccati dalla scheda)
+    const q = { ...rec, precedente: out }; const cc = { ...rec.campioni }; let ren = false;
+    for (const m of mats) if (m.auto && !(rec.congelati || {})[m.k] && (cc[m.k] || []).length) { cc[m.k] = cc[m.k].map((c, i) => ({ ...c, codice: m.auto + (precBase(q, m.auto) + i + 1) })); ren = true; }
+    if (ren) patch.campioni = cc;
+    if (ncOf(rec).length) patch.nc = ncRenum(ncOf(rec), precBase(q, 'NC'));
+  }
+  return { patch, camp, nc };
+}
+// numero più alto tra i codici importati con quel prefisso (A, F, NC): da lì prosegue la numerazione
+function precBase(r, pre) {
+  const p = r.precedente; if (!p || !pre) return 0;
+  const re = new RegExp('^' + pre + '\\s*(\\d+)$', 'i');
+  return [...(p.campioni || []), ...(p.nc || [])].map(c => re.exec((c.codice || '').trim())).filter(Boolean).map(m => +m[1]).reduce((a, b) => Math.max(a, b), 0);
+}
+// codice del prossimo campione di una matrice a codici automatici (DDA e Mappatura)
+function nextCampCode(r, m) {
+  if (!m.auto) return '';
+  const l = r.campioni[m.k] || [], base = precBase(r, m.auto);
+  if (!(r.congelati || {})[m.k]) return m.auto + (base + l.length + 1);
+  return m.auto + (Math.max(base, l.map(c => +c.codice.slice(1) || 0).reduce((a, b) => Math.max(a, b), 0)) + 1);
+}
+const renumCamp = (r, m, list) => (!m.auto || (r.congelati || {})[m.k]) ? list : list.map((c, i) => ({ ...c, codice: m.auto + (precBase(r, m.auto) + i + 1) }));
+
 function PrecSection({ r, onRicampiona }) {
   const p = r.precedente; const [open, setOpen] = useState(false);
   if (!p || !((p.campioni || []).length || (p.nc || []).length)) return null;
@@ -209,20 +240,21 @@ function CampFields({ c, upd, list, codice }) {
 /* ---------------- NC: manufatti non campionati (MCA e FAV, numerazione unica NC1, NC2…) ----------------
    r.nc = [{ id, codice, k: 'mca'|'fav', piano, ubicazione, descrizione, quantita, rif (id del campione di riferimento), foto }] */
 const ncOf = r => r.nc || [];
-const ncRenum = list => list.map((x, i) => ({ ...x, codice: 'NC' + (i + 1) }));
-const ncRif = (r, x) => { const c = x.rif && (r.campioni[x.k] || []).find(y => y.id === x.rif); return c ? c.codice : ''; };
+const ncRenum = (list, base = 0) => list.map((x, i) => ({ ...x, codice: 'NC' + (base + i + 1) }));
+const ncRif = (r, x) => { const c = x.rif && [...(r.campioni[x.k] || []), ...((r.precedente || {}).campioni || [])].find(y => y.id === x.rif); return c ? c.codice : ''; };
 function NcSection({ r, up, mat, list }) {
   const [openN, setOpenN] = useState({});
   const L = ncOf(r).filter(x => x.k === mat.k);
   const camp = r.campioni[mat.k] || [];
-  const setNc = fn => up(p => ({ ...p, nc: ncRenum(fn(ncOf(p))) }));
+  const setNc = fn => up(p => ({ ...p, nc: ncRenum(fn(ncOf(p)), precBase(p, 'NC')) }));
   const upd = (id, patch) => setNc(l => l.map(x => x.id === id ? { ...x, ...patch } : x));
   const add = () => { const id = uid('nc'); const last = L[L.length - 1];
     setNc(l => [...l, { id, codice: '', k: mat.k, piano: last ? last.piano : '', ubicazione: '', descrizione: '', quantita: '', rif: '', foto: [] }]);
     setOpenN({ [id]: true }); setTimeout(() => scrollToId('s-' + id), 80); };
   const del = async x => { if (!confirm('Eliminare ' + x.codice + '?')) return; for (const b of blobIds(x)) await removeBlob(b); setNc(l => l.filter(y => y.id !== x.id)); };
-  const next = 'NC' + (ncOf(r).length + 1);
-  return html`<div class="sec-h" style="margin-top:18px"><h3>Manufatti non campionati</h3><span class="hint">NC1, NC2… unica per MCA e FAV</span></div>
+  const next = 'NC' + (precBase(r, 'NC') + ncOf(r).length + 1);
+  const precC = ((r.precedente || {}).campioni || []).filter(c => c.k === mat.k);
+  return html`<div class="sec-h" style="margin-top:18px"><h3>Manufatti non campionati</h3><span class="hint">${precBase(r, 'NC') ? 'Prosegue dopo NC' + precBase(r, 'NC') : 'NC1, NC2…'} unica per MCA e FAV</span></div>
     ${L.length > 0 && html`<div class="list">${L.map(x => { const rc = ncRif(r, x); const cx = { ...x, descrizione: x.descrizione, quantita: [x.quantita, rc && 'come ' + rc].filter(Boolean).join(' · ') };
       return html`<${SampleRow} key=${x.id} c=${cx} mat=${mat} open=${!!openN[x.id]} toggle=${() => setOpenN(o => ({ ...o, [x.id]: !o[x.id] }))}
         onPhoto=${ids => upd(x.id, { foto: [...(x.foto || []), ...ids] })}>
@@ -230,7 +262,8 @@ function NcSection({ r, up, mat, list }) {
         <div class="row">
           <input class="inp" placeholder="Quantità (es. 180 mq)" value=${x.quantita || ''} onInput=${e => upd(x.id, { quantita: e.target.value })} aria-label="Quantità" />
           <select class="inp" value=${x.rif || ''} onChange=${e => upd(x.id, { rif: e.target.value })} aria-label="Campione di riferimento">
-            <option value="">Nessun campione di riferimento</option>${camp.map(c => html`<option value=${c.id}>Come ${c.codice}${c.descrizione ? ' · ' + c.descrizione.slice(0, 40) : ''}</option>`)}</select>
+            <option value="">Nessun campione di riferimento</option>${camp.map(c => html`<option value=${c.id}>Come ${c.codice}${c.descrizione ? ' · ' + c.descrizione.slice(0, 40) : ''}</option>`)}
+            ${precC.length > 0 && html`<optgroup label="Indagine precedente">${precC.map(c => html`<option value=${c.id}>Come ${c.codice} (precedente)${c.esito ? ' · ' + c.esito : ''}${c.descrizione ? ' · ' + c.descrizione.slice(0, 30) : ''}</option>`)}</optgroup>`}</select>
         </div>
         <${PhotoStrip} ids=${x.foto || []} max=${4} onAdd=${ids => upd(x.id, { foto: [...(x.foto || []), ...ids] })}
           onRemove=${async id => { await removeBlob(id); upd(x.id, { foto: x.foto.filter(f => f !== id) }); }} />
@@ -329,8 +362,8 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
 
   const mat = MATS.find(m => m.k === tab);
   const camp = r.campioni[tab] || [];
-  const renum = (k, list) => { const m = MATS.find(x => x.k === k); return (!m.auto || r.congelati[k]) ? list : list.map((c, i) => ({ ...c, codice: m.auto + (i + 1) })); };
-  const nextCode = k => { const m = MATS.find(x => x.k === k); if (!m.auto) return ''; const l = r.campioni[k]; if (!r.congelati[k]) return m.auto + (l.length + 1); return m.auto + (l.map(c => +c.codice.slice(1) || 0).reduce((a, b) => Math.max(a, b), 0) + 1); };
+  const renum = (k, list) => renumCamp(r, MATS.find(x => x.k === k), list);
+  const nextCode = k => nextCampCode(r, MATS.find(x => x.k === k));
   const setCamp = (k, fn) => up(p => ({ ...p, campioni: { ...p.campioni, [k]: fn(p.campioni[k]) } }));
   const updCamp = (id, patch) => setCamp(tab, l => l.map(c => c.id === id ? { ...c, ...patch } : c));
   const lastPiano = () => { const l = r.campioni[tab] || []; return l.length ? l[l.length - 1].piano || '' : ''; };
@@ -355,7 +388,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
     updCk(it.id, { fatto: true });
   };
   const addCamp2 = (k, descrizione, ubicazione) => { const id = uid('c'); setCamp(k, l => [...l, { id, codice: nextCode2(k), descrizione, piano: '', ubicazione: ubicazione || '', tipo: '', quantita: '', data: today(), foto: [] }]); setOpenS({ [id]: true }); };
-  const nextCode2 = k => { const m = MATS.find(x => x.k === k); if (!m.auto) return ''; const l = r.campioni[k]; if (!r.congelati[k]) return m.auto + (l.length + 1); return m.auto + (l.map(c => +c.codice.slice(1) || 0).reduce((a, b) => Math.max(a, b), 0) + 1); };
+  const nextCode2 = nextCode;
 
   const doImport1 = e => {
     const f = e.target.files[0]; e.target.value = ''; if (!f) return;
@@ -466,7 +499,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
       </div>
 
 
-      <div class="sec-h"><h3>Campioni</h3><span class="hint">${mat.auto ? (r.congelati[tab] ? 'Codici bloccati dalla scheda' : `Codici automatici ${mat.auto}1, ${mat.auto}2…`) : 'Codice libero'}</span></div>
+      <div class="sec-h"><h3>Campioni</h3><span class="hint">${mat.auto ? (r.congelati[tab] ? 'Codici bloccati dalla scheda' : precBase(r, mat.auto) ? `Prosegue dopo ${mat.auto}${precBase(r, mat.auto)}` : `Codici automatici ${mat.auto}1, ${mat.auto}2…`) : 'Codice libero'}</span></div>
       <${CampSummary} r=${r} mats=${MATS} todo=${(r.checklist || []).filter(c => !c.fatto).length} />
       <div class="mtabs" role="tablist">${MATS.map(m => html`<button role="tab" aria-selected=${tab === m.k} class=${tab === m.k ? 'on' : ''} onClick=${() => setTab(m.k)}>${m.l}<small><i class="mdot" style=${'background:' + m.c}></i>${r.campioni[m.k].length}</small></button>`)}</div>
       ${!camp.length && html`<div class="card"><div class="empty" style="padding:18px">Nessun campione ${mat.l}.</div></div>`}
