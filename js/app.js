@@ -637,6 +637,7 @@ function App() {
   const records = useMemo(() => allRecs.filter(r => r.type !== 'cli'), [allRecs]);
   const clienti = useMemo(() => allRecs.filter(r => r.type === 'cli'), [allRecs]);
   setClienti(clienti);
+  setRecsNum(records);
   const [settings, setSettingsState] = useState(DEFAULT_SETTINGS);
   const [route, setRoute] = useState({ v: 'home' });
   const notifs = useNotifiche();

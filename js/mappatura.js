@@ -25,7 +25,7 @@ async function importMappatura(json, rec) {
   const x = await importPrecedente(data, rec, MAP_MATS); Object.assign(patch, x.patch);
   const pl = await importPlanimetrie(data.planimetrie, rec.planimetrie || []);
   if (pl.length) patch.planimetrie = [...(rec.planimetrie || []), ...pl];
-  if (!n && !x.camp && !x.nc && !pl.length) throw new Error('nessun dato nuovo da importare (i campi già compilati non vengono toccati)');
+  if (!n && !x.camp && !x.nc && !pl.length && !x.patch.numerazione) throw new Error('nessun dato nuovo da importare (i campi già compilati non vengono toccati)');
   return { patch, msg: 'Importati ' + [n && `${n} campi`, x.camp && `${x.camp} campioni precedenti`, x.nc && `${x.nc} NC`, pl.length && `${pl.length} ${pl.length === 1 ? 'planimetria' : 'planimetrie'}`].filter(Boolean).join(', ') };
 }
 const allCampMap = r => MAP_MATS.flatMap(m => (r.campioni[m.k] || []).map(c => ({ ...c, k: m.k })));

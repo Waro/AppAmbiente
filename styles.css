@@ -996,12 +996,14 @@ img.logo { background: none; object-fit: cover; }
   .scad-items { display: grid; grid-template-columns: 1fr auto 1fr; gap: 0 16px; }
   .scad-items .scad-sep { width: 1px; height: auto; }
 }
-/* PC e tablet in orizzontale: tre colonne; in alto le tre card alte uguali, sotto «Da completare» e «Strumenti e dati», la terza colonna libera */
+/* PC e tablet in orizzontale: tre colonne; sotto «Da completare» e «Strumenti e dati», nella terza colonna solo «Scadenze» */
 @media (min-width: 1000px) {
   .frame.wide > .shell:not(.split) > .content.home2 { max-width: none; }
-  .home-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-areas: "n r d" "c s ."; }
-  .hg-n, .hg-r, .hg-d { align-self: stretch; display: flex; flex-direction: column; }
-  .hg-n .card-navy, .hg-r .card, .hg-d .card { flex: 1; }
+  .home-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-areas: "n r d" "c s d"; }
+  /* «Prossimo sopralluogo» e «Attività di oggi» alte uguali tra loro; «Scadenze» con la sua altezza, si allunga verso il basso se serve */
+  .hg-n, .hg-r { align-self: stretch; display: flex; flex-direction: column; }
+  .hg-n .card-navy, .hg-r .card { flex: 1; }
+  .hg-d { align-self: start; }
   .hg-r .rings { width: 100%; flex-wrap: wrap; }
   .hg-r .legend { min-width: 190px; }
 }

@@ -44,7 +44,7 @@ const DDA1_TEMPLATE = {
   planimetrie: [{ nome: '', piano: '', didascalia: '', origine: 'storica', fonte: '', formato: 'jpeg', dati: '' }],
 };
 const DDA2_TEMPLATE = {
-  app: 'nembo', type: 'dda-fase2', fonte: '',
+  app: 'nembo', type: 'dda-fase2', fonte: '', numerazione: 'prosegui',
   commessa: '', cliente: '', citta: '', indirizzo: '', sito: '', appunti: '',
   campioni: [{ codice: 'A1', matrice: 'mca', piano: '', ubicazione: '', descrizione: '', tipologia: '', quantita: '', data: '', esito: '', esitoDettaglio: '', note: '', foto: [] }],
   nc: [{ codice: 'NC1', matrice: 'mca', piano: '', ubicazione: '', descrizione: '', quantita: '', riferimento: 'A1', note: '', foto: [] }],
@@ -82,7 +82,7 @@ async function importDda(json, rec) {
   }
   const pl = await importPlanimetrie(data.planimetrie, rec.planimetrie || []);
   if (pl.length) patch.planimetrie = [...(rec.planimetrie || []), ...pl];
-  if (!n && !pl.length) throw new Error('nessun campo nuovo da importare (i campi già compilati non vengono toccati)');
+  if (!n && !pl.length && !patch.numerazione) throw new Error('nessun campo nuovo da importare (i campi già compilati non vengono toccati)');
   const msg = [n - camp - nc > 0 && `${n - camp - nc} campi`, camp && `${camp} campioni precedenti`, nc && `${nc} NC`, pl.length && `${pl.length} ${pl.length === 1 ? 'planimetria' : 'planimetrie'}`].filter(Boolean).join(', ');
   return { patch, n, msg: 'Importati ' + msg };
 }
@@ -123,21 +123,34 @@ async function importPrecedente(data, rec, mats) {
     nc++;
   }
   const patch = {};
-  if (camp || nc) {
-    patch.precedente = out;
-    // campioni e NC già inseriti in questa attività: rinumerati dopo quelli importati (solo se i codici non sono bloccati dalla scheda)
-    const q = { ...rec, precedente: out }; const cc = { ...rec.campioni }; let ren = false;
+  // "numerazione": "nuova" = i nuovi campioni ripartono da 1; "prosegui" (o assente) = proseguono
+  const num = data.numerazione === 'nuova' || data.numerazione === 'prosegui' ? data.numerazione : '';
+  if (num && num !== (rec.numerazione || 'prosegui')) patch.numerazione = num;
+  if (camp || nc || patch.numerazione) {
+    if (camp || nc) patch.precedente = out;
+    // campioni e NC già inseriti in questa attività: rinumerati secondo la nuova base (solo se i codici non sono bloccati dalla scheda)
+    const q = { ...rec, ...patch, precedente: out }; const cc = { ...rec.campioni }; let ren = false;
     for (const m of mats) if (m.auto && !(rec.congelati || {})[m.k] && (cc[m.k] || []).length) { cc[m.k] = cc[m.k].map((c, i) => ({ ...c, codice: m.auto + (precBase(q, m.auto) + i + 1) })); ren = true; }
     if (ren) patch.campioni = cc;
     if (ncOf(rec).length) patch.nc = ncRenum(ncOf(rec), precBase(q, 'NC'));
   }
   return { patch, camp, nc };
 }
-// numero più alto tra i codici importati con quel prefisso (A, F, NC): da lì prosegue la numerazione
+// attività salvate in Nembo, per proseguire la numerazione delle Mappature e DDA Fase 2 precedenti dello stesso immobile
+let _recsNum = [];
+const setRecsNum = l => { _recsNum = l || []; };
+// attività precedenti dello stesso immobile (Mappatura o DDA Fase 2), prima di r per data o per creazione
+const precNembo = r => _recsNum.filter(x => x.id !== r.id && !x._new && (x.type === 'mappatura' || (x.type === 'dda' && x.fase === 2)) && stessoImmobile(x, r)
+  && ((x.data || '') < (r.data || '') || ((x.data || '') === (r.data || '') && (x.createdAt || 0) < (r.createdAt || 0))));
+// numero più alto con quel prefisso (A, F, NC) tra l'indagine importata da JSON e le attività precedenti dello stesso immobile:
+// da lì prosegue la numerazione, salvo "numerazione": "nuova" nel JSON
 function precBase(r, pre) {
-  const p = r.precedente; if (!p || !pre) return 0;
+  if (!pre || r.numerazione === 'nuova') return 0;
   const re = new RegExp('^' + pre + '\\s*(\\d+)$', 'i');
-  return [...(p.campioni || []), ...(p.nc || [])].map(c => re.exec((c.codice || '').trim())).filter(Boolean).map(m => +m[1]).reduce((a, b) => Math.max(a, b), 0);
+  const p = r.precedente || {};
+  const codes = [...(p.campioni || []), ...(p.nc || [])].map(c => c.codice);
+  for (const x of precNembo(r)) codes.push(...Object.values(x.campioni || {}).flat().map(c => c.codice), ...ncOf(x).map(c => c.codice));
+  return codes.map(c => re.exec((c || '').trim())).filter(Boolean).map(m => +m[1]).reduce((a, b) => Math.max(a, b), 0);
 }
 // codice del prossimo campione di una matrice a codici automatici (DDA e Mappatura)
 function nextCampCode(r, m) {
