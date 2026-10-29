@@ -3,8 +3,9 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
-  { v: 48, data: '2026-10-29', tipo: 'minore', titolo: 'Planimetrie e Fase 2 dai documenti',
+  { v: 48, data: '2026-10-29', tipo: 'minore', titolo: 'Planimetrie e Fase 2 dai documenti, nuova Home',
     voci: [
+      'Home: «Attività di oggi» e «Scadenze» hanno la stessa struttura di «Prossimo sopralluogo». Le scadenze sono in una sola card su fondo ambra. Su PC e tablet in orizzontale le tre card sono affiancate e alte uguali; sotto ci sono «Da completare» e «Strumenti e dati».',
       'I file JSON preparati dai documenti (PMC, mappature, DDA Fase 1 e Fase 2) possono contenere le planimetrie: pagine o immagini con ubicazioni, sigle e perimetri. Nembo le aggiunge da sole alla sezione Planimetrie, pronte da annotare.',
       'Le planimetrie prese da un documento precedente hanno l’indicazione «Storica» e, sotto il nome, la spiegazione dei segni (es. «Fabbricato A», «S1 = sondaggio»).',
       'Nuovo import DDA Fase 2: i campioni e gli NC dell’indagine precedente compaiono in «Indagine precedente», con esito e foto. Sono di riferimento e non entrano nella scheda per il laboratorio; «Ricampiona» li aggiunge ai punti da campionare.',
