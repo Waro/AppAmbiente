@@ -538,6 +538,45 @@ function PlanViewer({ plan, labels, altrove, onChange, onClose }) {
   </div>`;
 }
 
+/* ---------------- planimetrie da JSON (prompt di estrazione) ----------------
+   "planimetrie": [{ "nome", "piano", "didascalia", "origine": "storica", "fonte", "formato": "pdf|jpeg|png", "dati": "base64 o data URI" }]
+   Un'immagine diventa un PDF di una pagina, così si apre nello stesso visualizzatore (disegno, etichette, PDF annotato).
+   Salta i nomi già presenti nell'attività. */
+async function importPlanimetrie(list, existing = []) {
+  if (!Array.isArray(list) || !list.length) return [];
+  const str = v => (v == null ? '' : String(v)).trim();
+  const known = new Set(existing.map(p => str(p.nome).toLowerCase()));
+  const out = [];
+  for (const x of list) {
+    if (!x || typeof x.dati !== 'string' || !x.dati.trim()) continue;
+    const nome = str(x.nome) || 'Planimetria ' + (existing.length + out.length + 1);
+    if (known.has(nome.toLowerCase())) continue;
+    let bytes;
+    try { bytes = new Uint8Array(await dataUriToBlob(x.dati).arrayBuffer()); } catch (e) { continue; }
+    const isPdf = bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46;
+    const isJpg = bytes[0] === 0xff && bytes[1] === 0xd8;
+    const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
+    if (!isPdf && !isJpg && !isPng) continue;
+    if (!isPdf) {
+      try {
+        await needLib('pdflib');
+        const doc = await PDFLib.PDFDocument.create();
+        const img = isJpg ? await doc.embedJpg(bytes) : await doc.embedPng(bytes);
+        // lato lungo come un A3 (1191 pt): la pagina resta leggibile e le etichette hanno una dimensione normale
+        const k = 1191 / Math.max(img.width, img.height);
+        const w = img.width * k, h = img.height * k;
+        doc.addPage([w, h]).drawImage(img, { x: 0, y: 0, width: w, height: h });
+        bytes = await doc.save();
+      } catch (e) { continue; }
+    }
+    const file = new File([bytes], nome + '.pdf', { type: 'application/pdf' });
+    known.add(nome.toLowerCase());
+    out.push({ id: uid('pl'), nome, piano: str(x.piano), didascalia: str(x.didascalia), origine: x.origine === 'storica' ? 'storica' : '', fonte: str(x.fonte),
+      blobId: await saveFile(file), annot: {}, mergedBlobId: null });
+  }
+  return out;
+}
+
 /* ---------------- sezione nelle schede ---------------- */
 function PlanList({ items = [], labels, onUpdate, onAdd, onRemove }) {
   const inp = useRef(); const [open, setOpen] = useState(null);
@@ -562,7 +601,8 @@ function PlanList({ items = [], labels, onUpdate, onAdd, onRemove }) {
         <span class="sq plain" style="margin-top:2px"><${Icon} n="file" s=${18} /></span>
         <div class="tb-grow" style="min-width:0">
           <button style="background:none;border:0;text-align:left;padding:0;width:100%" onClick=${() => setOpen(p.id)}>
-            <div style="font-size:var(--fs-md);font-weight:600">${p.nome}</div>
+            <div style="font-size:var(--fs-md);font-weight:600">${p.nome}${p.origine === 'storica' && html` <span class="badge st-nv" title="Segni e ubicazioni dal documento precedente: sono di riferimento">Storica</span>`}</div>
+            ${p.didascalia && html`<div class="lock" style="white-space:pre-line">${p.didascalia}</div>`}
             <div class="lock">${ns || nl ? `${ns} tratti · ${nl} etichette${p.mergedBlobId ? ' · PDF annotato pronto' : ''}` : 'Tocca per aprire e annotare'}</div></button>
           <input class="inp sm" style="margin-top:6px;max-width:220px" list="dl-piani-pl" placeholder="Piano" aria-label=${'Piano di ' + p.nome} defaultValue=${p.piano || ''}
             onChange=${e => onUpdate(p.id, { piano: e.target.value.trim() })} onKeyDown=${e => { if (e.key === 'Enter') e.target.blur(); }} /></div>

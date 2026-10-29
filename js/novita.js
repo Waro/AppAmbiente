@@ -3,6 +3,16 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
+  { v: 48, data: '2026-10-29', tipo: 'minore', titolo: 'Planimetrie e Fase 2 dai documenti, nuova Home',
+    voci: [
+      'Nuova voce «Concludi l’attività» nelle Opzioni: chiude l’attività anche con manufatti non visionati o foto mancanti, dopo una conferma che elenca cosa manca e chiede un motivo facoltativo. L’attività riporta «Conclusa» sotto il titolo e si può riaprire dalle Opzioni.',
+      'Home: «Attività di oggi» e «Scadenze» hanno la stessa struttura di «Prossimo sopralluogo». Le scadenze sono in una sola card su fondo ambra. Su PC e tablet in orizzontale le tre card sono affiancate e alte uguali; sotto ci sono «Da completare» e «Strumenti e dati».',
+      'I file JSON preparati dai documenti (PMC, mappature, DDA Fase 1 e Fase 2) possono contenere le planimetrie: pagine o immagini con ubicazioni, sigle e perimetri. Nembo le aggiunge da sole alla sezione Planimetrie, pronte da annotare.',
+      'Le planimetrie prese da un documento precedente hanno l’indicazione «Storica» e, sotto il nome, la spiegazione dei segni (es. «Fabbricato A», «S1 = sondaggio»).',
+      'Nuovo import DDA Fase 2: i campioni e gli NC dell’indagine precedente compaiono in «Indagine precedente», con esito e foto. Sono di riferimento e non entrano nella scheda per il laboratorio; «Ricampiona» li aggiunge ai punti da campionare.',
+      'Anche la Mappatura MCA e FAV importa l’indagine precedente (⋯ → Importa l’indagine precedente), con «Ricampiona» che crea il nuovo campione con piano, ubicazione e descrizione.',
+      'I campioni integrativi proseguono la numerazione dell’indagine precedente, importata da JSON o già in Nembo per lo stesso immobile (Mappatura o DDA Fase 2 con data precedente): dopo A1…A6 il primo nuovo è A7, dopo NC3 il primo NC è NC4. Nella scheda Campioni, accanto al titolo, si vede da dove si prosegue; l’interruttore «Prosegui la numerazione», spento, fa ripartire da 1 (anche «numerazione»: «nuova» nel JSON). Un NC può riferirsi anche a un campione precedente.',
+      'Lo stesso JSON di Fase 2 si può importare in un Sopralluogo RA: i campioni MCA non negativi e gli NC MCA diventano manufatti.' ] },
   { v: 46, data: '2026-10-26', tipo: 'maggiore', titolo: 'Scheda File, Home e tema scuro',
     voci: [
       'Nuova scheda «File» in ogni attività: schede campioni, riepiloghi, scheda radon, schede aria, Word HSE e fogli firme. Grigio da generare, verde generato (tocca per aprirlo), ambra se i dati sono cambiati dopo. «Rigenera» crea una nuova revisione senza cancellare la precedente. I file vanno anche su OneDrive.',

@@ -208,7 +208,7 @@ function AriaForm({ rec: initial, records, settings, onSave, onDelete, embedded,
   const firmeOn = !!r.firme || (r.fogli || []).length > 0;
   const [T, setT] = useSchede('aria', firmeOn ? ['anag', 'punti', 'firme', 'file'] : ['anag', 'punti', 'file'], initial._new, { 's-': 'punti', 'plan-': 'punti', 'aria-': 'punti' });
   return html`<div class="content form">
-    <${DetailHead} eye="Monitoraggio aria" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
+    <${DetailHead} conclusa=${r.conclusa} eye="Monitoraggio aria" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
     <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'punti', l: 'Punti', n: R.tot }, firmeOn && { k: 'firme', l: 'Firme', n: (r.fogli || []).length }, { k: 'file', l: 'File' }].filter(Boolean)} />
     ${T === 'anag' && html`    <div class="card"><div class="grid2">
       <${Inp} cls="full" label="Commessa" value=${r.commessa} set=${v => up({ commessa: v })} imp=${impOf(r, 'commessa')} />
@@ -243,7 +243,7 @@ function AriaForm({ rec: initial, records, settings, onSave, onDelete, embedded,
       center=${T === 'punti' ? (R.chiusi < R.tot ? html`<button class="btn pri" onClick=${() => AriaSection.next && AriaSection.next()}>Prossimo punto · ${R.tot - R.chiusi}</button>`
         : R.tot ? html`<button class="btn pri" onClick=${upload}><${Icon} n="share" s=${19} /> Carica su OneDrive</button>`
         : html`<button class="btn pri" onClick=${() => up(q => ({ ...q, aria: { ...ariaOf(q), punti: [...ariaOf(q).punti, newAriaPunto({ codice: ariaNextCode(ariaOf(q).punti, (ariaOf(q).punti.slice(-1)[0] || {}).metodica), metodica: (ariaOf(q).punti.slice(-1)[0] || {}).metodica || 'SEM' })] } }))}><${Icon} n="plus" s=${20} w=${2.4} /> Nuovo punto</button>`) : html`<${OdBtn} r=${r} settings=${settings} />`}
-      gruppi=${[opzArchivio({ r, settings, onDelete, elimina: 'Elimina il monitoraggio', firme: !firmeOn && (() => { up(q => prepFirme({ ...q }, settings, true)); setT('firme'); }) })]} />
+      gruppi=${[opzArchivio({ r, settings, onDelete, up, elimina: 'Elimina il monitoraggio', firme: !firmeOn && (() => { up(q => prepFirme({ ...q }, settings, true)); setT('firme'); }) })]} />
   </div>`;
 }
 

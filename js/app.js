@@ -54,6 +54,7 @@ async function buildZip(records, settings, withSettings) {
       for (const x of r.recs) for (const [k, f] of x.foto.entries()) await addBlob(f, `${dir}foto/${slug(x.nome)}_${k + 1}.jpg`);
       for (const m of MATS) for (const c of r.campioni[m.k]) for (const [k, f] of (c.foto || []).entries()) await addBlob(f, `${dir}foto/${m.l}_${slug(c.codice) || 'campione'}_${k + 1}.jpg`);
       for (const x of ncOf(r)) for (const [k, f] of (x.foto || []).entries()) await addBlob(f, `${dir}foto/${x.codice}_${k + 1}.jpg`);
+      for (const x of [...((r.precedente || {}).campioni || []), ...((r.precedente || {}).nc || [])]) for (const [k, f] of (x.foto || []).entries()) await addBlob(f, `${dir}foto/Precedente_${slug(x.codice) || 'campione'}_${k + 1}.jpg`);
       for (const d of r.documenti) await addBlob(d.blobId, `${dir}documenti/${d.nome}`);
       try {
         for (const k of ['mca', 'fav']) if (r.campioni[k].length) zip.file(uniq(`${dir}Scheda_campioni_${k.toUpperCase()}.xlsx`), await schedaCampioniXlsx(r, k, settings));
@@ -636,6 +637,7 @@ function App() {
   const records = useMemo(() => allRecs.filter(r => r.type !== 'cli'), [allRecs]);
   const clienti = useMemo(() => allRecs.filter(r => r.type === 'cli'), [allRecs]);
   setClienti(clienti);
+  setRecsNum(records);
   const [settings, setSettingsState] = useState(DEFAULT_SETTINGS);
   const [route, setRoute] = useState({ v: 'home' });
   const notifs = useNotifiche();
@@ -873,6 +875,7 @@ function App() {
     ${!wide && isTop && html`<${TabBar} route=${route} tab=${tab} bu=${settings.buDefault} />`}
     ${sheet && html`<${NewActivity} records=${records} preset=${preset} bu=${sheet === 'hs' ? 'hs' : settings.buDefault} onClose=${() => { setSheet(false); setPreset(null); }} onCreate=${(t, patch) => { window.addEventListener('popstate', () => setTimeout(() => create(t, patch), 0), { once: true }); setSheet(false); }} />`}
     <${ShareAsk} />
+    <${ConcludiAsk} />
     <${Progress} />
     <${CameraHost} />
     ${novita && html`<${NovitaSheet} list=${novita} go=${go} onClose=${() => setNovita(null)} />`}

@@ -6,6 +6,7 @@ const isoDay = d => { const z = new Date(d); z.setMinutes(z.getMinutes() - z.get
 
 // l’attività ha già dati raccolti sul campo?
 function recDone(r) {
+  if (r.conclusa) return true; // conclusa con «Concludi l'attività», anche se manca qualcosa
   if (r.type === 'dda') return r.fase === 1 ? (r.recs.length > 0 || Object.keys(r.check || {}).length > 0) : allCamp(r).length > 0;
   if (r.type === 'mappatura') return allCampMap(r).length > 0;
   if (r.type === 'ra') return r.manufatti.length > 0 && r.manufatti.every(m => m.stato);
@@ -29,7 +30,7 @@ function photoItems(r) {
 }
 // scadenza della verifica RA: fine dell'anno di incarico, non la data del sopralluogo precedente
 function raScadenza(r) { return r.incaricoAl || ''; }
-const raOpen = r => !(r.manufatti.length && r.manufatti.every(m => m.stato));
+const raOpen = r => !r.conclusa && !(r.manufatti.length && r.manufatti.every(m => m.stato));
 
 function recLine(r) {
   if (r.type === 'dda') {
@@ -51,6 +52,7 @@ function recLine(r) {
 function nextVisit(records, od) {
   const t = today(), c = [];
   for (const r of records) {
+    if (r.conclusa) continue;
     if (r.type === 'radon') {
       const s = radonStato(r);
       if (s !== 'da_iniziare' && s !== 'fase1' && s !== 'fase2') continue;
@@ -102,7 +104,7 @@ function daCompletare(records, od) {
     const d = r.type === 'radon' ? ((r.momenti || []).filter(m => m.confermato && m.data <= t).map(m => m.data).sort().pop() || '') : r.data;
     if (!d || d > t || d < from) continue;
     const ph = photoItems(r), miss = ph.tot - ph.ok, st = odStatus(od, r);
-    if (r.type !== 'hs' && miss > 0) out.push({ r, d, crit: true, ic: 'camera', sub: `${TIPO_NOME(r)} · ${miss} ${miss === 1 ? 'elemento' : 'elementi'} senza foto` });
+    if (r.type !== 'hs' && miss > 0 && !r.conclusa) out.push({ r, d, crit: true, ic: 'camera', sub: `${TIPO_NOME(r)} · ${miss} ${miss === 1 ? 'elemento' : 'elementi'} senza foto` });
     else if (st !== 'ok' && (recDone(r) || r.data < t)) out.push({ r, d, ic: 'share', sub: `${TIPO_NOME(r)} · ${st === 'stale' ? 'modificata dopo l\'invio: da ricaricare' : st === 'err' ? 'invio incompleto: riprova' : 'da caricare su OneDrive'}` });
     else if (!recDone(r) && r.data < t) out.push({ r, d, ic: 'file', sub: `${TIPO_NOME(r)} · ${recLine(r)}` });
   }
@@ -207,14 +209,16 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
         <div class="next-acts"><button class="btn pri" onClick=${newAct}>Nuova attività</button></div>`}
     </div></div>
 
-    <div class="hg-r"><div class="card">
+    <div class="hg-r"><div class="card hcard">
+      <span class="hc-eye">Attività di oggi</span>
+      <div class="hc-main">${todays.length ? todays.length + ' attività' : 'Nessuna attività oggi'}</div>
       <div class="rings">
         <div class="ring-wrap" style="width:96px;height:96px">
           <${Ring} p=${rings[0].b ? rings[0].a / rings[0].b : 0} size=${96} w=${9} color=${rings[0].c} />
           <div style="position:absolute;inset:12px"><${Ring} p=${rings[1].b ? rings[1].a / rings[1].b : 0} size=${72} w=${9} color=${rings[1].c} /></div>
           <div style="position:absolute;inset:24px"><${Ring} p=${rings[2].b ? rings[2].a / rings[2].b : 0} size=${48} w=${9} color=${rings[2].c} /></div>
         </div>
-        <div class="legend"><span class="lg-h">${todays.length ? 'Attività di oggi' : 'Nessuna attività oggi'}</span>${rings.map(x => html`<div><i class="mdot" style=${'background:' + x.c}></i><span>${x.l}</span><b>${x.a}/${x.b}</b></div>`)}</div>
+        <div class="legend">${rings.map(x => html`<div><i class="mdot" style=${'background:' + x.c}></i><span>${x.l}</span><b>${x.a}/${x.b}</b></div>`)}</div>
       </div>
     </div></div>
 
@@ -233,41 +237,38 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
       ${riga('gear', 'Impostazioni', 'Tecnico, modelli, OneDrive', goSettings)}
     </div></div>
 
-    <div class="home-scad hg-d">
-      <div class="sec-h home-h"><h2>Scadenze</h2></div>
-      ${bu === 'hs' ? html`<div class="widgets">
-      <button class="card" onClick=${() => goList('hsList')}>
+    <div class="home-scad hg-d"><div class="card hcard scad-card">
+      <span class="hc-eye">Scadenze</span>
+      <div class="scad-items">${bu === 'hs' ? html`
+      <button class="scad-it" onClick=${() => goList('hsList')}>
         <span class="wg-ic" style="background:var(--danger-soft);color:var(--danger)"><${Icon} n="shield" s=${20} /></span>
-        <div class="wg-num" style=${hsP1 ? 'color:var(--danger)' : ''}>${hsP1}</div>
-        <div class="wg-lbl">criticità urgenti (priorità 1 o gravità alta)</div>
-        <div class="wg-sub">${hsCrit} criticità aperte in tutto</div>
-      </button>
-      <button class="card" onClick=${() => goList('hsList')}>
+        <span class="t"><span class="wg-num" style=${hsP1 ? 'color:var(--danger)' : ''}>${hsP1}</span>
+          <span class="wg-lbl">criticità urgenti (priorità 1 o gravità alta)</span>
+          <span class="wg-sub">${hsCrit} criticità aperte in tutto</span></span></button>
+      <div class="scad-sep"></div>
+      <button class="scad-it" onClick=${() => goList('hsList')}>
         <span class="wg-ic" style="background:var(--blue-soft);color:var(--blue)"><${Icon} n="helmet" s=${20} /></span>
-        <div class="wg-num">${hsDaCaricare}</div>
-        <div class="wg-lbl">report da caricare su OneDrive</div>
-        <div class="wg-sub">${records.length} report HSE in archivio</div>
-      </button>
-    </div>` : html`<div class="widgets">
-      <button class="card" onClick=${() => goList('radonList')}>
-        <span class="wg-ic" style="background:var(--warn-soft);color:var(--warn)"><${Icon} n="radon" s=${20} /></span>
-        <div class="wg-num" style=${rDays != null && rDays <= 7 ? 'color:var(--danger)' : ''}>${rDays == null ? '–' : rDays < 0 ? -rDays : rDays}<small>gg</small></div>
-        <div class="wg-lbl">${rDays == null ? 'nessun ritiro radon' : rDays < 0 ? 'di ritardo sul ritiro' : 'al prossimo ritiro'}</div>
-        <div class="track"><i style=${'width:' + Math.round(rExp * 100) + '%'}></i></div>
-        <div class="wg-sub">${nDos} dosimetri · ${rad.length} ${rad.length === 1 ? 'sito' : 'siti'}</div>
-      </button>
-      <button class="card" onClick=${() => goList('raList')}>
-        <span class="wg-ic" style="background:var(--blue-soft);color:var(--blue)"><${Icon} n="shield" s=${20} /></span>
-        <div class="wg-num" style=${raCrit.length ? 'color:var(--danger)' : ''}>${raDue.length}</div>
-        <div class="wg-lbl">verifiche RA entro il mese prossimo</div>
-        <div class="track">${raYear.length + raCrit.length > 0 && html`
-          <i style=${'background:var(--ring2);width:' + (raDoneY / Math.max(1, raYear.length + raCrit.length) * 100) + '%'}></i>
-          <i style=${'background:var(--danger);width:' + (raCrit.length / Math.max(1, raYear.length + raCrit.length) * 100) + '%'}></i>
-          <i style=${'background:var(--chev);width:' + (raRest / Math.max(1, raYear.length + raCrit.length) * 100) + '%'}></i>`}</div>
-        <div class="wg-sub">${raDoneY} di ${raYear.length} fatte nell'anno</div>
-      </button>
+        <span class="t"><span class="wg-num">${hsDaCaricare}</span>
+          <span class="wg-lbl">report da caricare su OneDrive</span>
+          <span class="wg-sub">${records.length} report HSE in archivio</span></span></button>` : html`
+      <button class="scad-it" onClick=${() => goList('radonList')}>
+        <span class="wg-ic" style="background:var(--card);color:var(--warn)"><${Icon} n="radon" s=${20} /></span>
+        <span class="t"><span class="wg-num" style=${rDays != null && rDays <= 7 ? 'color:var(--danger)' : ''}>${rDays == null ? '–' : rDays < 0 ? -rDays : rDays}<small>gg</small></span>
+          <span class="wg-lbl">${rDays == null ? 'nessun ritiro radon' : rDays < 0 ? 'di ritardo sul ritiro' : 'al prossimo ritiro'}</span>
+          <span class="track"><i style=${'width:' + Math.round(rExp * 100) + '%'}></i></span>
+          <span class="wg-sub">${nDos} dosimetri · ${rad.length} ${rad.length === 1 ? 'sito' : 'siti'}</span></span></button>
+      <div class="scad-sep"></div>
+      <button class="scad-it" onClick=${() => goList('raList')}>
+        <span class="wg-ic" style="background:var(--card);color:var(--blue)"><${Icon} n="shield" s=${20} /></span>
+        <span class="t"><span class="wg-num" style=${raCrit.length ? 'color:var(--danger)' : ''}>${raDue.length}</span>
+          <span class="wg-lbl">verifiche RA entro il mese prossimo</span>
+          <span class="track">${raYear.length + raCrit.length > 0 && html`
+            <i style=${'background:var(--ring2);width:' + (raDoneY / Math.max(1, raYear.length + raCrit.length) * 100) + '%'}></i>
+            <i style=${'background:var(--danger);width:' + (raCrit.length / Math.max(1, raYear.length + raCrit.length) * 100) + '%'}></i>
+            <i style=${'background:var(--chev);width:' + (raRest / Math.max(1, raYear.length + raCrit.length) * 100) + '%'}></i>`}</span>
+          <span class="wg-sub">${raDoneY} di ${raYear.length} fatte nell'anno</span></span></button>`}</div>
+    </div></div>
     </div>`}
-    </div></div>`}
 
     ${bu === 'hs' && hsTplOk === false && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goSettings}>Per generare i report carica i modelli Word HSE (Esteso e Sintetico) in Impostazioni → Modelli.</button>`}
     ${bu === 'ambiente' && onbHidden() && (!tplOk || !settings.tecnicoCognome) && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goSettings}>Prima di iniziare: in Impostazioni inserisci i tuoi dati e carica i modelli.</button>`}

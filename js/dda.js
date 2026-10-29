@@ -24,50 +24,190 @@ const CSC = [
 
 const emptyCampioni = () => ({ terreni: [], acque: [], mca: [], fav: [], altro: [] });
 
-/* ---------------- import Fase 1 da JSON ----------------
-   Schema del file da importare (tutti i campi opzionali):
-   {
-     "app": "nembo", "type": "dda-fase1",
-     "commessa": "…", "cliente": "…", "sito": "…",
-     "usoAttuale": "…", "usoStorico": "…",
-     "check": { "serbatoi": "presente|assente|nv", … (chiavi in DDA_CHECK) },
-     "checkNote": { "serbatoi": "…", … },
-     "recs": [ { "nome": "REC-1", "descrizione": "…" } ],
-     "interviste": "…", "appunti": "…"
-   }
+/* ---------------- import da JSON: Fase 1 e Fase 2 ----------------
+   Fase 1 ("type": "dda-fase1", tutti i campi opzionali):
+     commessa, cliente, citta, indirizzo, sito, usoAttuale, usoStorico,
+     check { serbatoi: "presente|assente|nv", … chiavi in DDA_CHECK }, checkNote { … },
+     recs [ { nome, descrizione } ], interviste, appunti, planimetrie [ … ]
+   Fase 2 ("type": "dda-fase2"), base per le integrazioni:
+     fonte, commessa, cliente, citta, indirizzo, sito, appunti,
+     campioni [ { codice, matrice: terreni|acque|mca|fav|altro, piano, ubicazione, descrizione, tipologia, quantita, data, esito: positivo|negativo|"", esitoDettaglio, note, foto [] } ],
+     nc [ { codice, matrice: mca|fav, piano, ubicazione, descrizione, quantita, riferimento, note, foto [] } ],
+     planimetrie [ { nome, piano, didascalia, origine: "storica", fonte, formato, dati } ]
+   I campioni della Fase 2 vanno in "Indagine precedente": sono di riferimento e non entrano nella scheda per il laboratorio.
    Compila solo i campi vuoti del record corrente: non sovrascrive mai un dato già inserito. */
 const DDA1_TEMPLATE = {
   app: 'nembo', type: 'dda-fase1',
   commessa: '', cliente: '', citta: '', indirizzo: '', sito: '', usoAttuale: '', usoStorico: '',
   check: Object.fromEntries(DDA_CHECK.map(([k]) => [k, ''])), checkNote: {}, recs: [{ nome: 'REC-1', descrizione: '' }],
   interviste: '', appunti: '',
+  planimetrie: [{ nome: '', piano: '', didascalia: '', origine: 'storica', fonte: '', formato: 'jpeg', dati: '' }],
 };
-function importDda1(json, rec) {
+const DDA2_TEMPLATE = {
+  app: 'nembo', type: 'dda-fase2', fonte: '', numerazione: 'prosegui',
+  commessa: '', cliente: '', citta: '', indirizzo: '', sito: '', appunti: '',
+  campioni: [{ codice: 'A1', matrice: 'mca', piano: '', ubicazione: '', descrizione: '', tipologia: '', quantita: '', data: '', esito: '', esitoDettaglio: '', note: '', foto: [] }],
+  nc: [{ codice: 'NC1', matrice: 'mca', piano: '', ubicazione: '', descrizione: '', quantita: '', riferimento: 'A1', note: '', foto: [] }],
+  planimetrie: [{ nome: '', piano: '', didascalia: '', origine: 'storica', fonte: '', formato: 'jpeg', dati: '' }],
+};
+async function importDda(json, rec) {
   let data;
   try { data = JSON.parse(json); } catch (e) { throw new Error('il file non è un JSON valido'); }
-  if (data.type && data.type !== 'dda-fase1') throw new Error('il file non è un\'importazione Fase 1');
+  if (data.type && data.type !== 'dda-fase1' && data.type !== 'dda-fase2') throw new Error('il file non è un\'importazione DDA Fase 1 o Fase 2');
   const patch = {}; let n = 0;
   const str = k => { if (data[k] && !rec[k]) { patch[k] = String(data[k]); n++; } };
-  ['commessa', 'cliente', 'citta', 'indirizzo', 'sito', 'usoAttuale', 'usoStorico', 'interviste', 'appunti'].forEach(str);
+  ['commessa', 'cliente', 'citta', 'indirizzo', 'sito'].forEach(str);
   { const t = markImp({ imp: rec.imp }, patch, IMP_ANAG); if (t.imp) patch.imp = t.imp; }
-  if (data.check && typeof data.check === 'object') {
-    const valid = new Set(['presente', 'assente', 'nv']); const chk = { ...rec.check }; const nt = { ...rec.checkNote };
-    for (const [k, v] of Object.entries(data.check)) {
-      if (!DDA_CHECK.some(([kk]) => kk === k) || chk[k]) continue;
-      if (valid.has(v)) { chk[k] = v; n++; }
+  let camp = 0, nc = 0;
+  if (data.type === 'dda-fase2') {
+    if (data.appunti && !rec.appunti2) { patch.appunti2 = String(data.appunti); n++; }
+    if (rec.fase !== 2) patch.fase = 2;
+    const x = await importPrecedente(data, rec, MATS);
+    Object.assign(patch, x.patch); camp = x.camp; nc = x.nc; n += camp + nc;
+  } else {
+    ['usoAttuale', 'usoStorico', 'interviste', 'appunti'].forEach(str);
+    if (data.check && typeof data.check === 'object') {
+      const valid = new Set(['presente', 'assente', 'nv']); const chk = { ...rec.check }; const nt = { ...rec.checkNote };
+      for (const [k, v] of Object.entries(data.check)) {
+        if (!DDA_CHECK.some(([kk]) => kk === k) || chk[k]) continue;
+        if (valid.has(v)) { chk[k] = v; n++; }
+      }
+      if (data.checkNote) for (const [k, v] of Object.entries(data.checkNote)) if (!nt[k] && v) { nt[k] = String(v); n++; }
+      patch.check = chk; patch.checkNote = nt;
     }
-    if (data.checkNote) for (const [k, v] of Object.entries(data.checkNote)) if (!nt[k] && v) { nt[k] = String(v); n++; }
-    patch.check = chk; patch.checkNote = nt;
+    if (Array.isArray(data.recs) && data.recs.length && !rec.recs.length) {
+      patch.recs = data.recs.filter(x => x && (x.nome || x.descrizione)).map((x, i) => ({ id: uid('rec'), nome: x.nome || 'REC-' + (i + 1), descrizione: x.descrizione || '', foto: [], lat: null, lon: null }));
+      n += patch.recs.length;
+    }
   }
-  if (Array.isArray(data.recs) && data.recs.length && !rec.recs.length) {
-    patch.recs = data.recs.filter(x => x && (x.nome || x.descrizione)).map(x => ({ id: uid('rec'), nome: x.nome || 'REC-' + (n + 1), descrizione: x.descrizione || '', foto: [], lat: null, lon: null }));
-    n += patch.recs.length;
-  }
-  if (!n) throw new Error('nessun campo nuovo da importare (i campi già compilati non vengono toccati)');
-  return { patch, n };
+  const pl = await importPlanimetrie(data.planimetrie, rec.planimetrie || []);
+  if (pl.length) patch.planimetrie = [...(rec.planimetrie || []), ...pl];
+  if (!n && !pl.length && !patch.numerazione) throw new Error('nessun campo nuovo da importare (i campi già compilati non vengono toccati)');
+  const msg = [n - camp - nc > 0 && `${n - camp - nc} campi`, camp && `${camp} campioni precedenti`, nc && `${nc} NC`, pl.length && `${pl.length} ${pl.length === 1 ? 'planimetria' : 'planimetrie'}`].filter(Boolean).join(', ');
+  return { patch, n, msg: 'Importati ' + msg };
 }
 function downloadDda1Template() {
   downloadBlob(new Blob([JSON.stringify(DDA1_TEMPLATE, null, 1)], { type: 'application/json' }), 'Nembo_modello_Fase1.json');
+}
+function downloadDda2Template() {
+  downloadBlob(new Blob([JSON.stringify(DDA2_TEMPLATE, null, 1)], { type: 'application/json' }), 'Nembo_modello_Fase2.json');
+}
+
+/* ---------------- indagine precedente (Fase 2 o mappatura importata) ----------------
+   I campioni e gli NC importati sono di riferimento; i nuovi campioni e NC proseguono la loro numerazione
+   (es. dopo A1…A6 il primo campione integrativo è A7, dopo NC3 il primo NC è NC4). */
+async function importPrecedente(data, rec, mats) {
+  const s = v => (v == null ? '' : String(v)).trim();
+  const fotoDi = async x => { const ids = []; if (Array.isArray(x.foto)) for (const ph of x.foto.slice(0, 3)) { if (typeof ph !== 'string' || !ph.trim()) continue; try { ids.push(await saveImage(dataUriToBlob(ph))); } catch (e) { /* immagine non valida */ } } return ids; };
+  const prev = rec.precedente || { fonte: '', campioni: [], nc: [] };
+  const out = { fonte: prev.fonte || s(data.fonte), campioni: [...(prev.campioni || [])], nc: [...(prev.nc || [])] };
+  const keyC = new Set(out.campioni.map(c => c.k + '|' + c.codice.toLowerCase()));
+  let camp = 0, nc = 0;
+  for (const x of (Array.isArray(data.campioni) ? data.campioni : [])) {
+    if (!x || typeof x !== 'object') continue;
+    const k = s(x.matrice).toLowerCase(); if (!mats.some(m => m.k === k)) continue;
+    const codice = s(x.codice) || (MATS.find(m => m.k === k).auto || 'C') + (out.campioni.filter(c => c.k === k).length + 1);
+    if (keyC.has(k + '|' + codice.toLowerCase())) continue; keyC.add(k + '|' + codice.toLowerCase());
+    const esito = s(x.esito).toLowerCase();
+    out.campioni.push({ id: uid('cp'), k, codice, piano: s(x.piano), ubicazione: s(x.ubicazione), descrizione: s(x.descrizione), tipologia: s(x.tipologia), quantita: s(x.quantita),
+      data: /^\d{4}-\d{2}-\d{2}$/.test(s(x.data)) ? s(x.data) : '', esito: esito === 'positivo' || esito === 'negativo' ? esito : '', esitoDettaglio: s(x.esitoDettaglio), note: s(x.note), foto: await fotoDi(x) });
+    camp++;
+  }
+  const keyN = new Set(out.nc.map(c => c.codice.toLowerCase()));
+  for (const x of (Array.isArray(data.nc) ? data.nc : [])) {
+    if (!x || typeof x !== 'object') continue;
+    const k = s(x.matrice).toLowerCase() === 'fav' ? 'fav' : 'mca';
+    const codice = s(x.codice) || 'NC' + (out.nc.length + 1);
+    if (keyN.has(codice.toLowerCase())) continue; keyN.add(codice.toLowerCase());
+    out.nc.push({ id: uid('cp'), k, codice, piano: s(x.piano), ubicazione: s(x.ubicazione), descrizione: s(x.descrizione), quantita: s(x.quantita), riferimento: s(x.riferimento), note: s(x.note), foto: await fotoDi(x) });
+    nc++;
+  }
+  const patch = {};
+  // "numerazione": "nuova" = i nuovi campioni ripartono da 1; "prosegui" (o assente) = proseguono
+  const num = data.numerazione === 'nuova' || data.numerazione === 'prosegui' ? data.numerazione : '';
+  if (num && num !== (rec.numerazione || 'prosegui')) patch.numerazione = num;
+  if (camp || nc || patch.numerazione) {
+    if (camp || nc) patch.precedente = out;
+    // campioni e NC già inseriti in questa attività: rinumerati secondo la nuova base (solo se i codici non sono bloccati dalla scheda)
+    const q = { ...rec, ...patch, precedente: out }; const cc = { ...rec.campioni }; let ren = false;
+    for (const m of mats) if (m.auto && !(rec.congelati || {})[m.k] && (cc[m.k] || []).length) { cc[m.k] = cc[m.k].map((c, i) => ({ ...c, codice: m.auto + (precBase(q, m.auto) + i + 1) })); ren = true; }
+    if (ren) patch.campioni = cc;
+    if (ncOf(rec).length) patch.nc = ncRenum(ncOf(rec), precBase(q, 'NC'));
+  }
+  return { patch, camp, nc };
+}
+// attività salvate in Nembo, per proseguire la numerazione delle Mappature e DDA Fase 2 precedenti dello stesso immobile
+let _recsNum = [];
+const setRecsNum = l => { _recsNum = l || []; };
+// attività precedenti dello stesso immobile (Mappatura o DDA Fase 2), prima di r per data o per creazione
+const precNembo = r => _recsNum.filter(x => x.id !== r.id && !x._new && (x.type === 'mappatura' || (x.type === 'dda' && x.fase === 2)) && stessoImmobile(x, r)
+  && ((x.data || '') < (r.data || '') || ((x.data || '') === (r.data || '') && (x.createdAt || 0) < (r.createdAt || 0))));
+// numero più alto con quel prefisso (A, F, NC) tra l'indagine importata da JSON e le attività precedenti dello stesso immobile:
+// da lì prosegue la numerazione, salvo "numerazione": "nuova" nel JSON
+function precBase(r, pre) {
+  if (!pre || r.numerazione === 'nuova') return 0;
+  return precBaseAll(r, pre);
+}
+// come precBase, ma senza la scelta «riparti da 1» (serve al controllo della numerazione)
+function precBaseAll(r, pre) {
+  const re = new RegExp('^' + pre + '\\s*(\\d+)$', 'i');
+  const p = r.precedente || {};
+  const codes = [...(p.campioni || []), ...(p.nc || [])].map(c => c.codice);
+  for (const x of precNembo(r)) codes.push(...Object.values(x.campioni || {}).flat().map(c => c.codice), ...ncOf(x).map(c => c.codice));
+  return codes.map(c => re.exec((c || '').trim())).filter(Boolean).map(m => +m[1]).reduce((a, b) => Math.max(a, b), 0);
+}
+// codice del prossimo campione di una matrice a codici automatici (DDA e Mappatura)
+function nextCampCode(r, m) {
+  if (!m.auto) return '';
+  const l = r.campioni[m.k] || [], base = precBase(r, m.auto);
+  if (!(r.congelati || {})[m.k]) return m.auto + (base + l.length + 1);
+  return m.auto + (Math.max(base, l.map(c => +c.codice.slice(1) || 0).reduce((a, b) => Math.max(a, b), 0)) + 1);
+}
+// da dove prosegue la numerazione: l'indagine importata o l'ultima attività precedente dello stesso immobile (per il suggerimento accanto a «Campioni»)
+function numFonte(r) {
+  const prev = precNembo(r).sort((a, b) => (b.data || '').localeCompare(a.data || ''))[0];
+  if (prev) return prev.codice || (prev.type === 'mappatura' ? 'Mappatura' : 'DDA Fase 2') + (prev.data ? ' del ' + fmtD(prev.data) : '');
+  const p = r.precedente;
+  return p && ((p.campioni || []).length || (p.nc || []).length) ? (p.fonte || 'indagine importata') : '';
+}
+const numHint = (r, m) => { const n = precBase(r, m.auto); const f = n && numFonte(r); return n ? `Dopo ${m.auto}${n}${f ? ' · ' + f : ''}` : `Codici automatici ${m.auto}1, ${m.auto}2…`; };
+// interruttore «Prosegui la numerazione» (Rilievo: riga con l'etichetta a sinistra), solo se c'è da cosa proseguire
+function NumSection({ r, up, mats }) {
+  const c = [...mats.filter(m => m.auto).map(m => m.auto), 'NC'].some(p => precBaseAll(r, p));
+  if (!c) return null;
+  const set = v => up(p => {
+    const q = { ...p, numerazione: v ? 'prosegui' : 'nuova' }; const cc = { ...p.campioni };
+    for (const m of mats) if (m.auto && !(p.congelati || {})[m.k] && (cc[m.k] || []).length) cc[m.k] = cc[m.k].map((x, i) => ({ ...x, codice: m.auto + (precBase(q, m.auto) + i + 1) }));
+    return { ...q, campioni: cc, nc: ncRenum(ncOf(p), precBase(q, 'NC')) };
+  });
+  return html`<div class="card"><label class="fg-sw"><span>Prosegui la numerazione</span>
+    <${Toggle} on=${r.numerazione !== 'nuova'} label="Prosegui la numerazione" set=${set} /></label></div>`;
+}
+const renumCamp = (r, m, list) => (!m.auto || (r.congelati || {})[m.k]) ? list : list.map((c, i) => ({ ...c, codice: m.auto + (precBase(r, m.auto) + i + 1) }));
+
+function PrecSection({ r, onRicampiona }) {
+  const p = r.precedente; const [open, setOpen] = useState(false);
+  if (!p || !((p.campioni || []).length || (p.nc || []).length)) return null;
+  const pos = (p.campioni || []).filter(c => c.esito === 'positivo').length;
+  const ES = { positivo: ['Positivo', 'st-pres'], negativo: ['Negativo', 'st-ass'] };
+  const row = (c, i, isNc) => {
+    const m = MATS.find(x => x.k === c.k) || MATS[4]; const [el, ec] = ES[c.esito] || ['Esito n.d.', 'st-nv'];
+    return html`<div key=${c.id} style=${'padding:10px 0;display:grid;gap:6px' + (i ? ';border-top:.5px solid var(--sep)' : '')}>
+      <div class="row"><b style=${'min-width:52px;color:' + (isNc ? 'var(--nc)' : m.c)}>${c.codice}</b>
+        <span class="tb-grow" style="min-width:0">${[c.piano, c.ubicazione].filter(Boolean).join(' · ') || m.l}</span>
+        ${isNc ? html`<span class="badge st-nv">${c.riferimento ? 'NC → ' + c.riferimento : 'NC'}</span>` : html`<span class=${'badge ' + ec} title=${c.esitoDettaglio || ''}>${el}</span>`}
+        <button class="btn sm" onClick=${() => onRicampiona(c)}>Ricampiona</button></div>
+      ${(c.descrizione || c.quantita || c.esitoDettaglio || c.note) && html`<div class="lock" style="padding-left:60px">${[c.descrizione, c.quantita, c.esitoDettaglio, c.note].filter(Boolean).join(' · ')}</div>`}
+      ${(c.foto || []).length > 0 && html`<div style="padding-left:60px"><${PhotoStrip} ids=${c.foto} readonly /></div>`}
+    </div>`;
+  };
+  return html`<div class="sec-h" style="margin-top:14px"><h3>Indagine precedente</h3><span class="hint">${(p.campioni || []).length} campioni${pos ? ' · ' + pos + (pos === 1 ? ' positivo' : ' positivi') : ''}${(p.nc || []).length ? ' · ' + p.nc.length + ' NC' : ''}</span></div>
+    <div class="card tight">
+      <button class="chk-h" aria-expanded=${open} onClick=${() => setOpen(!open)}>
+        <div class="tb-grow"><b>${p.fonte || 'Dati importati da JSON'}</b><small>Solo di riferimento, fuori dalla scheda per il laboratorio</small></div>
+        <span class=${'chev' + (open ? ' open' : '')}><${Icon} n="chev" s=${18} /></span></button>
+      ${open && html`<div>${(p.campioni || []).map((c, i) => row(c, i, false))}${(p.nc || []).map((c, i) => row(c, i + (p.campioni || []).length, true))}</div>`}
+    </div>`;
 }
 
 function newDda(records, settings) {
@@ -137,20 +277,21 @@ function CampFields({ c, upd, list, codice }) {
 /* ---------------- NC: manufatti non campionati (MCA e FAV, numerazione unica NC1, NC2…) ----------------
    r.nc = [{ id, codice, k: 'mca'|'fav', piano, ubicazione, descrizione, quantita, rif (id del campione di riferimento), foto }] */
 const ncOf = r => r.nc || [];
-const ncRenum = list => list.map((x, i) => ({ ...x, codice: 'NC' + (i + 1) }));
-const ncRif = (r, x) => { const c = x.rif && (r.campioni[x.k] || []).find(y => y.id === x.rif); return c ? c.codice : ''; };
+const ncRenum = (list, base = 0) => list.map((x, i) => ({ ...x, codice: 'NC' + (base + i + 1) }));
+const ncRif = (r, x) => { const c = x.rif && [...(r.campioni[x.k] || []), ...((r.precedente || {}).campioni || [])].find(y => y.id === x.rif); return c ? c.codice : ''; };
 function NcSection({ r, up, mat, list }) {
   const [openN, setOpenN] = useState({});
   const L = ncOf(r).filter(x => x.k === mat.k);
   const camp = r.campioni[mat.k] || [];
-  const setNc = fn => up(p => ({ ...p, nc: ncRenum(fn(ncOf(p))) }));
+  const setNc = fn => up(p => ({ ...p, nc: ncRenum(fn(ncOf(p)), precBase(p, 'NC')) }));
   const upd = (id, patch) => setNc(l => l.map(x => x.id === id ? { ...x, ...patch } : x));
   const add = () => { const id = uid('nc'); const last = L[L.length - 1];
     setNc(l => [...l, { id, codice: '', k: mat.k, piano: last ? last.piano : '', ubicazione: '', descrizione: '', quantita: '', rif: '', foto: [] }]);
     setOpenN({ [id]: true }); setTimeout(() => scrollToId('s-' + id), 80); };
   const del = async x => { if (!confirm('Eliminare ' + x.codice + '?')) return; for (const b of blobIds(x)) await removeBlob(b); setNc(l => l.filter(y => y.id !== x.id)); };
-  const next = 'NC' + (ncOf(r).length + 1);
-  return html`<div class="sec-h" style="margin-top:18px"><h3>Manufatti non campionati</h3><span class="hint">NC1, NC2… unica per MCA e FAV</span></div>
+  const next = 'NC' + (precBase(r, 'NC') + ncOf(r).length + 1);
+  const precC = ((r.precedente || {}).campioni || []).filter(c => c.k === mat.k);
+  return html`<div class="sec-h" style="margin-top:18px"><h3>Manufatti non campionati</h3><span class="hint">${precBase(r, 'NC') ? 'Dopo NC' + precBase(r, 'NC') + ' · MCA e FAV' : 'NC1, NC2… unica per MCA e FAV'}</span></div>
     ${L.length > 0 && html`<div class="list">${L.map(x => { const rc = ncRif(r, x); const cx = { ...x, descrizione: x.descrizione, quantita: [x.quantita, rc && 'come ' + rc].filter(Boolean).join(' · ') };
       return html`<${SampleRow} key=${x.id} c=${cx} mat=${mat} open=${!!openN[x.id]} toggle=${() => setOpenN(o => ({ ...o, [x.id]: !o[x.id] }))}
         onPhoto=${ids => upd(x.id, { foto: [...(x.foto || []), ...ids] })}>
@@ -158,7 +299,8 @@ function NcSection({ r, up, mat, list }) {
         <div class="row">
           <input class="inp" placeholder="Quantità (es. 180 mq)" value=${x.quantita || ''} onInput=${e => upd(x.id, { quantita: e.target.value })} aria-label="Quantità" />
           <select class="inp" value=${x.rif || ''} onChange=${e => upd(x.id, { rif: e.target.value })} aria-label="Campione di riferimento">
-            <option value="">Nessun campione di riferimento</option>${camp.map(c => html`<option value=${c.id}>Come ${c.codice}${c.descrizione ? ' · ' + c.descrizione.slice(0, 40) : ''}</option>`)}</select>
+            <option value="">Nessun campione di riferimento</option>${camp.map(c => html`<option value=${c.id}>Come ${c.codice}${c.descrizione ? ' · ' + c.descrizione.slice(0, 40) : ''}</option>`)}
+            ${precC.length > 0 && html`<optgroup label="Indagine precedente">${precC.map(c => html`<option value=${c.id}>Come ${c.codice} (precedente)${c.esito ? ' · ' + c.esito : ''}${c.descrizione ? ' · ' + c.descrizione.slice(0, 30) : ''}</option>`)}</optgroup>`}</select>
         </div>
         <${PhotoStrip} ids=${x.foto || []} max=${4} onAdd=${ids => upd(x.id, { foto: [...(x.foto || []), ...ids] })}
           onRemove=${async id => { await removeBlob(id); upd(x.id, { foto: x.foto.filter(f => f !== id) }); }} />
@@ -257,8 +399,8 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
 
   const mat = MATS.find(m => m.k === tab);
   const camp = r.campioni[tab] || [];
-  const renum = (k, list) => { const m = MATS.find(x => x.k === k); return (!m.auto || r.congelati[k]) ? list : list.map((c, i) => ({ ...c, codice: m.auto + (i + 1) })); };
-  const nextCode = k => { const m = MATS.find(x => x.k === k); if (!m.auto) return ''; const l = r.campioni[k]; if (!r.congelati[k]) return m.auto + (l.length + 1); return m.auto + (l.map(c => +c.codice.slice(1) || 0).reduce((a, b) => Math.max(a, b), 0) + 1); };
+  const renum = (k, list) => renumCamp(r, MATS.find(x => x.k === k), list);
+  const nextCode = k => nextCampCode(r, MATS.find(x => x.k === k));
   const setCamp = (k, fn) => up(p => ({ ...p, campioni: { ...p.campioni, [k]: fn(p.campioni[k]) } }));
   const updCamp = (id, patch) => setCamp(tab, l => l.map(c => c.id === id ? { ...c, ...patch } : c));
   const lastPiano = () => { const l = r.campioni[tab] || []; return l.length ? l[l.length - 1].piano || '' : ''; };
@@ -283,14 +425,13 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
     updCk(it.id, { fatto: true });
   };
   const addCamp2 = (k, descrizione, ubicazione) => { const id = uid('c'); setCamp(k, l => [...l, { id, codice: nextCode2(k), descrizione, piano: '', ubicazione: ubicazione || '', tipo: '', quantita: '', data: today(), foto: [] }]); setOpenS({ [id]: true }); };
-  const nextCode2 = k => { const m = MATS.find(x => x.k === k); if (!m.auto) return ''; const l = r.campioni[k]; if (!r.congelati[k]) return m.auto + (l.length + 1); return m.auto + (l.map(c => +c.codice.slice(1) || 0).reduce((a, b) => Math.max(a, b), 0) + 1); };
+  const nextCode2 = nextCode;
 
   const doImport1 = e => {
     const f = e.target.files[0]; e.target.value = ''; if (!f) return;
     const rd = new FileReader();
     rd.onload = () => {
-      try { const { patch, n } = importDda1(rd.result, r); up(patch); toast(`Importati ${n} campi`); }
-      catch (err) { fail('Import non riuscito', err); }
+      importDda(rd.result, r).then(({ patch, msg }) => { up(patch); toast(msg); }).catch(err => fail('Import non riuscito', err));
     };
     rd.readAsText(f);
   };
@@ -301,7 +442,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
   const sup = superamenti(r);
 
   return html`<div class="content form">
-    <${DetailHead} eye=${'DDA · Fase ' + r.fase} title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
+    <${DetailHead} conclusa=${r.conclusa} eye=${'DDA · Fase ' + r.fase} title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
     <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'sop', l: 'Sopralluogo', n: r.recs.length }, { k: 'camp', l: 'Campioni', n: allCamp(r).length }, firmeOn && { k: 'firme', l: 'Firme', n: (r.fogli || []).length }, { k: 'file', l: 'File' }].filter(Boolean)} />
     ${T === 'anag' && html`<div class="card"><div class="grid2">
       <${Inp} cls="full" label="Commessa - progetto" value=${r.commessa} set=${v => up({ commessa: v })} imp=${impOf(r, 'commessa')} placeholder="es. 000/26" />
@@ -371,6 +512,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
       ${planSection}
     `}
     ${T === 'camp' && html`
+      <${PrecSection} r=${r} onRicampiona=${c => { addCk({ matrice: c.k, descrizione: [c.codice, c.descrizione].filter(Boolean).join(' · '), ubicazione: [c.piano, c.ubicazione].filter(Boolean).join(' - ') }); toast(c.codice + ' aggiunto ai punti da campionare'); }} />
       <div class="sec-h" style="margin-top:14px"><h3>Punti da campionare</h3><span class="hint">${(r.checklist || []).filter(c => !c.fatto).length} da fare</span></div>
       <div class="card tight">
         ${!(r.checklist || []).length && html`<p class="lead" style="margin:2px 0 4px">Segna qui cosa prevedi di campionare prima di uscire: manufatti, tipologia, dove si trovano. Man mano che preleva, spuntali.</p>`}
@@ -394,7 +536,8 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
       </div>
 
 
-      <div class="sec-h"><h3>Campioni</h3><span class="hint">${mat.auto ? (r.congelati[tab] ? 'Codici bloccati dalla scheda' : `Codici automatici ${mat.auto}1, ${mat.auto}2…`) : 'Codice libero'}</span></div>
+      <div class="sec-h"><h3>Campioni</h3><span class="hint">${mat.auto ? (r.congelati[tab] ? 'Codici bloccati dalla scheda' : numHint(r, mat)) : 'Codice libero'}</span></div>
+      ${r.fase === 2 && html`<${NumSection} r=${r} up=${up} mats=${MATS} />`}
       <${CampSummary} r=${r} mats=${MATS} todo=${(r.checklist || []).filter(c => !c.fatto).length} />
       <div class="mtabs" role="tablist">${MATS.map(m => html`<button role="tab" aria-selected=${tab === m.k} class=${tab === m.k ? 'on' : ''} onClick=${() => setTab(m.k)}>${m.l}<small><i class="mdot" style=${'background:' + m.c}></i>${r.campioni[m.k].length}</small></button>`)}</div>
       ${!camp.length && html`<div class="card"><div class="empty" style="padding:18px">Nessun campione ${mat.l}.</div></div>`}
@@ -458,8 +601,9 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
         (r.campioni.mca.length || r.campioni.fav.length) && { ic: 'gear', l: 'Laboratorio, offerta, codici analisi', fn: onSettings },
         T !== 'anag' && { ic: 'share', l: OD.account ? 'Carica su OneDrive' : 'Invia a OneDrive', fn: () => OD.account ? odSync([r], settings) : sendToOneDrive(r, settings) }]],
         ['Dati', [
-          { ic: 'file', l: 'Importa da un DDA precedente', s: 'File JSON: riempie solo i campi ancora vuoti', fn: () => importInp.current.click() },
-          { ic: 'paper', l: 'Scarica il modello JSON', fn: downloadDda1Template }]],
-        opzArchivio({ r, settings, onDelete, elimina: 'Elimina l’indagine', firme: !firmeOn && (() => { up(q => prepFirme({ ...q }, settings, true)); setT('firme'); }) })]} />
+          { ic: 'file', l: 'Importa da un DDA precedente', s: 'JSON di Fase 1 o Fase 2: riempie solo i campi ancora vuoti', fn: () => importInp.current.click() },
+          { ic: 'paper', l: 'Scarica il modello JSON Fase 1', fn: downloadDda1Template },
+          { ic: 'paper', l: 'Scarica il modello JSON Fase 2', fn: downloadDda2Template }]],
+        opzArchivio({ r, settings, onDelete, up, elimina: 'Elimina l’indagine', firme: !firmeOn && (() => { up(q => prepFirme({ ...q }, settings, true)); setT('firme'); }) })]} />
   </div>`;
 }
