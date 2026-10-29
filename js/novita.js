@@ -3,6 +3,12 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
+  { v: 48, data: '2026-10-29', tipo: 'minore', titolo: 'Planimetrie e Fase 2 dai documenti',
+    voci: [
+      'I file JSON preparati dai documenti (PMC, mappature, DDA Fase 1 e Fase 2) possono contenere le planimetrie: pagine o immagini con ubicazioni, sigle e perimetri. Nembo le aggiunge da sole alla sezione Planimetrie, pronte da annotare.',
+      'Le planimetrie prese da un documento precedente hanno l’indicazione «Storica» e, sotto il nome, la spiegazione dei segni (es. «Fabbricato A», «S1 = sondaggio»).',
+      'Nuovo import DDA Fase 2: i campioni e gli NC dell’indagine precedente compaiono in «Indagine precedente», con esito e foto. Sono di riferimento e non entrano nella scheda per il laboratorio; «Ricampiona» li aggiunge ai punti da campionare.',
+      'Lo stesso JSON di Fase 2 si può importare in un Sopralluogo RA: i campioni MCA non negativi e gli NC MCA diventano manufatti.' ] },
   { v: 46, data: '2026-10-26', tipo: 'maggiore', titolo: 'Scheda File, Home e tema scuro',
     voci: [
       'Nuova scheda «File» in ogni attività: schede campioni, riepiloghi, scheda radon, schede aria, Word HSE e fogli firme. Grigio da generare, verde generato (tocca per aprirlo), ambra se i dati sono cambiati dopo. «Rigenera» crea una nuova revisione senza cancellare la precedente. I file vanno anche su OneDrive.',

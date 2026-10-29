@@ -60,8 +60,17 @@ function dataUriToBlob(s) {
 async function importRa(text, rec) {
   let d;
   try { d = JSON.parse(text); } catch (e) { throw new Error('il file non è un JSON valido'); }
-  if (d.type && d.type !== 'ra-mappatura') throw new Error('il file non è una mappatura per il sopralluogo RA');
-  const list = Array.isArray(d) ? d : d.manufatti;
+  if (d.type && d.type !== 'ra-mappatura' && d.type !== 'dda-fase2') throw new Error('il file non è una mappatura/PMC né una DDA Fase 2 per il sopralluogo RA');
+  // DDA Fase 2: i manufatti sono i campioni MCA non negativi e gli NC MCA, con codici, piano e ubicazione del documento
+  const daF2 = d.type === 'dda-fase2';
+  const ubi = x => [x.piano, x.ubicazione].map(v => (v == null ? '' : String(v)).trim()).filter(Boolean).join(' - ');
+  const list = Array.isArray(d) ? d : daF2 ? [
+    ...(Array.isArray(d.campioni) ? d.campioni : []).filter(c => c && String(c.matrice || '').toLowerCase() === 'mca' && String(c.esito || '').toLowerCase() !== 'negativo')
+      .map(c => ({ codice: c.codice, ubicazione: ubi(c), descrizione: c.descrizione, tipologia: c.tipologia, quantita: c.quantita,
+        notePrecedenti: [c.esito && 'Esito: ' + c.esito + (c.esitoDettaglio ? ' (' + c.esitoDettaglio + ')' : ''), c.note].filter(Boolean).join(' · '), foto: c.foto })),
+    ...(Array.isArray(d.nc) ? d.nc : []).filter(c => c && String(c.matrice || 'mca').toLowerCase() === 'mca')
+      .map(c => ({ codice: c.codice, ubicazione: ubi(c), descrizione: c.descrizione, quantita: c.quantita,
+        notePrecedenti: [c.riferimento && 'Non campionato, riferito a ' + c.riferimento, c.note].filter(Boolean).join(' · '), foto: c.foto }))] : d.manufatti;
   if (!Array.isArray(list)) throw new Error('nel file manca l\'elenco "manufatti"');
   const patch = {}; let head = 0;
   if (!Array.isArray(d)) for (const k of ['fonte', 'commessa', 'cliente', 'citta', 'indirizzo', 'sito', 'incaricoDal', 'incaricoAl']) if (d[k] && !rec[k] && (!k.startsWith('incarico') || /^\d{4}-\d{2}-\d{2}$/.test(d[k]))) { patch[k] = String(d[k]); head++; }
@@ -81,14 +90,16 @@ async function importRa(text, rec) {
       }
     }
     add.push(markImpSelf(newManufatto({ codice, ubicazione: s(x.ubicazione), descrizione: s(x.descrizione), tipologia: s(x.tipologia), quantita: s(x.quantita),
-      statoPrec: s(x.statoPrecedente || x.stato), notePrec: s(x.notePrecedenti || x.note), fotoPrec: ids, fonte: (!Array.isArray(d) && d.fonte) || 'mappatura o PMC' }), ['codice', 'ubicazione', 'descrizione', 'tipologia', 'quantita']));
+      statoPrec: s(x.statoPrecedente || x.stato), notePrec: s(x.notePrecedenti || x.note), fotoPrec: ids, fonte: (!Array.isArray(d) && d.fonte) || (daF2 ? 'DDA Fase 2' : 'mappatura o PMC') }), ['codice', 'ubicazione', 'descrizione', 'tipologia', 'quantita']));
   }
   if (add.length) patch.manufatti = [...rec.manufatti, ...add];
   if (head) { const t = markImp({ imp: rec.imp }, patch, IMP_ANAG); if (t.imp) patch.imp = t.imp; }
-  if (!add.length && !head) throw new Error('nessun manufatto nuovo: i codici del file sono già tutti in elenco');
+  const pl = Array.isArray(d) ? [] : await importPlanimetrie(d.planimetrie, rec.planimetrie || []);
+  if (pl.length) patch.planimetrie = [...(rec.planimetrie || []), ...pl];
+  if (!add.length && !head && !pl.length) throw new Error('nessun manufatto nuovo: i codici del file sono già tutti in elenco');
   // "firme": true nel file → foglio firme pronto (false: nessun foglio; assente: preferenza del cliente)
   if (!Array.isArray(d) && !(rec.fogli || []).length) { const x = prepFirme({ ...rec, ...patch }, _settings, typeof d.firme === 'boolean' ? d.firme : null); if (x.firme) Object.assign(patch, { firme: true, fogli: x.fogli }); }
-  return { patch, nuovi: add.length, head, foto };
+  return { patch, nuovi: add.length, head, foto, plan: pl.length };
 }
 
 /* ---------------- manufatti da una Mappatura MCA o da una DDA Fase 2 ---------------- */
@@ -244,9 +255,9 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
     const rd = new FileReader();
     rd.onload = async () => {
       try {
-        const { patch, nuovi, head, foto } = await importRa(rd.result, r);
+        const { patch, nuovi, head, foto, plan } = await importRa(rd.result, r);
         up(patch);
-        toast(`Importati ${nuovi} manufatti${foto ? ' con ' + foto + ' foto' : ''}${head ? ' e ' + head + ' dati del sito' : ''}`);
+        toast(`Importati ${nuovi} manufatti${foto ? ' con ' + foto + ' foto' : ''}${plan ? ', ' + plan + (plan === 1 ? ' planimetria' : ' planimetrie') : ''}${head ? ' e ' + head + ' dati del sito' : ''}`);
       } catch (err) { fail('Import non riuscito', err); }
     };
     rd.readAsText(file);

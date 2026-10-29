@@ -119,7 +119,7 @@ async function agendaJson(text, slot, records, s) {
   let d; try { d = JSON.parse(text); } catch (e) { throw new Error('il file non è un JSON valido'); }
   if (d && d.type === 'nembo-programmazione') {
     const list = Array.isArray(d.attivita) ? d.attivita : [];
-    const all = [...records], out = []; let saltate = 0, ripresi = 0, conMan = 0;
+    const all = [...records], out = []; let saltate = 0, ripresi = 0, conMan = 0, conPl = 0;
     for (const x of list) {
       if (!x || !PIANO_TIPI[x.tipo] || !/^\d{4}-\d{2}-\d{2}$/.test(x.data || '')) { saltate++; continue; }
       const str = v => (v == null ? '' : String(v)).trim();
@@ -142,10 +142,12 @@ async function agendaJson(text, slot, records, s) {
           if (prev) { Object.assign(r, await raRiprendi(prev, r)); ripresi++; }
         }
       }
+      // planimetrie nel piano (immagini o pagine dei documenti, vedi importPlanimetrie)
+      if (Array.isArray(x.planimetrie) && x.planimetrie.length && 'planimetrie' in r) { const pl = await importPlanimetrie(x.planimetrie, r.planimetrie || []); if (pl.length) { r.planimetrie = [...(r.planimetrie || []), ...pl]; conPl++; } }
       all.push(r); out.push(r);
     }
     if (!out.length) throw new Error(saltate ? 'nessuna attività nuova: righe già presenti o senza tipo/data' : 'il piano non contiene attività');
-    const det = [conMan && `${conMan} RA con i manufatti del piano`, ripresi && `${ripresi} RA con i manufatti ripresi dall'anno precedente`].filter(Boolean).join(', ');
+    const det = [conMan && `${conMan} RA con i manufatti del piano`, ripresi && `${ripresi} RA con i manufatti ripresi dall'anno precedente`, conPl && `${conPl} con planimetrie`].filter(Boolean).join(', ');
     return { recs: out, msg: `${out.length} ${out.length === 1 ? 'attività programmata' : 'attività programmate'}${det ? ': ' + det : ''}${saltate ? ` (${saltate} saltate)` : ''}` };
   }
   if (Array.isArray(d) || (d && (d.type === 'ra-mappatura' || Array.isArray(d.manufatti)))) {
