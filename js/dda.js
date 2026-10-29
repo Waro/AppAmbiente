@@ -146,6 +146,10 @@ const precNembo = r => _recsNum.filter(x => x.id !== r.id && !x._new && (x.type 
 // da lì prosegue la numerazione, salvo "numerazione": "nuova" nel JSON
 function precBase(r, pre) {
   if (!pre || r.numerazione === 'nuova') return 0;
+  return precBaseAll(r, pre);
+}
+// come precBase, ma senza la scelta «riparti da 1» (serve al controllo della numerazione)
+function precBaseAll(r, pre) {
   const re = new RegExp('^' + pre + '\\s*(\\d+)$', 'i');
   const p = r.precedente || {};
   const codes = [...(p.campioni || []), ...(p.nc || [])].map(c => c.codice);
@@ -158,6 +162,25 @@ function nextCampCode(r, m) {
   const l = r.campioni[m.k] || [], base = precBase(r, m.auto);
   if (!(r.congelati || {})[m.k]) return m.auto + (base + l.length + 1);
   return m.auto + (Math.max(base, l.map(c => +c.codice.slice(1) || 0).reduce((a, b) => Math.max(a, b), 0)) + 1);
+}
+// controllo «Prosegui la numerazione» nelle schede Campioni di DDA Fase 2 e Mappatura (compare solo se c'è da cosa proseguire)
+function NumSection({ r, up, mats }) {
+  const pres = [...mats.filter(m => m.auto).map(m => [m.auto, precBaseAll(r, m.auto)]), ['NC', precBaseAll(r, 'NC')]].filter(x => x[1]);
+  if (!pres.length) return null;
+  const on = r.numerazione !== 'nuova';
+  const fonti = [r.precedente && ((r.precedente.campioni || []).length || (r.precedente.nc || []).length) && (r.precedente.fonte || 'indagine importata'),
+    ...precNembo(r).map(x => (x.type === 'mappatura' ? 'Mappatura ' : 'DDA Fase 2 ') + (x.codice || '') + (x.data ? ' del ' + fmtD(x.data) : ''))].filter(Boolean);
+  const bloccati = mats.some(m => (r.congelati || {})[m.k]);
+  const set = v => up(p => {
+    const q = { ...p, numerazione: v ? 'prosegui' : 'nuova' }; const cc = { ...p.campioni };
+    for (const m of mats) if (m.auto && !(p.congelati || {})[m.k] && (cc[m.k] || []).length) cc[m.k] = cc[m.k].map((c, i) => ({ ...c, codice: m.auto + (precBase(q, m.auto) + i + 1) }));
+    return { ...q, campioni: cc, nc: ncRenum(ncOf(p), precBase(q, 'NC')) };
+  });
+  return html`<div class="card tight" style="margin-top:10px">
+    <label class="fg-sw"><span><b>Prosegui la numerazione</b><small style="display:block;color:var(--muted);font-size:var(--fs-sm);margin-top:2px">${on
+      ? 'Dopo ' + pres.map(([p, n]) => p + n).join(', ') + (fonti.length ? ' · ' + fonti.join(', ') : '')
+      : 'I campioni ripartono da ' + pres.map(([p]) => p + '1').join(', ')}${bloccati ? ' · i codici bloccati dalla scheda non cambiano' : ''}</small></span>
+      <${Toggle} on=${on} label="Prosegui la numerazione" set=${set} /></label></div>`;
 }
 const renumCamp = (r, m, list) => (!m.auto || (r.congelati || {})[m.k]) ? list : list.map((c, i) => ({ ...c, codice: m.auto + (precBase(r, m.auto) + i + 1) }));
 
@@ -513,6 +536,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
 
 
       <div class="sec-h"><h3>Campioni</h3><span class="hint">${mat.auto ? (r.congelati[tab] ? 'Codici bloccati dalla scheda' : precBase(r, mat.auto) ? `Prosegue dopo ${mat.auto}${precBase(r, mat.auto)}` : `Codici automatici ${mat.auto}1, ${mat.auto}2…`) : 'Codice libero'}</span></div>
+      ${r.fase === 2 && html`<${NumSection} r=${r} up=${up} mats=${MATS} />`}
       <${CampSummary} r=${r} mats=${MATS} todo=${(r.checklist || []).filter(c => !c.fatto).length} />
       <div class="mtabs" role="tablist">${MATS.map(m => html`<button role="tab" aria-selected=${tab === m.k} class=${tab === m.k ? 'on' : ''} onClick=${() => setTab(m.k)}>${m.l}<small><i class="mdot" style=${'background:' + m.c}></i>${r.campioni[m.k].length}</small></button>`)}</div>
       ${!camp.length && html`<div class="card"><div class="empty" style="padding:18px">Nessun campione ${mat.l}.</div></div>`}

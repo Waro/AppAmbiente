@@ -10,7 +10,7 @@ const NOVITA = [
       'Le planimetrie prese da un documento precedente hanno l’indicazione «Storica» e, sotto il nome, la spiegazione dei segni (es. «Fabbricato A», «S1 = sondaggio»).',
       'Nuovo import DDA Fase 2: i campioni e gli NC dell’indagine precedente compaiono in «Indagine precedente», con esito e foto. Sono di riferimento e non entrano nella scheda per il laboratorio; «Ricampiona» li aggiunge ai punti da campionare.',
       'Anche la Mappatura MCA e FAV importa l’indagine precedente (⋯ → Importa l’indagine precedente), con «Ricampiona» che crea il nuovo campione con piano, ubicazione e descrizione.',
-      'I campioni integrativi proseguono la numerazione dell’indagine precedente, importata da JSON o già in Nembo per lo stesso immobile (Mappatura o DDA Fase 2 con data precedente): dopo A1…A6 il primo nuovo è A7, dopo NC3 il primo NC è NC4. Con «numerazione»: «nuova» nel JSON si riparte da 1. Un NC può riferirsi anche a un campione precedente.',
+      'I campioni integrativi proseguono la numerazione dell’indagine precedente, importata da JSON o già in Nembo per lo stesso immobile (Mappatura o DDA Fase 2 con data precedente): dopo A1…A6 il primo nuovo è A7, dopo NC3 il primo NC è NC4. Nella scheda Campioni l’interruttore «Prosegui la numerazione» mostra da dove si prosegue e, spento, fa ripartire da 1 (anche «numerazione»: «nuova» nel JSON). Un NC può riferirsi anche a un campione precedente.',
       'Lo stesso JSON di Fase 2 si può importare in un Sopralluogo RA: i campioni MCA non negativi e gli NC MCA diventano manufatti.' ] },
   { v: 46, data: '2026-10-26', tipo: 'maggiore', titolo: 'Scheda File, Home e tema scuro',
     voci: [

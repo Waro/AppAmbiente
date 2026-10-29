@@ -126,6 +126,7 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
       setCamp(m.k, l => [...l, { id, codice: nextCode(m.k), descrizione: c.descrizione || '', quantita: c.quantita || '', piano: c.piano || '', ubicazione: c.ubicazione || '', data: today(), foto: [] }]);
       setOpenS({ [id]: true }); setTimeout(() => scrollToId('s-' + id), 120); toast('Nuovo campione ' + nextCode(m.k) + ' da ' + c.codice); }} />
     <div class="sec-h"><h3>Campioni</h3><span class="hint">${r.congelati[tab] ? 'Codici bloccati dalla scheda' : precBase(r, mat.auto) ? `Prosegue dopo ${mat.auto}${precBase(r, mat.auto)}` : `Codici automatici ${mat.auto}1, ${mat.auto}2…`}</span></div>
+    <${NumSection} r=${r} up=${up} mats=${MAP_MATS} />
     <${CampSummary} r=${r} mats=${MAP_MATS} />
     <div class="seg" style="margin-bottom:6px">${MAP_MATS.map(m => html`
       <button class=${tab === m.k ? 'on' : ''} onClick=${() => setTab(m.k)}><i class="mdot" style=${'background:' + m.c}></i>${m.l}<span class="n">${(r.campioni[m.k] || []).length}</span></button>`)}</div>
