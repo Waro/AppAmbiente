@@ -200,14 +200,14 @@ function RaList({ records, open, create, activeId, acts }) {
 }
 
 /* ---------------- scheda manufatto ---------------- */
-function ManufattoCard({ m, open, toggle, onUpd, onDel }) {
+function ManufattoCard({ m, open, toggle, onUpd, onDel, conclusa }) {
   const st = raStato(m.stato);
   const set = patch => onUpd(m.id, patch);
   return html`<div class="punto" id=${'m-' + m.id}>
     <button class="punto-h" aria-expanded=${open} onClick=${toggle}>
       <span class=${'rtag' + (st ? ' tint' : '')} style=${st ? '--c:' + st.v : ''}>${m.codice || '—'}</span>
       <div class="t"><b>${m.ubicazione || 'Ubicazione da indicare'}</b><small>${m.stato && !(m.foto || []).length ? html`<span class="crit">Scatta la foto prima di uscire</span>` : m.descrizione || 'Descrizione da indicare'}</small></div>
-      ${st ? html`<span class=${'badge ' + st.b}>${st.s}</span>` : html`<span class="badge st-none">Da verificare</span>`}
+      ${st ? html`<span class=${'badge ' + st.b}>${st.s}</span>` : html`<span class="badge st-none">${conclusa ? 'Non visionato' : 'Da verificare'}</span>`}
       <span class=${'chev' + (open ? ' open' : '')}><${Icon} n="chev" s=${18} /></span></button>
     ${open && html`<div class="punto-b">
       <div class="grid2">
@@ -330,9 +330,9 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
 
     <div class="sec-h"><h3>Manufatti · ${tot}</h3><span class="hint">${fatti} di ${tot} verificati</span></div>
     ${tot > 0 && html`<div class="track" style="margin:0 2px 12px"><i style=${'background:var(--ok);width:' + Math.round(fatti / tot * 100) + '%'}></i></div>
-      <div class="pills">${[['tutti', 'Tutti', tot], ['da', 'Da verificare', tot - fatti], ['fatti', 'Verificati', fatti]].map(([k, l, n]) => html`<button class=${'pill' + (f === k ? ' on' : '')} onClick=${() => setF(k)}>${l}<span class="n">${n}</span></button>`)}
-        ${fatti < tot && html`<button class="pill nx" onClick=${nextM}>Prossimo da verificare ›</button>`}</div>`}
-    ${list.map(m => html`<${ManufattoCard} key=${m.id} m=${m} open=${!!openM[m.id]} toggle=${() => setOpenM({ ...openM, [m.id]: !openM[m.id] })} onUpd=${updM} onDel=${delM} />`)}
+      <div class="pills">${[['tutti', 'Tutti', tot], ['da', r.conclusa ? 'Non visionati' : 'Da verificare', tot - fatti], ['fatti', 'Verificati', fatti]].map(([k, l, n]) => html`<button class=${'pill' + (f === k ? ' on' : '')} onClick=${() => setF(k)}>${l}<span class="n">${n}</span></button>`)}
+        ${fatti < tot && !r.conclusa && html`<button class="pill nx" onClick=${nextM}>Prossimo da verificare ›</button>`}</div>`}
+    ${list.map(m => html`<${ManufattoCard} key=${m.id} m=${m} open=${!!openM[m.id]} toggle=${() => setOpenM({ ...openM, [m.id]: !openM[m.id] })} onUpd=${updM} onDel=${delM} conclusa=${!!r.conclusa} />`)}
     ${f === 'da' && tot > 0 && !list.length && html`<div class="empty" style="padding:20px"><b>Tutti verificati</b>Controlla le note e carica tutto su OneDrive.</div>`}
     <button class="btn dashed" onClick=${addM}>+ Aggiungi manufatto</button>
 
