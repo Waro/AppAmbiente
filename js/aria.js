@@ -74,7 +74,7 @@ function AriaPuntoCard({ p, open, toggle, onUpd, onMet, onDel, onScan, settings 
   const badge = st === 'non' ? html`<span class="badge b-grey">Non eseguito</span>`
     : st === 'esito' ? html`<span class=${'badge ' + (e && e.over ? 'b-nc' : 'b-ok')}>${e.txt} ff/l</span>`
     : st === 'prelevato' ? html`<span class="badge b-f2">Attesa esito</span>` : html`<span class="badge st-none">Da prelevare</span>`;
-  return html`<div class="punto" id=${'s-' + p.id}>
+  return html`<div class=${'punto' + (e && e.over ? ' st-bar st-err' : '')} id=${'s-' + p.id}>
     <button class="punto-h" aria-expanded=${open} onClick=${toggle}>
       <span class="rtag tint" style="--c:var(--t-aria)">${p.codice || ariaPref(p.metodica)}</span>
       <div class="t"><b>${[p.piano, p.postazione].filter(Boolean).join(' · ') || 'Postazione da indicare'}</b>

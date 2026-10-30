@@ -192,7 +192,7 @@ function RaList({ records, open, create, activeId, acts }) {
 function ManufattoCard({ m, open, toggle, onUpd, onDel }) {
   const st = raStato(m.stato);
   const set = patch => onUpd(m.id, patch);
-  return html`<div class="punto" id=${'m-' + m.id}>
+  return html`<div class=${'punto' + (m.stato === 'danneggiato' ? ' st-bar st-err' : '')} id=${'m-' + m.id}>
     <button class="punto-h" aria-expanded=${open} onClick=${toggle}>
       <span class=${'rtag' + (st ? ' tint' : '')} style=${st ? '--c:' + st.v : ''}>${m.codice || '—'}</span>
       <div class="t"><b>${m.ubicazione || 'Ubicazione da indicare'}</b><small>${m.stato && !(m.foto || []).length ? html`<span class="crit">Scatta la foto prima di uscire</span>` : m.descrizione || 'Descrizione da indicare'}</small></div>

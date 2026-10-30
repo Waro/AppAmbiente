@@ -87,7 +87,7 @@ function FogliFirme({ r, up, settings }) {
   const cur = fogli.find(x => x.id === open);
   useEffect(() => { if (cur && cur.auto && !cur.chiuso) setF(cur.id, x => ({ ...foglioAuto(r, x, settings), auto: false, tpl: undefined })); }, [open]);
   return html`<div class="sec-h" id=${'firme-' + r.id}><h3>Firme</h3><span class="hint">Presenze, informative, consegne</span></div>
-    ${fogli.length > 0 && html`<div class="list" style="margin-bottom:8px">${fogli.map(f => { const n = foglioFirme(f); return html`<button class="rcard fg-card" key=${f.id} onClick=${() => setOpen(f.id)}>
+    ${fogli.length > 0 && html`<div class="list" style="margin-bottom:8px">${fogli.map(f => { const n = foglioFirme(f); return html`<button class=${'rcard fg-card' + (f.chiuso ? ' st-bar st-ok' : '')} key=${f.id} onClick=${() => setOpen(f.id)}>
       <div class="r1"><span class="ttl" style="margin:0">${f.titolo || 'Foglio firme'}</span>
         <span class=${'badge ' + (f.chiuso ? 'b-ok' : n ? 'b-f2' : 'b-grey')}>${f.chiuso ? 'Chiuso' : n ? 'In corso' : 'Da firmare'}</span><span class="dt">${fmtD(f.data)}</span></div>
       <div class="sum">${n} ${n === 1 ? 'firma' : 'firme'}${f.firmaRelatore ? ' + relatore' : ''}${f.inclMan && foglioElenco(r) ? ' · con elenco ' + foglioElenco(r).nome : ''}</div></button>`; })}</div>`}

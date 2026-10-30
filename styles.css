@@ -45,7 +45,7 @@
   --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 24px;
   --gutter: var(--sp-4); --gap: var(--sp-3); --tap: 44px;
   /* Ombre e veli */
-  --sh-pri: 0 4px 14px var(--pri-shadow); --sh-seg: 0 1px 3px rgba(0,0,0,.10); --sh-card: none;
+  --sh-pri: 0 4px 14px var(--pri-shadow); --sh-seg: 0 1px 3px rgba(0,0,0,.10); --sh-card: 0 0 0 transparent; /* non "none": deve potersi combinare con altre ombre (indicatore di stato) */
   --sh-pop: 0 8px 24px rgba(20,30,60,.16), 0 1px 3px rgba(20,30,60,.08);
   --scrim: rgba(16,22,42,.45); --scrim-strong: rgba(16,22,42,.55);
   /* Elementi variabili tra i temi */
@@ -270,12 +270,14 @@ input[type=checkbox] { accent-color: var(--blue); }
 /* Indicatore di stato: un solo modello in tutta l'app, quello delle Notifiche.
    Barra di 4 px sul lato sinistro, disegnata come ombra interna: segue la curva degli angoli dell'elemento.
    Colore in --st (verde caricato, ambra da ricaricare, rosso errore). */
-.st-bar, .rcard.od-ok:not(.on), .rcard.od-stale:not(.on), .rcard.od-err:not(.on) { box-shadow: inset 4px 0 0 var(--st); }
+/* (regole della barra in fondo al file, dopo i componenti che hanno un'ombra propria) */
 .rcard.od-ok { --st: var(--ok); } .rcard.od-stale { --st: var(--warn); } .rcard.od-err { --st: var(--danger); }
 .st-ok { --st: var(--ok); } .st-warn { --st: var(--warn); } .st-err { --st: var(--danger); } .st-info { --st: var(--blue); }
 /* le righe dentro un elenco prendono gli angoli arrotondati dell'elenco: la barra segue il profilo come nelle Notifiche */
 .list > .rcard:first-child { border-top-left-radius: inherit; border-top-right-radius: inherit; }
 .list > .rcard:last-child { border-bottom-left-radius: inherit; border-bottom-right-radius: inherit; }
+.card > .prow:first-child { border-top-left-radius: inherit; border-top-right-radius: inherit; }
+.card > .prow:last-child { border-bottom-left-radius: inherit; border-bottom-right-radius: inherit; }
 .od-tag { display: inline-block; margin-top: 7px; font-size: var(--fs-sm); font-weight: 600; border-radius: var(--r-pill); padding: 2px 10px; }
 .od-tag.ok { color: var(--ok); background: var(--ok-soft); }
 .od-tag.stale { color: var(--warn); background: var(--warn-soft); }
@@ -459,7 +461,7 @@ input[type=checkbox] { accent-color: var(--blue); }
 .mom-h .n { width: 28px; height: 28px; border-radius: 50%; background: var(--fill-soft); color: var(--text2); font-size: var(--fs-md); font-weight: 700; display: grid; place-items: center; }
 .mom.done .mom-h .n { background: var(--ok); color: var(--on-accent); }
 .mom.cur .mom-h .n { background: var(--blue); color: var(--on-accent); }
-.mom.cur { box-shadow: inset 0 0 0 2px var(--blue), var(--sh-card); }
+/* stato del momento: indicatore di stato (barra a sinistra) */
 .mom-h b { font-size: var(--fs-lg); font-weight: 600; flex: 1; }
 .who { font-size: var(--fs-sm); font-weight: 600; color: var(--muted); letter-spacing: .05em; margin: 14px 0 6px; }
 .sigbox { border: 1.5px dashed var(--chev); border-radius: var(--r-md); min-height: 64px; display: grid; place-items: center; background: var(--fill-soft); width: 100%; color: var(--blue); font-size: var(--fs-base); font-weight: 500; padding: 4px; }
@@ -1007,3 +1009,7 @@ img.logo { background: none; object-fit: cover; }
 }
 @media (min-width: 1000px) { .fab { display: none; } }
 .r1 .drone-ic { margin: 0 0 0 6px; }
+
+/* Indicatore di stato: dopo tutti i componenti, così vale anche su card, momenti, manufatti e punti */
+.st-bar, .rcard.od-ok:not(.on), .rcard.od-stale:not(.on), .rcard.od-err:not(.on) { box-shadow: inset 4px 0 0 var(--st), var(--sh-card); }
+.list .st-bar, .card .st-bar, .list .rcard[class*="od-"]:not(.on) { box-shadow: inset 4px 0 0 var(--st); }
