@@ -477,7 +477,7 @@ function Notifiche({ settings, records = [], openRec }) {
         <button class=${f === 'ok' ? 'on' : ''} onClick=${() => setF('ok')}>Esiti · ${list.length - nErr}</button>
       </div></div>`}
     ${!shown.length && html`<div class="empty"><b>Nessuna notifica</b>${list.length ? 'Niente in questa categoria.' : 'Qui compariranno gli esiti dei caricamenti e gli eventuali errori.'}</div>`}
-    <div>${shown.map(n => html`<div class="card tight" key=${n.id} style=${'box-shadow:inset 4px 0 0 ' + COL[n.level] + ';padding:12px 14px 12px 18px'}>
+    <div>${shown.map(n => html`<div class="card tight st-bar" key=${n.id} style=${'--st:' + COL[n.level] + ';padding:12px 14px 12px 18px'}>
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline">
         <b style=${'font-size:var(--fs-sm);font-weight:600;color:' + COL[n.level]}>${LBL[n.level]}</b>
         <span style="font-size:var(--fs-xs);color:var(--muted)">${new Date(n.t).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}</span></div>

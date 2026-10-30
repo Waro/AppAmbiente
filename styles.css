@@ -267,9 +267,15 @@ input[type=checkbox] { accent-color: var(--blue); }
 .rcard .l { font-size: var(--fs-md); line-height: 1.4; margin-top: 4px; display: flex; gap: 8px; align-items: baseline; color: var(--text2); }
 .rcard .l b { font-family: var(--mono); font-weight: 600; font-size: var(--fs-sm); }
 .rcard .l .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; transform: translateY(-1px); }
-.rcard.od-ok:not(.on) { box-shadow: inset 4px 0 0 var(--ok); }
-.rcard.od-stale:not(.on) { box-shadow: inset 4px 0 0 var(--warn); }
-.rcard.od-err:not(.on) { box-shadow: inset 4px 0 0 var(--danger); }
+/* Indicatore di stato: un solo modello in tutta l'app, quello delle Notifiche.
+   Barra di 4 px sul lato sinistro, disegnata come ombra interna: segue la curva degli angoli dell'elemento.
+   Colore in --st (verde caricato, ambra da ricaricare, rosso errore). */
+.st-bar, .rcard.od-ok:not(.on), .rcard.od-stale:not(.on), .rcard.od-err:not(.on) { box-shadow: inset 4px 0 0 var(--st); }
+.rcard.od-ok { --st: var(--ok); } .rcard.od-stale { --st: var(--warn); } .rcard.od-err { --st: var(--danger); }
+.st-ok { --st: var(--ok); } .st-warn { --st: var(--warn); } .st-err { --st: var(--danger); } .st-info { --st: var(--blue); }
+/* le righe dentro un elenco prendono gli angoli arrotondati dell'elenco: la barra segue il profilo come nelle Notifiche */
+.list > .rcard:first-child { border-top-left-radius: inherit; border-top-right-radius: inherit; }
+.list > .rcard:last-child { border-bottom-left-radius: inherit; border-bottom-right-radius: inherit; }
 .od-tag { display: inline-block; margin-top: 7px; font-size: var(--fs-sm); font-weight: 600; border-radius: var(--r-pill); padding: 2px 10px; }
 .od-tag.ok { color: var(--ok); background: var(--ok-soft); }
 .od-tag.stale { color: var(--warn); background: var(--warn-soft); }
