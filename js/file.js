@@ -117,6 +117,7 @@ function FileTab({ r, up, settings }) {
   const quando = t => new Date(t).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' });
   return html`<div>
     <div class="sec-h" style="margin-top:4px"><h3>File</h3><span class="hint">Si salvano anche su OneDrive</span></div>
+    <${Suggerimento} id="file" />
     ${!docs.length ? html`<div class="card"><div class="empty" style="padding:18px">Ancora nessun file da generare: compaiono qui quando l'attività ha i dati che servono.</div></div>`
     : html`<div class="card files">${docs.map(d => {
       const st = fileState(r, d), L = fileRevs(r, d), last = L[L.length - 1], [fmt] = FILE_FMT[d.type];

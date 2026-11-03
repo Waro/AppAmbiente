@@ -101,6 +101,7 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
     ${T === 'camp' && html`
 
     <div class="sec-h"><h3>Campioni</h3><span class="hint">${r.congelati[tab] ? 'Codici bloccati dalla scheda' : `Codici automatici ${mat.auto}1, ${mat.auto}2…`}</span></div>
+    <${Suggerimento} id="campioni" />
     <${CampSummary} r=${r} mats=${MAP_MATS} />
     <div class="seg" style="margin-bottom:6px">${MAP_MATS.map(m => html`
       <button class=${tab === m.k ? 'on' : ''} onClick=${() => setTab(m.k)}><i class="mdot" style=${'background:' + m.c}></i>${m.l}<span class="n">${(r.campioni[m.k] || []).length}</span></button>`)}</div>

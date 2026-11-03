@@ -272,6 +272,7 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
 `}
 
     ${T === 'punti' && html`
+      <${Suggerimento} id="radon" />
     ${!lockPos && html`<div class="sec-h"><h3>Dosimetri per piano</h3><span class="hint">${r.punti.length} in tutto</span></div>
       <div class="list">
         ${piani.map(pi => { const n = r.punti.filter(p => (p.piano || '').trim() === pi).length; return html`<div class="prow" key=${pi}>

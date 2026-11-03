@@ -306,6 +306,7 @@ function Agenda({ records, settings, saveRec, openRec, removeRec, bell }) {
 
   return html`<div class="content ag">
     <${LargeTitle} top eye=${view === 'month' ? 'Mese' : view === 'week' ? 'Settimana' : new Date(day + 'T12:00:00').toLocaleDateString('it-IT', { weekday: 'long' })} title="Programmazione" acts=${html`${plusBtn}${bell}`} />
+    <${Suggerimento} id="programmazione" />
     <div class="ag-bar">
       <div class="seg ag-views">${VISTE.map(([k, l]) => html`<button key=${k} class=${view === k ? 'on' : ''} onClick=${() => setView(k)}>${l}</button>`)}</div>
       ${!(view === 'day' ? day === today() : view === 'week' ? week.includes(today()) : today() >= mFrom && today() < mTo) && html`<button class="chip-btn" onClick=${() => setDay(today())}>Oggi</button>`}

@@ -1068,3 +1068,46 @@ img.logo { background: none; object-fit: cover; }
   .set-wide { display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); gap: var(--sp-6); align-items: start; }
   .set-wide .set-list { position: sticky; top: 0; }
 }
+
+/* ---------------- Guida: suggerimenti, primi passi in due fasi, benvenuto ---------------- */
+/* Suggerimento: un avviso non critico (fascia blue-sky in alto), una volta sola per funzione */
+.notice.tip { display: flex; align-items: flex-start; gap: 10px; margin: 0 0 var(--gap); padding: 12px 6px 12px 14px; }
+.tip-ic { color: var(--blue); display: flex; margin-top: 1px; flex: none; }
+.tip-t { flex: 1; min-width: 0; }
+.tip-t b { display: block; color: var(--text); font-size: var(--fs-base); font-weight: 600; margin-bottom: 2px; }
+.tip-x { width: var(--tap); height: var(--tap); margin: -10px 0 -10px 0; flex: none; border: 0; background: none; color: var(--muted); display: grid; place-items: center; border-radius: var(--r-sq); }
+/* Primi passi: anello d'avanzamento, fase corrente, card finale */
+.onb-top { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+.onb-top .t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.onb-top .t b { font-size: var(--fs-xl); font-weight: 600; }
+.onb-top .t small { font-size: var(--fs-sm); color: var(--muted); }
+.onb-of { font-size: var(--fs-sm); color: var(--muted); font-weight: 600; white-space: nowrap; }
+.onb-fase { cursor: default; }
+.onb-done { display: flex; align-items: center; gap: 12px; padding: 14px 16px; }
+.onb-done .t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.onb-done .t b { font-size: var(--fs-lg); font-weight: 600; }
+.onb-done .t small { font-size: var(--fs-md); color: var(--muted); line-height: 1.4; }
+.onb-big { width: 44px; height: 44px; border-radius: var(--r-sq); background: var(--ok-soft); color: var(--ok); display: grid; place-items: center; flex: none; }
+/* Benvenuto: illustrazioni fatte con i componenti dell'app, sul fondo delle Novità */
+.wl-art { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; padding: var(--sp-4); }
+.wl-logo { width: 128px; height: 128px; border-radius: var(--r-card-lg); }
+.wl-types { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-5) var(--sp-4); }
+.wl-types span { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: var(--fs-sm); font-weight: 600; color: var(--on-dark); }
+.wl-types .sq, .wl-opt .sq { width: 52px; height: 52px; background: var(--card); }
+.wl-types .sq.tint, .wl-opt .sq.tint { background: color-mix(in srgb, var(--c) 18%, var(--card)); }
+.wl-files { width: 100%; max-width: 300px; background: var(--card); border-radius: var(--r-card); overflow: hidden; }
+.wl-file { display: flex; align-items: center; gap: 10px; padding: 12px 14px 12px 16px; color: var(--muted); box-shadow: inset 4px 0 0 var(--chev); }
+.wl-file + .wl-file { border-top: .5px solid var(--sep); }
+.wl-file b { flex: 1; min-width: 0; font-size: var(--fs-md); font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wl-file small { font-size: var(--fs-xs); font-weight: 600; }
+.wl-file.wl-ok { color: var(--ok); box-shadow: inset 4px 0 0 var(--ok); }
+.wl-file.wl-warn { color: var(--warn); box-shadow: inset 4px 0 0 var(--warn); }
+.nv-img.wl-last { height: auto; min-height: 300px; background: none; }
+.wl-bu { display: flex; flex-direction: column; gap: var(--sp-2); width: 100%; }
+.wl-opt { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 76px; padding: 12px 14px; border: 0; border-radius: var(--r-card); background: var(--card); color: var(--text); text-align: left; }
+.wl-opt .sq { width: 44px; height: 44px; }
+.wl-opt span { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.wl-opt b { font-size: var(--fs-xl); font-weight: 600; }
+.wl-opt small { font-size: var(--fs-md); color: var(--muted); }
+.wl-opt > svg { color: var(--blue); flex: none; }
+.wl-opt.on { box-shadow: inset 0 0 0 2px var(--blue); }

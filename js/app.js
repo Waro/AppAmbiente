@@ -325,6 +325,7 @@ const SET_PAGES = {
   firme: { l: 'Fogli firme', ic: 'pen', c: 'var(--t-firme)' },
   aria: { l: 'Monitoraggio aria', ic: 'air', c: 'var(--t-aria)' },
   radon: { l: 'Radon', ic: 'radon', c: 'var(--t-radon)' },
+  guida: { l: 'Guida', ic: 'note' },
   assistenza: { l: 'Assistenza', ic: 'bell' },
   info: { l: 'Info app', ic: 'gear' },
 };
@@ -332,7 +333,7 @@ const SET_GROUPS = [
   { h: 'Generali', items: ['aspetto', 'foto', 'novita'] },
   { h: 'Dati e OneDrive', items: ['config', 'onedrive', 'modelli', 'dispositivo'] },
   { h: 'Attività', items: ['campioni', 'hse', 'programmazione', 'firme', 'aria', 'radon'] },
-  { h: 'Supporto', items: ['assistenza', 'info'] },
+  { h: 'Supporto', items: ['guida', 'assistenza', 'info'] },
 ];
 
 function Settings({ settings, setSettings, onTemplates, go, page, wide }) {
@@ -433,6 +434,7 @@ function Settings({ settings, setSettings, onTemplates, go, page, wide }) {
       case 'firme': return html`<${FirmeSettings} s=${s} set=${set} />`;
       case 'aria': return html`<${AriaSettings} s=${s} set=${set} />`;
       case 'radon': return html`<div class="card"><${Inp} label="Livello di riferimento (Bq/m³)" type="number" inputmode="numeric" value=${s.livelloRif} set=${v => set({ livelloRif: num(v) || 300 })} /></div>`;
+      case 'guida': return html`<${GuidaCard} settings=${s} setSettings=${setSettings} />`;
       case 'assistenza': return html`<div class="card"><${Inp} label="Email per le segnalazioni" type="email" value=${s.supportEmail || ''} set=${v => set({ supportEmail: v.trim() })} /></div>
     <${IssueCard} settings=${s} />`;
       case 'info': return html`<div class="card tight" style="font-size:var(--fs-base);color:var(--text2)">
@@ -735,6 +737,7 @@ function App() {
   const [sheet, setSheet] = useState(false);
   const [preset, setPreset] = useState(null);
   const [novita, setNovita] = useState(null);
+  const [benvenuto, setBenvenuto] = useState(false);
   const [, odTick] = useState(0);
   useEffect(() => OD.subscribe(() => odTick(x => x + 1)), []);
 
@@ -748,7 +751,9 @@ function App() {
     return rs;
   };
   useEffect(() => {
-    reload().then(rs => { setReady(true); novitaDaMostrare(rs.some(r => r.type !== 'cli')).then(l => l && setNovita(l)).catch(e => console.warn('novità', e)); radonReminders(rs).then(n => n && DB.all().then(setRecords)); Sync.start(); });
+    reload().then(async rs => { setReady(true); const haDati = rs.some(r => r.type !== 'cli');
+      if (await benvenutoDaMostrare(haDati, await DB.get('settings')).catch(() => false)) setBenvenuto(true);
+      novitaDaMostrare(haDati).then(l => l && setNovita(l)).catch(e => console.warn('novità', e)); radonReminders(rs).then(n => n && DB.all().then(setRecords)); Sync.start(); });
     const offRec = Sync.onRecords(() => DB.all().then(setRecords));
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
     const bip = e => { e.preventDefault(); setInstallEvt(e); };
@@ -963,7 +968,8 @@ function App() {
     <${ShareAsk} />
     <${Progress} />
     <${CameraHost} />
-    ${novita && html`<${NovitaSheet} list=${novita} go=${go} onClose=${() => setNovita(null)} />`}
+    ${novita && !benvenuto && html`<${NovitaSheet} list=${novita} go=${go} onClose=${() => setNovita(null)} />`}
+    ${benvenuto && html`<${BenvenutoSheet} settings=${settings} setSettings=${setSettings} onClose=${() => setBenvenuto(false)} />`}
     <${Toast} />
     </div>
   </div>`;

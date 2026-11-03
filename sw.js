@@ -2,7 +2,7 @@
 const VERSION = 'nembo-v49';
 const FILES = [
   './', 'index.html', 'styles.css', 'manifest.webmanifest', 'pdfgen.js',
-  'js/core.js', 'js/capture.js', 'js/plan.js', 'js/office.js', 'js/dda.js', 'js/mappatura.js', 'js/radon.js', 'js/ra.js', 'js/hs-data.js', 'js/hs-word.js', 'js/hs.js', 'js/verbale.js', 'js/vs-word.js', 'js/clienti.js', 'js/novita.js', 'js/riepilogo.js', 'js/cerca.js', 'js/firme.js', 'js/aria.js', 'js/file.js', 'js/controlli.js', 'js/agenda.js', 'js/onedrive.js', 'js/sync.js', 'js/home.js', 'js/app.js',
+  'js/core.js', 'js/capture.js', 'js/plan.js', 'js/office.js', 'js/dda.js', 'js/mappatura.js', 'js/radon.js', 'js/ra.js', 'js/hs-data.js', 'js/hs-word.js', 'js/hs.js', 'js/verbale.js', 'js/vs-word.js', 'js/clienti.js', 'js/novita.js', 'js/guida.js', 'js/riepilogo.js', 'js/cerca.js', 'js/firme.js', 'js/aria.js', 'js/file.js', 'js/controlli.js', 'js/agenda.js', 'js/onedrive.js', 'js/sync.js', 'js/home.js', 'js/app.js',
   'vendor/preact.min.umd.js', 'vendor/hooks.umd.js', 'vendor/htm.umd.js', 'vendor/pdf-lib.min.js',
   'vendor/jszip.min.js', 'vendor/signature_pad.umd.min.js', 'vendor/msal-browser.min.js', 'vendor/pdfjs.min.js', 'vendor/pdfjs.worker.min.js', 'vendor/exceljs.min.js', 'vendor/docx.umd.min.js',
   'fonts/ibm-plex-sans-latin-400-normal.woff2', 'fonts/ibm-plex-sans-latin-500-normal.woff2', 'fonts/ibm-plex-sans-latin-600-normal.woff2', 'fonts/ibm-plex-sans-latin-700-normal.woff2',

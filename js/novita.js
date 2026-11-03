@@ -3,13 +3,15 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
-  { v: 49, data: '2026-11-03', tipo: 'minore', titolo: 'Originale scuro e Impostazioni a gruppi',
+  { v: 49, data: '2026-11-03', tipo: 'minore', titolo: 'Originale scuro, Impostazioni a gruppi e Guida',
     voci: [
       'Lo stile Originale ha anche la versione scura.',
       'In Impostazioni → Aspetto e avvio scegli lo stile (Essenziale o Originale) e l’aspetto: Automatico, Chiaro o Scuro. Automatico segue il tema del dispositivo.',
       'La scelta che avevi già fatto resta: chi usava Scuro ritrova Essenziale scuro. Se non avevi mai scelto, Nembo ora segue il tema del dispositivo.',
       'Impostazioni a gruppi, come su iPhone: ogni voce apre la sua pagina. Su PC e tablet in orizzontale l’elenco è a sinistra e la pagina a destra.',
-      'I «Primi passi» della Home aprono direttamente la pagina giusta delle Impostazioni.' ] },
+      'Primi passi in due fasi: «Prepara il dispositivo» e «Prova sul campo», con l’avanzamento e un messaggio quando hai finito. Ogni passo apre direttamente la pagina giusta.',
+      'Al primo avvio un benvenuto in quattro schermate: l’ultima ti fa scegliere la Business Unit.',
+      'Suggerimenti la prima volta che apri Programmazione, planimetrie, campioni, scheda File e dosimetri radon. In Impostazioni → Guida rivedi il benvenuto e riattivi suggerimenti e primi passi.' ] },
   { v: 48, data: '2026-11-03', tipo: 'minore', titolo: 'Allegati controllati e backup firmati',
     voci: [
       'Home: «Attività di oggi» e «Scadenze» hanno la stessa struttura di «Prossimo sopralluogo»; le scadenze sono in una sola card su fondo ambra. Su PC e tablet in orizzontale le tre card sono affiancate.',

@@ -555,6 +555,7 @@ function PlanList({ items = [], labels, onUpdate, onAdd, onRemove }) {
   const refsOf = p => Object.values(p.annot || {}).flatMap(a => (a.labels || []).map(l => l.ref));
   const altrove = cur ? new Set(items.filter(p => p.id !== cur.id).flatMap(refsOf)) : null;
   return html`<div class="stack">
+    <${Suggerimento} id="planimetrie" />
     ${items.map(p => {
       const nl = Object.values(p.annot || {}).reduce((a, x) => a + (x.labels || []).length, 0);
       const ns = Object.values(p.annot || {}).reduce((a, x) => a + (x.strokes || []).length, 0);

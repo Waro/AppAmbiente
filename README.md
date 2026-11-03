@@ -285,6 +285,13 @@ cartella nel salvataggio (resta il download semplice).
 - **Impostazioni a gruppi** (dalla v49), come su iPhone: Tecnico in alto, poi Generali, Dati e OneDrive, Attività e Supporto.
   Sul telefono ogni voce apre la sua pagina (il tasto indietro torna all'elenco); su tablet in orizzontale e PC elenco a
   sinistra e pagina a destra. Le voci sono in `SET_PAGES` e `SET_GROUPS` in `js/app.js`.
+- **Guida** (dalla v49, `js/guida.js`): al primo avvio (nessuna attività e nessuna configurazione) un **benvenuto** in quattro
+  slide nel foglio delle Novità, l'ultima con la scelta della Business Unit (`buDefault`). In Oggi i **Primi passi** in due fasi,
+  *Prepara il dispositivo* (configurazione, modelli Word per l'HSE, firma, OneDrive con sincronizzazione, installazione) e
+  *Prova sul campo* (attività di prova, foto, file generato, backup): si spuntano da soli con i dati veri; alla fine compare
+  «Pronto per il primo sopralluogo». Chi ha già più di tre attività salta la Fase 2. **Suggerimenti** una volta sola la prima
+  volta che si apre una funzione (`SUGGERIMENTI`: programmazione, planimetrie, campioni, file, radon; visti in `nembo_tips`).
+  Impostazioni → Guida rivede il benvenuto e riattiva suggerimenti e primi passi.
 - **Font IBM Plex** inclusi in `fonts/` (woff2, licenza OFL in `fonts/OFL.txt`): funzionano anche offline.
 - **Telefono e tablet in verticale**: tab bar flottante in basso, in stile segmented control (Oggi, DDA, Mappature, RA, Radon; con BU HSE: Oggi, HSE, DDA, RA); nelle schede la barra
   azioni in basso con l'azione principale. **Tablet in orizzontale e PC**: menu laterale comprimibile + elenco e scheda.
