@@ -2,7 +2,7 @@
 // Stessa stringa di VERSION in sw.js: aumentala insieme a quella ad ogni aggiornamento.
 // Essendo dentro un file JS servito dalla cache, se l'aggiornamento automatico fallisce
 // questa scritta mostra ancora la versione vecchia — è il modo per accorgersene.
-const APP_VERSION = 'nembo-v47';
+const APP_VERSION = 'nembo-v48';
 
 /* ---------------- tema grafico: "essenziale" (predefinito), "originale" o "scuro" ----------------
    Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno.
@@ -27,7 +27,7 @@ const PRINT = {
   integro: '#007e46', suscettibile: '#a45f00', danneggiato: '#be222a', nonIspez: '#6f7278', rimosso: '#5b3cb0', nc: '#52555b',
   aria: '#0a6ebd', ariaOver: '#be222a', radon: '#0061c5', rec: '#b7791f',
   terreni: '#855831', acque: '#00708e', mca: '#a21f8f', fav: '#a45f00', altro: '#0076d3',
-  firma: '#0b1f6b', testo: '#1c1c1e', critico: '#be222a',
+  firma: '#0b1f6b', testo: '#1c1c1e', critico: '#be222a', carta: '#ffffff',
 };
 const { h, render } = preact;
 const { useState, useEffect, useRef, useMemo, useCallback, useErrorBoundary } = preactHooks;
@@ -430,20 +430,38 @@ function Viewer({ ids, index = 0, onClose, labelOf }) {
 }
 
 /* ---------------- allegati (documenti) ---------------- */
-function FileList({ items = [], onAdd, onRemove, accept = '*/*', label = 'Allega documento' }) {
-  const inp = useRef();
-  const open = async it => { const b = await DB.getBlob(it.blobId); if (b) window.open(URL.createObjectURL(b.blob), '_blank'); };
+// Solo foto, PDF e Word (.docx), controllati in js/controlli.js. Foto e PDF si aprono nel visore di Nembo, Word con l'app Word.
+function FileList({ items = [], onAdd, onRemove, label = 'Allega documento' }) {
+  const inp = useRef(); const [busy, setBusy] = useState(false);
+  const [pdf, setPdf] = useState(null); const [img, setImg] = useState(null);
+  const open = it => apriAllegato(it, { pdf: setPdf, img: setImg }).catch(e => fail('Allegato non aperto', e));
   const pick = async e => {
-    for (const f of [...e.target.files]) onAdd({ id: uid('d'), nome: f.name, blobId: await saveFile(f) });
-    e.target.value = '';
+    const files = [...e.target.files]; e.target.value = ''; if (!files.length) return;
+    setBusy(true);
+    for (const f of files) {
+      try {
+        const a = await allegato(f);
+        const blobId = uid('b'); await DB.putBlob({ id: blobId, blob: a.blob, type: a.type, name: a.name });
+        onAdd({ id: uid('d'), nome: a.name, blobId, ...(a.script ? { script: true } : {}) });
+        if (a.script) toast(a.name + ': contiene script, in Nembo si apre senza eseguirli');
+      } catch (err) {
+        if (err.code === 'ALLEGATO') { toast(err.message); notify('warn', 'Allegato non accettato', { detail: err.message, code: 'ALLEGATO' }); }
+        else fail('Allegato non salvato', err);
+      }
+    }
+    setBusy(false);
   };
   return html`<div class="stack">
     ${items.map(it => html`<div class="row" key=${it.id}>
       <span class="sq plain"><${Icon} n="file" s=${18} /></span>
-      <button class="tb-grow" style="background:none;border:0;text-align:left;font-size:var(--fs-md);padding:0" onClick=${() => open(it)}><div>${it.nome}</div></button>
+      <button class="tb-grow" style="background:none;border:0;text-align:left;font-size:var(--fs-md);padding:0" onClick=${() => open(it)}><div>${it.nome}</div>
+        ${it.script && html`<small class="lock">Contiene script: in Nembo si apre senza eseguirli</small>`}</button>
       <button class="x" aria-label="Rimuovi" onClick=${() => { if (confirm('Rimuovere ' + it.nome + '?')) onRemove(it); }}>×</button></div>`)}
-    <button class="btn dashed" onClick=${() => inp.current.click()}><${Icon} n="paper" s=${17} /> ${label}</button>
-    <input ref=${inp} type="file" accept=${accept} multiple hidden onChange=${pick} />
+    <button class="btn dashed" disabled=${busy} onClick=${() => inp.current.click()}>${busy ? html`<div class="spin" />` : html`<${Icon} n="paper" s=${17} />`} ${label}</button>
+    <div class="lock" style="margin:-4px 2px 0">Foto, PDF e Word (.docx)</div>
+    <input ref=${inp} type="file" accept=${ALLEGATI_ACCEPT} multiple hidden onChange=${pick} />
+    ${pdf && html`<${PdfViewer} blob=${pdf.blob} nome=${pdf.nome} onClose=${() => setPdf(null)} />`}
+    ${img && html`<${Viewer} ids=${[img]} onClose=${() => setImg(null)} />`}
   </div>`;
 }
 
@@ -663,9 +681,10 @@ function collectTags(o, cnt = {}) {
   }
   return cnt;
 }
-// colore del tag (il testo tende verso --text, così resta leggibile anche nel tema Scuro): tavolozza di colori diversi tra loro e da quelli dei tipi di attività (MCA, FAV, radon, aria, RA, HSE).
-// Ogni tag ha il suo colore: si parte dal nome e, se il colore è già preso da un altro tag, si passa al successivo.
-const TAG_PAL = ['#0f8b8d', '#5b4fd6', '#c2416b', '#6b8e23', '#8b5e3c', '#e07a5f', '#3d5a80', '#0ca678', '#e5007d', '#b08968', '#5e548e', '#495057', '#2b9348', '#d1495b', '#00798c', '#9a6324'];
+// colore del tag: gli 8 token --tag-1 … --tag-8 di Rilievo (toni smorzati, lontani dai colori di stato e dei tipi).
+// Ogni tag ha il suo colore: si parte dal nome e, se il colore è già preso da un altro tag, si passa al successivo;
+// oltre gli 8 tag i colori si ripetono (sempre dentro la tavolozza).
+const TAG_PAL = [1, 2, 3, 4, 5, 6, 7, 8].map(i => `var(--tag-${i})`);
 let _tagCol = {};
 const tagHash = t => { let h = 2166136261; for (const ch of String(t).toLowerCase()) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h; };
 function setTagList(list) {
@@ -673,12 +692,12 @@ function setTagList(list) {
   [...list].sort((a, b) => a.localeCompare(b, 'it')).forEach(t => {
     let k = tagHash(t) % TAG_PAL.length, n = 0;
     while (used.has(k) && n < TAG_PAL.length) { k = (k + 1) % TAG_PAL.length; n++; }
-    if (n < TAG_PAL.length) { used.add(k); _tagCol[t.toLowerCase()] = TAG_PAL[k]; }
-    else _tagCol[t.toLowerCase()] = `hsl(${tagHash(t) % 360} 55% 38%)`;
+    if (n < TAG_PAL.length) used.add(k); else k = tagHash(t) % TAG_PAL.length;
+    _tagCol[t.toLowerCase()] = TAG_PAL[k];
   });
 }
 function tagColor(t) { return _tagCol[String(t).toLowerCase()] || TAG_PAL[tagHash(t) % TAG_PAL.length]; }
-const tagStyle = (t, on) => { const c = tagColor(t); return on ? `background:color-mix(in srgb, ${c} 75%, #000);color:var(--on-dark)` : `background:color-mix(in srgb, ${c} 14%, var(--card));color:color-mix(in srgb, ${c} 60%, var(--text))`; };
+const tagStyle = (t, on) => { const c = tagColor(t); return on ? `background:color-mix(in srgb, ${c} 75%, #000);color:var(--on-dark)` : `background:color-mix(in srgb, ${c} 16%, var(--card));color:${c}`; };
 async function knownTags() { const cnt = collectTags(await DB.all()); const L = Object.keys(cnt); setTagList(L); return L.sort((a, b) => cnt[b] - cnt[a] || a.localeCompare(b, 'it')); }
 function TagPicker({ tags = [], set, label = 'Tag' }) {
   const [open, setOpen] = useState(false); const [q, setQ] = useState(''); const [known, setKnown] = useState([]);

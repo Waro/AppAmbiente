@@ -74,7 +74,7 @@ function AriaPuntoCard({ p, open, toggle, onUpd, onMet, onDel, onScan, settings 
   const badge = st === 'non' ? html`<span class="badge b-grey">Non eseguito</span>`
     : st === 'esito' ? html`<span class=${'badge ' + (e && e.over ? 'b-nc' : 'b-ok')}>${e.txt} ff/l</span>`
     : st === 'prelevato' ? html`<span class="badge b-f2">Attesa esito</span>` : html`<span class="badge st-none">Da prelevare</span>`;
-  return html`<div class="punto" id=${'s-' + p.id}>
+  return html`<div class=${'punto' + (e && e.over ? ' st-bar st-err' : '')} id=${'s-' + p.id}>
     <button class="punto-h" aria-expanded=${open} onClick=${toggle}>
       <span class="rtag tint" style="--c:var(--t-aria)">${p.codice || ariaPref(p.metodica)}</span>
       <div class="t"><b>${[p.piano, p.postazione].filter(Boolean).join(' · ') || 'Postazione da indicare'}</b>
@@ -156,7 +156,7 @@ function AriaSection({ r, up, settings, inRa }) {
     ${R.over > 0 && html`<div class="notice err">${R.over === 1 ? '1 punto oltre il limite' : R.over + ' punti oltre il limite'}</div>`}
 
     <div class="sec-h"><h3>Rapporti di prova</h3><span class="hint">Referti del laboratorio</span></div>
-    <div class="card"><${FileList} items=${A.rapporti || []} accept="application/pdf,image/*" label="Allega rapporto di prova"
+    <div class="card"><${FileList} items=${A.rapporti || []} label="Allega rapporto di prova"
       onAdd=${d => upA(a => ({ rapporti: [...(a.rapporti || []), d] }))}
       onRemove=${async d => { await removeBlob(d.blobId); upA(a => ({ rapporti: (a.rapporti || []).filter(x => x.id !== d.id) })); }} /></div>
 

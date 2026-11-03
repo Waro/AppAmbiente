@@ -10,7 +10,7 @@
 
 /* Rilievo, il design system di Nembo: tutti i valori sono qui. Nelle regole e negli stili scritti dal codice
    si usano solo questi token (colori, dimensioni del testo, raggi, spazi), mai valori a mano.
-   Eccezioni volute: i colori di stampa di planimetrie e PDF (PRINT in js/core.js) e la palette dei tag. */
+   Eccezione voluta: i colori di stampa di planimetrie e PDF (PRINT in js/core.js), fissi in tutti i temi. */
 :root {
   /* Superfici */
   --bg: #f2f2f7; --card: #ffffff; --track: #e4e5eb; --fill-soft: #eef0f4; --sep: #e1e3ea;
@@ -27,12 +27,15 @@
   /* Stati */
   --danger: #bf3131; --danger-on-navy: #ff8b7e; --danger-soft: #fdecea;
   --warn: #94590f; --warn-soft: #fff1de; --ok: #17744a; --ok-soft: #e3f3ea;
-  --rec: #dfa11a;                          /* aree REC della Fase 1 */
+  --rec: #716a04;                          /* aree REC della Fase 1 (oliva: distinto da DDA, FAV e terreni; contrasto ≥ 4,5:1) */
   /* Matrici (solo pallini e sigle) */
-  --mca: #a21f8f; --fav: #a45f00; --terreni: #855831; --acque: #00708e; --altro: #8a6a4a;
+  --mca: #a21f8f; --fav: #985805; --terreni: #855831; --acque: #00708e; --altro: #816142;
   /* Tipi di attività: lo stesso colore in menu, «Nuova attività», programmazione e home */
-  --t-dda: var(--warn); --t-map: var(--mca); --t-ra: #7a3db8; --t-radon: var(--ok); --t-aria: #0b7a99;
+  --t-dda: var(--warn); --t-map: var(--mca); --t-ra: #7a3db8; --t-radon: var(--ok); --t-aria: #02708d;
   --t-hse: var(--blue); --t-vs: #5361b8; --t-firme: var(--ring2); --t-app: var(--muted);
+  /* Tag delle note: 8 toni smorzati, lontani dai colori di stato e dei tipi (testo ≥ 4,5:1 sul fondo del tag) */
+  --tag-1: #7d3850; --tag-2: #65461e; --tag-3: #44581a; --tag-4: #015c59;
+  --tag-5: #2a527a; --tag-6: #535695; --tag-7: #613e78; --tag-8: #82456f;
   /* Tipografia: una sola scala */
   --font: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   --mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
@@ -45,7 +48,7 @@
   --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 24px;
   --gutter: var(--sp-4); --gap: var(--sp-3); --tap: 44px;
   /* Ombre e veli */
-  --sh-pri: 0 4px 14px var(--pri-shadow); --sh-seg: 0 1px 3px rgba(0,0,0,.10); --sh-card: none;
+  --sh-pri: 0 4px 14px var(--pri-shadow); --sh-seg: 0 1px 3px rgba(0,0,0,.10); --sh-card: 0 0 0 transparent; /* non "none": deve potersi combinare con altre ombre (indicatore di stato) */
   --sh-pop: 0 8px 24px rgba(20,30,60,.16), 0 1px 3px rgba(20,30,60,.08);
   --scrim: rgba(16,22,42,.45); --scrim-strong: rgba(16,22,42,.55);
   /* Elementi variabili tra i temi */
@@ -267,9 +270,17 @@ input[type=checkbox] { accent-color: var(--blue); }
 .rcard .l { font-size: var(--fs-md); line-height: 1.4; margin-top: 4px; display: flex; gap: 8px; align-items: baseline; color: var(--text2); }
 .rcard .l b { font-family: var(--mono); font-weight: 600; font-size: var(--fs-sm); }
 .rcard .l .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; transform: translateY(-1px); }
-.rcard.od-ok:not(.on) { box-shadow: inset 4px 0 0 var(--ok); }
-.rcard.od-stale:not(.on) { box-shadow: inset 4px 0 0 var(--warn); }
-.rcard.od-err:not(.on) { box-shadow: inset 4px 0 0 var(--danger); }
+/* Indicatore di stato: un solo modello in tutta l'app, quello delle Notifiche.
+   Barra di 4 px sul lato sinistro, disegnata come ombra interna: segue la curva degli angoli dell'elemento.
+   Colore in --st (verde caricato, ambra da ricaricare, rosso errore). */
+/* (regole della barra in fondo al file, dopo i componenti che hanno un'ombra propria) */
+.rcard.od-ok { --st: var(--ok); } .rcard.od-stale { --st: var(--warn); } .rcard.od-err { --st: var(--danger); }
+.st-ok { --st: var(--ok); } .st-warn { --st: var(--warn); } .st-err { --st: var(--danger); } .st-info { --st: var(--blue); }
+/* le righe dentro un elenco prendono gli angoli arrotondati dell'elenco: la barra segue il profilo come nelle Notifiche */
+.list > .rcard:first-child { border-top-left-radius: inherit; border-top-right-radius: inherit; }
+.list > .rcard:last-child { border-bottom-left-radius: inherit; border-bottom-right-radius: inherit; }
+.card > .prow:first-child { border-top-left-radius: inherit; border-top-right-radius: inherit; }
+.card > .prow:last-child { border-bottom-left-radius: inherit; border-bottom-right-radius: inherit; }
 .od-tag { display: inline-block; margin-top: 7px; font-size: var(--fs-sm); font-weight: 600; border-radius: var(--r-pill); padding: 2px 10px; }
 .od-tag.ok { color: var(--ok); background: var(--ok-soft); }
 .od-tag.stale { color: var(--warn); background: var(--warn-soft); }
@@ -453,7 +464,7 @@ input[type=checkbox] { accent-color: var(--blue); }
 .mom-h .n { width: 28px; height: 28px; border-radius: 50%; background: var(--fill-soft); color: var(--text2); font-size: var(--fs-md); font-weight: 700; display: grid; place-items: center; }
 .mom.done .mom-h .n { background: var(--ok); color: var(--on-accent); }
 .mom.cur .mom-h .n { background: var(--blue); color: var(--on-accent); }
-.mom.cur { box-shadow: inset 0 0 0 2px var(--blue), var(--sh-card); }
+/* stato del momento: indicatore di stato (barra a sinistra) */
 .mom-h b { font-size: var(--fs-lg); font-weight: 600; flex: 1; }
 .who { font-size: var(--fs-sm); font-weight: 600; color: var(--muted); letter-spacing: .05em; margin: 14px 0 6px; }
 .sigbox { border: 1.5px dashed var(--chev); border-radius: var(--r-md); min-height: 64px; display: grid; place-items: center; background: var(--fill-soft); width: 100%; color: var(--blue); font-size: var(--fs-base); font-weight: 500; padding: 4px; }
@@ -936,10 +947,12 @@ img.logo { background: none; object-fit: cover; }
   --grad-pri: linear-gradient(135deg, #0b4fa3 0%, #1468c4 52%, #1a74c9 100%); --pri-shadow: rgba(0,0,0,.45);
   --on-accent: #0b1220;
   --danger: #ff6f6f; --danger-on-navy: #ff8b7e; --danger-soft: #3a1c1f; --warn: #e7a74c; --warn-soft: #36290f; --ok: #43c98a; --ok-soft: #12301f;
-  --rec: #e8b23a;
-  --mca: #d35dc2; --fav: #e3a252; --terreni: #c28a5a; --acque: #3fb3d3; --altro: #b8946f;
+  --rec: #b6af4d;
+  --mca: #d963c8; --fav: #e3a252; --terreni: #c28a5a; --acque: #3fb3d3; --altro: #b8946f;
   --t-ra: #b48ae8; --t-aria: #45b8d6; --t-vs: #8f9cf0;
-  --sh-seg: 0 1px 3px rgba(0,0,0,.5); --sh-card: none;
+  --tag-1: #d0829a; --tag-2: #b6936a; --tag-3: #8aa162; --tag-4: #56a7a2;
+  --tag-5: #729cc8; --tag-6: #8f94d8; --tag-7: #ae8aca; --tag-8: #c583af;
+  --sh-seg: 0 1px 3px rgba(0,0,0,.5); --sh-card: 0 0 0 transparent; /* mai "none": si combina con l'indicatore di stato */
   --scrim: rgba(0,0,0,.6); --scrim-strong: rgba(0,0,0,.6);
   --ring2: #7f97cc; --navy-ink: #cfd8ee; --btn2: #2a303b; --btn-ink: var(--text); --seg-on: #fff; --seg-thumb: #3a4150;
   --ava: linear-gradient(135deg, #2a4a86, #17223f);
@@ -965,7 +978,6 @@ img.logo { background: none; object-fit: cover; }
 .home-h { margin-top: 18px; }
 .home-h h2 { margin: 0; font-size: var(--fs-2xl); font-weight: 700; letter-spacing: -.01em; color: var(--text); text-transform: none; }
 .home-h h2 .n { color: var(--faint); font-weight: 600; }
-.lg-h { font-size: var(--fs-sm) !important; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted) !important; flex: none !important; }
 .ok-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px; }
 .ok-card .t b { display: block; font-size: var(--fs-lg); font-weight: 600; }
 .ok-card .t small { display: block; font-size: var(--fs-md); color: var(--muted); }
@@ -975,29 +987,44 @@ img.logo { background: none; object-fit: cover; }
 .btn.glass { flex: 1; min-height: 46px; background: rgba(255,255,255,.12); color: var(--on-dark); font-size: var(--fs-lg); font-weight: 600; border: 0; }
 .card.stale { box-shadow: inset 0 3px 0 var(--blue-sky); }
 .fab { position: absolute; right: 20px; bottom: calc(100px + env(safe-area-inset-bottom, 0px)); z-index: 7; width: 60px; height: 60px; border-radius: var(--r-sq); border: 0; background: var(--grad-pri); color: var(--on-dark); display: grid; place-items: center; box-shadow: 0 8px 22px var(--pri-shadow); }
+/* card della Home con la stessa struttura del «Prossimo sopralluogo» (occhiello, titolo grande, righe), su fondo chiaro */
+.hcard { border-radius: var(--r-card-lg); padding: 16px 18px; }
+.hc-eye { font-size: var(--fs-sm); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.hc-when { font-size: var(--fs-md); font-weight: 600; color: var(--text2); }
+.hc-when.crit { color: var(--danger); }
+.hc-title { font-size: var(--fs-3xl); font-weight: 700; line-height: 1.2; margin: 8px 0 4px; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.hc-line { font-size: var(--fs-base); color: var(--text2); }
+.hcard.scad { background: var(--warn-soft); }
+.hc-rows { margin-top: 12px; }
+.hc-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 60px; padding: 8px 0; border: 0; background: none; text-align: left; color: inherit; }
+.hc-row + .hc-row { border-top: .5px solid var(--sep); }
+.hc-row .sq { width: 40px; height: 40px; border-radius: var(--r-sq); display: grid; place-items: center; flex-shrink: 0; }
+.hc-row .t { flex: 1; min-width: 0; }
+.hc-row .t b { display: block; font-size: var(--fs-lg); font-weight: 600; }
+.hc-row .t small { display: block; font-size: var(--fs-md); color: var(--text2); }
+.hc-row .num { font-size: var(--fs-2xl); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hc-row .num.crit { color: var(--danger); }
 .home-scad { display: none; }
-/* tablet: una colonna, le scadenze subito sotto «Prossimo sopralluogo», a tutta larghezza */
+/* tablet in verticale: una colonna, le scadenze subito sotto «Prossimo sopralluogo», a tutta larghezza */
 @media (min-width: 700px) {
   .home-scad { display: block; }
   .home-grid { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: "n" "d" "r" "c" "s"; gap: 0 var(--gap); align-items: start; }
-  .hg-n { grid-area: n; } .hg-r { grid-area: r; } .hg-c { grid-area: c; } .hg-s { grid-area: s; } .hg-d { grid-area: d; margin-bottom: var(--gap); }
-  .home-scad .home-h { margin-top: 4px; }
+  .hg-n { grid-area: n; } .hg-r { grid-area: r; } .hg-c { grid-area: c; } .hg-s { grid-area: s; } .hg-d { grid-area: d; }
 }
-/* PC: tutta la larghezza, scadenze in una colonna a parte */
+/* PC e tablet in orizzontale: tre colonne (Prossimo · Attività di oggi · Scadenze), card della prima riga alte uguali.
+   Seconda riga: Da completare e Strumenti e dati; la terza colonna resta libera e Scadenze ci si allunga se serve
+   (contain: size: la card delle scadenze non fa crescere la prima riga, che segue le altre due card). */
 @media (min-width: 1000px) {
   .frame.wide > .shell:not(.split) > .content.home2 { max-width: none; }
-  .home-grid { grid-template-columns: minmax(0, 1fr) minmax(280px, 340px); grid-template-areas: "n d" "r d" "c d" "s d"; }
-  .home-scad .widgets { grid-template-columns: 1fr; }
-  .home-scad .home-h { margin-top: 0; }
-}
-@media (min-width: 1300px) {
-  .home-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(300px, 360px); grid-template-areas: "n r d" "c s d"; }
-  .hg-n, .hg-r { align-self: stretch; display: flex; flex-direction: column; }
-  .hg-r .card, .hg-n .card-navy { flex: 1; }
-  .hg-r .card { display: flex; align-items: center; }
+  .home-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(260px, 340px); grid-template-areas: "n r d" "c s ."; }
+  .hg-n, .hg-r, .hg-d { align-self: stretch; display: flex; flex-direction: column; }
+  .hg-n .card-navy, .hg-r .card, .hg-d .card { flex: 1 0 auto; }
+  .hg-d { contain: size; }
   .hg-r .rings { width: 100%; }
-  .home-scad .widgets { grid-template-columns: 1fr; }
-  .home-scad .home-h { margin-top: 0; }
 }
 @media (min-width: 1000px) { .fab { display: none; } }
 .r1 .drone-ic { margin: 0 0 0 6px; }
+
+/* Indicatore di stato: dopo tutti i componenti, così vale anche su card, momenti, manufatti e punti */
+.st-bar, .rcard.od-ok:not(.on), .rcard.od-stale:not(.on), .rcard.od-err:not(.on) { box-shadow: inset 4px 0 0 var(--st), var(--sh-card); }
+.list .st-bar, .card .st-bar, .list .rcard[class*="od-"]:not(.on) { box-shadow: inset 4px 0 0 var(--st); }

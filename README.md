@@ -21,11 +21,13 @@ Da installata funziona anche offline e Chrome protegge i dati dalla pulizia auto
 
 Impostazioni → **Carica configurazione** e scegli il file `.json` ricevuto (da OneDrive, email o Teams).
 Contiene impostazioni (tecnico, laboratorio, offerta, codici analisi, valori proposti HSE), i due modelli PDF e, se caricati, i due modelli Word HSE. Resta solo su quel dispositivo.
+Contiene anche il **codice utente** (dalla v48): carica la stessa configurazione su telefono, tablet e PC, così ognuno riconosce come tuoi i backup degli altri, anche senza OneDrive.
 In alternativa si caricano i modelli e si compilano i campi a mano.
 
 **Preparare la configurazione per un collega:** compila le impostazioni sul tuo dispositivo, tocca **Esporta**,
 poi nel file `.json` cambia `tecnicoNome`, `tecnicoCognome` e `prelevatoDa` (o lascia che li cambi lui dopo il caricamento).
-La firma salvata non viene mai esportata. Il file contiene dati riservati: mai su GitHub.
+Il codice utente è legato a nome e cognome del tecnico: se li cambi nel file, o se il collega li cambia in Impostazioni, sul suo dispositivo il tuo codice non vale e ne viene creato uno suo.
+La firma salvata non viene mai esportata. Il file contiene dati riservati e il codice utente: mai su GitHub.
 
 ## Importazione Fase 1 e checklist Fase 2
 
@@ -248,6 +250,8 @@ Permesso usato: `Files.ReadWrite.AppFolder` (delegato): l'app legge e scrive sol
 con lo stesso account Microsoft, telefono, tablet e PC vedono le stesse attività. Parte da sola all'apertura dell'app, quando torna
 la rete e poco dopo ogni modifica; c'è anche il tasto *Sincronizza ora*. Su un dispositivo nuovo basta accedere: le attività arrivano da sole.
 - Usa la sottocartella `_nembo/` della cartella dell'app (una scheda per attività e i file per id), separata dalle cartelle leggibili di "Carica su OneDrive".
+  In `_nembo/chiavi/` c'è la chiave pubblica di ogni tuo dispositivo, per riconoscerne i backup firmati.
+- Quello che arriva da OneDrive passa gli stessi controlli del ripristino: attività o file non validi non vengono salvati e lo dicono le Notifiche.
 - Vince la modifica più recente; se un'attività è cambiata su due dispositivi, l'altra versione diventa una copia ("· copia") con le sue foto, e lo dice nelle Notifiche.
 - Un'attività eliminata sparisce anche dagli altri dispositivi; i suoi file restano su OneDrive.
 - L'attività aperta sullo schermo non viene sovrascritta: si aggiorna quando la chiudi.
@@ -317,6 +321,7 @@ Al secondo avvio dopo l'aggiornamento il telefono usa la nuova versione. I dati 
 | `js/firme.js` | fogli firme: modelli, sezione nelle attività, attività a sé, passa il telefono, impostazioni |
 | `js/home.js` | schermata Oggi e foglio Nuova attività |
 | `js/onedrive.js` | caricamento su OneDrive e stato di invio |
+| `js/controlli.js` | controlli su allegati, backup e sincronizzazione; firma dei backup |
 | `js/sync.js` | sincronizzazione tra dispositivi tramite la cartella dell'app (`_nembo/`) |
 | `js/app.js` | navigazione, impostazioni, backup ZIP e ripristino |
 | `fonts/` | IBM Plex Sans e Mono (woff2) |
@@ -330,9 +335,16 @@ Se cambia la scheda campioni, vanno ricontrollate le coordinate `SC_LINES` / `SC
 ## Da sapere
 
 - **Backup**: lo ZIP contiene cartelle leggibili (foto, allegati, PDF) e `manifest.json` per il ripristino.
+  Dalla v48 `manifest.json` ha l'impronta SHA-256 di ogni file e `firma.json` lo firma due volte: con la chiave del dispositivo
+  (la parte segreta non esce mai dal dispositivo) e con il codice utente del file di configurazione.
   Chrome Android non permette di condividere file .zip: finisce in Download, da lì si carica con l'app OneDrive.
   I PDF singoli invece si condividono direttamente su OneDrive.
 - **Ripristino**: Backup → "Scegli file ZIP" (il selettore di Android mostra anche OneDrive).
+  Firma non corrispondente: ripristino annullato. Backup senza firma o di un dispositivo non riconosciuto: Nembo chiede conferma.
+  File modificati, di tipo non ammesso o attività non valide vengono scartati e riportati nelle Notifiche; impostazioni e modelli passano gli stessi controlli del caricamento a mano.
+- **Allegati**: solo foto, PDF e Word (.docx). Le foto vengono ridisegnate in JPEG; i PDF si aprono nel visore di Nembo senza eseguire script
+  (quelli che ne contengono sono segnalati); i Word con macro, controlli ActiveX, oggetti eseguibili o contenuti da Internet vengono rifiutati
+  e si aprono con l'app Word. I .doc (Word 97–2003) non sono ammessi: salvali prima come .docx.
 - **Codici MCA/FAV**: si rinumerano eliminando un campione finché non generi la scheda campioni; da lì restano fissi.
 - **Radon**: "Conferma e blocca" richiede data e firma del tecnico; blocca i dati di posa. "Sblocca" cancella le firme di quel momento.
   La media per punto è pesata sui giorni di esposizione di Fase 1 e Fase 2.

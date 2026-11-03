@@ -24,7 +24,8 @@ async function buildZip(records, settings, withSettings) {
     const b = await DB.getBlob(id); if (!b) return;
     const ext = (b.name && b.name.includes('.')) ? b.name.slice(b.name.lastIndexOf('.')) : (b.type === 'image/jpeg' ? '.jpg' : '');
     const full = uniq(path.includes('.') ? path : path + ext);
-    zip.file(full, b.blob); files[id] = { path: full, type: b.type, name: b.name };
+    // impronta SHA-256: al ripristino si controlla che il file non sia cambiato
+    zip.file(full, b.blob); files[id] = { path: full, type: b.type, name: b.name, sha256: await sha256(b.blob) };
   };
   for (const r of records) {
     if (r.type === 'cli') continue; // i clienti vanno solo nel manifest
@@ -81,7 +82,7 @@ async function buildZip(records, settings, withSettings) {
     for (const [k, f] of (r.fotoAppunti2 || []).entries()) await addBlob(f, `${dir}foto/Appunti_Fase2_${k + 1}.jpg`);
     for (const id of blobIds(r)) await addBlob(id, `${dir}altri/${id}`);
   }
-  const manifest = { app: 'nembo', version: 1, exportedAt: new Date().toISOString(), records, files };
+  const manifest = { app: 'nembo', version: 1, impronte: 'sha256', exportedAt: new Date().toISOString(), records, files };
   if (withSettings) {
     manifest.settings = settings; manifest.templates = {};
     for (const [name, t] of Object.entries(TEMPLATES)) {
@@ -89,7 +90,10 @@ async function buildZip(records, settings, withSettings) {
       if (b) { zip.file('_modelli/' + name, b); manifest.templates[t.key] = '_modelli/' + name; }
     }
   }
-  zip.file('manifest.json', JSON.stringify(manifest, null, 1));
+  const manText = JSON.stringify(manifest, null, 1);
+  zip.file('manifest.json', manText);
+  // firma del dispositivo su manifest.json (che contiene le impronte di tutti i file)
+  try { zip.file('firma.json', JSON.stringify(await firmaBackup(manText), null, 1)); } catch (e) { console.warn('firma del backup', e); }
   return zip.generateAsync({ type: 'blob', mimeType: 'application/zip' });
 }
 
@@ -101,8 +105,9 @@ async function recordFiles(r, settings) {
   const pdf = (bytes, name) => out.push({ blob: new Blob([bytes], { type: 'application/pdf' }), name: `${pre}_${name}.pdf` });
   const add = async (id, name) => {
     const b = id && await DB.getBlob(id); if (!b) return;
-    if (!/^(image\/|application\/pdf)/.test(b.type || '')) return;
-    const ext = b.type === 'application/pdf' ? '.pdf' : '.jpg';
+    const docx = b.type === MIME_DOCX;
+    if (!docx && !/^(image\/|application\/pdf)/.test(b.type || '')) return;
+    const ext = docx ? '.docx' : b.type === 'application/pdf' ? '.pdf' : '.jpg';
     out.push({ blob: b.blob, name: `${pre}_${slug(name)}${name.toLowerCase().endsWith(ext) ? '' : ext}` });
   };
   if (r.type === 'ra') {
@@ -188,27 +193,61 @@ async function exportRecords(records, settings, full) {
   } catch (e) { fail('Esportazione non riuscita', e); }
 }
 
-async function importZip(file) {
+// Ripristino con controlli: limiti sullo ZIP, impronta e tipo reale di ogni file, struttura di ogni attività,
+// impostazioni solo con le chiavi note, modelli verificati. Quello che non passa viene scartato e riportato in esito.
+const ZIP_MAX_VOCI = 20000, ZIP_MAX_BYTES = 4 * 1024 * 1048576, MANIFEST_MAX = 100 * 1048576;
+const zipSize = f => (f && f._data && f._data.uncompressedSize) || 0;
+async function importZip(file, opts = {}) {
   const zip = await JSZip.loadAsync(file);
+  const voci = Object.values(zip.files);
+  if (voci.length > ZIP_MAX_VOCI) throw new Error('lo ZIP contiene troppi file per essere un backup di Nembo');
+  if (voci.reduce((a, v) => a + zipSize(v), 0) > ZIP_MAX_BYTES) throw new Error('lo ZIP è troppo grande una volta aperto');
   const mf = zip.file('manifest.json'); if (!mf) throw new Error('lo ZIP non contiene manifest.json');
-  const man = JSON.parse(await mf.async('string'));
-  if (man.app !== 'nembo') throw new Error('file di un\'altra applicazione');
-  for (const [id, info] of Object.entries(man.files || {})) {
+  if (zipSize(mf) > MANIFEST_MAX) throw new Error('manifest.json troppo grande');
+  const manText = await mf.async('string');
+  let man; try { man = JSON.parse(manText); } catch (e) { throw new Error('manifest.json non leggibile'); }
+  if (!isObj(man) || man.app !== 'nembo') throw new Error('file di un\'altra applicazione');
+  if (!Array.isArray(man.records)) throw new Error('il backup non contiene attività');
+  // firma: prima di toccare l'archivio
+  const ff = zip.file('firma.json');
+  let firma = 'assente';
+  if (ff) { let fj = null; try { fj = JSON.parse(await ff.async('string')); } catch (e) { /* firma illeggibile */ } firma = await verificaFirma(manText, fj); }
+  if (firma === 'non valida') throw Object.assign(new Error('la firma non corrisponde al contenuto: il backup è stato modificato dopo essere stato creato. Ripristino annullato'), { code: 'FIRMA' });
+  const domanda = firma === 'sconosciuto' ? 'Il backup è firmato da un dispositivo che Nembo non riconosce tra i tuoi (per riconoscerli serve OneDrive collegato oppure lo stesso file di configurazione). Ripristinare comunque?'
+    : firma === 'assente' ? 'Il backup non è firmato: è stato creato prima della v48 oppure la firma è stata tolta. Ripristinare comunque?' : '';
+  if (domanda && opts.conferma && !opts.conferma(domanda)) throw Object.assign(new Error('ripristino annullato'), { code: 'ANNULLATO' });
+  const esito = { firma, verificati: 0, senzaImpronta: 0, alterati: [], fileScartati: [], attScartate: [] };
+  for (const [id, info] of Object.entries(isObj(man.files) ? man.files : {})) {
+    if (!/^b_[A-Za-z0-9_]{1,60}$/.test(id) || !isObj(info) || typeof info.path !== 'string') { esito.fileScartati.push(String(id).slice(0, 60) + ' (voce non valida)'); continue; }
     const f = zip.file(info.path); if (!f) continue;
-    const blob = new Blob([await f.async('uint8array')], { type: info.type || '' });
-    await DB.putBlob({ id, blob, type: info.type, name: info.name });
+    if (zipSize(f) > ALLEGATO_MAX) { esito.fileScartati.push(info.path + ' (oltre 60 MB)'); continue; }
+    const data = await f.async('uint8array');
+    if (typeof info.sha256 === 'string') {
+      if (await sha256(data) !== info.sha256) { esito.alterati.push(info.path); continue; }
+      esito.verificati++;
+    } else esito.senzaImpronta++;
+    const tipo = await tipoFileArrivo(data, info);
+    if (!tipo) { esito.fileScartati.push(info.path + ' (tipo non ammesso)'); continue; }
+    await DB.putBlob({ id, blob: new Blob([data], { type: tipo }), type: tipo, name: String(info.name || '').slice(0, 200) });
   }
   const current = await DB.all();
   let added = 0, updated = 0, kept = 0;
-  for (const r of man.records || []) {
+  for (const raw of man.records) {
+    const [r, perche] = pulisciRecord(raw);
+    if (!r) { esito.attScartate.push(((isObj(raw) && (raw.codice || raw.id)) || 'attività senza nome') + ' (' + perche + ')'); continue; }
     const ex = current.find(x => x.id === r.id);
     if (!ex) { await DB.put(r); added++; }
     else if ((r.updatedAt || 0) > (ex.updatedAt || 0)) { await DB.put(r); updated++; }
     else kept++;
   }
   const templates = {};
-  for (const [key, path] of Object.entries(man.templates || {})) { const f = zip.file(path); if (f) templates[key] = await f.async('arraybuffer'); }
-  return { added, updated, kept, settings: man.settings, templates };
+  for (const [key, path] of Object.entries(isObj(man.templates) ? man.templates : {})) {
+    const name = Object.keys(TEMPLATES).find(n => TEMPLATES[n].key === key);
+    const f = name && typeof path === 'string' && zip.file(path); if (!f) continue;
+    const buf = await f.async('arraybuffer');
+    try { await checkTemplate(name, buf); templates[key] = buf; } catch (e) { esito.fileScartati.push(path + ' (modello non valido)'); }
+  }
+  return { added, updated, kept, settings: pulisciImpostazioni(man.settings), templates, esito };
 }
 
 /* ---------------- file di configurazione ---------------- */
@@ -222,6 +261,8 @@ async function exportConfig(settings) {
     catch (e) { if (e.name === 'AbortError') return; handle = null; }
   }
   const cfg = { app: 'nembo', type: 'config', version: 1, createdAt: new Date().toISOString(), settings: rest, templates: {} };
+  // codice utente: riconosce come tuoi i backup degli altri tuoi dispositivi; legato a nome e cognome del tecnico
+  const u = await chiaveUtente(true); cfg.utente = { per: u.per, k: u.k };
   for (const t of Object.values(TEMPLATES)) { const b = await DB.get(t.key); if (b) cfg.templates[t.key] = bufToB64(b); }
   const blob = new Blob([JSON.stringify(cfg, null, 1)], { type: 'application/json' });
   if (handle) {
@@ -241,8 +282,8 @@ async function importConfig(file, current) {
     const buf = b64ToBuf(cfg.templates[t.key]); await checkTemplate(name, buf); tpl[t.key] = buf;
   }
   for (const [k, b] of Object.entries(tpl)) await DB.set(k, b);
-  const known = Object.keys(DEFAULT_SETTINGS);
-  const incoming = Object.fromEntries(Object.entries(cfg.settings || {}).filter(([k]) => known.includes(k) && k !== 'firmaTecnico'));
+  const { firmaTecnico, ...incoming } = pulisciImpostazioni(cfg.settings) || {}; // la firma resta quella del dispositivo
+  await chiaveUtenteDaConfig(cfg.utente, { ...current, ...incoming });
   return { settings: { ...current, ...incoming }, nTpl: Object.keys(tpl).length };
 }
 
@@ -477,7 +518,7 @@ function Notifiche({ settings, records = [], openRec }) {
         <button class=${f === 'ok' ? 'on' : ''} onClick=${() => setF('ok')}>Esiti · ${list.length - nErr}</button>
       </div></div>`}
     ${!shown.length && html`<div class="empty"><b>Nessuna notifica</b>${list.length ? 'Niente in questa categoria.' : 'Qui compariranno gli esiti dei caricamenti e gli eventuali errori.'}</div>`}
-    <div>${shown.map(n => html`<div class="card tight" key=${n.id} style=${'box-shadow:inset 4px 0 0 ' + COL[n.level] + ';padding:12px 14px 12px 18px'}>
+    <div>${shown.map(n => html`<div class="card tight st-bar" key=${n.id} style=${'--st:' + COL[n.level] + ';padding:12px 14px 12px 18px'}>
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline">
         <b style=${'font-size:var(--fs-sm);font-weight:600;color:' + COL[n.level]}>${LBL[n.level]}</b>
         <span style="font-size:var(--fs-xs);color:var(--muted)">${new Date(n.t).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}</span></div>
@@ -511,15 +552,19 @@ function Backup({ records, all, settings, reload, lastBackup }) {
     const f = e.target.files[0]; e.target.value = ''; if (!f) return;
     setBusy(true);
     try {
-      const res = await importZip(f);
+      const res = await importZip(f, { conferma: m => confirm(m) });
       const hasTpl = Object.keys(res.templates || {}).length > 0;
       if ((res.settings || hasTpl) && confirm('Il backup contiene anche impostazioni e modelli PDF. Sostituire quelli attuali?')) {
-        if (res.settings) await DB.set('settings', res.settings);
+        if (res.settings) await DB.set('settings', { ...settings, ...res.settings });
         for (const [k, b] of Object.entries(res.templates || {})) await DB.set(k, b);
       }
-      toast(`Importati: ${res.added} nuovi, ${res.updated} aggiornati, ${res.kept} già presenti`);
+      const E = res.esito, problemi = [...E.alterati.map(x => x + ' (modificato dopo il backup)'), ...E.fileScartati, ...E.attScartate];
+      toast(`Importati: ${res.added} nuovi, ${res.updated} aggiornati, ${res.kept} già presenti${problemi.length ? ` · ${problemi.length} elementi scartati` : ''}`);
+      notify(problemi.length ? 'warn' : 'ok', problemi.length ? `Ripristino: ${problemi.length} elementi scartati dai controlli` : 'Ripristino completato', {
+        detail: `${FIRMA_ESITO[E.firma] || ''} Attività: ${res.added} nuove, ${res.updated} aggiornate, ${res.kept} già presenti. File con impronta verificata: ${E.verificati}${E.senzaImpronta ? `; senza impronta (backup precedenti alla v48): ${E.senzaImpronta}` : ''}.`,
+        items: problemi });
       reload();
-    } catch (err) { fail('Import non riuscito', err); }
+    } catch (err) { if (err.code === 'ANNULLATO') toast('Ripristino annullato'); else fail('Import non riuscito', err); }
     setBusy(false);
   };
   return html`<div class="content form">
@@ -668,7 +713,7 @@ function App() {
     return () => { window.removeEventListener('beforeinstallprompt', bip); offRec(); };
   }, []);
 
-  const setSettings = s => { setSettingsState(s); _settings = s; DB.set('settings', s); };
+  const setSettings = s => { setSettingsState(s); _settings = s; DB.set('settings', s); chiaveUtenteNome(s).catch(e => console.warn('codice utente', e)); };
   const go = next => { const prev = route; setRoute({ ...next, from: ROUTE_TITLE[prev.v] }); Back.push(() => setRoute(prev)); };
   const goBack = () => history.back();
   // tab bar: dalla Home si entra in un'area (Indietro torna a Oggi); tra un'area e l'altra si sostituisce la schermata

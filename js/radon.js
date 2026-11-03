@@ -297,7 +297,7 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
           <input class="inp" inputmode="decimal" value=${p.valoreF2} disabled=${!lockF2} onInput=${e => updP(p.id, { valoreF2: e.target.value })} aria-label=${'R' + (i + 1) + ' Fase 2'} />
           <span class=${'mean' + (v != null && v > settings.livelloRif ? ' over' : '')}>${fmtN(v)}</span></div>`; })}
         <div class="divider"></div>
-        <${FileList} items=${r.rapporti} accept="application/pdf,image/*" label="Allega rapporto di prova"
+        <${FileList} items=${r.rapporti} label="Allega rapporto di prova"
           onAdd=${d => up(p => ({ ...p, rapporti: [...p.rapporti, d] }))}
           onRemove=${async d => { await removeBlob(d.blobId); up(p => ({ ...p, rapporti: p.rapporti.filter(x => x.id !== d.id) })); }} />
       </div>`}
@@ -320,7 +320,7 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
       const cls = mm.confermato ? ' done' : enabled ? ' cur' : '';
       const ro = mm.confermato || !enabled;
       const prevista = i === 1 && m[0].data ? addMonths(m[0].data, 6) : i === 2 && m[1].data ? addMonths(m[1].data, 6) : null;
-      return html`<div class=${'mom' + cls} key=${i} id=${i === curMom ? 'mom-cur-' + r.id : null}>
+      return html`<div class=${'mom' + cls + (mm.confermato ? ' st-bar st-ok' : enabled ? ' st-bar st-info' : '')} key=${i} id=${i === curMom ? 'mom-cur-' + r.id : null}>
         <div class="mom-h"><span class="n">${i + 1}</span><b>${MOMENTI[i]}</b>
           ${mm.confermato && html`<span class="badge b-ok">Confermato</span>`}</div>
         ${!enabled ? html`<div class="lock">Si compila dopo aver confermato il momento ${i}${prevista ? ' · previsto ' + fmtD(prevista) : ''}</div>` : html`
