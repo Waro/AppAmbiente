@@ -213,7 +213,7 @@ async function importZip(file, opts = {}) {
   let firma = 'assente';
   if (ff) { let fj = null; try { fj = JSON.parse(await ff.async('string')); } catch (e) { /* firma illeggibile */ } firma = await verificaFirma(manText, fj); }
   if (firma === 'non valida') throw Object.assign(new Error('la firma non corrisponde al contenuto: il backup è stato modificato dopo essere stato creato. Ripristino annullato'), { code: 'FIRMA' });
-  const domanda = firma === 'sconosciuto' ? 'Il backup è firmato da un dispositivo che Nembo non riconosce tra i tuoi (per riconoscerli serve OneDrive collegato). Ripristinare comunque?'
+  const domanda = firma === 'sconosciuto' ? 'Il backup è firmato da un dispositivo che Nembo non riconosce tra i tuoi (per riconoscerli serve OneDrive collegato oppure lo stesso file di configurazione). Ripristinare comunque?'
     : firma === 'assente' ? 'Il backup non è firmato: è stato creato prima della v48 oppure la firma è stata tolta. Ripristinare comunque?' : '';
   if (domanda && opts.conferma && !opts.conferma(domanda)) throw Object.assign(new Error('ripristino annullato'), { code: 'ANNULLATO' });
   const esito = { firma, verificati: 0, senzaImpronta: 0, alterati: [], fileScartati: [], attScartate: [] };
@@ -261,6 +261,8 @@ async function exportConfig(settings) {
     catch (e) { if (e.name === 'AbortError') return; handle = null; }
   }
   const cfg = { app: 'nembo', type: 'config', version: 1, createdAt: new Date().toISOString(), settings: rest, templates: {} };
+  // codice utente: riconosce come tuoi i backup degli altri tuoi dispositivi; legato a nome e cognome del tecnico
+  const u = await chiaveUtente(true); cfg.utente = { per: u.per, k: u.k };
   for (const t of Object.values(TEMPLATES)) { const b = await DB.get(t.key); if (b) cfg.templates[t.key] = bufToB64(b); }
   const blob = new Blob([JSON.stringify(cfg, null, 1)], { type: 'application/json' });
   if (handle) {
@@ -281,6 +283,7 @@ async function importConfig(file, current) {
   }
   for (const [k, b] of Object.entries(tpl)) await DB.set(k, b);
   const { firmaTecnico, ...incoming } = pulisciImpostazioni(cfg.settings) || {}; // la firma resta quella del dispositivo
+  await chiaveUtenteDaConfig(cfg.utente, { ...current, ...incoming });
   return { settings: { ...current, ...incoming }, nTpl: Object.keys(tpl).length };
 }
 
@@ -710,7 +713,7 @@ function App() {
     return () => { window.removeEventListener('beforeinstallprompt', bip); offRec(); };
   }, []);
 
-  const setSettings = s => { setSettingsState(s); _settings = s; DB.set('settings', s); };
+  const setSettings = s => { setSettingsState(s); _settings = s; DB.set('settings', s); chiaveUtenteNome(s).catch(e => console.warn('codice utente', e)); };
   const go = next => { const prev = route; setRoute({ ...next, from: ROUTE_TITLE[prev.v] }); Back.push(() => setRoute(prev)); };
   const goBack = () => history.back();
   // tab bar: dalla Home si entra in un'area (Indietro torna a Oggi); tra un'area e l'altra si sostituisce la schermata

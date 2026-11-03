@@ -271,11 +271,45 @@ async function chiaviNote() {
   }
   return L;
 }
+/* Codice utente: un segreto casuale di 256 bit, uguale su tutti i dispositivi della stessa persona.
+   Viaggia solo nel file di configurazione (mai nei backup né su OneDrive) ed è legato al nome del tecnico:
+   se la configurazione viene adattata per un collega cambiando nome e cognome, sul suo dispositivo il codice non viene accettato.
+   Ogni backup porta, oltre alla firma del dispositivo, un HMAC-SHA256 di manifest.json con questo codice:
+   un altro dispositivo con la stessa configurazione riconosce il backup come tuo anche senza OneDrive. */
+const nomeTecnico = s => cliNorm(`${(s && s.tecnicoNome) || ''} ${(s && s.tecnicoCognome) || ''}`);
+const hmacKey = raw => crypto.subtle.importKey('raw', raw, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
+const idUtente = async raw => (await sha256(raw)).slice(0, 16);
+async function chiaveUtente(crea) {
+  const u = await DB.get('chiave_utente');
+  if (u && typeof u.k === 'string') return u;
+  if (!crea) return null;
+  const raw = crypto.getRandomValues(new Uint8Array(32));
+  const n = { k: bufToB64(raw), per: nomeTecnico(_settings), id: await idUtente(raw) };
+  await DB.set('chiave_utente', n);
+  return n;
+}
+// dal file di configurazione: accettato solo se è dello stesso tecnico della configurazione
+async function chiaveUtenteDaConfig(u, settings) {
+  const nome = nomeTecnico(settings);
+  const ok = isObj(u) && typeof u.k === 'string' && typeof u.per === 'string' && u.per === nome && /^[A-Za-z0-9+/=]{40,48}$/.test(u.k) && b64ToBuf(u.k).byteLength === 32;
+  if (ok) { await DB.set('chiave_utente', { k: u.k, per: u.per, id: await idUtente(b64ToBuf(u.k)) }); return true; }
+  const cur = await DB.get('chiave_utente');
+  if (cur && cur.per !== nome) await DB.set('chiave_utente', null); // configurazione di un'altra persona: il codice precedente non vale più
+  return false;
+}
+// nome del tecnico cambiato in Impostazioni: il codice di un'altra persona non resta su questo dispositivo
+async function chiaveUtenteNome(settings) {
+  const cur = await DB.get('chiave_utente');
+  if (cur && cur.per !== nomeTecnico(settings)) await DB.set('chiave_utente', null);
+}
 async function firmaBackup(manText) {
   const c = await chiaveDispositivo();
   const sig = await crypto.subtle.sign(FIRMA_SIGN, c.priv, new TextEncoder().encode(manText));
   chiavePubblica().catch(e => console.warn('chiave', e));
-  return { app: 'nembo', kind: 'firma', alg: 'ECDSA-P256-SHA256', chiave: c.jwk, impronta: c.fp, firma: bufToB64(sig), creata: new Date().toISOString() };
+  const f = { app: 'nembo', kind: 'firma', alg: 'ECDSA-P256-SHA256', chiave: c.jwk, impronta: c.fp, firma: bufToB64(sig), creata: new Date().toISOString() };
+  const u = await chiaveUtente(true);
+  f.utente = { id: u.id, alg: 'HMAC-SHA256', firma: bufToB64(await crypto.subtle.sign('HMAC', await hmacKey(b64ToBuf(u.k)), new TextEncoder().encode(manText))) };
+  return f;
 }
 // 'questo' | 'tuo' | 'sconosciuto' | 'non valida'
 async function verificaFirma(manText, f) {
@@ -287,6 +321,11 @@ async function verificaFirma(manText, f) {
     const fp = await improntaChiave(jwk);
     const mia = await DB.get('chiave_dispositivo');
     if (mia && mia.fp === fp) return 'questo';
+    // stesso codice utente (stessa configurazione): riconosciuto anche senza OneDrive
+    const u = await chiaveUtente(false);
+    if (u && isObj(f.utente) && f.utente.id === u.id) {
+      return await crypto.subtle.verify('HMAC', await hmacKey(b64ToBuf(u.k)), b64ToBuf(String(f.utente.firma)), new TextEncoder().encode(manText)) ? 'tuo' : 'non valida';
+    }
     return (await chiaviNote()).includes(fp) ? 'tuo' : 'sconosciuto';
   } catch (e) { return 'non valida'; }
 }
