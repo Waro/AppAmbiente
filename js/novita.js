@@ -3,6 +3,16 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
+  { v: 48, data: '2026-11-03', tipo: 'minore', titolo: 'Allegati controllati e backup firmati',
+    voci: [
+      'Home: «Attività di oggi» e «Scadenze» hanno la stessa struttura di «Prossimo sopralluogo»; le scadenze sono in una sola card su fondo ambra. Su PC e tablet in orizzontale le tre card sono affiancate.',
+      'Indicatore di stato uguale in tutta l’app: la barra colorata a sinistra, come nelle Notifiche. Compare anche in «Da completare», nei momenti radon, nei manufatti danneggiati, nei punti aria oltre il limite e nei fogli firme chiusi.',
+      'Allegati: solo foto, PDF e Word (.docx). I PDF si aprono dentro Nembo senza eseguire script; i Word con macro o contenuti attivi non vengono accettati.',
+      'Backup firmati: ogni ZIP porta la firma del dispositivo e del tuo codice utente. Al ripristino Nembo controlla firma e file e scarta quello che è stato modificato.',
+      'Codice utente nel file di configurazione: esporta di nuovo la configurazione e caricala sugli altri tuoi dispositivi, così riconoscono i tuoi backup anche senza OneDrive.',
+      'Anche quello che arriva dalla sincronizzazione passa gli stessi controlli.',
+      'Nuovi colori dei tag, più tenui e diversi da quelli degli stati; colori di Aria, FAV, Altro e REC più leggibili.',
+      'Aggiornamenti più affidabili: la nuova versione si scarica sempre per intero.' ] },
   { v: 46, data: '2026-10-26', tipo: 'maggiore', titolo: 'Scheda File, Home e tema scuro',
     voci: [
       'Nuova scheda «File» in ogni attività: schede campioni, riepiloghi, scheda radon, schede aria, Word HSE e fogli firme. Grigio da generare, verde generato (tocca per aprirlo), ambra se i dati sono cambiati dopo. «Rigenera» crea una nuova revisione senza cancellare la precedente. I file vanno anche su OneDrive.',

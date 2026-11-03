@@ -2,7 +2,7 @@
 // Stessa stringa di VERSION in sw.js: aumentala insieme a quella ad ogni aggiornamento.
 // Essendo dentro un file JS servito dalla cache, se l'aggiornamento automatico fallisce
 // questa scritta mostra ancora la versione vecchia — è il modo per accorgersene.
-const APP_VERSION = 'nembo-v47';
+const APP_VERSION = 'nembo-v48';
 
 /* ---------------- tema grafico: "essenziale" (predefinito), "originale" o "scuro" ----------------
    Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno.
