@@ -77,9 +77,9 @@ function PrimiPassi({ settings, tplOk, goSettings, installEvt, onInstall }) {
   useEffect(() => OD.subscribe(() => force(x => x + 1)), []);
   const installed = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   const steps = [
-    { ok: !!(settings.tecnicoCognome && tplOk), l: 'Carica la configurazione', s: 'Impostazioni → File di configurazione → Carica .json', go: goSettings },
-    { ok: !!settings.firmaTecnico, l: 'Salva la tua firma', s: 'Impostazioni → Tecnico', go: goSettings },
-    { ok: !!OD.account, l: 'Collega OneDrive', s: 'Impostazioni → OneDrive → Accedi', go: goSettings },
+    { ok: !!(settings.tecnicoCognome && tplOk), l: 'Carica la configurazione', s: 'Impostazioni → File di configurazione → Carica .json', go: () => goSettings('config') },
+    { ok: !!settings.firmaTecnico, l: 'Salva la tua firma', s: 'Impostazioni → Tecnico', go: () => goSettings('tecnico') },
+    { ok: !!OD.account, l: 'Collega OneDrive', s: 'Impostazioni → OneDrive → Accedi', go: () => goSettings('onedrive') },
     { ok: installed, l: "Installa l'app", s: installEvt ? 'Tocca per installarla' : 'Menu ⋮ di Chrome → Installa app', go: installEvt ? onInstall : null },
   ];
   const n = steps.filter(x => x.ok).length;
@@ -263,7 +263,7 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
     </div></div>
     </div>`}
 
-    ${bu === 'hs' && hsTplOk === false && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goSettings}>Per generare i report carica i modelli Word HSE (Esteso e Sintetico) in Impostazioni → Modelli.</button>`}
+    ${bu === 'hs' && hsTplOk === false && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${() => goSettings('modelli')}>Per generare i report carica i modelli Word HSE (Esteso e Sintetico) in Impostazioni → Modelli.</button>`}
     ${bu === 'ambiente' && onbHidden() && (!tplOk || !settings.tecnicoCognome) && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goSettings}>Prima di iniziare: in Impostazioni inserisci i tuoi dati e carica i modelli.</button>`}
     ${installEvt && html`<button class="btn block" style="margin-top:12px" onClick=${onInstall}><${Icon} n="plus" s=${18} /> Installa l'app</button>`}
     ${/* senza sopralluoghi in programma il blocco navy ha già «Nuova attività»: niente + doppione */ ''}

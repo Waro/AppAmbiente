@@ -1,5 +1,5 @@
 /* ============================================================
-   Nembo · stile "Essenziale" (tema predefinito) + tema "Originale"
+   Nembo · stili "Essenziale" (predefinito) e "Originale", ognuno chiaro e scuro
    ============================================================ */
 @font-face { font-family: 'IBM Plex Sans'; font-weight: 400; font-style: normal; font-display: swap; src: url(fonts/ibm-plex-sans-latin-400-normal.woff2) format('woff2'); }
 @font-face { font-family: 'IBM Plex Sans'; font-weight: 500; font-style: normal; font-display: swap; src: url(fonts/ibm-plex-sans-latin-500-normal.woff2) format('woff2'); }
@@ -71,7 +71,7 @@
   -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
 }
 
-/* Tema "Originale": stessa struttura, palette storica rosa-grigio e accento petrolio */
+/* Stile "Originale" chiaro: stessa struttura, palette storica rosa-grigio e accento petrolio */
 [data-theme="originale"] {
   --bg: #f7f2f0; --card: #ffffff; --track: #ebe3e0; --fill-soft: #efe8e5; --sep: #e4d9d5;
   --text: #1b2238; --text2: #4b5066; --muted: #635c67; --faint: #6b646f; --chev: #c9bdb9;
@@ -937,8 +937,8 @@ img.logo { background: none; object-fit: cover; }
 .drone-sw { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-direction: row; }
 .drone-sw > span { font-size: var(--fs-base); color: var(--text); }
 
-/* ---------------- tema Scuro ---------------- */
-[data-theme="scuro"] {
+/* ---------------- aspetto Scuro (vale per entrambi gli stili; data-mode="scuro") ---------------- */
+[data-mode="scuro"] {
   color-scheme: dark;
   --bg: #0e1116; --card: #1a1e26; --track: #262b35; --fill-soft: #232832; --sep: #2f3541;
   --text: #e8ebf1; --text2: #c2c7d2; --muted: #969cab; --faint: #8a90a0; --chev: #565d6b;
@@ -959,12 +959,26 @@ img.logo { background: none; object-fit: cover; }
   --tgl-off: #3a4150; --tgl-on: var(--blue); --grab: #4a5160; --stp-sep: #3a4150;
   --bar-bg: rgba(16,19,25,.9); --bar-solid: #10131a; --bar-line: rgba(255,255,255,.09);
 }
-[data-theme="scuro"] .fbtn:not(.green):not(.amber) .fic { background: var(--btn2); }
-[data-theme="scuro"] img.dark-inv { filter: invert(1); }
+/* Originale scuro: stessa struttura dello Scuro, fondi grafite caldi (rosa-grigio) e accento petrolio.
+   Stati, matrici, tipi e tag restano quelli dello Scuro: fondi di luminanza uguale, stesso contrasto ≥ 4,5:1. */
+[data-theme="originale-scuro"] {
+  --bg: #161214; --card: #221c1f; --track: #2e272b; --fill-soft: #2b2428; --sep: #3a3136;
+  --text: #f1ebee; --text2: #cfc5ca; --muted: #a59aa0; --faint: #9a8f95; --chev: #5f5459;
+  --navy: #0f2f3a; --navy-tx: #a9d3df; --navy-tx2: #cbe5ec;
+  --blue: #5fb4cf; --blue-dk: #85c8dd; --blue-sky: #7cc0d6; --blue-soft: #13323d; --blue-icon: #13323d;
+  --grad-pri: linear-gradient(135deg, #0f4c61 0%, #1a6f8c 52%, #1d7a99 100%);
+  --on-accent: #1a1216;
+  --ring2: #b9c3d1; --navy-ink: #d6e6ec; --btn2: #2e272b; --seg-thumb: #40363c;
+  --ava: linear-gradient(135deg, #1d7a99, #0f2f3a);
+  --tgl-off: #40363c; --grab: #4f4449; --stp-sep: #40363c;
+  --bar-bg: rgba(22,18,20,.9); --bar-solid: #161214;
+}
+[data-mode="scuro"] .fbtn:not(.green):not(.amber) .fic { background: var(--btn2); }
+[data-mode="scuro"] img.dark-inv { filter: invert(1); }
 .theme-seg button { gap: 3px; }
 .theme-seg button small { color: inherit; }
 /* la firma si fa sempre su carta bianca, anche col tema scuro */
-[data-theme="scuro"] .sig-wrap { --text: #1c1f2b; --text2: #4a4f60; --muted: #5f6474; --card: #fff; --btn2: #e6e8ee; --btn-ink: #243257; --fill-soft: #eef0f4; --sep: #e1e3ea; --track: #e4e5eb; --seg-thumb: #fff; color: var(--text); color-scheme: light; }
+[data-mode="scuro"] .sig-wrap { --text: #1c1f2b; --text2: #4a4f60; --muted: #5f6474; --card: #fff; --btn2: #e6e8ee; --btn-ink: #243257; --fill-soft: #eef0f4; --sep: #e1e3ea; --track: #e4e5eb; --seg-thumb: #fff; color: var(--text); color-scheme: light; }
 
 /* ---------------- Home semplificata ---------------- */
 .home2 { padding-bottom: 170px; }
@@ -1028,3 +1042,29 @@ img.logo { background: none; object-fit: cover; }
 /* Indicatore di stato: dopo tutti i componenti, così vale anche su card, momenti, manufatti e punti */
 .st-bar, .rcard.od-ok:not(.on), .rcard.od-stale:not(.on), .rcard.od-err:not(.on) { box-shadow: inset 4px 0 0 var(--st), var(--sh-card); }
 .list .st-bar, .card .st-bar, .list .rcard[class*="od-"]:not(.on) { box-shadow: inset 4px 0 0 var(--st); }
+
+/* ---------------- Impostazioni a gruppi (come le Impostazioni di iPhone) ----------------
+   Righe dentro una card: icona squircle, nome, valore attuale, freccia. Icone colorate solo per le voci
+   legate a un tipo di attività (tinta .tint con il colore del tipo), le altre neutre. */
+.set-group { background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-card); overflow: hidden; }
+.set-row, .set-prof { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 12px 8px 14px; border: 0; background: none; text-align: left; color: var(--text); position: relative; }
+.set-row + .set-row::before { content: ''; position: absolute; top: 0; left: 60px; right: 0; height: .5px; background: var(--sep); }
+.set-row > svg, .set-prof > svg { flex: none; color: var(--chev); }
+.set-ic { width: 34px; height: 34px; border-radius: var(--r-sq); display: grid; place-items: center; flex: none; background: var(--fill-soft); color: var(--text2); }
+.set-ic.tint { background: color-mix(in srgb, var(--c) 14%, var(--card)); color: var(--c); }
+.set-t { flex: 1 0 auto; max-width: 100%; min-width: 0; }  /* il nome ha la precedenza sul valore */
+.set-t b { display: block; font-size: var(--fs-lg); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.set-t small { display: block; font-size: var(--fs-sm); color: var(--muted); }
+.set-v { font-size: var(--fs-md); color: var(--muted); white-space: nowrap; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; text-align: right; }
+.set-prof { background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-card); min-height: 72px; padding: 12px 12px 12px 14px; margin-top: 4px; }
+.set-prof .set-t b { font-size: var(--fs-xl); font-weight: 600; }
+.set-row:active, .set-prof:active { background: var(--fill-soft); }
+.set-row.on, .set-prof.on { background: var(--blue-soft); }
+.set-row.on .set-t b, .set-prof.on .set-t b { color: var(--blue); font-weight: 600; }
+.set-page { padding-bottom: var(--sp-6); }
+.set-ph { font-size: var(--fs-3xl); font-weight: 700; letter-spacing: -0.01em; margin: 6px 2px 14px; }
+@supports (corner-shape: squircle) { .set-ic { border-radius: 50%; corner-shape: squircle; } }
+@media (min-width: 1000px) {
+  .set-wide { display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); gap: var(--sp-6); align-items: start; }
+  .set-wide .set-list { position: sticky; top: 0; }
+}

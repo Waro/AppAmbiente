@@ -307,14 +307,44 @@ function TemplateRow({ name, t, onChange }) {
     <input ref=${inp} type="file" accept=${t.docx ? '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document' : t.xlsx ? '.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'application/pdf'} hidden onChange=${pick} /></div>`;
 }
 
-function Settings({ settings, setSettings, onTemplates, go }) {
+/* Impostazioni: un elenco a gruppi (come le Impostazioni di iPhone) e una pagina per voce.
+   Telefono: ogni voce apre la sua pagina (route p), il tasto indietro torna all'elenco.
+   Tablet in orizzontale e PC: elenco a sinistra e pagina a destra. */
+const SET_PAGES = {
+  tecnico: { l: 'Tecnico', ic: 'sign' },
+  aspetto: { l: 'Aspetto e avvio', ic: 'sun' },
+  foto: { l: 'Foto', ic: 'camera' },
+  novita: { l: 'Novità', ic: 'spark' },
+  config: { l: 'File di configurazione', ic: 'file' },
+  onedrive: { l: 'OneDrive', ic: 'share' },
+  modelli: { l: 'Modelli', ic: 'paper' },
+  dispositivo: { l: 'Dati su questo dispositivo', ic: 'archive' },
+  campioni: { l: 'Scheda campioni', ic: 'pin', c: 'var(--t-map)' },
+  hse: { l: 'Sopralluoghi HSE', sub: 'Valori proposti', t: 'Sopralluoghi HSE · valori proposti', ic: 'helmet', c: 'var(--t-hse)' },
+  programmazione: { l: 'Programmazione', sub: 'Durate tipiche', t: 'Programmazione · durate tipiche', ic: 'today', c: 'var(--t-app)' },
+  firme: { l: 'Fogli firme', ic: 'pen', c: 'var(--t-firme)' },
+  aria: { l: 'Monitoraggio aria', ic: 'air', c: 'var(--t-aria)' },
+  radon: { l: 'Radon', ic: 'radon', c: 'var(--t-radon)' },
+  assistenza: { l: 'Assistenza', ic: 'bell' },
+  info: { l: 'Info app', ic: 'gear' },
+};
+const SET_GROUPS = [
+  { h: 'Generali', items: ['aspetto', 'foto', 'novita'] },
+  { h: 'Dati e OneDrive', items: ['config', 'onedrive', 'modelli', 'dispositivo'] },
+  { h: 'Attività', items: ['campioni', 'hse', 'programmazione', 'firme', 'aria', 'radon'] },
+  { h: 'Supporto', items: ['assistenza', 'info'] },
+];
+
+function Settings({ settings, setSettings, onTemplates, go, page, wide }) {
   const [sig, setSig] = useState(false);
   const [k, setK] = useState(0);
   const [cacheVer, setCacheVer] = useState(null);
-  const [theme, setThemeSt] = useState(getTheme());
+  const [look, setLookSt] = useState(getLook());
+  const [sel, setSel] = useState(page || 'aspetto');
   useEffect(() => { if (window.caches) caches.keys().then(ks => setCacheVer(ks[0] || '—')); }, []);
   const cfgInp = useRef();
   const s = settings; const set = patch => setSettings({ ...s, ...patch });
+  const pickLook = patch => setLookSt(setLook(patch));
   const loadCfg = async e => {
     const f = e.target.files[0]; e.target.value = ''; if (!f) return;
     if (!/\.json$/i.test(f.name || '')) { toast('Seleziona un file .json (hai scelto "' + (f.name || 'file senza nome') + '")'); return; }
@@ -325,32 +355,18 @@ function Settings({ settings, setSettings, onTemplates, go }) {
       toast(`Configurazione caricata${res.nTpl ? ' con ' + res.nTpl + ' modelli' : ''}`);
     } catch (err) { fail('Configurazione non caricata', err); }
   };
-  return html`<div class="content form" key=${k}>
-    <${LargeTitle} top title="Impostazioni" />
-    <div class="sec-h" style="margin-top:6px"><h3>Aspetto e avvio</h3></div>
-    <div class="card">
-      <div class="fld"><span>Tema grafico (solo su questo dispositivo)</span></div>
-      <div class="seg tall theme-seg" style="margin-top:6px" role="radiogroup" aria-label="Tema grafico">${Object.entries(THEMES).map(([t, x]) => html`<button role="radio" aria-checked=${theme === t} class=${theme === t ? 'on' : ''} onClick=${() => { setTheme(t); setThemeSt(t); }}><${Icon} n=${x.ic} s=${22} /><small>${x.l}</small></button>`)}</div>
-      <div class="fld" style="margin-top:14px"><span>Business unit mostrata in Oggi</span></div>
-      <div class="seg" style="margin-top:6px">${BUS.map(([k2, l]) => html`<button class=${(s.buDefault || 'ambiente') === k2 ? 'on' : ''} onClick=${() => set({ buDefault: k2 })}>${l}</button>`)}</div>
-    </div>
-    <div class="sec-h"><h3>File di configurazione</h3></div>
-    <div class="card tight">
-      <p class="lead" style="margin:6px 0 10px">Un unico file .json con impostazioni e modelli PDF, da tenere su OneDrive o inviare a un collega. Non pubblicarlo mai sul sito.</p>
-      <div class="row">
-        <button class="btn" style="flex:1" onClick=${() => cfgInp.current.click()}>Carica .json</button>
-        <button class="btn" style="flex:1" onClick=${() => exportConfig(s)}>Esporta .json</button>
-      </div>
-      <input ref=${cfgInp} type="file" accept="application/json,text/plain,application/octet-stream,.json" hidden onChange=${loadCfg} />
-    </div>
-    <div class="sec-h"><h3>OneDrive</h3></div>
-    <${OneDriveSettings} settings=${s} set=${set} />
-    <${SyncCard} settings=${s} set=${set} />
-    <div class="sec-h"><h3>Modelli</h3></div>
-    <div class="card tight"><p class="lead" style="margin:2px 0 6px">I moduli aziendali (PDF per l'Ambiente, Word per l'HSE) non sono nell'app pubblicata: caricali qui dal telefono o da OneDrive. Restano solo su questo dispositivo e finiscono nel file di configurazione e nel backup.</p>
-      ${Object.entries(TEMPLATES).map(([name, t]) => html`<${TemplateRow} key=${name} name=${name} t=${t} onChange=${onTemplates} />`)}</div>
-    <div class="sec-h"><h3>Tecnico</h3></div>
-    <div class="card"><div class="grid2">
+  const nome = [s.tecnicoNome, s.tecnicoCognome].filter(Boolean).join(' ');
+  // valore mostrato a destra della voce, quando aiuta a capire senza aprirla
+  const val = id => id === 'aspetto' ? `${STYLES[look.style].l} · ${MODES[look.mode].l}`
+    : id === 'radon' ? `${s.livelloRif || 300} Bq/m³` : id === 'info' ? APP_VERSION.replace('nembo-', '') : '';
+  const open = id => { if (wide) setSel(id); else go({ v: 'settings', p: id }); };
+  const cur = wide ? sel : page;
+
+  const segLook = (map, key, label) => html`<div class="seg tall theme-seg" style="margin-top:6px" role="radiogroup" aria-label=${label}>${Object.entries(map).map(([t, x]) => html`<button role="radio" aria-checked=${look[key] === t} class=${look[key] === t ? 'on' : ''} onClick=${() => pickLook({ [key]: t })}><${Icon} n=${x.ic} s=${22} /><small>${x.l}</small></button>`)}</div>`;
+
+  const body = id => {
+    switch (id) {
+      case 'tecnico': return html`<div class="card"><div class="grid2">
       <${Inp} label="Nome" value=${s.tecnicoNome} set=${v => set({ tecnicoNome: v })} />
       <${Inp} label="Cognome" value=${s.tecnicoCognome} set=${v => set({ tecnicoCognome: v })} />
     </div>
@@ -359,13 +375,32 @@ function Settings({ settings, setSettings, onTemplates, go }) {
     <div style="display:flex;margin-top:8px;gap:8px;flex-wrap:wrap"><${SigImageButton} onDone=${url => set({ firmaTecnico: url })} />
       ${s.firmaTecnico && html`<button class="btn sm" onClick=${() => set({ firmaTecnico: '' })}>Rimuovi firma salvata</button>`}</div>
     <p class="lead" style="margin:6px 2px 0;font-size:var(--fs-sm)">Puoi disegnarla o caricare una foto della tua firma su un foglio bianco: lo sfondo viene tolto da solo.</p>
-    </div>
-
-    <div class="sec-h"><h3>Foto</h3></div>
-    <${CamSerieCard} />
-
-    <div class="sec-h"><h3>Scheda campioni</h3></div>
-    <div class="card"><div class="grid2">
+    </div>`;
+      case 'aspetto': return html`<div class="card">
+      <div class="fld"><span>Stile</span></div>
+      ${segLook(STYLES, 'style', 'Stile')}
+      <div class="fld" style="margin-top:14px"><span>Aspetto</span></div>
+      ${segLook(MODES, 'mode', 'Aspetto')}
+      <p class="lead" style="margin:8px 2px 0;font-size:var(--fs-sm)">Automatico segue il tema chiaro o scuro del dispositivo. Stile e aspetto valgono solo su questo dispositivo.</p>
+      <div class="fld" style="margin-top:14px"><span>Business unit mostrata in Oggi</span></div>
+      <div class="seg" style="margin-top:6px">${BUS.map(([k2, l]) => html`<button class=${(s.buDefault || 'ambiente') === k2 ? 'on' : ''} onClick=${() => set({ buDefault: k2 })}>${l}</button>`)}</div>
+    </div>`;
+      case 'foto': return html`<${CamSerieCard} />`;
+      case 'novita': return html`<${NovitaCard} go=${go} />`;
+      case 'config': return html`<div class="card tight">
+      <p class="lead" style="margin:6px 0 10px">Un unico file .json con impostazioni e modelli PDF, da tenere su OneDrive o inviare a un collega. Non pubblicarlo mai sul sito.</p>
+      <div class="row">
+        <button class="btn" style="flex:1" onClick=${() => cfgInp.current.click()}>Carica .json</button>
+        <button class="btn" style="flex:1" onClick=${() => exportConfig(s)}>Esporta .json</button>
+      </div>
+      <input ref=${cfgInp} type="file" accept="application/json,text/plain,application/octet-stream,.json" hidden onChange=${loadCfg} />
+    </div>`;
+      case 'onedrive': return html`<${OneDriveSettings} settings=${s} set=${set} />
+    <${SyncCard} settings=${s} set=${set} />`;
+      case 'modelli': return html`<div class="card tight"><p class="lead" style="margin:2px 0 6px">I moduli aziendali (PDF per l'Ambiente, Word per l'HSE) non sono nell'app pubblicata: caricali qui dal telefono o da OneDrive. Restano solo su questo dispositivo e finiscono nel file di configurazione e nel backup.</p>
+      ${Object.entries(TEMPLATES).map(([name, t]) => html`<${TemplateRow} key=${name} name=${name} t=${t} onChange=${onTemplates} />`)}</div>`;
+      case 'dispositivo': return html`<${WipeCard} />`;
+      case 'campioni': return html`<div class="card"><div class="grid2">
       <${Inp} cls="full" label="Prelevato da" value=${s.prelevatoDa} set=${v => set({ prelevatoDa: v })} placeholder="es. Tec. Amb. Nome Cognome" />
       <${Inp} cls="full" label="Verificato da" value=${s.verificatoDa} set=${v => set({ verificatoDa: v })} />
       <${Inp} cls="full" label="Email per i referti" value=${s.emailReferti} set=${v => set({ emailReferti: v })} />
@@ -378,10 +413,8 @@ function Settings({ settings, setSettings, onTemplates, go }) {
       <${Inp} label="Descrizione analisi MCA" value=${s.mcaDesc} set=${v => set({ mcaDesc: v })} />
       <${Inp} label="Codice analisi FAV" value=${s.favCodice} set=${v => set({ favCodice: v })} />
       <${Inp} label="Descrizione analisi FAV" value=${s.favDesc} set=${v => set({ favDesc: v })} />
-    </div></div>
-
-    <div class="sec-h"><h3>Sopralluoghi HSE · valori proposti</h3></div>
-    <div class="card"><p class="lead" style="margin:2px 0 10px">Compilano i nuovi report HSE; restano nel tuo file di configurazione, mai nel codice dell'app.</p><div class="grid2">
+    </div></div>`;
+      case 'hse': return html`<div class="card"><p class="lead" style="margin:2px 0 10px">Compilano i nuovi report HSE; restano nel tuo file di configurazione, mai nel codice dell'app.</p><div class="grid2">
       <${Inp} label="Committente (Esteso)" value=${s.hsCommEsteso} set=${v => set({ hsCommEsteso: v })} />
       <${Inp} label="Committente (Sintetico)" value=${s.hsCommSint} set=${v => set({ hsCommSint: v })} />
       <${Inp} label="Verificato da" value=${s.hsVerificato} set=${v => set({ hsVerificato: v })} />
@@ -391,42 +424,52 @@ function Settings({ settings, setSettings, onTemplates, go }) {
       <${Inp} label="Property Manager (Sintetico)" value=${s.hsPropertyManager} set=${v => set({ hsPropertyManager: v })} />
       <${Inp} label="Procuratore HSE (Sintetico)" value=${s.hsProcuratore} set=${v => set({ hsProcuratore: v })} />
       <${Inp} label="Tecnici incaricati (Sintetico)" value=${s.hsTecnici} set=${v => set({ hsTecnici: v })} />
-    </div></div>
-
-    <div class="sec-h"><h3>Programmazione · durate tipiche</h3></div>
-    <div class="card"><p class="lead" style="margin:2px 0 10px">Durata proposta per ogni nuova attività; nella singola attività si cambia quando serve.</p><div class="grid2">
+    </div></div>`;
+      case 'programmazione': return html`<div class="card"><p class="lead" style="margin:2px 0 10px">Durata proposta per ogni nuova attività; nella singola attività si cambia quando serve.</p><div class="grid2">
       ${Object.keys(DURATE_BASE).map(k => html`<label class="fld" key=${k}><span>${TIPI_AG[k].l}</span>
         <select value=${String(durataBase(k, s))} onChange=${e => set({ durate: { ...(s.durate || {}), [k]: +e.target.value } })}>
           ${DUR_OPT.map(m => html`<option value=${m}>${fmtDur(m)}</option>`)}</select></label>`)}
-    </div></div>
-
-    <div class="sec-h"><h3>Fogli firme</h3></div>
-    <${FirmeSettings} s=${s} set=${set} />
-
-    <div class="sec-h"><h3>Monitoraggio aria</h3></div>
-    <${AriaSettings} s=${s} set=${set} />
-
-    <div class="sec-h"><h3>Radon</h3></div>
-    <div class="card"><${Inp} label="Livello di riferimento (Bq/m³)" type="number" inputmode="numeric" value=${s.livelloRif} set=${v => set({ livelloRif: num(v) || 300 })} /></div>
-    <p class="lead" style="margin:14px 2px">Le impostazioni si salvano da sole e restano su questo telefono.</p>
-    ${sig && html`<${SignaturePadOverlay} title="La tua firma" allowImage=${true} onClose=${() => setSig(false)} onDone=${url => set({ firmaTecnico: url })} />`}
-
-    <div class="sec-h"><h3>Assistenza</h3></div>
-    <div class="card"><${Inp} label="Email per le segnalazioni" type="email" value=${s.supportEmail || ''} set=${v => set({ supportEmail: v.trim() })} /></div>
-    <${IssueCard} settings=${s} />
-    <div class="sec-h"><h3>Dati su questo dispositivo</h3></div>
-    <${WipeCard} />
-    <div class="sec-h"><h3>Novità</h3></div>
-    <${NovitaCard} go=${go} />
-    <div class="sec-h"><h3>Info app</h3></div>
-    <div class="card tight" style="font-size:var(--fs-base);color:var(--text2)">
+    </div></div>`;
+      case 'firme': return html`<${FirmeSettings} s=${s} set=${set} />`;
+      case 'aria': return html`<${AriaSettings} s=${s} set=${set} />`;
+      case 'radon': return html`<div class="card"><${Inp} label="Livello di riferimento (Bq/m³)" type="number" inputmode="numeric" value=${s.livelloRif} set=${v => set({ livelloRif: num(v) || 300 })} /></div>`;
+      case 'assistenza': return html`<div class="card"><${Inp} label="Email per le segnalazioni" type="email" value=${s.supportEmail || ''} set=${v => set({ supportEmail: v.trim() })} /></div>
+    <${IssueCard} settings=${s} />`;
+      case 'info': return html`<div class="card tight" style="font-size:var(--fs-base);color:var(--text2)">
       <div style="display:flex;justify-content:space-between;padding:9px 2px"><span>Versione app</span><b class="mono" style="color:var(--text)">${APP_VERSION}</b></div>
       <div style="display:flex;justify-content:space-between;padding:9px 2px;border-top:.5px solid var(--sep)">
         <span>Cache offline attiva</span>
         <b style="color:${cacheVer && cacheVer !== APP_VERSION ? 'var(--warn)' : 'var(--text)'}">${cacheVer || '…'}</b>
       </div>
       ${cacheVer && cacheVer !== APP_VERSION && html`<p style="margin:8px 2px 2px;color:var(--warn)">Diverse dalla versione app: l'aggiornamento è a metà, chiudi e riapri l'app (o svuota la cache del sito) per completarlo.</p>`}
-    </div>
+    </div>`;
+    }
+    return null;
+  };
+
+  const row = id => { const x = SET_PAGES[id]; const v = val(id);
+    return html`<button class=${'set-row' + (wide && cur === id ? ' on' : '')} key=${id} aria-current=${wide && cur === id ? 'page' : null} onClick=${() => open(id)}>
+      <span class=${'set-ic' + (x.c ? ' tint' : '')} style=${x.c ? '--c:' + x.c : null}><${Icon} n=${x.ic} s=${19} /></span>
+      <span class="set-t"><b>${x.l}</b>${x.sub && html`<small>${x.sub}</small>`}</span>
+      ${v && html`<span class="set-v">${v}</span>`}<${Icon} n="right" s=${18} /></button>`; };
+
+  const list = html`<div class="set-list">
+    <button class=${'set-prof' + (wide && cur === 'tecnico' ? ' on' : '')} aria-current=${wide && cur === 'tecnico' ? 'page' : null} onClick=${() => open('tecnico')}>
+      <span class="ava">${(((s.tecnicoNome || '')[0] || '') + ((s.tecnicoCognome || '')[0] || '')).toUpperCase() || html`<${Icon} n="gear" s=${20} />`}</span>
+      <span class="set-t"><b>${nome || 'Tecnico'}</b><small>${s.firmaTecnico ? 'Firma salvata' : 'Nome, cognome e firma'}</small></span><${Icon} n="right" s=${18} /></button>
+    ${SET_GROUPS.map(g => html`<div class="sec-h" key=${g.h}><h3>${g.h}</h3></div><div class="set-group">${g.items.map(row)}</div>`)}
+    <p class="lead" style="margin:14px 2px">Le impostazioni si salvano da sole e restano su questo telefono.</p>
+  </div>`;
+
+  const pageView = id => { const x = SET_PAGES[id]; if (!x) return null;
+    return html`<div class="set-page">
+      ${wide ? html`<div class="set-ph">${x.t || x.l}</div>` : html`<${LargeTitle} title=${x.t || x.l} />`}
+      ${body(id)}</div>`; };
+
+  return html`<div class="content form" key=${k + (wide ? '' : '-' + (page || ''))}>
+    ${!(page && !wide) && html`<${LargeTitle} top title="Impostazioni" />`}
+    ${wide ? html`<div class="set-wide">${list}${pageView(cur)}</div>` : page ? pageView(page) : list}
+    ${sig && html`<${SignaturePadOverlay} title="La tua firma" allowImage=${true} onClose=${() => setSig(false)} onDone=${url => set({ firmaTecnico: url })} />`}
   </div>`;
 }
 
@@ -822,7 +865,7 @@ function App() {
     wideCreate = () => setSheet(true);
     body = html`<${Home} records=${records} settings=${settings} open=${openRec} newAct=${() => setSheet(true)} bell=${bell}
       avatar=${html`<button class="ava" aria-label="Impostazioni" onClick=${() => go({ v: 'settings' })}>${initials.toUpperCase() || html`<${Icon} n="gear" s=${20} />`}</button>`}
-      tplOk=${tplOk} lastBackup=${lastBackup} goList=${v => go({ v })} goSettings=${() => go({ v: 'settings' })} goBackup=${() => go({ v: 'backup' })} goCerca=${() => go({ v: 'cerca' })}
+      tplOk=${tplOk} lastBackup=${lastBackup} goList=${v => go({ v })} goSettings=${p => go({ v: 'settings', p: typeof p === 'string' ? p : undefined })} goBackup=${() => go({ v: 'backup' })} goCerca=${() => go({ v: 'cerca' })}
       installEvt=${installEvt} onInstall=${async () => { installEvt.prompt(); await installEvt.userChoice; setInstallEvt(null); }} />`;
   } else if (route.v === 'ddaList') {
     wideCreate = createDda;
@@ -893,7 +936,7 @@ function App() {
   } else if (route.v === 'radon' && rec) {
     body = html`<${RadonForm} ...${formProps(rec)} embedded=${false} onClose=${null} onSave=${r => saveRec({ ...r, _new: r._new && radonIsEmpty(r) })} />`;
   } else if (route.v === 'settings') {
-    body = html`<${Settings} settings=${settings} setSettings=${setSettings} onTemplates=${reload} go=${go} />`;
+    body = html`<${Settings} settings=${settings} setSettings=${setSettings} onTemplates=${reload} go=${go} page=${route.p} wide=${wide} />`;
   } else if (route.v === 'notifiche') {
     body = html`<${Notifiche} settings=${settings} records=${records} openRec=${openRec} />`;
   } else if (route.v === 'backup') {

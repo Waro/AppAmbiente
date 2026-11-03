@@ -2,20 +2,46 @@
 // Stessa stringa di VERSION in sw.js: aumentala insieme a quella ad ogni aggiornamento.
 // Essendo dentro un file JS servito dalla cache, se l'aggiornamento automatico fallisce
 // questa scritta mostra ancora la versione vecchia — è il modo per accorgersene.
-const APP_VERSION = 'nembo-v48';
+const APP_VERSION = 'nembo-v49';
 
-/* ---------------- tema grafico: "essenziale" (predefinito), "originale" o "scuro" ----------------
+/* ---------------- aspetto: stile ("essenziale" o "originale") × modo ("auto", "chiaro" o "scuro") ----------------
    Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno.
-   Selettore a 3 vie: sole = Essenziale, ciotola di ramen = Originale, luna = Scuro. */
-const THEMES = { essenziale: { l: 'Essenziale', ic: 'sun' }, originale: { l: 'Originale', ic: 'ramen' }, scuro: { l: 'Scuro', ic: 'moon' } };
-function getTheme() { try { const t = localStorage.getItem('nembo_theme'); if (THEMES[t]) return t; } catch (e) {} return 'essenziale'; }
-function applyTheme(t) {
-  if (t === 'originale' || t === 'scuro') document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
-  // il colore della barra di sistema è il fondo del tema (--bg in styles.css)
-  const m = document.querySelector('meta[name="theme-color"]'); const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(); if (m && bg) m.setAttribute('content', bg);
+   Sull'<html>: data-theme = originale | scuro | originale-scuro (assente = Essenziale chiaro), data-mode = scuro se scuro.
+   "auto" segue il tema chiaro o scuro del dispositivo e cambia insieme a lui. */
+const STYLES = { essenziale: { l: 'Essenziale', ic: 'briefcase' }, originale: { l: 'Originale', ic: 'ramen' } };
+const MODES = { auto: { l: 'Automatico', ic: 'contrast' }, chiaro: { l: 'Chiaro', ic: 'sun' }, scuro: { l: 'Scuro', ic: 'moon' } };
+const _darkMq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+function getLook() {
+  let style = null, mode = null;
+  try {
+    style = localStorage.getItem('nembo_style'); mode = localStorage.getItem('nembo_mode');
+    if (!STYLES[style] || !MODES[mode]) {
+      // dalla v48: un solo "tema" (essenziale, originale o scuro). La scelta fatta resta uguale.
+      const old = localStorage.getItem('nembo_theme');
+      if (old === 'originale') { style = 'originale'; mode = 'chiaro'; }
+      else if (old === 'scuro') { style = 'essenziale'; mode = 'scuro'; }
+      else if (old === 'essenziale') { style = 'essenziale'; mode = 'chiaro'; }
+      if (old) { localStorage.setItem('nembo_style', style); localStorage.setItem('nembo_mode', mode); localStorage.removeItem('nembo_theme'); }
+    }
+  } catch (e) {}
+  return { style: STYLES[style] ? style : 'essenziale', mode: MODES[mode] ? mode : 'auto' };
 }
-function setTheme(t) { try { localStorage.setItem('nembo_theme', t); } catch (e) {} applyTheme(t); }
-applyTheme(getTheme());
+function isDark(look) { return look.mode === 'scuro' || (look.mode === 'auto' && !!(_darkMq && _darkMq.matches)); }
+function applyLook(look) {
+  const el = document.documentElement, dark = isDark(look);
+  const t = look.style === 'originale' ? (dark ? 'originale-scuro' : 'originale') : (dark ? 'scuro' : '');
+  if (t) el.dataset.theme = t; else delete el.dataset.theme;
+  if (dark) el.dataset.mode = 'scuro'; else delete el.dataset.mode;
+  // il colore della barra di sistema è il fondo del tema (--bg in styles.css)
+  const m = document.querySelector('meta[name="theme-color"]'); const bg = getComputedStyle(el).getPropertyValue('--bg').trim(); if (m && bg) m.setAttribute('content', bg);
+}
+function setLook(patch) {
+  const look = { ...getLook(), ...patch };
+  try { localStorage.setItem('nembo_style', look.style); localStorage.setItem('nembo_mode', look.mode); } catch (e) {}
+  applyLook(look); return look;
+}
+applyLook(getLook());
+if (_darkMq) { const f = () => { const l = getLook(); if (l.mode === 'auto') applyLook(l); }; _darkMq.addEventListener ? _darkMq.addEventListener('change', f) : _darkMq.addListener(f); }
 
 /* ---------------- design system (Rilievo) ----------------
    Sullo schermo si usano solo i token di styles.css (colori, testo, raggi, spazi).
@@ -256,6 +282,8 @@ const P = {
   drone: 'M10 10h4v4h-4zM10 10 7.6 7.6M14 10l2.4-2.4M10 14l-2.4 2.4M14 14l2.4 2.4M3 5.5a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0M16 5.5a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0M3 18.5a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0M16 18.5a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0',
   sun: 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
   moon: 'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z',
+  briefcase: 'M3 8h18v12H3zM8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18',
+  contrast: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 3v18M12 8h5M12 12h6M12 16h5',
   ramen: 'M3 12h18a9 7.5 0 0 1-18 0zM9 21h6M13 11.5 17 3M15.5 11.5 21 4.5M6 9c0-1.2 1.2-1.2 1.2-2.4S6 5.4 6 4.2M9.5 9c0-1.2 1.2-1.2 1.2-2.4S9.5 5.4 9.5 4.2',
   torch: 'M9 2h6v4l-2 3v13h-2V9L9 6z', trash: 'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6', paper: 'M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5',
 };

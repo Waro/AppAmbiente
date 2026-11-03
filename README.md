@@ -278,8 +278,13 @@ cartella nel salvataggio (resta il download semplice).
 
 ## Aspetto (dalla v14, stile "Essenziale")
 
-- **Due temi**: *Essenziale* (grigio freddo, predefinito) e *Originale* (rosa-grigio e petrolio). Si sceglie in
-  Impostazioni → Aspetto e avvio; la scelta resta solo su quel dispositivo.
+- **Due stili, ognuno chiaro e scuro** (dalla v49): *Essenziale* (grigio freddo e blu Proj.Eco, predefinito) e *Originale*
+  (rosa-grigio e petrolio). In Impostazioni → Aspetto e avvio si scelgono lo **stile** e l'**aspetto**: *Automatico*
+  (segue il tema chiaro o scuro del dispositivo, predefinito), *Chiaro* o *Scuro*. La scelta resta solo su quel dispositivo
+  (`nembo_style` e `nembo_mode` in localStorage; la vecchia `nembo_theme` della v46–v48 viene convertita al primo avvio).
+- **Impostazioni a gruppi** (dalla v49), come su iPhone: Tecnico in alto, poi Generali, Dati e OneDrive, Attività e Supporto.
+  Sul telefono ogni voce apre la sua pagina (il tasto indietro torna all'elenco); su tablet in orizzontale e PC elenco a
+  sinistra e pagina a destra. Le voci sono in `SET_PAGES` e `SET_GROUPS` in `js/app.js`.
 - **Font IBM Plex** inclusi in `fonts/` (woff2, licenza OFL in `fonts/OFL.txt`): funzionano anche offline.
 - **Telefono e tablet in verticale**: tab bar flottante in basso, in stile segmented control (Oggi, DDA, Mappature, RA, Radon; con BU HSE: Oggi, HSE, DDA, RA); nelle schede la barra
   azioni in basso con l'azione principale. **Tablet in orizzontale e PC**: menu laterale comprimibile + elenco e scheda.
@@ -351,11 +356,12 @@ Se cambia la scheda campioni, vanno ricontrollate le coordinate `SC_LINES` / `SC
 
 ## Design system: Rilievo
 
-Il design system di Nembo si chiama **Rilievo**. Tutti i valori grafici sono all'inizio di `styles.css`: colori dei tre temi (Essenziale, Originale, Scuro),
+Il design system di Nembo si chiama **Rilievo**. Tutti i valori grafici sono all'inizio di `styles.css`: colori dei quattro temi (Essenziale e Originale, ognuno chiaro e scuro;
+gli scuri sono in fondo, sotto `[data-mode="scuro"]` e `[data-theme="originale-scuro"]`),
 scala del testo (`--fs-2xs` … `--fs-5xl`, solo IBM Plex), raggi (`--r-*`), spazi (`--sp-*`) e i colori dei tipi di attività (`--t-*`).
 Nelle regole CSS e negli stili scritti dal codice non si mettono colori, dimensioni del testo o raggi a mano: si usano i token.
 
 - **Tipi di attività**: `TIPO_COL` in `js/core.js` dà lo stesso colore a menu, «Nuova attività», programmazione e home.
 - **Colori di stampa**: `PRINT` in `js/core.js` raccoglie i colori fissi di planimetrie, PDF, Word, Excel ed email (non cambiano col tema).
-- **Testo sui colori pieni**: `--on-accent` (bianco nei temi chiari, inchiostro scuro nel tema Scuro) e `--on-dark` (sempre bianco).
-- **Contrasto**: testo almeno 4,5:1 su fondo e card in tutti e tre i temi.
+- **Testo sui colori pieni**: `--on-accent` (bianco nei temi chiari, inchiostro scuro nei temi scuri) e `--on-dark` (sempre bianco).
+- **Contrasto**: testo almeno 4,5:1 su fondo e card in tutti e quattro i temi.
