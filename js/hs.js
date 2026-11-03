@@ -483,7 +483,7 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
   else if (S && S.k === 'note') body = html`<div class="card"><${HsText} label="Appunti (non vanno nel Word)" rows=${6} value=${r.appunti} set=${v => up({ appunti: v })} />
       <${NotePhotos} rec=${r} up=${up} /></div>
     <div class="sec-h"><h3>Documenti allegati</h3><span class="hint">restano sul dispositivo e vanno su OneDrive</span></div>
-    <div class="card"><${FileList} items=${r.documenti || []} accept="application/pdf,image/*"
+    <div class="card"><${FileList} items=${r.documenti || []}
       onAdd=${d => up(p => ({ ...p, documenti: [...(p.documenti || []), d] }))}
       onRemove=${async d => { await removeBlob(d.blobId); up(p => ({ ...p, documenti: p.documenti.filter(x => x.id !== d.id) })); }} /></div>`;
 

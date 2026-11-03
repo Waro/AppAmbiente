@@ -156,7 +156,7 @@ function AriaSection({ r, up, settings, inRa }) {
     ${R.over > 0 && html`<div class="notice err">${R.over === 1 ? '1 punto oltre il limite' : R.over + ' punti oltre il limite'}</div>`}
 
     <div class="sec-h"><h3>Rapporti di prova</h3><span class="hint">Referti del laboratorio</span></div>
-    <div class="card"><${FileList} items=${A.rapporti || []} accept="application/pdf,image/*" label="Allega rapporto di prova"
+    <div class="card"><${FileList} items=${A.rapporti || []} label="Allega rapporto di prova"
       onAdd=${d => upA(a => ({ rapporti: [...(a.rapporti || []), d] }))}
       onRemove=${async d => { await removeBlob(d.blobId); upA(a => ({ rapporti: (a.rapporti || []).filter(x => x.id !== d.id) })); }} /></div>
 

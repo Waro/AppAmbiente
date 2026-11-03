@@ -297,7 +297,7 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
           <input class="inp" inputmode="decimal" value=${p.valoreF2} disabled=${!lockF2} onInput=${e => updP(p.id, { valoreF2: e.target.value })} aria-label=${'R' + (i + 1) + ' Fase 2'} />
           <span class=${'mean' + (v != null && v > settings.livelloRif ? ' over' : '')}>${fmtN(v)}</span></div>`; })}
         <div class="divider"></div>
-        <${FileList} items=${r.rapporti} accept="application/pdf,image/*" label="Allega rapporto di prova"
+        <${FileList} items=${r.rapporti} label="Allega rapporto di prova"
           onAdd=${d => up(p => ({ ...p, rapporti: [...p.rapporti, d] }))}
           onRemove=${async d => { await removeBlob(d.blobId); up(p => ({ ...p, rapporti: p.rapporti.filter(x => x.id !== d.id) })); }} />
       </div>`}

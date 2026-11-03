@@ -57,14 +57,19 @@ const Sync = (() => {
     st[rec.id] = { v: rec.updatedAt || 0, m: item && item.lastModifiedDateTime };
     return true;
   }
+  let scartati = 0; // file e attività fermati dai controlli in questo giro
   async function pullBlobs(remote, sent) {
     let missing = 0;
     for (const id of [...new Set(blobIds(remote.record))]) {
       if (await DB.getBlob(id)) continue;
+      if (!/^b_[A-Za-z0-9_]{1,60}$/.test(id)) continue;
       const b = await OD.getRaw(BLOB + id);
       if (!b) { missing++; continue; }
-      const meta = (remote.blobs || {})[id] || {};
-      await DB.putBlob({ id, blob: meta.type ? new Blob([b], { type: meta.type }) : b, type: meta.type || b.type, name: meta.name || '' });
+      const meta = isObj((remote.blobs || {})[id]) ? remote.blobs[id] : {};
+      // tipo reale del contenuto: un file non ammesso non entra nell'archivio del dispositivo
+      const tipo = b.size <= ALLEGATO_MAX ? await tipoFileArrivo(b, meta) : null;
+      if (!tipo) { scartati++; continue; }
+      await DB.putBlob({ id, blob: new Blob([b], { type: tipo }), type: tipo, name: String(meta.name || '').slice(0, 200) });
       sent[id] = 1;
     }
     return missing;
@@ -76,6 +81,7 @@ const Sync = (() => {
     if (running) { again = true; return running; }
     running = (async () => {
       const esito = { su: 0, giu: 0, copie: [], tolte: 0, tolteSu: 0, mancanti: 0, rinviate: 0 };
+      scartati = 0;
       try {
         set({ phase: 'run', text: 'Controllo OneDrive…', error: null, done: 0, total: 0 });
         await OD.token({ silent: true });
@@ -108,7 +114,7 @@ const Sync = (() => {
             st[id] = { v: remote.deletedAt, deleted: true, m: f.lastModifiedDateTime };
             continue;
           }
-          const R = remote.record; if (!R || R.id !== id) continue;
+          const [R] = pulisciRecord(remote.record); if (!R || R.id !== id) { scartati++; continue; }
           const rV = R.updatedAt || 0;
           if (!L) {
             esito.mancanti += await pullBlobs(remote, sent);
@@ -156,6 +162,7 @@ const Sync = (() => {
         if (esito.copie.length) notify('warn', 'Sincronizzazione: ' + (esito.copie.length === 1 ? 'un’attività era cambiata su due dispositivi' : esito.copie.length + ' attività erano cambiate su due dispositivi'), {
           detail: 'È rimasta la modifica più recente; l\'altra versione è stata salvata come copia. Controllale e cancella quella che non serve.', items: esito.copie });
         if (esito.mancanti) notify('warn', `Sincronizzazione: ${esito.mancanti} file non trovati su OneDrive`, { detail: 'Le attività sono arrivate, ma alcune foto o allegati non erano ancora stati caricati dall\'altro dispositivo. Riapri Nembo su quel dispositivo con la rete attiva.' });
+        if (scartati) notify('warn', `Sincronizzazione: ${scartati === 1 ? '1 elemento scartato' : scartati + ' elementi scartati'} dai controlli`, { detail: 'Attività o file arrivati da OneDrive con contenuto non valido o di tipo non ammesso: non sono stati salvati su questo dispositivo.' });
         if (opts.manual) toast(parts.length ? 'Sincronizzato: ' + parts.join(', ') : 'Tutto già sincronizzato');
       } catch (e) {
         const login = e.code === 'LOGIN';

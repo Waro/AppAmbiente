@@ -27,12 +27,15 @@
   /* Stati */
   --danger: #bf3131; --danger-on-navy: #ff8b7e; --danger-soft: #fdecea;
   --warn: #94590f; --warn-soft: #fff1de; --ok: #17744a; --ok-soft: #e3f3ea;
-  --rec: #dfa11a;                          /* aree REC della Fase 1 */
+  --rec: #716a04;                          /* aree REC della Fase 1 (oliva: distinto da DDA, FAV e terreni; contrasto ≥ 4,5:1) */
   /* Matrici (solo pallini e sigle) */
-  --mca: #a21f8f; --fav: #a45f00; --terreni: #855831; --acque: #00708e; --altro: #8a6a4a;
+  --mca: #a21f8f; --fav: #985805; --terreni: #855831; --acque: #00708e; --altro: #816142;
   /* Tipi di attività: lo stesso colore in menu, «Nuova attività», programmazione e home */
-  --t-dda: var(--warn); --t-map: var(--mca); --t-ra: #7a3db8; --t-radon: var(--ok); --t-aria: #0b7a99;
+  --t-dda: var(--warn); --t-map: var(--mca); --t-ra: #7a3db8; --t-radon: var(--ok); --t-aria: #02708d;
   --t-hse: var(--blue); --t-vs: #5361b8; --t-firme: var(--ring2); --t-app: var(--muted);
+  /* Tag delle note: 8 toni smorzati, lontani dai colori di stato e dei tipi (testo ≥ 4,5:1 sul fondo del tag) */
+  --tag-1: #7d3850; --tag-2: #65461e; --tag-3: #44581a; --tag-4: #015c59;
+  --tag-5: #2a527a; --tag-6: #535695; --tag-7: #613e78; --tag-8: #82456f;
   /* Tipografia: una sola scala */
   --font: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   --mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
@@ -944,10 +947,12 @@ img.logo { background: none; object-fit: cover; }
   --grad-pri: linear-gradient(135deg, #0b4fa3 0%, #1468c4 52%, #1a74c9 100%); --pri-shadow: rgba(0,0,0,.45);
   --on-accent: #0b1220;
   --danger: #ff6f6f; --danger-on-navy: #ff8b7e; --danger-soft: #3a1c1f; --warn: #e7a74c; --warn-soft: #36290f; --ok: #43c98a; --ok-soft: #12301f;
-  --rec: #e8b23a;
-  --mca: #d35dc2; --fav: #e3a252; --terreni: #c28a5a; --acque: #3fb3d3; --altro: #b8946f;
+  --rec: #b6af4d;
+  --mca: #d963c8; --fav: #e3a252; --terreni: #c28a5a; --acque: #3fb3d3; --altro: #b8946f;
   --t-ra: #b48ae8; --t-aria: #45b8d6; --t-vs: #8f9cf0;
-  --sh-seg: 0 1px 3px rgba(0,0,0,.5); --sh-card: none;
+  --tag-1: #d0829a; --tag-2: #b6936a; --tag-3: #8aa162; --tag-4: #56a7a2;
+  --tag-5: #729cc8; --tag-6: #8f94d8; --tag-7: #ae8aca; --tag-8: #c583af;
+  --sh-seg: 0 1px 3px rgba(0,0,0,.5); --sh-card: 0 0 0 transparent; /* mai "none": si combina con l'indicatore di stato */
   --scrim: rgba(0,0,0,.6); --scrim-strong: rgba(0,0,0,.6);
   --ring2: #7f97cc; --navy-ink: #cfd8ee; --btn2: #2a303b; --btn-ink: var(--text); --seg-on: #fff; --seg-thumb: #3a4150;
   --ava: linear-gradient(135deg, #2a4a86, #17223f);

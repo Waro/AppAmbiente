@@ -340,7 +340,8 @@ async function odSync(records, settings) {
       let blob, type, replace;
       if (it.kind === 'blob') {
         const b = await DB.getBlob(it.blobId); if (!b) { it._ok = true; done++; continue; }
-        type = await OD.sniff(b.blob);
+        // foto e PDF riconosciuti dal contenuto; Word solo se il controllo degli allegati lo ammette
+        type = await OD.sniff(b.blob) || await tipoFileArrivo(b.blob, b).then(t => t === MIME_DOCX ? t : null);
         if (!type) { errors.push({ path: it.folder + '/' + it.segs.join('/'), msg: 'tipo di file non ammesso, saltato', code: 'TIPO' }); done++; continue; }
         blob = b.blob; replace = false;
       } else if (it.kind === 'fileblob') {
