@@ -978,7 +978,6 @@ img.logo { background: none; object-fit: cover; }
 .home-h { margin-top: 18px; }
 .home-h h2 { margin: 0; font-size: var(--fs-2xl); font-weight: 700; letter-spacing: -.01em; color: var(--text); text-transform: none; }
 .home-h h2 .n { color: var(--faint); font-weight: 600; }
-.lg-h { font-size: var(--fs-sm) !important; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted) !important; flex: none !important; }
 .ok-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px; }
 .ok-card .t b { display: block; font-size: var(--fs-lg); font-weight: 600; }
 .ok-card .t small { display: block; font-size: var(--fs-md); color: var(--muted); }
@@ -988,29 +987,40 @@ img.logo { background: none; object-fit: cover; }
 .btn.glass { flex: 1; min-height: 46px; background: rgba(255,255,255,.12); color: var(--on-dark); font-size: var(--fs-lg); font-weight: 600; border: 0; }
 .card.stale { box-shadow: inset 0 3px 0 var(--blue-sky); }
 .fab { position: absolute; right: 20px; bottom: calc(100px + env(safe-area-inset-bottom, 0px)); z-index: 7; width: 60px; height: 60px; border-radius: var(--r-sq); border: 0; background: var(--grad-pri); color: var(--on-dark); display: grid; place-items: center; box-shadow: 0 8px 22px var(--pri-shadow); }
+/* card della Home con la stessa struttura del «Prossimo sopralluogo» (occhiello, titolo grande, righe), su fondo chiaro */
+.hcard { border-radius: var(--r-card-lg); padding: 16px 18px; }
+.hc-eye { font-size: var(--fs-sm); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.hc-when { font-size: var(--fs-md); font-weight: 600; color: var(--text2); }
+.hc-when.crit { color: var(--danger); }
+.hc-title { font-size: var(--fs-3xl); font-weight: 700; line-height: 1.2; margin: 8px 0 4px; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.hc-line { font-size: var(--fs-base); color: var(--text2); }
+.hcard.scad { background: var(--warn-soft); }
+.hc-rows { margin-top: 12px; }
+.hc-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 60px; padding: 8px 0; border: 0; background: none; text-align: left; color: inherit; }
+.hc-row + .hc-row { border-top: .5px solid var(--sep); }
+.hc-row .sq { width: 40px; height: 40px; border-radius: var(--r-sq); display: grid; place-items: center; flex-shrink: 0; }
+.hc-row .t { flex: 1; min-width: 0; }
+.hc-row .t b { display: block; font-size: var(--fs-lg); font-weight: 600; }
+.hc-row .t small { display: block; font-size: var(--fs-md); color: var(--text2); }
+.hc-row .num { font-size: var(--fs-2xl); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hc-row .num.crit { color: var(--danger); }
 .home-scad { display: none; }
-/* tablet: una colonna, le scadenze subito sotto «Prossimo sopralluogo», a tutta larghezza */
+/* tablet in verticale: una colonna, le scadenze subito sotto «Prossimo sopralluogo», a tutta larghezza */
 @media (min-width: 700px) {
   .home-scad { display: block; }
   .home-grid { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: "n" "d" "r" "c" "s"; gap: 0 var(--gap); align-items: start; }
-  .hg-n { grid-area: n; } .hg-r { grid-area: r; } .hg-c { grid-area: c; } .hg-s { grid-area: s; } .hg-d { grid-area: d; margin-bottom: var(--gap); }
-  .home-scad .home-h { margin-top: 4px; }
+  .hg-n { grid-area: n; } .hg-r { grid-area: r; } .hg-c { grid-area: c; } .hg-s { grid-area: s; } .hg-d { grid-area: d; }
 }
-/* PC: tutta la larghezza, scadenze in una colonna a parte */
+/* PC e tablet in orizzontale: tre colonne (Prossimo · Attività di oggi · Scadenze), card della prima riga alte uguali.
+   Seconda riga: Da completare e Strumenti e dati; la terza colonna resta libera e Scadenze ci si allunga se serve
+   (contain: size: la card delle scadenze non fa crescere la prima riga, che segue le altre due card). */
 @media (min-width: 1000px) {
   .frame.wide > .shell:not(.split) > .content.home2 { max-width: none; }
-  .home-grid { grid-template-columns: minmax(0, 1fr) minmax(280px, 340px); grid-template-areas: "n d" "r d" "c d" "s d"; }
-  .home-scad .widgets { grid-template-columns: 1fr; }
-  .home-scad .home-h { margin-top: 0; }
-}
-@media (min-width: 1300px) {
-  .home-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(300px, 360px); grid-template-areas: "n r d" "c s d"; }
-  .hg-n, .hg-r { align-self: stretch; display: flex; flex-direction: column; }
-  .hg-r .card, .hg-n .card-navy { flex: 1; }
-  .hg-r .card { display: flex; align-items: center; }
+  .home-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(260px, 340px); grid-template-areas: "n r d" "c s ."; }
+  .hg-n, .hg-r, .hg-d { align-self: stretch; display: flex; flex-direction: column; }
+  .hg-n .card-navy, .hg-r .card, .hg-d .card { flex: 1 0 auto; }
+  .hg-d { contain: size; }
   .hg-r .rings { width: 100%; }
-  .home-scad .widgets { grid-template-columns: 1fr; }
-  .home-scad .home-h { margin-top: 0; }
 }
 @media (min-width: 1000px) { .fab { display: none; } }
 .r1 .drone-ic { margin: 0 0 0 6px; }

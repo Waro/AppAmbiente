@@ -175,6 +175,12 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
   const riga = (ic, l, sub, fn, o = {}) => html`<button class=${'prow' + (o.st ? ' st-bar ' + o.st : '')} onClick=${fn}>
     <span class=${'sq' + (o.st ? ' plain' : o.crit ? ' crit' : o.blu ? ' blu' : '')}><${Icon} n=${ic} s=${20} /></span><span class="t"><b>${l}</b><small class=${o.st === 'st-err' || o.crit ? 'crit' : o.blu ? 'blu' : ''}>${sub}</small></span><${Icon} n="right" s=${18} /></button>`;
 
+  // scadenza più vicina (Ambiente): ritiro radon o verifica RA
+  const raNx = raDue.map(r => ({ r, d: raScadenza(r) })).sort((a, b) => a.d.localeCompare(b.d))[0];
+  const cand = [rNext && { r: rNext.r, d: rNext.d, riga: `Ritiro radon · ${rNext.r.punti.length} dosimetri` }, raNx && { r: raNx.r, d: raNx.d, riga: `Verifica RA · ${raNx.r.manufatti.length} manufatti` }].filter(Boolean).sort((a, b) => a.d.localeCompare(b.d));
+  const top = bu !== 'hs' && cand[0] ? { ...cand[0], w: whenLabel(cand[0].d) } : null;
+  const scadRiga = (ic, c, l, sub, num, crit, fn) => html`<button class="hc-row" onClick=${fn}>
+    <span class="sq tint" style=${'--c:' + c}><${Icon} n=${ic} s=${20} /></span><span class="t"><b>${l}</b><small>${sub}</small></span><span class=${'num' + (crit ? ' crit' : '')}>${num}</span></button>`;
   return html`<div class="content home2">
     <${LargeTitle} top eye=${eye} title="Oggi" acts=${html`<button class="btn-icon" aria-label="Cerca in tutte le attività" onClick=${goCerca}><${Icon} n="search" s=${20} /></button>${bell}${avatar}`} />
     <div class="seg" style="margin-bottom:var(--gap)">${BUS.map(([k, l]) => html`<button class=${bu === k ? 'on' : ''} onClick=${() => setBu(k)}>${l}</button>`)}</div>
@@ -207,15 +213,21 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
         <div class="next-acts"><button class="btn pri" onClick=${newAct}>Nuova attività</button></div>`}
     </div></div>
 
-    <div class="hg-r"><div class="card">
-      <div class="rings">
-        <div class="ring-wrap" style="width:96px;height:96px">
-          <${Ring} p=${rings[0].b ? rings[0].a / rings[0].b : 0} size=${96} w=${9} color=${rings[0].c} />
-          <div style="position:absolute;inset:12px"><${Ring} p=${rings[1].b ? rings[1].a / rings[1].b : 0} size=${72} w=${9} color=${rings[1].c} /></div>
-          <div style="position:absolute;inset:24px"><${Ring} p=${rings[2].b ? rings[2].a / rings[2].b : 0} size=${48} w=${9} color=${rings[2].c} /></div>
-        </div>
-        <div class="legend"><span class="lg-h">${todays.length ? 'Attività di oggi' : 'Nessuna attività oggi'}</span>${rings.map(x => html`<div><i class="mdot" style=${'background:' + x.c}></i><span>${x.l}</span><b>${x.a}/${x.b}</b></div>`)}</div>
-      </div>
+    <div class="hg-r"><div class="card hcard">
+      <div class="row" style="justify-content:space-between"><span class="hc-eye">Attività di oggi</span>${todays.length > 0 && html`<span class="hc-when">${done} di ${todays.length} completate</span>`}</div>
+      ${todays.length ? html`
+        <div class="hc-title">${todays.length} attività</div>
+        <div class="hc-line">${todays.slice(0, 2).map(placeLabel).join(' · ')}${todays.length > 2 ? ` e altre ${todays.length - 2}` : ''}</div>
+        <div class="rings" style="margin-top:14px">
+          <div class="ring-wrap" style="width:96px;height:96px">
+            <${Ring} p=${rings[0].b ? rings[0].a / rings[0].b : 0} size=${96} w=${9} color=${rings[0].c} />
+            <div style="position:absolute;inset:12px"><${Ring} p=${rings[1].b ? rings[1].a / rings[1].b : 0} size=${72} w=${9} color=${rings[1].c} /></div>
+            <div style="position:absolute;inset:24px"><${Ring} p=${rings[2].b ? rings[2].a / rings[2].b : 0} size=${48} w=${9} color=${rings[2].c} /></div>
+          </div>
+          <div class="legend">${rings.map(x => html`<div><i class="mdot" style=${'background:' + x.c}></i><span>${x.l}</span><b>${x.a}/${x.b}</b></div>`)}</div>
+        </div>` : html`
+        <div class="hc-title">Nessuna attività oggi</div>
+        <div class="hc-line">Le attività con la data di oggi compaiono qui.</div>`}
     </div></div>
 
     <div class="hg-c"><div class="sec-h home-h"><h2>Da completare${sosp.length > 0 && html` <span class="n">${sosp.length}</span>`}</h2>${sosp.length > 3 && html`<button class="btn link" onClick=${() => setTutte(!tutte)}>${tutte ? 'Meno' : 'Tutte'}</button>`}</div>
@@ -233,41 +245,23 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
       ${riga('gear', 'Impostazioni', 'Tecnico, modelli, OneDrive', goSettings)}
     </div></div>
 
-    <div class="home-scad hg-d">
-      <div class="sec-h home-h"><h2>Scadenze</h2></div>
-      ${bu === 'hs' ? html`<div class="widgets">
-      <button class="card" onClick=${() => goList('hsList')}>
-        <span class="wg-ic" style="background:var(--danger-soft);color:var(--danger)"><${Icon} n="shield" s=${20} /></span>
-        <div class="wg-num" style=${hsP1 ? 'color:var(--danger)' : ''}>${hsP1}</div>
-        <div class="wg-lbl">criticità urgenti (priorità 1 o gravità alta)</div>
-        <div class="wg-sub">${hsCrit} criticità aperte in tutto</div>
-      </button>
-      <button class="card" onClick=${() => goList('hsList')}>
-        <span class="wg-ic" style="background:var(--blue-soft);color:var(--blue)"><${Icon} n="helmet" s=${20} /></span>
-        <div class="wg-num">${hsDaCaricare}</div>
-        <div class="wg-lbl">report da caricare su OneDrive</div>
-        <div class="wg-sub">${records.length} report HSE in archivio</div>
-      </button>
-    </div>` : html`<div class="widgets">
-      <button class="card" onClick=${() => goList('radonList')}>
-        <span class="wg-ic" style="background:var(--warn-soft);color:var(--warn)"><${Icon} n="radon" s=${20} /></span>
-        <div class="wg-num" style=${rDays != null && rDays <= 7 ? 'color:var(--danger)' : ''}>${rDays == null ? '–' : rDays < 0 ? -rDays : rDays}<small>gg</small></div>
-        <div class="wg-lbl">${rDays == null ? 'nessun ritiro radon' : rDays < 0 ? 'di ritardo sul ritiro' : 'al prossimo ritiro'}</div>
-        <div class="track"><i style=${'width:' + Math.round(rExp * 100) + '%'}></i></div>
-        <div class="wg-sub">${nDos} dosimetri · ${rad.length} ${rad.length === 1 ? 'sito' : 'siti'}</div>
-      </button>
-      <button class="card" onClick=${() => goList('raList')}>
-        <span class="wg-ic" style="background:var(--blue-soft);color:var(--blue)"><${Icon} n="shield" s=${20} /></span>
-        <div class="wg-num" style=${raCrit.length ? 'color:var(--danger)' : ''}>${raDue.length}</div>
-        <div class="wg-lbl">verifiche RA entro il mese prossimo</div>
-        <div class="track">${raYear.length + raCrit.length > 0 && html`
-          <i style=${'background:var(--ring2);width:' + (raDoneY / Math.max(1, raYear.length + raCrit.length) * 100) + '%'}></i>
-          <i style=${'background:var(--danger);width:' + (raCrit.length / Math.max(1, raYear.length + raCrit.length) * 100) + '%'}></i>
-          <i style=${'background:var(--chev);width:' + (raRest / Math.max(1, raYear.length + raCrit.length) * 100) + '%'}></i>`}</div>
-        <div class="wg-sub">${raDoneY} di ${raYear.length} fatte nell'anno</div>
-      </button>
+    <div class="home-scad hg-d"><div class="card hcard scad">
+      <div class="row" style="justify-content:space-between"><span class="hc-eye">Scadenze</span>${top && html`<span class=${'hc-when' + (top.w.crit ? ' crit' : '')}>${top.w.l}</span>`}</div>
+      ${bu === 'hs' ? html`
+        <div class="hc-title">${hsP1 ? `${hsP1} ${hsP1 === 1 ? 'criticità urgente' : 'criticità urgenti'}` : 'Nessuna criticità urgente'}</div>
+        <div class="hc-line">${hsCrit} criticità aperte in tutto</div>
+        <div class="hc-rows">
+          ${scadRiga('shield', TIPO_COL.hs, 'Criticità urgenti', 'priorità 1 o gravità alta', hsP1, hsP1 > 0, () => goList('hsList'))}
+          ${scadRiga('helmet', TIPO_COL.hs, 'Report da caricare', `su OneDrive · ${records.length} report HSE in archivio`, hsDaCaricare, false, () => goList('hsList'))}
+        </div>` : html`
+        <div class="hc-title">${top ? placeLabel(top.r) : 'Nessuna scadenza vicina'}</div>
+        <div class="hc-line">${top ? top.riga : 'I ritiri radon e le verifiche RA dei prossimi due mesi compaiono qui.'}</div>
+        <div class="hc-rows">
+          ${scadRiga('radon', TIPO_COL.radon, 'Ritiro radon', rDays == null ? 'nessun ritiro radon' : `${rDays < 0 ? 'di ritardo sul ritiro' : 'al prossimo ritiro'} · ${nDos} dosimetri · ${rad.length} ${rad.length === 1 ? 'sito' : 'siti'}`, rDays == null ? '–' : (rDays < 0 ? -rDays : rDays) + ' gg', rDays != null && rDays <= 7, () => goList('radonList'))}
+          ${scadRiga('shield', TIPO_COL.ra, 'Verifiche RA', `entro il mese prossimo · ${raDoneY} di ${raYear.length} fatte nell'anno`, raDue.length, raCrit.length > 0, () => goList('raList'))}
+        </div>`}
+    </div></div>
     </div>`}
-    </div></div>`}
 
     ${bu === 'hs' && hsTplOk === false && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goSettings}>Per generare i report carica i modelli Word HSE (Esteso e Sintetico) in Impostazioni → Modelli.</button>`}
     ${bu === 'ambiente' && onbHidden() && (!tplOk || !settings.tecnicoCognome) && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goSettings}>Prima di iniziare: in Impostazioni inserisci i tuoi dati e carica i modelli.</button>`}
