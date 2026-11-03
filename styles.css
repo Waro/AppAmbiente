@@ -10,7 +10,7 @@
 
 /* Rilievo, il design system di Nembo: tutti i valori sono qui. Nelle regole e negli stili scritti dal codice
    si usano solo questi token (colori, dimensioni del testo, raggi, spazi), mai valori a mano.
-   Eccezioni volute: i colori di stampa di planimetrie e PDF (PRINT in js/core.js) e la palette dei tag. */
+   Eccezione voluta: i colori di stampa di planimetrie e PDF (PRINT in js/core.js), fissi in tutti i temi. */
 :root {
   /* Superfici */
   --bg: #f2f2f7; --card: #ffffff; --track: #e4e5eb; --fill-soft: #eef0f4; --sep: #e1e3ea;
