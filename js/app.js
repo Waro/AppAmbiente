@@ -90,7 +90,10 @@ async function buildZip(records, settings, withSettings) {
       if (b) { zip.file('_modelli/' + name, b); manifest.templates[t.key] = '_modelli/' + name; }
     }
   }
-  zip.file('manifest.json', JSON.stringify(manifest, null, 1));
+  const manText = JSON.stringify(manifest, null, 1);
+  zip.file('manifest.json', manText);
+  // firma del dispositivo su manifest.json (che contiene le impronte di tutti i file)
+  try { zip.file('firma.json', JSON.stringify(await firmaBackup(manText), null, 1)); } catch (e) { console.warn('firma del backup', e); }
   return zip.generateAsync({ type: 'blob', mimeType: 'application/zip' });
 }
 
@@ -194,17 +197,26 @@ async function exportRecords(records, settings, full) {
 // impostazioni solo con le chiavi note, modelli verificati. Quello che non passa viene scartato e riportato in esito.
 const ZIP_MAX_VOCI = 20000, ZIP_MAX_BYTES = 4 * 1024 * 1048576, MANIFEST_MAX = 100 * 1048576;
 const zipSize = f => (f && f._data && f._data.uncompressedSize) || 0;
-async function importZip(file) {
+async function importZip(file, opts = {}) {
   const zip = await JSZip.loadAsync(file);
   const voci = Object.values(zip.files);
   if (voci.length > ZIP_MAX_VOCI) throw new Error('lo ZIP contiene troppi file per essere un backup di Nembo');
   if (voci.reduce((a, v) => a + zipSize(v), 0) > ZIP_MAX_BYTES) throw new Error('lo ZIP è troppo grande una volta aperto');
   const mf = zip.file('manifest.json'); if (!mf) throw new Error('lo ZIP non contiene manifest.json');
   if (zipSize(mf) > MANIFEST_MAX) throw new Error('manifest.json troppo grande');
-  let man; try { man = JSON.parse(await mf.async('string')); } catch (e) { throw new Error('manifest.json non leggibile'); }
+  const manText = await mf.async('string');
+  let man; try { man = JSON.parse(manText); } catch (e) { throw new Error('manifest.json non leggibile'); }
   if (!isObj(man) || man.app !== 'nembo') throw new Error('file di un\'altra applicazione');
   if (!Array.isArray(man.records)) throw new Error('il backup non contiene attività');
-  const esito = { verificati: 0, senzaImpronta: 0, alterati: [], fileScartati: [], attScartate: [] };
+  // firma: prima di toccare l'archivio
+  const ff = zip.file('firma.json');
+  let firma = 'assente';
+  if (ff) { let fj = null; try { fj = JSON.parse(await ff.async('string')); } catch (e) { /* firma illeggibile */ } firma = await verificaFirma(manText, fj); }
+  if (firma === 'non valida') throw Object.assign(new Error('la firma non corrisponde al contenuto: il backup è stato modificato dopo essere stato creato. Ripristino annullato'), { code: 'FIRMA' });
+  const domanda = firma === 'sconosciuto' ? 'Il backup è firmato da un dispositivo che Nembo non riconosce tra i tuoi (per riconoscerli serve OneDrive collegato). Ripristinare comunque?'
+    : firma === 'assente' ? 'Il backup non è firmato: è stato creato prima della v48 oppure la firma è stata tolta. Ripristinare comunque?' : '';
+  if (domanda && opts.conferma && !opts.conferma(domanda)) throw Object.assign(new Error('ripristino annullato'), { code: 'ANNULLATO' });
+  const esito = { firma, verificati: 0, senzaImpronta: 0, alterati: [], fileScartati: [], attScartate: [] };
   for (const [id, info] of Object.entries(isObj(man.files) ? man.files : {})) {
     if (!/^b_[A-Za-z0-9_]{1,60}$/.test(id) || !isObj(info) || typeof info.path !== 'string') { esito.fileScartati.push(String(id).slice(0, 60) + ' (voce non valida)'); continue; }
     const f = zip.file(info.path); if (!f) continue;
@@ -537,7 +549,7 @@ function Backup({ records, all, settings, reload, lastBackup }) {
     const f = e.target.files[0]; e.target.value = ''; if (!f) return;
     setBusy(true);
     try {
-      const res = await importZip(f);
+      const res = await importZip(f, { conferma: m => confirm(m) });
       const hasTpl = Object.keys(res.templates || {}).length > 0;
       if ((res.settings || hasTpl) && confirm('Il backup contiene anche impostazioni e modelli PDF. Sostituire quelli attuali?')) {
         if (res.settings) await DB.set('settings', { ...settings, ...res.settings });
@@ -546,10 +558,10 @@ function Backup({ records, all, settings, reload, lastBackup }) {
       const E = res.esito, problemi = [...E.alterati.map(x => x + ' (modificato dopo il backup)'), ...E.fileScartati, ...E.attScartate];
       toast(`Importati: ${res.added} nuovi, ${res.updated} aggiornati, ${res.kept} già presenti${problemi.length ? ` · ${problemi.length} elementi scartati` : ''}`);
       notify(problemi.length ? 'warn' : 'ok', problemi.length ? `Ripristino: ${problemi.length} elementi scartati dai controlli` : 'Ripristino completato', {
-        detail: `Attività: ${res.added} nuove, ${res.updated} aggiornate, ${res.kept} già presenti. File con impronta verificata: ${E.verificati}${E.senzaImpronta ? `; senza impronta (backup precedenti alla v48): ${E.senzaImpronta}` : ''}.`,
+        detail: `${FIRMA_ESITO[E.firma] || ''} Attività: ${res.added} nuove, ${res.updated} aggiornate, ${res.kept} già presenti. File con impronta verificata: ${E.verificati}${E.senzaImpronta ? `; senza impronta (backup precedenti alla v48): ${E.senzaImpronta}` : ''}.`,
         items: problemi });
       reload();
-    } catch (err) { fail('Import non riuscito', err); }
+    } catch (err) { if (err.code === 'ANNULLATO') toast('Ripristino annullato'); else fail('Import non riuscito', err); }
     setBusy(false);
   };
   return html`<div class="content form">

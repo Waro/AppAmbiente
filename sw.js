@@ -10,7 +10,8 @@ const FILES = [
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png', 'splash/bg-desktop.webp', 'splash/bg-phone.webp', 'novita/v41-zoom.webp', 'novita/v41-lucchetto.webp', 'novita/v41-clienti.webp', 'novita/v42-opzioni.webp', 'novita/v42-riepilogo.webp', 'novita/v45-planimetrie.webp', 'novita/v45-foto.webp', 'novita/v46-file.webp', 'novita/v46-home.webp', 'novita/v46-tema.webp', 'README.md',
 ];
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
+  // cache: 'reload' scarica ogni file dalla rete: niente copie vecchie prese dalla cache del browser
+  e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES.map(f => new Request(f, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim()));

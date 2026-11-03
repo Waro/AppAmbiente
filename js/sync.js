@@ -85,6 +85,7 @@ const Sync = (() => {
       try {
         set({ phase: 'run', text: 'Controllo OneDrive…', error: null, done: 0, total: 0 });
         await OD.token({ silent: true });
+        chiavePubblica().catch(e => console.warn('chiave', e)); // chiave pubblica di questo dispositivo, per riconoscerne i backup
         const st = await kv('sync_state', {}), sent = await kv('sync_blobs', {}), del = await kv('sync_del', {});
         // 1. eliminazioni fatte qui
         for (const [id, t] of Object.entries(del)) {

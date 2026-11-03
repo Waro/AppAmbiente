@@ -227,3 +227,67 @@ function pulisciImpostazioni(s) {
   if (out.firmaTecnico && !DATA_OK.test(out.firmaTecnico)) delete out.firmaTecnico;
   return out;
 }
+
+/* ---------------- firma dei backup ----------------
+   Ogni dispositivo ha una coppia di chiavi ECDSA P-256. La chiave privata è creata non esportabile e resta solo
+   nell'archivio del dispositivo; la chiave pubblica va nella cartella dell'app su OneDrive (_nembo/chiavi/<impronta>.json),
+   così gli altri tuoi dispositivi collegati allo stesso account la riconoscono.
+   Ogni ZIP contiene firma.json: firma di manifest.json, che a sua volta contiene le impronte SHA-256 di tutti i file.
+   Al ripristino: firma non valida = backup modificato, ripristino annullato; firma di un dispositivo non riconosciuto
+   o backup senza firma = si chiede conferma. */
+const FIRMA_ALG = { name: 'ECDSA', namedCurve: 'P-256' }, FIRMA_SIGN = { name: 'ECDSA', hash: 'SHA-256' };
+const CHIAVI_DIR = '_nembo/chiavi/';
+const pubJwk = j => ({ kty: j.kty, crv: j.crv, x: j.x, y: j.y });
+const improntaChiave = async jwk => (await sha256(new TextEncoder().encode(JSON.stringify(pubJwk(jwk))))).slice(0, 32);
+let _chiaveP = null;
+function chiaveDispositivo() {
+  return _chiaveP || (_chiaveP = (async () => {
+    const c = await DB.get('chiave_dispositivo');
+    if (c && c.priv && c.jwk && c.fp) return c;
+    const k = await crypto.subtle.generateKey(FIRMA_ALG, false, ['sign', 'verify']);
+    const jwk = pubJwk(await crypto.subtle.exportKey('jwk', k.publicKey));
+    const n = { priv: k.privateKey, jwk, fp: await improntaChiave(jwk), creata: Date.now() };
+    await DB.set('chiave_dispositivo', n);
+    return n;
+  })().catch(e => { _chiaveP = null; throw e; }));
+}
+// pubblica la chiave pubblica di questo dispositivo su OneDrive (una volta sola)
+async function chiavePubblica() {
+  if (!OD.account || !navigator.onLine) return;
+  const c = await chiaveDispositivo();
+  if ((await DB.get('chiave_pubblicata')) === c.fp) return;
+  const doc = { app: 'nembo', kind: 'chiave', chiave: c.jwk, impronta: c.fp, creata: new Date(c.creata).toISOString() };
+  await OD.putRaw(CHIAVI_DIR + c.fp + '.json', new Blob([JSON.stringify(doc)], { type: 'application/json' }), 'application/json');
+  await DB.set('chiave_pubblicata', c.fp);
+}
+// impronte delle chiavi dei tuoi dispositivi: da OneDrive se raggiungibile, altrimenti l'ultimo elenco salvato
+async function chiaviNote() {
+  let L = (await DB.get('chiavi_note')) || [];
+  if (OD.account && navigator.onLine) {
+    try {
+      L = (await OD.list(CHIAVI_DIR)).map(f => f.name.replace(/\.json$/, '')).filter(x => /^[0-9a-f]{32}$/.test(x));
+      await DB.set('chiavi_note', L);
+    } catch (e) { /* accesso da rinnovare o rete assente: resta l'elenco salvato */ }
+  }
+  return L;
+}
+async function firmaBackup(manText) {
+  const c = await chiaveDispositivo();
+  const sig = await crypto.subtle.sign(FIRMA_SIGN, c.priv, new TextEncoder().encode(manText));
+  chiavePubblica().catch(e => console.warn('chiave', e));
+  return { app: 'nembo', kind: 'firma', alg: 'ECDSA-P256-SHA256', chiave: c.jwk, impronta: c.fp, firma: bufToB64(sig), creata: new Date().toISOString() };
+}
+// 'questo' | 'tuo' | 'sconosciuto' | 'non valida'
+async function verificaFirma(manText, f) {
+  try {
+    if (!isObj(f) || f.alg !== 'ECDSA-P256-SHA256' || !isObj(f.chiave) || typeof f.firma !== 'string') return 'non valida';
+    const jwk = pubJwk(f.chiave);
+    const key = await crypto.subtle.importKey('jwk', jwk, FIRMA_ALG, false, ['verify']);
+    if (!await crypto.subtle.verify(FIRMA_SIGN, key, b64ToBuf(f.firma), new TextEncoder().encode(manText))) return 'non valida';
+    const fp = await improntaChiave(jwk);
+    const mia = await DB.get('chiave_dispositivo');
+    if (mia && mia.fp === fp) return 'questo';
+    return (await chiaviNote()).includes(fp) ? 'tuo' : 'sconosciuto';
+  } catch (e) { return 'non valida'; }
+}
+const FIRMA_ESITO = { questo: 'Firma valida, di questo dispositivo.', tuo: 'Firma valida, di un tuo dispositivo.', sconosciuto: 'Firma valida, di un dispositivo non riconosciuto.', assente: 'Backup senza firma.' };
