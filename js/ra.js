@@ -98,10 +98,11 @@ function stessoImmobile(x, r) {
   if (!sito && !ind) return false;
   return sito && normLuogo(x.sito) ? normLuogo(x.sito) === sito : !!ind && normLuogo(x.indirizzo) === ind && (!cit || !normLuogo(x.citta) || normLuogo(x.citta) === cit);
 }
-// attività con campioni MCA da cui creare i manufatti: prima quelle dello stesso immobile, poi le più recenti
+// attività con campioni MCA da cui creare i manufatti: solo quelle dello stesso immobile, le più recenti prima
+// (i campioni di un altro immobile non c'entrano con questo sopralluogo)
 function raFontiCampioni(records, r) {
-  return records.filter(x => !x._new && ((x.type === 'mappatura') || (x.type === 'dda' && x.fase === 2)) && ((x.campioni || {}).mca || []).length)
-    .map(x => ({ x, same: stessoImmobile(x, r) })).sort((a, b) => (b.same - a.same) || (b.x.data || '').localeCompare(a.x.data || '')).map(o => o.x);
+  return records.filter(x => !x._new && x.id !== r.id && ((x.type === 'mappatura') || (x.type === 'dda' && x.fase === 2)) && ((x.campioni || {}).mca || []).length && stessoImmobile(x, r))
+    .sort((a, b) => (b.data || '').localeCompare(a.data || ''));
 }
 const fonteNome = x => (x.type === 'mappatura' ? 'Mappatura ' : 'DDA Fase 2 ') + (x.codice || '');
 async function raDaCampioni(src, r) {
@@ -176,7 +177,7 @@ function RaList({ records, open, create, activeId, acts }) {
       ${Object.entries(sites).map(([s, rs]) => html`<div key=${s}><div class="grp-site">${s}<span class="count">${rs.length}</span></div><div class="list">
         ${rs.map(r => {
           const tot = r.manufatti.length, fatti = r.manufatti.filter(m => m.stato).length, dann = r.manufatti.filter(m => m.stato === 'danneggiato').length;
-          return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r)} key=${r.id} onClick=${() => open(r.id)}>
+          return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r) + selCls(r)} key=${r.id} ...${selRow(r, () => open(r.id))}>${selCk(r)}
             <div class="r1"><span class="id">${r.codice}</span>${r.drone && html`<${DroneIc} />`}
               <span class=${'badge ' + (tot && fatti === tot ? 'b-ok' : 'b-f2')}>${tot ? `${fatti}/${tot} verificati` : 'Da impostare'}</span><span class="dt">${fmtD(r.data)}</span></div>
             ${r.commessa && html`<div class="ttl">${r.commessa}</div>`}
