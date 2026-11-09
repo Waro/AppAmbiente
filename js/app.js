@@ -174,7 +174,7 @@ async function pickSaveHandle(name) {
 
 async function exportRecords(records, settings, full) {
   const stamp = new Date().toISOString().slice(0, 10);
-  const name = full ? `Nembo_backup_${stamp}.zip` : `${recordLabel(records[0])}_${stamp}.zip`;
+  const name = full ? `Nembo_backup_${stamp}.zip` : records.length > 1 ? `Nembo_${records.length}_attivita_${stamp}.zip` : `${recordLabel(records[0])}_${stamp}.zip`;
   const handle = await pickSaveHandle(name);
   if (handle === 'cancel') return 'cancel';
   toast('Preparo lo ZIP…');
@@ -731,6 +731,8 @@ function App() {
   const notifs = useNotifiche();
   const unreadErr = notifs.filter(n => !n.read && n.level === 'err').length;
   const [navMin, toggleNav] = useNavMin();
+  useSel(); // la selezione di più attività ridisegna elenchi e «Da completare»
+  const od = useOdSynced();
   const [lastBackup, setLastBackup] = useState(null);
   const [installEvt, setInstallEvt] = useState(null);
   const [tplOk, setTplOk] = useState(true);
@@ -805,6 +807,8 @@ function App() {
   };
   // colori dei tag coerenti in tutta l'app
   useEffect(() => { setTagList(Object.keys(collectTags(records))); }, [records]);
+  // cambiando schermata la selezione si chiude
+  useEffect(() => Sel.stop(), [route.v]);
   // l’attività aperta non viene sovrascritta dalla sincronizzazione
   useEffect(() => { Sync.busy = route.id || null; }, [route.id]);
   // uscendo da un record nuovo rimasto vuoto, lo scarto
@@ -857,7 +861,7 @@ function App() {
   const bell = html`<button class=${'btn-icon' + (route.v === 'notifiche' ? ' on' : '')} aria-label=${unreadErr ? `Notifiche, ${unreadErr} errori non letti` : 'Notifiche'}
     onClick=${() => route.v !== 'notifiche' && go({ v: 'notifiche' })}><${Icon} n="bell" s=${21} />${unreadErr > 0 && html`<span class="dot">${unreadErr}</span>`}</button>`;
   const plus = (fn, label) => html`<button class="btn-icon pri" aria-label=${label} onClick=${fn}><${Icon} n="plus" s=${22} w=${2.4} /></button>`;
-  const listActs = (fn, label) => html`${plus(fn, label)}${bell}`;
+  const listActs = (fn, label) => html`${!Sel.active && html`<span class="sel-pc"><${SelBtn} /></span>`}${plus(fn, label)}${bell}`;
 
   const split = (list, detail, emptyTxt) => wide ? html`<div class="split-body">
       <div class="split-list">${list}</div>
@@ -952,12 +956,14 @@ function App() {
 
   const isTop = TOP_ROUTES.includes(route.v);
   const splitActive = wide && !!DETAIL_OF[route.v];
-  const counts = { dda: records.filter(r => r.type === 'dda').length, mappatura: records.filter(r => r.type === 'mappatura').length,
-    cli: clienti.length, ra: records.filter(r => r.type === 'ra').length, hs: records.filter(r => r.type === 'hs').length, vs: records.filter(r => r.type === 'vs').length, firme: records.filter(r => r.type === 'firme').length, aria: records.filter(r => r.type === 'aria').length, radon: records.filter(r => r.type === 'radon' && radonStato(r) !== 'terminata').length };
+  // numeri del menu laterale: solo le attività aperte (i sopralluoghi conclusi non contano)
+  const aperte = t => records.filter(r => r.type === t && attAperta(r, od)).length;
+  const counts = { dda: aperte('dda'), mappatura: aperte('mappatura'), cli: clienti.length, ra: aperte('ra'), hs: aperte('hs'), vs: aperte('vs'), firme: aperte('firme'), aria: aperte('aria'), radon: aperte('radon') };
   return html`<div class=${'frame' + (wide ? ' wide' : '')}>
     ${wide && html`<${SideNav} route=${route} go=${go} counts=${counts} settings=${settings} min=${navMin} toggle=${toggleNav} />`}
-    <div class=${'shell' + (splitActive ? ' split' : '') + (!wide && isTop ? ' has-tabs' : '')}>
+    <div class=${'shell' + (splitActive ? ' split' : '') + (!wide && isTop ? ' has-tabs' : '') + (Sel.active ? ' sel-on' : '')}>
     ${wide && html`<header class="wbar"><div class="tb-grow">${route.v === 'home' && html`<div class="lt-eye">${new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}</div>`}<h1>${ROUTE_TITLE[route.v] || 'Nembo'}</h1></div>
+      ${DETAIL_OF[route.v] && route.v !== 'cliList' && !Sel.active && html`<span class="sel-pc"><${SelBtn} /></span>`}
       ${route.v !== 'cerca' && html`<button class="btn-icon" aria-label="Cerca" title="Cerca" onClick=${() => go({ v: 'cerca' })}><${Icon} n="search" s=${20} /></button>`}${wideCreate && plus(wideCreate, 'Nuova')}${bell}</header>`}
     ${!wide && !isTop && html`<header class="navbar">
       <button class="nb-back" onClick=${goBack}><${Icon} n="back" s=${22} /> ${route.from || 'Indietro'}</button>
@@ -965,6 +971,7 @@ function App() {
     ${body}
     ${!wide && isTop && html`<${TabBar} route=${route} tab=${tab} bu=${settings.buDefault} />`}
     ${sheet && html`<${NewActivity} records=${records} preset=${preset} bu=${sheet === 'hs' ? 'hs' : settings.buDefault} onClose=${() => { setSheet(false); setPreset(null); }} onCreate=${(t, patch) => { window.addEventListener('popstate', () => setTimeout(() => create(t, patch), 0), { once: true }); setSheet(false); }} />`}
+    ${Sel.active && html`<${SelBars} records=${allRecs} settings=${settings} />`}
     <${ShareAsk} />
     <${Progress} />
     <${CameraHost} />

@@ -21,7 +21,7 @@ function VerbaleList({ records, open, activeId, acts }) {
     <${LargeTitle} top eye="HSE" title="Verbali HSE" sub=${`${all.length} ${all.length === 1 ? 'verbale' : 'verbali'}`} acts=${acts} />
     ${!all.length && html`<div class="empty"><b>Nessun verbale</b>Tocca + e scegli “Verbale HSE”.</div>`}
     ${Object.entries(groups).map(([c, rs]) => html`<div key=${c}><div class="grp-client">${c}</div><div class="list">
-      ${rs.map(r => { const N = (r.note || []).length, tg = Object.keys(collectTags(r.note || [])); return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r)} key=${r.id} onClick=${() => open(r.id)}>
+      ${rs.map(r => { const N = (r.note || []).length, tg = Object.keys(collectTags(r.note || [])); return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r) + selCls(r)} key=${r.id} ...${selRow(r, () => open(r.id))}>${selCk(r)}
         <div class="r1"><span class="id">${r.codice}</span><span class=${'badge ' + (N ? 'b-ok' : 'b-grey')}>${N ? N + (N === 1 ? ' nota' : ' note') : 'Da compilare'}</span><span class="dt">${fmtD(r.data)}</span></div>
         ${(r.commessa || placeLabel(r)) && html`<div class="ttl">${[r.commessa, placeLabel(r)].filter(Boolean).join(' · ')}</div>`}
         ${tg.length > 0 && html`<div class="sum">${tg.slice(0, 6).map(t => html`<span key=${t} style=${'color:' + tagColor(t) + ';margin-right:6px'}>#${t}</span>`)}</div>`}

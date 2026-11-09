@@ -32,7 +32,7 @@ function MappaturaList({ records, open, create, activeId, acts }) {
     });
     const sch = Object.entries(r.schede || {}).map(([k, t]) => k.toUpperCase() + ' ' + new Date(t).toLocaleDateString('it-IT'));
     if (sch.length) lines.push(html`<div class="l" style="color:var(--ok)"><span class="dot" style="background:var(--ok)"></span><span>Scheda campioni: ${sch.join(', ')}</span></div>`);
-    return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r)} key=${r.id} onClick=${() => open(r.id)}>
+    return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r) + selCls(r)} key=${r.id} ...${selRow(r, () => open(r.id))}>${selCk(r)}
       <div class="r1"><span class="id">${r.codice}</span>${r.drone && html`<${DroneIc} />`}<span class="dt">${fmtD(r.data)}</span></div>
       ${r.commessa && html`<div class="ttl">${r.commessa}</div>`}
       <div class="sum">${r.tecnico ? r.tecnico + ' · ' : ''}${cs.length} campioni${byM ? ' (' + byM + ')' : ''}</div>${lines}<${OdBadge} map=${od} r=${r} /></button>`;

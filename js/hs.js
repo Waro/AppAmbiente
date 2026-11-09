@@ -21,7 +21,7 @@ function HsList({ records, open, create, activeId, acts }) {
     ${!list.length && html`<div class="empty"><b>Nessun sopralluogo HSE</b>Tocca + e scegli il formato Esteso o Sintetico.</div>`}
     ${Object.entries(groups).map(([c, sites]) => html`<div key=${c}><div class="grp-client">${c}</div>
       ${Object.entries(sites).map(([s, rs]) => html`<div key=${s}><div class="grp-site">${s}<span class="count">${rs.length}</span></div><div class="list">
-        ${rs.map(r => { const cr = hsCriticita(r).filter(x => x.p === 1).length; return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r)} key=${r.id} onClick=${() => open(r.id)}>
+        ${rs.map(r => { const cr = hsCriticita(r).filter(x => x.p === 1).length; return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r) + selCls(r)} key=${r.id} ...${selRow(r, () => open(r.id))}>${selCk(r)}
           <div class="r1"><span class="id">${r.codice}</span><span class=${'badge ' + (r.formato === 'sintetico' ? 'b-f2' : 'b-f1')}>${HS_FMT[r.formato]}</span><span class="dt">${fmtD(r.data)}</span></div>
           ${(r.sito || r.commessa) && html`<div class="ttl">${[r.commessa, r.sito].filter(Boolean).join(' · ')}</div>`}
           <div class="sum">${r.tecnico ? r.tecnico + ' · ' : ''}${hsProgress(r)} · ${(r.foto || []).length} foto</div>

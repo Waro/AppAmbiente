@@ -71,6 +71,18 @@ function whenLabel(d) {
 
 /* primi passi: in js/guida.js */
 
+// attività aperta (numeri del menu laterale): non ancora conclusa.
+// Conclusa = dati raccolti e su OneDrive senza modifiche dopo l'invio; radon a campagna terminata;
+// RA con tutti i manufatti valutati e caricata; foglio firme con tutti i fogli chiusi; annullata non conta.
+function attAperta(r, od) {
+  if (r.conclusa || r.stato === 'annullato') return false;
+  if (r.type === 'radon') return radonStato(r) !== 'terminata';
+  const caricata = odStatus(od, r) === 'ok';
+  if (r.type === 'ra') return raOpen(r) || !caricata;
+  if (r.type === 'firme') { const fg = r.fogli || []; return !fg.length || fg.some(f => !f.chiuso) || !caricata; }
+  return !(recDone(r) && caricata);
+}
+
 // attività da completare: con data da 14 giorni fa a oggi, senza foto su qualche elemento o non ancora su OneDrive
 function daCompletare(records, od) {
   const t = today(), from = dayShift(t, -14), out = [];
@@ -149,7 +161,8 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
   const giorni = lastBackup ? Math.floor((Date.now() - lastBackup) / 86400000) : null;
   const stale = records.length > 0 && (giorni == null || giorni >= 7);
   const navBtn = a => a && html`<a class="btn-icon glass" aria-label="Indicazioni stradali" href=${'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(a)} target="_blank" rel="noopener"><${Icon} n="nav" s=${20} /></a>`;
-  const riga = (ic, l, sub, fn, o = {}) => html`<button class=${'prow' + (o.st ? ' st-bar ' + o.st : '')} onClick=${fn}>
+  // o.sel: attività selezionabile (tocco prolungato o «Seleziona»), come negli elenchi
+  const riga = (ic, l, sub, fn, o = {}) => html`<button class=${'prow' + (o.st ? ' st-bar ' + o.st : '') + (o.sel ? selCls(o.sel) : '')} ...${o.sel ? selRow(o.sel, fn) : { onClick: fn }}>${o.sel && selCk(o.sel)}
     <span class=${'sq' + (o.st ? ' plain' : o.crit ? ' crit' : o.blu ? ' blu' : '')}><${Icon} n=${ic} s=${20} /></span><span class="t"><b>${l}</b><small class=${o.st === 'st-err' || o.crit ? 'crit' : o.blu ? 'blu' : ''}>${sub}</small></span><${Icon} n="right" s=${18} /></button>`;
 
   // scadenza più vicina (Ambiente): ritiro radon o verifica RA
@@ -207,9 +220,9 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
         <div class="hc-line">Le attività con la data di oggi compaiono qui.</div>`}
     </div></div>
 
-    <div class="hg-c"><div class="sec-h home-h"><h2>Da completare${sosp.length > 0 && html` <span class="n">${sosp.length}</span>`}</h2>${sosp.length > 3 && html`<button class="btn link" onClick=${() => setTutte(!tutte)}>${tutte ? 'Meno' : 'Tutte'}</button>`}</div>
+    <div class="hg-c"><div class="sec-h home-h"><h2>Da completare${sosp.length > 0 && html` <span class="n">${sosp.length}</span>`}</h2>${sosp.length > 0 && !Sel.active && html`<span class="sel-pc"><${SelBtn} /></span>`}${sosp.length > 3 && !Sel.active && html`<button class="btn link" onClick=${() => setTutte(!tutte)}>${tutte ? 'Meno' : 'Tutte'}</button>`}</div>
     ${!sosp.length ? html`<div class="card ok-card"><span class="t"><b>Niente in sospeso</b><small>Tutte le attività sono complete e caricate.</small></span><span class="ok-ic" aria-label="Niente in sospeso"><${Icon} n="check" s=${20} w=${2.4} /></span></div>`
-      : html`<div class="card" style="padding:0">${(tutte ? sosp : sosp.slice(0, 3)).map(x => riga(x.ic, placeLabel(x.r), x.sub, () => open(x.r), { st: x.st }))}</div>`}
+      : html`<div class="card" style="padding:0">${(tutte || Sel.active ? sosp : sosp.slice(0, 3)).map(x => riga(x.ic, placeLabel(x.r), x.sub, () => open(x.r), { st: x.st, sel: x.r }))}</div>`}
 
     </div>
     <div class="hg-s"><div class="sec-h home-h"><h2>Strumenti e dati</h2></div>

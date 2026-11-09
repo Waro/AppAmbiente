@@ -191,7 +191,7 @@ function AriaList({ records, open, activeId, acts }) {
     ${inRa > 0 && html`<p class="lead" style="margin:0 2px 12px">${inRa === 1 ? 'Un sopralluogo RA ha' : inRa + ' sopralluoghi RA hanno'} il monitoraggio aria nella propria scheda.</p>`}
     ${!all.length && html`<div class="empty"><b>Nessun monitoraggio</b>Tocca + e scegli “Monitoraggio aria”. Nei sopralluoghi RA c'è anche la sezione facoltativa.</div>`}
     ${Object.entries(groups).map(([c, rs]) => html`<div key=${c}><div class="grp-client">${c}</div><div class="list">
-      ${rs.map(r => { const R = ariaRiepilogo(r); return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r)} key=${r.id} onClick=${() => open(r.id)}>
+      ${rs.map(r => { const R = ariaRiepilogo(r); return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r) + selCls(r)} key=${r.id} ...${selRow(r, () => open(r.id))}>${selCk(r)}
         <div class="r1"><span class="id">${r.codice}</span><span class=${'badge ' + (!R.tot ? 'b-grey' : R.over ? 'b-nc' : R.chiusi < R.tot ? 'b-f2' : R.esiti < R.fatti ? 'b-f1' : 'b-ok')}>${!R.tot ? 'Da impostare' : R.chiusi < R.tot ? `${R.chiusi}/${R.tot} prelievi` : R.esiti < R.fatti ? 'Attesa esiti' : 'Completato'}</span><span class="dt">${fmtD(r.data)}</span></div>
         ${(r.commessa || placeLabel(r)) && html`<div class="ttl">${[r.commessa, placeLabel(r)].filter(Boolean).join(' · ')}</div>`}
         <div class="sum">${R.tot} ${R.tot === 1 ? 'punto' : 'punti'}${R.non ? ' · ' + R.non + ' non eseguiti' : ''}${R.esiti ? ' · ' + R.esiti + ' esiti' : ''}</div>

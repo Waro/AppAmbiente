@@ -73,7 +73,7 @@ function RadonList({ records, open, create, activeId, acts }) {
     ${!list.length && html`<div class="empty"><b>Nessuna campagna qui</b>Tocca + per registrare una nuova campagna.</div>`}
     <div class="list">${list.map(r => {
       const s = radonStato(r);
-      return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r)} key=${r.id} onClick=${() => open(r.id)}>
+      return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r) + selCls(r)} key=${r.id} ...${selRow(r, () => open(r.id))}>${selCk(r)}
         <div class="r1"><span class="id">${r.commessa || 'Commessa da indicare'}</span><span class=${'badge ' + STATI[s][1]}>${STATI[s][0]}</span><span class="dt">${r.punti.length} punti</span></div>
         <div class="ttl">${[r.cliente, r.insegna].filter(Boolean).join(' · ') || 'Cliente da indicare'}</div>
         <div class="sum">${[r.citta && r.citta + (r.provincia ? ' (' + r.provincia + ')' : ''), r.indirizzo].filter(Boolean).join(', ')}</div>

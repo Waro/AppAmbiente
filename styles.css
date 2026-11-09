@@ -1111,3 +1111,22 @@ img.logo { background: none; object-fit: cover; }
 .wl-opt small { font-size: var(--fs-md); color: var(--muted); }
 .wl-opt > svg { color: var(--blue); flex: none; }
 .wl-opt.on { box-shadow: inset 0 0 0 2px var(--blue); }
+
+/* Selezione di più attività (tocco prolungato negli elenchi e in «Da completare»; «Seleziona» su PC) */
+.rcard, .home2 .prow { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.rcard.sel-mode { padding-left: 52px; }
+.home2 .prow.sel-mode { padding-left: 52px; position: relative; }
+.selck { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--chev); display: grid; place-items: center; color: var(--on-accent); }
+.sel .selck { background: var(--blue); box-shadow: none; }
+.rcard.sel, .home2 .prow.sel { background: var(--blue-soft); }
+.rcard.sel-mode::after { display: none; }
+.selhead { position: absolute; top: 0; left: 0; right: 0; z-index: 8; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  min-height: 52px; padding: env(safe-area-inset-top, 0) 8px 0; background: var(--bar-solid); box-shadow: 0 .5px 0 var(--bar-line); }
+.selhead b { font-size: var(--fs-lg); font-weight: 600; }
+.selhead .btn.link { min-height: var(--tap); padding: 0 10px; }
+.selbar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 8; padding: 12px var(--gutter) calc(12px + env(safe-area-inset-bottom, 0px)); background: var(--bar-bg); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); box-shadow: 0 -.5px 0 var(--bar-line); }
+.selbar .btn { min-height: 52px; }
+.sel-pc { display: none; }
+@media (hover: hover) and (pointer: fine) { .sel-pc { display: inline-flex; align-items: center; } }
+.frame.wide .selhead { min-height: 76px; padding: 0 16px; }
+.sel-on .fab { display: none; }

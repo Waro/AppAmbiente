@@ -278,7 +278,7 @@ function FirmeList({ records, open, activeId, acts }) {
     <${LargeTitle} top eye="Strumenti" title="Fogli firme" sub="Presenze, informative e consegne fuori da un’attività" acts=${acts} />
     ${!all.length && html`<div class="empty"><b>Nessun foglio firme</b>Tocca + e scegli “Foglio firme”. Dentro DDA, Mappature e RA c'è anche la sezione Firme.</div>`}
     ${Object.entries(groups).map(([c, rs]) => html`<div key=${c}><div class="grp-client">${c}</div><div class="list">
-      ${rs.map(r => { const fg = r.fogli || [], n = fg.reduce((a, f) => a + foglioFirme(f), 0); return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r)} key=${r.id} onClick=${() => open(r.id)}>
+      ${rs.map(r => { const fg = r.fogli || [], n = fg.reduce((a, f) => a + foglioFirme(f), 0); return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r) + selCls(r)} key=${r.id} ...${selRow(r, () => open(r.id))}>${selCk(r)}
         <div class="r1"><span class="id">${r.codice}</span><span class=${'badge ' + (fg.length && fg.every(f => f.chiuso) ? 'b-ok' : n ? 'b-f2' : 'b-grey')}>${!fg.length ? 'Vuoto' : fg.every(f => f.chiuso) ? 'Chiuso' : n ? 'In corso' : 'Da firmare'}</span><span class="dt">${fmtD(r.data)}</span></div>
         ${(r.commessa || placeLabel(r)) && html`<div class="ttl">${[r.commessa, placeLabel(r)].filter(Boolean).join(' · ')}</div>`}
         <div class="sum">${fg.length ? fg.map(f => f.titolo).join(', ') : 'Nessun foglio'} · ${n} ${n === 1 ? 'firma' : 'firme'}</div>
