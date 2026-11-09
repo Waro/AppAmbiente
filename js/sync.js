@@ -95,12 +95,14 @@ const Sync = (() => {
         await DB.set('sync_del', del); await DB.set('sync_state', st);
         // 2. cosa c'è su OneDrive
         const remoteList = (await OD.list(REC)).filter(f => /\.json$/.test(f.name));
+        const arch = await kv('archiviate', {});
         const locals = await DB.all(); const byId = Object.fromEntries(locals.map(r => [r.id, r]));
         let changed = false;
         for (const f of remoteList) {
           const id = f.name.replace(/\.json$/, '');
           const s0 = st[id];
           if (s0 && s0.m === f.lastModifiedDateTime) continue; // già visto
+          if (arch[id] && !byId[id]) { st[id] = { ...(s0 || {}), m: f.lastModifiedDateTime }; continue; } // tolta da questo dispositivo: resta su OneDrive
           if (id === busyId) { esito.rinviate++; continue; }
           set({ text: 'Scarico ' + id });
           const b = await OD.getRaw(REC + f.name); if (!b) continue;

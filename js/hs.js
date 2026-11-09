@@ -491,6 +491,7 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
     <${DetailHead} eye=${'HSE · ' + HS_FMT[r.formato]} title=${S0 && T === 'main' ? S0.l : r.codice} sub=${S0 && T === 'main' ? [r.codice, r.sito].filter(Boolean).join(' · ') : [r.commessa, r.cliente, placeAddr(r) || r.sito].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
     <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'main', l: 'Sezioni' }, { k: 'file', l: 'File' }]} />
     ${T === 'anag' ? html`${body}${archivio}` : T === 'file' ? html`<${FileTab} r=${r} up=${up} settings=${settings} />` : html`
+    ${SR_API && html`<${Suggerimento} id="dettatura" />`}
     ${S && html`<button class="btn link" style="margin:-8px 0 8px -4px" onClick=${() => setSec(null)}><${Icon} n="back" s=${18} /> Indice delle sezioni</button>`}
     ${S ? body : indice}`}
     <input ref=${imp} type="file" accept=".docx,.json,application/json,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden onChange=${doImport} />

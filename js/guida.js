@@ -13,6 +13,7 @@ const SUGGERIMENTI = {
   planimetrie: { t: 'Planimetrie', s: 'Apri una pianta per scriverci sopra: penna, evidenziatore, forme, testo e gomma sono nella barra degli strumenti. Con «Solo penna» il dito sposta la pianta e scrive solo la penna del tablet.' },
   campioni: { t: 'Campioni', s: 'I codici si assegnano da soli: A1, A2… per MCA e F1, F2… per FAV. I manufatti non campionati sono NC1, NC2…, ognuno con il campione di riferimento.' },
   file: { t: 'Scheda File', s: 'Qui generi i documenti dell’attività. Grigio: da generare. Verde: generato e su OneDrive, tocca per aprirlo. Ambra: i dati sono cambiati, rigeneralo. «Rigenera» crea una nuova revisione senza cancellare la precedente.' },
+  dettatura: { t: 'Dettatura', s: 'Il microfono nei campi di testo usa la dettatura di Chrome: per trascriverla, l’audio viene inviato ai server di Google. Se nel sopralluogo ci sono dati riservati, scrivi a mano.' },
   radon: { t: 'Dosimetri', s: 'Tocca lo scanner per leggere il codice a barre dei dosimetri: dopo ogni lettura passa da solo al punto successivo. Un codice già usato viene segnalato subito.' },
 };
 function Suggerimento({ id }) {

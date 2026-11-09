@@ -400,7 +400,8 @@ function Settings({ settings, setSettings, onTemplates, go, page, wide }) {
     <${SyncCard} settings=${s} set=${set} />`;
       case 'modelli': return html`<div class="card tight"><p class="lead" style="margin:2px 0 6px">I moduli aziendali (PDF per l'Ambiente, Word per l'HSE) non sono nell'app pubblicata: caricali qui dal telefono o da OneDrive. Restano solo su questo dispositivo e finiscono nel file di configurazione e nel backup.</p>
       ${Object.entries(TEMPLATES).map(([name, t]) => html`<${TemplateRow} key=${name} name=${name} t=${t} onChange=${onTemplates} />`)}</div>`;
-      case 'dispositivo': return html`<${WipeCard} />`;
+      case 'dispositivo': return html`<${ArchiviaCard} />
+        <${WipeCard} />`;
       case 'campioni': return html`<div class="card"><div class="grid2">
       <${Inp} cls="full" label="Prelevato da" value=${s.prelevatoDa} set=${v => set({ prelevatoDa: v })} placeholder="es. Tec. Amb. Nome Cognome" />
       <${Inp} cls="full" label="Verificato da" value=${s.verificatoDa} set=${v => set({ verificatoDa: v })} />
@@ -526,6 +527,54 @@ async function wipeDevice() {
     try { sessionStorage.clear(); } catch (e) {}
     location.hash = ''; location.reload();
   } catch (e) { fail('Dati non rimossi', e); }
+}
+/* ---------------- attività vecchie: togli da questo dispositivo (DAT-01) ----------------
+   Solo attività concluse, già sincronizzate su OneDrive senza modifiche successive e non toccate da N mesi.
+   Si tolgono dati e file dal dispositivo (non è un'eliminazione: su OneDrive restano). L'elenco «archiviate» dice alla
+   sincronizzazione di non riscaricarle; «Riporta sul dispositivo» lo svuota e le attività tornano al giro successivo. */
+const ARCH_MESI = [[6, '6 mesi'], [12, '1 anno'], [24, '2 anni']];
+async function archiviabili(records, mesi, od) {
+  if (!Sync.enabled()) return [];
+  const st = (await DB.get('sync_state')) || {}, lim = Date.now() - mesi * 30.44 * 86400000;
+  return records.filter(r => !r._new && r.type !== 'cli' && r.type !== 'app' && !attAperta(r, od) && (r.updatedAt || 0) < lim
+    && st[r.id] && !st[r.id].deleted && (r.updatedAt || 0) <= (st[r.id].v || 0));
+}
+function ArchiviaCard() {
+  const od = useOdSynced();
+  const [records, setRecs] = useState([]);
+  useEffect(() => { DB.all().then(setRecs); }, []);
+  const [mesi, setMesi] = useState(12);
+  const [L, setL] = useState(null); const [mb, setMb] = useState(0); const [arch, setArch] = useState({}); const [busy, setBusy] = useState(false);
+  const on = Sync.enabled();
+  useEffect(() => { DB.get('archiviate').then(a => setArch(a || {})); }, []);
+  useEffect(() => { let ok = true; archiviabili(records, mesi, od).then(async l => {
+    let tot = 0; for (const r of l) for (const id of new Set(blobIds(r))) { const b = await DB.getBlob(id); if (b && b.blob) tot += b.blob.size; }
+    if (ok) { setL(l); setMb(tot / 1048576); } }); return () => { ok = false; }; }, [records, mesi, od]);
+  const togli = async () => {
+    if (!L || !L.length || !confirm(`Togliere ${L.length} ${L.length === 1 ? 'attività' : 'attività'} da questo dispositivo? Restano su OneDrive e tornano con «Riporta sul dispositivo».`)) return;
+    setBusy(true);
+    const a = { ...((await DB.get('archiviate')) || {}) };
+    for (const r of L) { for (const id of new Set(blobIds(r))) await removeBlob(id); await DB.del(r.id); a[r.id] = { il: Date.now(), codice: r.codice || '' }; }
+    await DB.set('archiviate', a); setArch(a); setBusy(false);
+    toast(`${L.length} ${L.length === 1 ? 'attività tolta' : 'attività tolte'} da questo dispositivo`);
+    location.reload();
+  };
+  const riporta = async () => {
+    const st = (await DB.get('sync_state')) || {};
+    for (const id of Object.keys(arch)) delete st[id];
+    await DB.set('sync_state', st); await DB.set('archiviate', {}); setArch({});
+    toast('Le attività tornano con la prossima sincronizzazione'); Sync.schedule(500);
+  };
+  const nA = Object.keys(arch).length;
+  return html`<div class="card tight">
+    <p class="lead lead-gap">Le attività concluse e già sincronizzate su OneDrive si possono togliere da questo dispositivo per liberare spazio: restano su OneDrive e tornano quando vuoi.</p>
+    ${!on ? html`<p class="lead lead-gap">Serve la sincronizzazione con OneDrive attiva: senza, le attività sarebbero solo nei backup.</p>` : html`
+      <div class="fld"><span>Non modificate da</span></div>
+      <div class="seg mt-1" role="radiogroup" aria-label="Non modificate da">${ARCH_MESI.map(([m, l]) => html`<button role="radio" aria-checked=${mesi === m} class=${mesi === m ? 'on' : ''} onClick=${() => setMesi(m)}>${l}</button>`)}</div>
+      <p class="lock mt-2">${L == null ? '' : L.length ? `${L.length} ${L.length === 1 ? 'attività' : 'attività'} · ${mb.toFixed(1).replace('.', ',')} MB` : 'Nessuna attività da togliere'}</p>
+      <button class="btn block mt-2" disabled=${busy || !L || !L.length} onClick=${togli}><${Icon} n="archive" s=${17} /> ${L && L.length ? `Togli ${L.length} ${L.length === 1 ? 'attività' : 'attività'} da questo dispositivo` : 'Togli da questo dispositivo'}</button>`}
+    ${nA > 0 && html`<button class="btn block mt-2" onClick=${riporta}>Riporta sul dispositivo (${nA})</button>`}
+  </div>`;
 }
 function WipeCard() {
   const [w, setW] = useState(null);
