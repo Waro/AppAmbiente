@@ -3,8 +3,17 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
-  { v: 49, data: '2026-11-03', tipo: 'minore', titolo: 'Originale scuro, Impostazioni a gruppi e Guida',
+  { v: 49, data: '2026-11-09', tipo: 'minore', titolo: 'Selezione di più attività, Impostazioni a gruppi e Guida',
     voci: [
+      'Selezione di più attività: tieni premuta un’attività negli elenchi o in «Da completare» (su PC tocca «Seleziona»), poi tocca le altre. Un solo invio su OneDrive, ognuna nella sua cartella; senza OneDrive le salvi in un unico file ZIP.',
+      'Nel menu laterale su PC e tablet i numeri contano solo le attività aperte.',
+      'Impostazioni → Dati su questo dispositivo: togli le attività concluse e già su OneDrive per liberare spazio, e riportale quando vuoi.',
+      'Sopralluogo RA: «Manufatti dai campioni MCA» propone solo le attività dello stesso immobile.',
+      'I fogli firme chiusi hanno un’impronta nel PDF, per riconoscere se il documento è stato modificato.',
+      'Lettore PDF aggiornato, per planimetrie e allegati.',
+      'Nembo non si apre dentro altre pagine web.',
+      'L’avviso di sincronizzazione non riuscita ricompare a ogni nuovo problema.',
+      'Guida: il microfono nei campi di testo usa la dettatura di Chrome, che invia l’audio ai server di Google.',
       'Lo stile Originale ha anche la versione scura.',
       'In Impostazioni → Aspetto e avvio scegli lo stile (Essenziale o Originale) e l’aspetto: Automatico, Chiaro o Scuro. Automatico segue il tema del dispositivo.',
       'La scelta che avevi già fatto resta: chi usava Scuro ritrova Essenziale scuro. Se non avevi mai scelto, Nembo ora segue il tema del dispositivo.',
