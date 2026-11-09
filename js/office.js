@@ -32,6 +32,7 @@ const xEsc = t => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g
 const xAttr = (tag, a) => { const m = tag.match(new RegExp('\\s' + a.replace(':', '\\:') + '="([^"]*)"')); return m ? m[1] : null; };
 // kind: 'massivi' | 'aria'; info come per il PDF (schedaInfo / ariaInfo)
 async function schedeXlsx(tplBuf, kind, info) {
+  await needLib('jszip');
   const zip = await JSZip.loadAsync(tplBuf);
   const rd = async n => { const f = zip.file(n); return f ? f.async('string') : null; };
   const norm = t => t.replace(/^\//, '').replace(/^(?!xl\/)/, 'xl/');

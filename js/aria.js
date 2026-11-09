@@ -301,6 +301,7 @@ const xDate = iso => iso ? new Date(iso + 'T12:00:00') : null;
 const lines = t => Math.max(1, String(t || '').split('\n').length);
 
 async function ariaSchedaXlsx(r, s) {
+  await needLib('jszip');
   const I = ariaInfo(r, s);
   const tpl = await schedaTplXlsx();
   if (tpl) { const z = await JSZip.loadAsync(tpl); if (/name="[^"]*ARIA/i.test(await z.file('xl/workbook.xml').async('string'))) return schedeXlsx(tpl, 'aria', I); }

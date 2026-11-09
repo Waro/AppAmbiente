@@ -35,7 +35,7 @@ async function sha256(data) {
 /* ---------------- Word ed Excel: niente macro né contenuti attivi ---------------- */
 // restituisce il motivo del rifiuto, oppure null se il file va bene
 async function officeRischi(data, kind) {
-  const z = await JSZip.loadAsync(data).catch(() => null);
+  await needLib('jszip'); const z = await JSZip.loadAsync(data).catch(() => null);
   if (!z) return 'il file è danneggiato';
   const nomi = Object.keys(z.files);
   if (nomi.length > 5000) return 'il file contiene troppi elementi';
@@ -212,7 +212,7 @@ function pulisciRecord(r) {
   }
   ripulisci(c);
   if (typeof c.updatedAt !== 'number') c.updatedAt = 0;
-  return [c, null];
+  return [migraRecord(c), null];
 }
 // impostazioni da un backup o da una configurazione: solo le chiavi note, con il tipo atteso
 function pulisciImpostazioni(s) {
@@ -330,3 +330,12 @@ async function verificaFirma(manText, f) {
   } catch (e) { return 'non valida'; }
 }
 const FIRMA_ESITO = { questo: 'Firma valida, di questo dispositivo.', tuo: 'Firma valida, di un tuo dispositivo.', sconosciuto: 'Firma valida, di un dispositivo non riconosciuto.', assente: 'Backup senza firma.' };
+
+/* ---------------- impronta dei fogli firme chiusi ----------------
+   SHA-256 dei dati del foglio al momento della chiusura (partecipanti, firme, orari, relatore):
+   ricalcolandola si vede se il foglio è stato cambiato dopo. */
+async function improntaFoglio(f) {
+  const dati = { titolo: f.titolo || '', data: f.data || '', chiuso: f.chiuso || null, firmaRelatore: f.firmaRelatore || '',
+    partecipanti: (f.partecipanti || []).map(p => [p.nome || '', p.societa || '', p.ruolo || '', p.firma || '', p.ts || null]) };
+  return sha256(new TextEncoder().encode(JSON.stringify(dati)));
+}

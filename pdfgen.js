@@ -446,6 +446,7 @@
       const n = `pag. ${i + 1} di ${pages.length}`; p.drawText(n, { x: M + CW - font.widthOfTextAtSize(n, 8), y: 24, size: 8, font, color: mute });
     });
     doc.setTitle(safe(f.titolo || 'Foglio firme'));
+    if (f.impronta) doc.setKeywords(['Impronta SHA-256 del foglio chiuso: ' + f.impronta]);
     return await doc.save();
   }
 

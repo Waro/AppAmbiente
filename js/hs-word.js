@@ -121,11 +121,13 @@ function hsDiff(text, base) {
 
 /* ---------------- zip e XML ---------------- */
 async function hsUnzip(buf) {
+  await needLib('jszip');
   const z = await JSZip.loadAsync(buf); const files = {};
   for (const n of Object.keys(z.files)) if (!z.files[n].dir) files[n] = await z.files[n].async('uint8array');
   return files;
 }
 async function hsZip(files) {
+  await needLib('jszip');
   const z = new JSZip();
   Object.keys(files).sort((a, b) => (a === '[Content_Types].xml' ? -1 : b === '[Content_Types].xml' ? 1 : 0)).forEach(n => z.file(n, files[n]));
   return z.generateAsync({ type: 'blob', mimeType: DOCX_MIME, compression: 'DEFLATE' });

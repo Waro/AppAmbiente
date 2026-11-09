@@ -126,14 +126,17 @@ function FoglioSheet({ r, f, settings, set, onDelete, onClose }) {
   const E = foglioElenco(r); const man = E ? E.voci : [];
   const sel = id => !f.manSel || f.manSel.includes(id);
   const toggleMan = id => set(x => { const all = man.map(m => m.id); const cur = x.manSel || all; const nx = cur.includes(id) ? cur.filter(y => y !== id) : [...cur, id]; return { ...x, manSel: nx.length === all.length ? null : nx }; });
-  const chiudi = () => {
+  const chiudi = async () => {
     if (!n) { toast('Serve almeno una firma'); return; }
     const vuote = f.partecipanti.filter(p => !p.firma).length;
     if (vuote && !confirm(`${vuote} ${vuote === 1 ? 'persona non ha' : 'persone non hanno'} firmato e ${vuote === 1 ? 'verrà tolta' : 'verranno tolte'}. Chiudere il foglio?`)) return;
-    set(x => ({ ...x, partecipanti: x.partecipanti.filter(p => p.firma), chiuso: Date.now() }));
+    // impronta SHA-256 del foglio chiuso: va nell'attività, in dati.json su OneDrive e nelle proprietà del PDF
+    const c = { ...f, partecipanti: f.partecipanti.filter(p => p.firma), chiuso: Date.now() };
+    const impronta = await improntaFoglio(c);
+    set(x => ({ ...x, partecipanti: c.partecipanti, chiuso: c.chiuso, impronta }));
     toast('Foglio chiuso: le firme sono bloccate');
   };
-  const riapri = () => { if (!confirm('Riaprendo il foglio le firme raccolte vengono cancellate. Continuare?')) return; set(x => ({ ...x, chiuso: null, firmaRelatore: '', partecipanti: x.partecipanti.map(p => ({ ...p, firma: '', ts: null })) })); };
+  const riapri = () => { if (!confirm('Riaprendo il foglio le firme raccolte vengono cancellate. Continuare?')) return; set(x => ({ ...x, chiuso: null, impronta: null, firmaRelatore: '', partecipanti: x.partecipanti.map(p => ({ ...p, firma: '', ts: null })) })); };
   const scarica = async () => {
     const name = `${foglioNome(f)}.pdf`;
     const h = await pickSave(name, 'PDF', 'application/pdf', '.pdf'); if (h === 'cancel') return;

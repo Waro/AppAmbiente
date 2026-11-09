@@ -164,6 +164,7 @@ const Sync = (() => {
           detail: 'È rimasta la modifica più recente; l\'altra versione è stata salvata come copia. Controllale e cancella quella che non serve.', items: esito.copie });
         if (esito.mancanti) notify('warn', `Sincronizzazione: ${esito.mancanti} file non trovati su OneDrive`, { detail: 'Le attività sono arrivate, ma alcune foto o allegati non erano ancora stati caricati dall\'altro dispositivo. Riapri Nembo su quel dispositivo con la rete attiva.' });
         if (scartati) notify('warn', `Sincronizzazione: ${scartati === 1 ? '1 elemento scartato' : scartati + ' elementi scartati'} dai controlli`, { detail: 'Attività o file arrivati da OneDrive con contenuto non valido o di tipo non ammesso: non sono stati salvati su questo dispositivo.' });
+        state.notified = false; // il prossimo errore automatico torna nelle Notifiche
         if (opts.manual) toast(parts.length ? 'Sincronizzato: ' + parts.join(', ') : 'Tutto già sincronizzato');
       } catch (e) {
         const login = e.code === 'LOGIN';

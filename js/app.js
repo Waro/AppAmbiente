@@ -15,7 +15,7 @@ function recordLabel(r) {
 
 // Costruisce lo ZIP: cartelle leggibili (foto, documenti, PDF) + manifest.json per il ripristino
 async function buildZip(records, settings, withSettings) {
-  const zip = new JSZip();
+  await needLib('jszip'); const zip = new JSZip();
   const files = {};
   const used = new Set();
   const uniq = p => { let q = p, i = 2; while (used.has(q)) q = p.replace(/(\.[^.]+)$/, `_${i++}$1`); used.add(q); return q; };
@@ -198,7 +198,7 @@ async function exportRecords(records, settings, full) {
 const ZIP_MAX_VOCI = 20000, ZIP_MAX_BYTES = 4 * 1024 * 1048576, MANIFEST_MAX = 100 * 1048576;
 const zipSize = f => (f && f._data && f._data.uncompressedSize) || 0;
 async function importZip(file, opts = {}) {
-  const zip = await JSZip.loadAsync(file);
+  await needLib('jszip'); const zip = await JSZip.loadAsync(file);
   const voci = Object.values(zip.files);
   if (voci.length > ZIP_MAX_VOCI) throw new Error('lo ZIP contiene troppi file per essere un backup di Nembo');
   if (voci.reduce((a, v) => a + zipSize(v), 0) > ZIP_MAX_BYTES) throw new Error('lo ZIP è troppo grande una volta aperto');

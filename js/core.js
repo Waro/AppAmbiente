@@ -2,6 +2,12 @@
 // Stessa stringa di VERSION in sw.js: aumentala insieme a quella ad ogni aggiornamento.
 // Essendo dentro un file JS servito dalla cache, se l'aggiornamento automatico fallisce
 // questa scritta mostra ancora la versione vecchia — è il modo per accorgersene.
+// Nembo non si apre dentro una pagina di un altro sito (protezione dal clickjacking: GitHub Pages non permette frame-ancestors)
+if (window.top !== window.self) {
+  document.documentElement.style.display = 'none';
+  try { window.top.location.replace(window.self.location.href); } catch (e) { /* riquadro isolato: la pagina resta vuota */ }
+  throw new Error('Nembo aperto dentro un riquadro');
+}
 const APP_VERSION = 'nembo-v49';
 
 /* ---------------- aspetto: stile ("essenziale" o "originale") × modo ("auto", "chiaro" o "scuro") ----------------
@@ -70,6 +76,13 @@ const num = v => { if (v === '' || v == null) return null; const n = parseFloat(
 const fmtN = n => n == null ? '–' : (Math.round(n * 10) / 10).toLocaleString('it-IT');
 
 /* ---------------- IndexedDB ---------------- */
+// versione del formato delle attività: ogni record la porta in «schema»; migraRecord porta i record vecchi al formato attuale
+const REC_SCHEMA = 1;
+function migraRecord(r) {
+  if (!r || typeof r !== 'object' || r.schema >= REC_SCHEMA) return r;
+  // schema 1: formato della v49 (i record precedenti hanno già questa forma, manca solo il numero)
+  return { ...r, schema: REC_SCHEMA };
+}
 const DB = (() => {
   let dbp;
   const open = () => dbp || (dbp = new Promise((res, rej) => {
@@ -89,8 +102,8 @@ const DB = (() => {
     t.oncomplete = () => res(out); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
   }));
   return {
-    all: () => tx('records', 'readonly', s => s.getAll()),
-    put: r => tx('records', 'readwrite', s => s.put(r)),
+    all: () => tx('records', 'readonly', s => s.getAll()).then(L => (L || []).map(migraRecord)),
+    put: r => tx('records', 'readwrite', s => s.put(migraRecord(r))),
     del: id => tx('records', 'readwrite', s => s.delete(id)),
     putBlob: b => tx('blobs', 'readwrite', s => s.put(b)),
     getBlob: id => tx('blobs', 'readonly', s => s.get(id)),
@@ -549,7 +562,7 @@ async function loadTemplate(name) {
 async function checkTemplate(name, bytes) {
   if (/\.docx$/.test(name)) return hsCheckTemplate(name, bytes);
   if (/\.xlsx$/.test(name)) {
-    const z = await JSZip.loadAsync(bytes).catch(() => null); const wb = z && z.file('xl/workbook.xml') && await z.file('xl/workbook.xml').async('string');
+    await needLib('jszip'); const z = await JSZip.loadAsync(bytes).catch(() => null); const wb = z && z.file('xl/workbook.xml') && await z.file('xl/workbook.xml').async('string');
     if (!wb || !/name="[^"]*MASSIVI/i.test(wb)) throw new Error('non è il modello Excel atteso (serve il foglio MASSIVI, e ARIA per il monitoraggio dell\'aria)');
     return;
   }
@@ -631,6 +644,7 @@ const LIBS = {
   docx: ['vendor/docx.umd.min.js', () => window.docx],
   pdfjs: ['vendor/pdfjs.min.js', () => window.pdfjsLib || window['pdfjs-dist/build/pdf']],
   pdflib: ['vendor/pdf-lib.min.js', () => window.PDFLib],
+  jszip: ['vendor/jszip.min.js', () => window.JSZip],
 };
 const libP = {};
 function needLib(k) {
