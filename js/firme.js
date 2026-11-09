@@ -87,7 +87,7 @@ function FogliFirme({ r, up, settings }) {
   const cur = fogli.find(x => x.id === open);
   useEffect(() => { if (cur && cur.auto && !cur.chiuso) setF(cur.id, x => ({ ...foglioAuto(r, x, settings), auto: false, tpl: undefined })); }, [open]);
   return html`<div class="sec-h" id=${'firme-' + r.id}><h3>Firme</h3><span class="hint">Presenze, informative, consegne</span></div>
-    ${fogli.length > 0 && html`<div class="list" style="margin-bottom:8px">${fogli.map(f => { const n = foglioFirme(f); return html`<button class=${'rcard fg-card' + (f.chiuso ? ' st-bar st-ok' : '')} key=${f.id} onClick=${() => setOpen(f.id)}>
+    ${fogli.length > 0 && html`<div class="list mb-2">${fogli.map(f => { const n = foglioFirme(f); return html`<button class=${'rcard fg-card' + (f.chiuso ? ' st-bar st-ok' : '')} key=${f.id} onClick=${() => setOpen(f.id)}>
       <div class="r1"><span class="ttl" style="margin:0">${f.titolo || 'Foglio firme'}</span>
         <span class=${'badge ' + (f.chiuso ? 'b-ok' : n ? 'b-f2' : 'b-grey')}>${f.chiuso ? 'Chiuso' : n ? 'In corso' : 'Da firmare'}</span><span class="dt">${fmtD(f.data)}</span></div>
       <div class="sum">${n} ${n === 1 ? 'firma' : 'firme'}${f.firmaRelatore ? ' + relatore' : ''}${f.inclMan && foglioElenco(r) ? ' · con elenco ' + foglioElenco(r).nome : ''}</div></button>`; })}</div>`}
@@ -103,7 +103,7 @@ function FoglioModelli({ r, settings, onPick, onClose }) {
     <div class="sheet-grab"></div>
     <div class="sheet-nav"><button class="btn link" onClick=${onClose}>Annulla</button><b>Nuovo foglio firme</b><span></span></div>
     <div class="sheet-body">
-      <div class="sec-h" style="margin-top:6px"><h3>Scegli il modello</h3><span class="hint">i testi restano modificabili</span></div>
+      <div class="sec-h mt-2"><h3>Scegli il modello</h3><span class="hint">i testi restano modificabili</span></div>
       ${mods.map(m => html`<button class="opt" key=${m.id} onClick=${() => onPick(m)}>
         <span class="oi" style="background:var(--blue-soft);color:var(--blue)"><${Icon} n="sign" s=${21} /></span>
         <span class="ot"><b>${m.titolo}</b><small>${m.sottotitolo || (m.testo ? fillTpl(m.testo, firmeCtx(r)).slice(0, 90) + (m.testo.length > 90 ? '…' : '') : 'Solo nomi e firme')}</small></span></button>`)}
@@ -205,7 +205,7 @@ function FoglioSheet({ r, f, settings, set, onDelete, onClose }) {
       <div class="sec-h"><h3>Firma del relatore</h3><span class="hint">${f.relatore || ''}</span></div>
       <button class=${'sigbox' + (f.firmaRelatore ? ' has' : '')} disabled=${ro} onClick=${() => setSig({ who: 'rel', title: 'Firma relatore · ' + (f.relatore || '') })}>
         ${f.firmaRelatore ? html`<img src=${f.firmaRelatore} alt="Firma del relatore" />` : html`<span><${Icon} n="sign" s=${18} /> Tocca per firmare</span>`}</button>
-      ${!ro && !f.firmaRelatore && settings.firmaTecnico && html`<button class="btn sm" style="margin-top:6px" onClick=${() => set({ firmaRelatore: settings.firmaTecnico })}>Usa la firma salvata</button>`}
+      ${!ro && !f.firmaRelatore && settings.firmaTecnico && html`<button class="btn sm mt-2" onClick=${() => set({ firmaRelatore: settings.firmaTecnico })}>Usa la firma salvata</button>`}
 
       <div class="stack" style="margin-top:20px">
         ${ro ? html`<button class="btn pri block" onClick=${scarica}><${Icon} n="file" s=${18} /> Scarica il PDF</button>
@@ -246,9 +246,9 @@ function PassaTelefono({ f, r, societa, onAdd, onClose }) {
       <div class="fg-hero"><div class="lt-eye">${[r.cliente, placeDoc(r)].filter(Boolean).join(' · ')}</div><b>${f.titolo}</b>${f.sottotitolo && html`<small>${f.sottotitolo}</small>`}</div>
       ${f.testo && html`<div class="card tight"><div class=${'fg-testo' + (leggi ? ' open' : '')}>${f.testo}</div>
         <button class="btn link sm" onClick=${() => setLeggi(!leggi)}>${leggi ? 'Riduci' : 'Leggi tutto'}</button></div>`}
-      <div class="card tight" style="margin-top:12px">
+      <div class="card tight mt-3">
         <label class="fld"><span>Nome e cognome</span><input ref=${nome} value=${p.nome} onInput=${e => setP({ ...p, nome: e.target.value })} autocomplete="off" /></label>
-        <div class="grid2" style="margin-top:10px">
+        <div class="grid2 mt-3">
           <${Inp} label="Società / ditta" list="dl-passa" value=${p.societa} set=${v => setP({ ...p, societa: v })} />
           <${Inp} label="Ruolo" value=${p.ruolo} set=${v => setP({ ...p, ruolo: v })} />
         </div>
@@ -256,7 +256,7 @@ function PassaTelefono({ f, r, societa, onAdd, onClose }) {
         <button class=${'sigbox' + (p.firma ? ' has' : '')} style="margin-top:12px;min-height:90px" onClick=${() => setSig(true)}>
           ${p.firma ? html`<img src=${p.firma} alt="Firma" />` : html`<span><${Icon} n="sign" s=${20} /> Tocca per firmare</span>`}</button>
       </div>
-      <button class="btn pri block" style="margin-top:14px" disabled=${!ok} onClick=${salva}>Conferma e passa al prossimo</button>
+      <button class="btn pri block mt-4" disabled=${!ok} onClick=${salva}>Conferma e passa al prossimo</button>
       <p class="hint-p">${fatti ? `${fatti} ${fatti === 1 ? 'firma raccolta' : 'firme raccolte'} in questo giro. ` : ''}Chi firma vede solo i propri dati. Tocca “Fine” quando hanno firmato tutti.</p>
     </div></div>
     ${sig && html`<${SignaturePadOverlay} title=${'Firma · ' + (p.nome || '')} onClose=${() => setSig(false)} onDone=${url => setP(x => ({ ...x, firma: url }))} />`}
@@ -292,7 +292,6 @@ function FirmeList({ records, open, activeId, acts }) {
 function FirmeForm({ rec: initial, records, settings, onSave, onDelete, embedded, onClose }) {
   const [r, up, saved] = useAutosave(initial, onSave);
   const clienti = nomiClienti(records);
-  const upload = () => OD.account ? odSync([r], settings) : sendToOneDrive(r, settings);
   return html`<div class="content form">
     <${DetailHead} eye="Fogli firme" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
     <div class="card"><div class="grid2">
@@ -344,6 +343,6 @@ function ModelloSheet({ m, onSave, onClose }) {
       <label class="fld"><span>Oggetto</span><textarea rows="6" value=${x.testo} onInput=${e => setX({ ...x, testo: e.target.value })}></textarea></label>
       <label class="fld"><span>Documenti consegnati (uno per riga)</span><textarea rows="3" value=${x.docs} onInput=${e => setX({ ...x, docs: e.target.value })}></textarea></label>
       <label class="fld"><span>Note in fondo</span><textarea rows="3" value=${x.note} onInput=${e => setX({ ...x, note: e.target.value })}></textarea></label>
-      <label class="fg-sw" style="margin-top:10px"><span>Nei sopralluoghi RA allega l'elenco dei manufatti</span><${Toggle} on=${!!x.manufatti} label="Elenco manufatti" set=${v => setX({ ...x, manufatti: v, per: v ? ['ra'] : (x.per || []).filter(t => t !== 'ra') })} /></label>
+      <label class="fg-sw mt-3"><span>Nei sopralluoghi RA allega l'elenco dei manufatti</span><${Toggle} on=${!!x.manufatti} label="Elenco manufatti" set=${v => setX({ ...x, manufatti: v, per: v ? ['ra'] : (x.per || []).filter(t => t !== 'ra') })} /></label>
     </div></div></div></div>`;
 }

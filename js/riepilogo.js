@@ -124,7 +124,7 @@ function RiepilogoSheet({ r, settings, onClose }) {
         <div class="card tight"><div class="rp-ogg">${oggetto}</div><pre class="rp-txt">${testo}</pre></div>
         ${tutte.length > 0 && html`<div class="sec-h"><h3>Foto · ${scelte.length} di ${tutte.length}</h3><span class="hint">tocca per togliere o aggiungere</span></div>
           <div class="rp-foto">${tutte.map(id => html`<button key=${id} class=${'rp-ph' + (sel.has(id) ? ' on' : '')} onClick=${() => toggle(id)}><${RpThumb} id=${id} /><span>${nomi[id]}</span></button>`)}</div>`}
-        <div class="stack" style="margin-top:14px">
+        <div class="stack mt-4">
           <button class="btn pri block" disabled=${!!busy} onClick=${condividi}>${busy === 'share' ? html`<div class="spin" />` : html`<${Icon} n="share" s=${19} />`} Condividi${scelte.length ? ' con ' + scelte.length + ' foto' : ''}</button>
           <button class="btn block" disabled=${!!busy} onClick=${() => copia(false)}>${busy === 'copy' ? html`<div class="spin" />` : ''} Copia testo e foto</button>
           <button class="btn block" disabled=${!!busy} onClick=${() => copia(true)}>Copia solo il testo</button>

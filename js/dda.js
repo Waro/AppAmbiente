@@ -162,9 +162,9 @@ function NcSection({ r, up, mat, list }) {
         </div>
         <${PhotoStrip} ids=${x.foto || []} max=${4} onAdd=${ids => upd(x.id, { foto: [...(x.foto || []), ...ids] })}
           onRemove=${async id => { await removeBlob(id); upd(x.id, { foto: x.foto.filter(f => f !== id) }); }} />
-        <button class="btn sm danger" style="justify-self:start" onClick=${() => del(x)}>Elimina ${x.codice}</button>
+        <button class="btn sm danger self-start" onClick=${() => del(x)}>Elimina ${x.codice}</button>
       <//>`; })}</div>`}
-    <button class="btn dashed" style="margin-top:10px" onClick=${add}>+ Aggiungi manufatto non campionato ${next}</button>`;
+    <button class="btn dashed mt-3" onClick=${add}>+ Aggiungi manufatto non campionato ${next}</button>`;
 }
 
 // riga campione: miniatura (o segnaposto rosso se manca la foto), sigla, descrizione; si apre per modificare
@@ -204,7 +204,7 @@ function DdaList({ records, open, create, activeId, acts }) {
       });
       superamenti(r).slice(0, 3).forEach(x => {
         const p = CSC.find(c => c.p === x.parametro);
-        lines.push(html`<div class="l" style="color:var(--nc)"><span class="dot" style="background:var(--nc)"></span><span>${x.campione} · ${x.parametro}: ${x.valore} ${p.u} (CSC ${p[r.colonna || 'B']})</span></div>`);
+        lines.push(html`<div class="l" style="color:var(--danger)"><span class="dot" style="background:var(--danger)"></span><span>${x.campione} · ${x.parametro}: ${x.valore} ${p.u} (CSC ${p[r.colonna || 'B']})</span></div>`);
       });
       const sch = Object.entries(r.schede || {}).map(([k, t]) => k.toUpperCase() + ' ' + new Date(t).toLocaleDateString('it-IT'));
       if (sch.length) lines.push(html`<div class="l" style="color:var(--ok)"><span class="dot" style="background:var(--ok)"></span><span>Scheda campioni: ${sch.join(', ')}</span></div>`);
@@ -229,7 +229,6 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
   const [r, up, saved] = useAutosave(initial, onSave);
   const [openC, setOpenC] = useState({});
   const [tab, setTab] = useState(() => (MATS.find(m => initial.campioni[m.k].length) || MATS[0]).k);
-  const [busy, setBusy] = useState(null);
   const [openS, setOpenS] = useState({});
   const firmeOn = !!r.firme || (r.fogli || []).length > 0;
   const [T, setT] = useSchede('dda', firmeOn ? ['anag', 'sop', 'camp', 'firme', 'file'] : ['anag', 'sop', 'camp', 'file'], initial._new, { 's-': 'camp', 'rec-': 'sop' });
@@ -349,14 +348,14 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
 
       <div class="sec-h"><h3>Aree di potenziale contaminazione · ${r.recs.length}</h3></div>
       ${r.recs.map(x => html`<div class="card" key=${x.id} id=${'rec-' + x.id}>
-        <div class="row" style="margin-bottom:8px"><span class="mdot" style="background:var(--rec)"></span>
+        <div class="row mb-2"><span class="mdot" style="background:var(--rec)"></span>
           <input class="inp" style="font-weight:700" value=${x.nome} onInput=${e => updRec(x.id, { nome: e.target.value })} aria-label="Nome area" />
           <button class="x" aria-label="Elimina area" onClick=${() => delRec(x)}>×</button></div>
         <textarea class="inp" rows="2" placeholder="Descrizione" value=${x.descrizione} onInput=${e => updRec(x.id, { descrizione: e.target.value })}></textarea>
-        <div style="margin-top:10px"><${PhotoStrip} ids=${x.foto} max=${6}
+        <div class="mt-3"><${PhotoStrip} ids=${x.foto} max=${6}
           onAdd=${async ids => { updRec(x.id, { foto: [...x.foto, ...ids] }); if (x.lat == null) { const g = await getPosition(); if (g) updRec(x.id, g); } }}
           onRemove=${async id => { await removeBlob(id); updRec(x.id, { foto: x.foto.filter(f => f !== id) }); }} /></div>
-        <div style="margin-top:8px">${x.lat != null ? html`<span class="geo"><${Icon} n="pin" s=${14} /> ${x.lat}, ${x.lon}</span>` : html`<span class="lock">La posizione GPS si salva con la prima foto</span>`}</div>
+        <div class="mt-2">${x.lat != null ? html`<span class="geo"><${Icon} n="pin" s=${14} /> ${x.lat}, ${x.lon}</span>` : html`<span class="lock">La posizione GPS si salva con la prima foto</span>`}</div>
       </div>`)}
       <button class="btn dashed" onClick=${addRec}>+ Aggiungi area</button>
 
@@ -371,7 +370,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
       ${planSection}
     `}
     ${T === 'camp' && html`
-      <div class="sec-h" style="margin-top:14px"><h3>Punti da campionare</h3><span class="hint">${(r.checklist || []).filter(c => !c.fatto).length} da fare</span></div>
+      <div class="sec-h mt-4"><h3>Punti da campionare</h3><span class="hint">${(r.checklist || []).filter(c => !c.fatto).length} da fare</span></div>
       <div class="card tight">
         ${!(r.checklist || []).length && html`<p class="lead" style="margin:2px 0 4px">Segna qui cosa prevedi di campionare prima di uscire: manufatti, tipologia, dove si trovano. Man mano che preleva, spuntali.</p>`}
         ${(r.checklist || []).map((it, ci) => html`<div key=${it.id} style=${'padding:10px 0;display:grid;gap:6px' + (ci ? ';border-top:.5px solid var(--sep)' : '') + (it.fatto ? ';opacity:.55' : '')}>
@@ -387,8 +386,8 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
             <input class="inp" placeholder="Cosa" value=${it.descrizione} onInput=${e => updCk(it.id, { descrizione: e.target.value })} />
             <div style="flex:0 0 42%"><${InpGrow} placeholder="Dove" value=${it.ubicazione} set=${v => updCk(it.id, { ubicazione: v })} /></div>
           </div></div>`)}
-        <div class="row" style="margin-top:8px">
-          <button class="btn dashed" style="flex:1" onClick=${() => addCk()}>+ Aggiungi voce</button>
+        <div class="row mt-2">
+          <button class="btn dashed grow" onClick=${() => addCk()}>+ Aggiungi voce</button>
           ${r.recs.length > 0 && html`<button class="btn sm" onClick=${ckFromRecs}>Da aree REC</button>`}
         </div>
       </div>
@@ -400,7 +399,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
       <div class="mtabs" role="tablist">${MATS.map(m => html`<button role="tab" aria-selected=${tab === m.k} class=${tab === m.k ? 'on' : ''} onClick=${() => setTab(m.k)}>${m.l}<small><i class="mdot" style=${'background:' + m.c}></i>${r.campioni[m.k].length}</small></button>`)}</div>
       ${!camp.length && html`<div class="card"><div class="empty" style="padding:18px">Nessun campione ${mat.l}.</div></div>`}
       ${byPiano(camp).map(([piano, list]) => html`<div key=${piano}>
-        <div class="sec-h" style="margin-top:14px"><h3>${piano}</h3><span class="hint">${list.length}</span></div>
+        <div class="sec-h mt-4"><h3>${piano}</h3><span class="hint">${list.length}</span></div>
         <div class="list">${list.map(c => html`<${SampleRow} key=${c.id} c=${c} mat=${mat} open=${!!openS[c.id]} toggle=${() => setOpenS(o => ({ ...o, [c.id]: !o[c.id] }))}
           onPhoto=${ids => updCamp(c.id, { foto: [...(c.foto || []), ...ids] })}>
           <${CampFields} c=${c} list="dl-piani-c" upd=${patch => updCamp(c.id, patch)} codice=${mat.auto ? html`<div class="code-auto" style=${'width:64px;flex-shrink:0;color:' + mat.c}>${c.codice}</div>`
@@ -412,10 +411,10 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
           </div>
           <${PhotoStrip} ids=${c.foto || []} max=${4} onAdd=${ids => updCamp(c.id, { foto: [...(c.foto || []), ...ids] })}
             onRemove=${async id => { await removeBlob(id); updCamp(c.id, { foto: c.foto.filter(f => f !== id) }); }} />
-          <button class="btn sm danger" style="justify-self:start" onClick=${() => delCamp(c)}>Elimina campione</button>
+          <button class="btn sm danger self-start" onClick=${() => delCamp(c)}>Elimina campione</button>
         <//>`)}</div></div>`)}
       <datalist id="dl-piani-c">${[...new Set([...allCamp(r).map(c => c.piano).filter(Boolean), ...PIANI_COMUNI])].map(x => html`<option value=${x} />`)}</datalist>
-      <button class="btn dashed" style="margin-top:10px" onClick=${addCamp}>+ Aggiungi campione ${mat.auto ? nextCode(tab) : ''}</button>
+      <button class="btn dashed mt-3" onClick=${addCamp}>+ Aggiungi campione ${mat.auto ? nextCode(tab) : ''}</button>
       ${(tab === 'mca' || tab === 'fav') && html`<${NcSection} r=${r} up=${up} mat=${mat} list="dl-piani-c" />`}
       <div style="height:10px"></div>
 
@@ -434,13 +433,13 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
           <div class="seg" style="width:150px">${['A', 'B'].map(c => html`<button class=${r.colonna === c ? 'on' : ''} style="padding:6px" onClick=${() => up({ colonna: c })}>Col. ${c}</button>`)}</div></div>
         <div class="card tight">
           ${r.risultati.length ? html`<div class=${'notice' + (sup.length ? ' err' : '')} style="margin:0 0 10px;${sup.length ? '' : 'background:var(--ok-soft);border-color:var(--ok);color:var(--ok)'}">
-            ${sup.length ? `${sup.length} superamenti rispetto alla colonna ${r.colonna}` : `Nessun superamento rispetto alla colonna ${r.colonna}`}</div>` : html`<p class="lead" style="margin:4px 0 10px">Inserisci i valori dai rapporti di prova del laboratorio.</p>`}
+            ${sup.length ? `${sup.length} superamenti rispetto alla colonna ${r.colonna}` : `Nessun superamento rispetto alla colonna ${r.colonna}`}</div>` : html`<p class="lead lead-gap">Inserisci i valori dai rapporti di prova del laboratorio.</p>`}
           ${r.risultati.map(x => {
             const p = CSC.find(c => c.p === x.parametro) || CSC[0]; const v = num(x.valore); const over = v != null && v > p[r.colonna];
             return html`<div key=${x.id} style="display:grid;grid-template-columns:80px 1fr 80px 28px;gap:6px;align-items:center;margin-bottom:6px">
               <select class="inp" style="padding:8px 4px" value=${x.campione} onChange=${e => updRis(x.id, { campione: e.target.value })}>${risCamp.map(c => html`<option value=${c.codice}>${c.codice}</option>`)}</select>
               <select class="inp" style="padding:8px 4px" value=${x.parametro} onChange=${e => updRis(x.id, { parametro: e.target.value })}>${CSC.map(c => html`<option value=${c.p}>${c.p} (${c.u}) · CSC ${c[r.colonna]}</option>`)}</select>
-              <input class="inp" inputmode="decimal" style=${'text-align:right;padding:8px' + (over ? ';color:var(--nc);font-weight:700;background:rgba(190,34,42,.07)' : '')} value=${x.valore} placeholder="Valore" onInput=${e => updRis(x.id, { valore: e.target.value })} />
+              <input class="inp" inputmode="decimal" style=${'text-align:right;padding:8px' + (over ? ';color:var(--danger);font-weight:700;background:rgba(190,34,42,.07)' : '')} value=${x.valore} placeholder="Valore" onInput=${e => updRis(x.id, { valore: e.target.value })} />
               <button class="x" aria-label="Elimina risultato" onClick=${() => up(pp => ({ ...pp, risultati: pp.risultati.filter(y => y.id !== x.id) }))}>×</button></div>`;
           })}
           <button class="btn dashed" onClick=${addRis}>+ Aggiungi risultato</button>

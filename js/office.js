@@ -180,7 +180,7 @@ async function photoForDoc(id, maxSide = 1100) {
 async function riepilogoCampioniDocx(r, s) {
   await needLib('docx');
   const D = window.docx;
-  const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, ImageRun, AlignmentType, BorderStyle, ShadingType, HeadingLevel, Footer, PageNumber, VerticalAlign } = D;
+  const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, ImageRun, AlignmentType, BorderStyle, ShadingType, Footer, PageNumber, VerticalAlign } = D;
   const txt = (t, o = {}) => new TextRun({ text: String(t ?? ''), font: 'Calibri', size: o.size || 20, bold: o.bold, color: o.color, italics: o.italics });
   const p = (runs, o = {}) => new Paragraph({ children: Array.isArray(runs) ? runs : [runs], spacing: { after: o.after ?? 80, before: o.before ?? 0 }, alignment: o.align, keepNext: o.keepNext });
   const line = { style: BorderStyle.SINGLE, size: 4, color: 'BFBFBF' };

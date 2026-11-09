@@ -302,7 +302,7 @@ function TemplateRow({ name, t, onChange }) {
   };
   return html`<div class="row" style="padding:10px 0;border-top:.5px solid var(--sep)">
     <div class="tb-grow"><div style="font-size:var(--fs-base);font-weight:600;white-space:normal">${t.label}</div>
-      <div class=${'lock'} style=${has ? 'color:var(--ok)' : 'color:var(--nc)'}>${has === null ? '' : has ? 'Caricato su questo dispositivo' : 'Da caricare'}</div></div>
+      <div class=${'lock'} style=${has ? 'color:var(--ok)' : 'color:var(--danger)'}>${has === null ? '' : has ? 'Caricato su questo dispositivo' : 'Da caricare'}</div></div>
     <button class="btn sm" onClick=${() => inp.current.click()}>${has ? 'Sostituisci' : 'Carica'}</button>
     <input ref=${inp} type="file" accept=${t.docx ? '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document' : t.xlsx ? '.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'application/pdf'} hidden onChange=${pick} /></div>`;
 }
@@ -363,7 +363,7 @@ function Settings({ settings, setSettings, onTemplates, go, page, wide }) {
   const open = id => { if (wide) setSel(id); else go({ v: 'settings', p: id }); };
   const cur = wide ? sel : page;
 
-  const segLook = (map, key, label) => html`<div class="seg tall theme-seg" style="margin-top:6px" role="radiogroup" aria-label=${label}>${Object.entries(map).map(([t, x]) => html`<button role="radio" aria-checked=${look[key] === t} class=${look[key] === t ? 'on' : ''} onClick=${() => pickLook({ [key]: t })}><${Icon} n=${x.ic} s=${22} /><small>${x.l}</small></button>`)}</div>`;
+  const segLook = (map, key, label) => html`<div class="seg tall theme-seg mt-2" role="radiogroup" aria-label=${label}>${Object.entries(map).map(([t, x]) => html`<button role="radio" aria-checked=${look[key] === t} class=${look[key] === t ? 'on' : ''} onClick=${() => pickLook({ [key]: t })}><${Icon} n=${x.ic} s=${22} /><small>${x.l}</small></button>`)}</div>`;
 
   const body = id => {
     switch (id) {
@@ -371,7 +371,7 @@ function Settings({ settings, setSettings, onTemplates, go, page, wide }) {
       <${Inp} label="Nome" value=${s.tecnicoNome} set=${v => set({ tecnicoNome: v })} />
       <${Inp} label="Cognome" value=${s.tecnicoCognome} set=${v => set({ tecnicoCognome: v })} />
     </div>
-    <div class="fld" style="margin-top:10px"><span>Firma salvata (per i moduli radon)</span></div>
+    <div class="fld mt-3"><span>Firma salvata (per i moduli radon)</span></div>
     <button class=${'sigbox' + (s.firmaTecnico ? ' has' : '')} onClick=${() => setSig(true)}>${s.firmaTecnico ? html`<img src=${s.firmaTecnico} alt="Firma salvata" />` : 'Tocca per salvare la tua firma'}</button>
     <div style="display:flex;margin-top:8px;gap:8px;flex-wrap:wrap"><${SigImageButton} onDone=${url => set({ firmaTecnico: url })} />
       ${s.firmaTecnico && html`<button class="btn sm" onClick=${() => set({ firmaTecnico: '' })}>Rimuovi firma salvata</button>`}</div>
@@ -380,19 +380,19 @@ function Settings({ settings, setSettings, onTemplates, go, page, wide }) {
       case 'aspetto': return html`<div class="card">
       <div class="fld"><span>Stile</span></div>
       ${segLook(STYLES, 'style', 'Stile')}
-      <div class="fld" style="margin-top:14px"><span>Aspetto</span></div>
+      <div class="fld mt-4"><span>Aspetto</span></div>
       ${segLook(MODES, 'mode', 'Aspetto')}
       <p class="lead" style="margin:8px 2px 0;font-size:var(--fs-sm)">Automatico segue il tema chiaro o scuro del dispositivo. Stile e aspetto valgono solo su questo dispositivo.</p>
-      <div class="fld" style="margin-top:14px"><span>Business unit mostrata in Oggi</span></div>
-      <div class="seg" style="margin-top:6px">${BUS.map(([k2, l]) => html`<button class=${(s.buDefault || 'ambiente') === k2 ? 'on' : ''} onClick=${() => set({ buDefault: k2 })}>${l}</button>`)}</div>
+      <div class="fld mt-4"><span>Business unit mostrata in Oggi</span></div>
+      <div class="seg mt-2">${BUS.map(([k2, l]) => html`<button class=${(s.buDefault || 'ambiente') === k2 ? 'on' : ''} onClick=${() => set({ buDefault: k2 })}>${l}</button>`)}</div>
     </div>`;
       case 'foto': return html`<${CamSerieCard} />`;
       case 'novita': return html`<${NovitaCard} go=${go} />`;
       case 'config': return html`<div class="card tight">
       <p class="lead" style="margin:6px 0 10px">Un unico file .json con impostazioni e modelli PDF, da tenere su OneDrive o inviare a un collega. Non pubblicarlo mai sul sito.</p>
       <div class="row">
-        <button class="btn" style="flex:1" onClick=${() => cfgInp.current.click()}>Carica .json</button>
-        <button class="btn" style="flex:1" onClick=${() => exportConfig(s)}>Esporta .json</button>
+        <button class="btn grow" onClick=${() => cfgInp.current.click()}>Carica .json</button>
+        <button class="btn grow" onClick=${() => exportConfig(s)}>Esporta .json</button>
       </div>
       <input ref=${cfgInp} type="file" accept="application/json,text/plain,application/octet-stream,.json" hidden onChange=${loadCfg} />
     </div>`;
@@ -415,7 +415,7 @@ function Settings({ settings, setSettings, onTemplates, go, page, wide }) {
       <${Inp} label="Codice analisi FAV" value=${s.favCodice} set=${v => set({ favCodice: v })} />
       <${Inp} label="Descrizione analisi FAV" value=${s.favDesc} set=${v => set({ favDesc: v })} />
     </div></div>`;
-      case 'hse': return html`<div class="card"><p class="lead" style="margin:2px 0 10px">Compilano i nuovi report HSE; restano nel tuo file di configurazione, mai nel codice dell'app.</p><div class="grid2">
+      case 'hse': return html`<div class="card"><p class="lead lead-gap">Compilano i nuovi report HSE; restano nel tuo file di configurazione, mai nel codice dell'app.</p><div class="grid2">
       <${Inp} label="Committente (Esteso)" value=${s.hsCommEsteso} set=${v => set({ hsCommEsteso: v })} />
       <${Inp} label="Committente (Sintetico)" value=${s.hsCommSint} set=${v => set({ hsCommSint: v })} />
       <${Inp} label="Verificato da" value=${s.hsVerificato} set=${v => set({ hsVerificato: v })} />
@@ -426,7 +426,7 @@ function Settings({ settings, setSettings, onTemplates, go, page, wide }) {
       <${Inp} label="Procuratore HSE (Sintetico)" value=${s.hsProcuratore} set=${v => set({ hsProcuratore: v })} />
       <${Inp} label="Tecnici incaricati (Sintetico)" value=${s.hsTecnici} set=${v => set({ hsTecnici: v })} />
     </div></div>`;
-      case 'programmazione': return html`<div class="card"><p class="lead" style="margin:2px 0 10px">Durata proposta per ogni nuova attività; nella singola attività si cambia quando serve.</p><div class="grid2">
+      case 'programmazione': return html`<div class="card"><p class="lead lead-gap">Durata proposta per ogni nuova attività; nella singola attività si cambia quando serve.</p><div class="grid2">
       ${Object.keys(DURATE_BASE).map(k => html`<label class="fld" key=${k}><span>${TIPI_AG[k].l}</span>
         <select value=${String(durataBase(k, s))} onChange=${e => set({ durate: { ...(s.durate || {}), [k]: +e.target.value } })}>
           ${DUR_OPT.map(m => html`<option value=${m}>${fmtDur(m)}</option>`)}</select></label>`)}
@@ -479,8 +479,8 @@ function Settings({ settings, setSettings, onTemplates, go, page, wide }) {
 function IssueCard({ settings }) {
   return html`<div class="card tight" style="margin:4px 0 14px">
     <div style="font-weight:700">Qualcosa non funziona?</div>
-    <p class="lead" style="margin:4px 0 10px">Prepara un'email con versione dell'app, dispositivo e ultimi errori: tu aggiungi cosa stavi facendo.</p>
-    <div class="row"><button class="btn" style="flex:1" onClick=${() => reportIssue(settings)}><${Icon} n="bell" s=${17} /> Segnala un problema</button>
+    <p class="lead lead-gap">Prepara un'email con versione dell'app, dispositivo e ultimi errori: tu aggiungi cosa stavi facendo.</p>
+    <div class="row"><button class="btn grow" onClick=${() => reportIssue(settings)}><${Icon} n="bell" s=${17} /> Segnala un problema</button>
       <button class="btn" onClick=${copyIssue}>Copia</button></div>
   </div>`;
 }
@@ -493,8 +493,8 @@ function Boundary({ children }) {
     <p class="lead">I tuoi dati sono salvati. L'errore è stato registrato nelle Notifiche con il codice APP-JS.</p>
     <div class="mono" style="font-size:var(--fs-sm);background:var(--fill-soft);border-radius:var(--r-sm);padding:8px;word-break:break-word;margin:10px 0 16px">${String(err && err.message || err)}</div>
     <button class="btn pri block" onClick=${() => { location.hash = ''; reset(); }}>Torna a Oggi</button>
-    <button class="btn block" style="margin-top:8px" onClick=${() => location.reload()}>Ricarica l'app</button>
-    <button class="btn block" style="margin-top:8px" onClick=${() => DB.get('settings').then(s => reportIssue(s))}>Segnala un problema</button>
+    <button class="btn block mt-2" onClick=${() => location.reload()}>Ricarica l'app</button>
+    <button class="btn block mt-2" onClick=${() => DB.get('settings').then(s => reportIssue(s))}>Segnala un problema</button>
   </div>`;
 }
 
@@ -557,7 +557,7 @@ function Notifiche({ settings, records = [], openRec }) {
     <p class="lead">Esiti dei caricamenti su OneDrive, promemoria ed errori dell'app, con il relativo codice. Restano su questo dispositivo (ultime ${NOTIF_MAX}).</p>
     <${IssueCard} settings=${settings} />
     ${list.length > 0 && html`<div class="row" style="margin:6px 0 12px">
-      <div class="seg" style="flex:1">
+      <div class="seg grow">
         <button class=${f === 'tutte' ? 'on' : ''} onClick=${() => setF('tutte')}>Tutte · ${list.length}</button>
         <button class=${f === 'err' ? 'on' : ''} onClick=${() => setF('err')}>Errori · ${nErr}</button>
         <button class=${f === 'ok' ? 'on' : ''} onClick=${() => setF('ok')}>Esiti · ${list.length - nErr}</button>
@@ -574,12 +574,12 @@ function Notifiche({ settings, records = [], openRec }) {
           ${html`<button class="btn sm pri" onClick=${() => odSync(rs, settings)}><${Icon} n="share" s=${15} /> Ricarica${rs.length > 1 ? ' tutte' : ''}</button>`}
           ${rs.map(r => html`<button class="btn sm" key=${r.id} onClick=${() => openRec(r)}>Apri ${rs.length > 1 ? r.codice || recordTitle(r) : 'attività'}</button>`)}</div>`; })()}
       ${n.detail && html`<div style="font-size:var(--fs-sm);margin-top:6px;word-break:break-word">${n.detail}</div>`}
-      ${n.code && html`<div style="margin-top:8px"><span class="mono" style="font-size:var(--fs-sm);background:var(--fill-soft);border-radius:var(--r-xs);padding:2px 8px">Codice: ${n.code}</span></div>`}
-      ${(n.items || []).length > 0 && html`<button class="btn sm" style="margin-top:8px" onClick=${() => setOpen(o => ({ ...o, [n.id]: !o[n.id] }))}>${open[n.id] ? 'Nascondi' : 'Mostra'} dettaglio file (${n.items.length})</button>
-        ${open[n.id] && html`<div class="mono" style="margin-top:8px;font-size:var(--fs-sm);font-weight:500;background:var(--fill-soft);border-radius:var(--r-sm);padding:8px;max-height:260px;overflow:auto;word-break:break-word">${n.items.map(x => html`<div style="padding:3px 0;border-bottom:1px dashed var(--border)">${x}</div>`)}</div>`}`}
-      ${(n.level === 'err' || n.level === 'warn') && html`<div style="margin-top:8px"><button class="btn sm" onClick=${() => copy(n)}>Copia dettagli</button></div>`}
+      ${n.code && html`<div class="mt-2"><span class="mono" style="font-size:var(--fs-sm);background:var(--fill-soft);border-radius:var(--r-xs);padding:2px 8px">Codice: ${n.code}</span></div>`}
+      ${(n.items || []).length > 0 && html`<button class="btn sm mt-2" onClick=${() => setOpen(o => ({ ...o, [n.id]: !o[n.id] }))}>${open[n.id] ? 'Nascondi' : 'Mostra'} dettaglio file (${n.items.length})</button>
+        ${open[n.id] && html`<div class="mono" style="margin-top:8px;font-size:var(--fs-sm);font-weight:500;background:var(--fill-soft);border-radius:var(--r-sm);padding:8px;max-height:260px;overflow:auto;word-break:break-word">${n.items.map(x => html`<div style="padding:3px 0;border-bottom:1px dashed var(--sep)">${x}</div>`)}</div>`}`}
+      ${(n.level === 'err' || n.level === 'warn') && html`<div class="mt-2"><button class="btn sm" onClick=${() => copy(n)}>Copia dettagli</button></div>`}
     </div>`)}</div>
-    ${list.length > 0 && html`<button class="btn danger block" style="margin-top:16px" onClick=${() => { if (confirm('Cancellare tutte le notifiche?')) notifClear(); }}><${Icon} n="trash" s=${17} /> Svuota notifiche</button>`}
+    ${list.length > 0 && html`<button class="btn danger block mt-4" onClick=${() => { if (confirm('Cancellare tutte le notifiche?')) notifClear(); }}><${Icon} n="trash" s=${17} /> Svuota notifiche</button>`}
   </div>`;
 }
 
@@ -618,8 +618,8 @@ function Backup({ records, all, settings, reload, lastBackup }) {
       <h2 style="font-size:var(--fs-xl);font-weight:600">Backup su OneDrive</h2>
       <p class="lead" style="margin:6px 0 12px">Un unico file ZIP con tutte le indagini e campagne, anche con centinaia di foto: cartelle con foto, allegati e PDF, più i dati in manifest.json per il ripristino. Nella finestra di salvataggio scegli OneDrive; se non compare, il file va in Download e lo carichi dall'app OneDrive.</p>
       <button class="btn pri block" disabled=${busy || !records.length} onClick=${doExport}>${busy ? html`<div class="spin" />` : html`<${Icon} n="archive" s=${18} />`} Crea backup completo</button>
-      ${OD.account && html`<button class="btn outline block" style="margin-top:8px" disabled=${busy || !records.length} onClick=${async () => { setBusy(true); await odSync(records.filter(r => !r._new), settings); setBusy(false); }}><${Icon} n="share" s=${18} /> Carica tutto su OneDrive</button>`}
-      <div class="lock" style="margin-top:8px">${lastBackup ? 'Ultimo backup: ' + new Date(lastBackup).toLocaleString('it-IT', { dateStyle: 'medium', timeStyle: 'short' }) : 'Nessun backup ancora'}</div>
+      ${OD.account && html`<button class="btn outline block mt-2" disabled=${busy || !records.length} onClick=${async () => { setBusy(true); await odSync(records.filter(r => !r._new), settings); setBusy(false); }}><${Icon} n="share" s=${18} /> Carica tutto su OneDrive</button>`}
+      <div class="lock mt-2">${lastBackup ? 'Ultimo backup: ' + new Date(lastBackup).toLocaleString('it-IT', { dateStyle: 'medium', timeStyle: 'short' }) : 'Nessun backup ancora'}</div>
     </div>
     <div class="card">
       <h2 style="font-size:var(--fs-xl);font-weight:600">Ripristina da backup</h2>
@@ -629,7 +629,7 @@ function Backup({ records, all, settings, reload, lastBackup }) {
     </div>
     <div class="card tight">
       <div class="lock">${persist === true ? 'Archivio protetto: Chrome non cancella i dati da solo.' : persist === false ? 'Archivio non protetto: installa l\'app nella schermata Home per proteggerlo.' : ''}</div>
-      ${est && html`<div class="lock" style="margin-top:4px">Spazio usato: ${(est.usage / 1048576).toFixed(1)} MB</div>`}
+      ${est && html`<div class="lock mt-1">Spazio usato: ${(est.usage / 1048576).toFixed(1)} MB</div>`}
     </div>
   </div>`;
 }

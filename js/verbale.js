@@ -79,7 +79,7 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
       <${Inp} label="Presenti al sopralluogo" value=${m.presenti} set=${v => setM({ presenti: v })} placeholder="Nomi e ruoli" />
       <div class="divider"></div><${ImgSlot} label="Inquadramento (ubicazione dell'asset)" id=${(r.img || {}).inquadramento} set=${id => setImg('inquadramento', id)} /></div>
     <div class="sec-h"><h3>Sopralluoghi precedenti</h3><span class="hint">nel Word con quello di oggi</span></div>
-    <div class="card tight">${visite.map((v, i) => html`<div class="row" key=${i} style="margin-bottom:8px">
+    <div class="card tight">${visite.map((v, i) => html`<div class="row mb-2" key=${i}>
         <input class="inp" type="date" style="max-width:170px" value=${v.data} onInput=${e => setV(i, { data: e.target.value })} aria-label="Data" />
         <input class="inp" value=${v.presenti} placeholder="Presenti" onInput=${e => setV(i, { presenti: e.target.value })} />
         <button class="x" aria-label="Elimina" onClick=${() => up(q => ({ ...q, visite: q.visite.filter((_, j) => j !== i) }))}>×</button></div>`)}
@@ -108,7 +108,7 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
         onRemove=${async id => { await removeBlob(id); up(q => ({ ...q, note: q.note.map(x => x.id === n.id ? { ...x, foto: x.foto.filter(f => f !== id) } : x) })); }} />
       <${TagPicker} tags=${n.tag || []} set=${t => updN(n.id, { tag: t })} />
     </div>`; })}
-    <button class="btn dashed block" style="margin-top:4px" onClick=${addN}>+ Nuova nota</button>
+    <button class="btn dashed block mt-1" onClick=${addN}>+ Nuova nota</button>
     <div class="sec-h"><h3>Appunti</h3><span class="hint">Testo libero</span></div>
     <div class="card"><textarea class="inp" rows="3" value=${r.appunti} onInput=${e => up({ appunti: e.target.value })} aria-label="Appunti"></textarea>
       <${NotePhotos} rec=${r} up=${up} /></div>

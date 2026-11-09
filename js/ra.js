@@ -217,7 +217,7 @@ function ManufattoCard({ m, open, toggle, onUpd, onDel }) {
       <${Area} label="Note" rows=${3} value=${m.note} set=${v => set({ note: v })} placeholder="Condizioni rilevate, interventi consigliati…" />
       <div><div class="fld"><span>Foto (fino a 3)</span></div>
         <${PhotoStrip} ids=${m.foto} max=${3} gallery=${gal(m)} labelOf=${lab(m)} onAdd=${ids => set({ foto: [...m.foto, ...ids] })} onRemove=${async id => { await removeBlob(id); set({ foto: m.foto.filter(f => f !== id) }); }} /></div>
-      <button class="btn sm danger" style="justify-self:start" onClick=${() => onDel(m)}>Elimina manufatto</button>
+      <button class="btn sm danger self-start" onClick=${() => onDel(m)}>Elimina manufatto</button>
     </div>`}
   </div>`;
 }
@@ -262,12 +262,11 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
     setRiprendo(false);
   };
   const fonti = raFontiCampioni(records, r);
-  const [fonteSel, setFonteSel] = useState('');
   const daCampioni = async src => {
     if (!src) return; setRiprendo(true);
     try { const { patch, nuovi } = await raDaCampioni(src, r); up(x => ({ ...x, ...patch })); toast(nuovi ? `${nuovi === 1 ? 'Creato 1 manufatto' : 'Creati ' + nuovi + ' manufatti'} da ${fonteNome(src)}` : 'Nessun manufatto nuovo: i codici sono già in elenco'); }
     catch (e) { fail('Manufatti non creati', e); }
-    setRiprendo(false); setFonteSel('');
+    setRiprendo(false);
   };
   const tot = r.manufatti.length, fatti = r.manufatti.filter(m => m.stato).length;
   const list = r.manufatti.filter(m => f === 'tutti' || (f === 'da' ? !m.stato : !!m.stato));
@@ -278,7 +277,6 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
     const m = r.manufatti.find(x => !x.stato); if (!m) return;
     setF('tutti'); setOpenM({ [m.id]: true }); setTimeout(() => scrollToId('m-' + m.id), 80);
   };
-  const upload = () => OD.account ? odSync([r], settings) : sendToOneDrive(r, settings);
   const labels = [...r.manufatti.map(m => { const st = raStato(m.stato); return { ref: m.id, text: m.codice || 'M', color: st ? st.c : PRINT.nc }; }), ...ariaLabels(r)];
 
   return html`<div class="content form">
@@ -308,13 +306,13 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
         Verifica entro <b style="color:var(--on-dark)">${fmtD(scad)}</b> · <span class=${gScad <= 30 && fatti < tot ? 'crit' : ''}>${gScad < 0 ? 'scaduta da ' + -gScad + ' gg' : gScad === 0 ? 'oggi' : 'tra ' + gScad + ' gg'}</span> (fine anno di incarico)</div>`}
     </div>
 
-    ${!r.manufatti.length && prec && html`<div class="card tight alert-soft" style="margin-top:12px">
-      <b style="font-weight:600">Stesso immobile di ${prec.codice} (${fmtD(prec.data)})</b>
-      <p class="lead" style="margin:4px 0 10px">Riprendi ${prec.manufatti.length === 1 ? 'il manufatto' : 'i ' + prec.manufatti.length + ' manufatti'} con stato, note e foto dell'anno scorso come riferimento${(prec.planimetrie || []).length ? ', più le planimetrie' : ''}.</p>
+    ${!r.manufatti.length && prec && html`<div class="card tight alert-soft mt-3">
+      <b class="fw-6">Stesso immobile di ${prec.codice} (${fmtD(prec.data)})</b>
+      <p class="lead lead-gap">Riprendi ${prec.manufatti.length === 1 ? 'il manufatto' : 'i ' + prec.manufatti.length + ' manufatti'} con stato, note e foto dell'anno scorso come riferimento${(prec.planimetrie || []).length ? ', più le planimetrie' : ''}.</p>
       <button class="btn pri block" disabled=${riprendo} onClick=${riprendi}>${riprendo ? html`<div class="spin" />` : ''} Riprendi dall'anno precedente</button></div>`}
-    ${!r.manufatti.length && !prec && fonti[0] && stessoImmobile(fonti[0], r) && html`<div class="card tight alert-soft" style="margin-top:12px">
-      <b style="font-weight:600">Stesso immobile di ${fonteNome(fonti[0])} (${fmtD(fonti[0].data)})</b>
-      <p class="lead" style="margin:4px 0 10px">Crea i manufatti dai ${fonti[0].campioni.mca.length === 1 ? 'campione' : fonti[0].campioni.mca.length + ' campioni'} MCA, con descrizione, ubicazione, quantità e foto come riferimento.</p>
+    ${!r.manufatti.length && !prec && fonti[0] && stessoImmobile(fonti[0], r) && html`<div class="card tight alert-soft mt-3">
+      <b class="fw-6">Stesso immobile di ${fonteNome(fonti[0])} (${fmtD(fonti[0].data)})</b>
+      <p class="lead lead-gap">Crea i manufatti dai ${fonti[0].campioni.mca.length === 1 ? 'campione' : fonti[0].campioni.mca.length + ' campioni'} MCA, con descrizione, ubicazione, quantità e foto come riferimento.</p>
       <button class="btn pri block" disabled=${riprendo} onClick=${() => daCampioni(fonti[0])}>${riprendo ? html`<div class="spin" />` : ''} Crea i manufatti</button></div>`}
     ${!tot && html`<div class="card tight"><p class="lead" style="margin:2px 0">Per creare i manufatti da un PMC o da una mappatura in JSON, o dai campioni MCA di un'altra attività, tocca <b>⋯ Opzioni</b> in basso.</p></div>`}
 

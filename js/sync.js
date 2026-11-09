@@ -222,11 +222,11 @@ function SyncCard({ settings, set }) {
   const on = settings.odSync !== false;
   if (!OD.configured(settings)) return null;
   return html`<div class="card">
-    <label class="fg-sw"><span><b style="font-weight:600">Sincronizza tra i dispositivi</b><br /><small class="lock">All'apertura, quando torna la rete e poco dopo ogni modifica</small></span>
+    <label class="fg-sw"><span><b class="fw-6">Sincronizza tra i dispositivi</b><br /><small class="lock">All'apertura, quando torna la rete e poco dopo ogni modifica</small></span>
       <${Toggle} on=${on} label="Sincronizzazione automatica" set=${v => { set({ odSync: v }); if (v) Sync.schedule(1000); }} /></label>
     ${OD.account ? html`<div class="sync-st ${s.phase}">${syncLabel(s)}${s.text && s.phase !== 'run' ? ' · ' + s.text : ''}</div>
         ${s.error && html`<div class="notice err">${s.error}</div>`}
-        <button class="btn block" style="margin-top:10px" disabled=${s.phase === 'run'} onClick=${() => Sync.run({ manual: true })}>${s.phase === 'run' ? html`<div class="spin" />` : html`<${Icon} n="share" s=${18} />`} Sincronizza ora</button>`
+        <button class="btn block mt-3" disabled=${s.phase === 'run'} onClick=${() => Sync.run({ manual: true })}>${s.phase === 'run' ? html`<div class="spin" />` : html`<${Icon} n="share" s=${18} />`} Sincronizza ora</button>`
       : html`<p class="lead" style="margin:8px 0 0">Accedi con Microsoft 365 qui sopra per attivarla.</p>`}
     <p class="lead" style="margin:10px 0 0">Su un dispositivo nuovo basta accedere: le attività arrivano da sole. Vince la modifica più recente; se un’attività è cambiata su due dispositivi, l'altra versione resta come copia. Le attività eliminate spariscono ovunque, i file restano nella cartella dell'app su OneDrive.</p>
   </div>`;

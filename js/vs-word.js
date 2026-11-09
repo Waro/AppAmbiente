@@ -57,11 +57,3 @@ async function vsBuildDocx(r, settings, opt = {}) {
   hsFinish(ctx, x, { ASSET: r.sito || m.titolo || '', MESEANNO: meseAnno(r.data), REVISIONE: m.revisione || '00' });
   return hsZip(files);
 }
-async function vsWord(r, settings) {
-  const name = vsFileBase(r) + '.docx';
-  const h = await pickSave(name, 'Documento Word', DOCX_MIME, '.docx'); if (h === 'cancel') return;
-  try {
-    const blob = await vsBuildDocx(r, settings, { onStep: (n, t) => _progress({ title: 'Preparo il Word', text: `Foto ${n} di ${t}`, done: n, total: t }) });
-    _progress(null); await saveOffice(h, blob, name);
-  } catch (e) { _progress(null); fail('Word non creato', e, recordTitle(r)); }
-}

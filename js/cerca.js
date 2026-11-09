@@ -107,7 +107,7 @@ function Cerca({ records, openRec, acts }) {
     <div class="seg cerca-amb">${CERCA_AMBITI.map(([k, l]) => html`<button key=${k} class=${ambito === k && !tag ? 'on' : ''} onClick=${() => { setAmbito(k); setTag(null); }}>${l}</button>`)}</div>
     ${tutti.length > 0 && (ambito === 'tag' || tag || !q) && html`<div class="tags-row" style="margin:10px 2px 4px">${tutti.map(t => html`<button key=${t} class="tag" style=${tagStyle(t, tag === t)} onClick=${() => { setTag(tag === t ? null : t); setQ(''); }}>#${t} <small style="opacity:.7">${cnt[t]}</small></button>`)}</div>`}
     ${(q.trim() || tag) && html`<div class="lead" style="margin:10px 2px">${res.length ? `${res.length} attività · ${nHit} ${nHit === 1 ? 'risultato' : 'risultati'}` : 'Nessun risultato.'}</div>`}
-    ${!q.trim() && !tag && html`<div class="empty" style="margin-top:16px"><b>Cerca in tutte le attività</b>Scrivi un indirizzo, una città, il titolo o il testo di una nota, oppure tocca un tag. La ricerca funziona anche offline.</div>`}
+    ${!q.trim() && !tag && html`<div class="empty mt-4"><b>Cerca in tutte le attività</b>Scrivi un indirizzo, una città, il titolo o il testo di una nota, oppure tocca un tag. La ricerca funziona anche offline.</div>`}
     <div class="list">${res.slice(0, 80).map(({ r, hits }) => html`<div class="cerca-res" key=${r.id}>
       <button class="cerca-h" onClick=${() => apri(r)}><span class="id">${r.codice || TIPO_NOME(r)}</span><span class="t">${TIPO_NOME(r)}</span><span class="dt">${fmtD(r.data)}</span></button>
       <div class="cerca-place">${[r.commessa, r.cliente, placeLabel(r) || r.luogo].filter(Boolean).join(' · ')}</div>

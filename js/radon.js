@@ -106,7 +106,7 @@ function PuntoCard({ p, n, open, toggle, lockPos, lockF2, onUpd, onDel, onScan }
       <div><div class="fld"><span>Foto (1–3)</span></div>
         <${PhotoStrip} ids=${p.foto} max=${3} onAdd=${ids => set({ foto: [...p.foto, ...ids] })} onRemove=${async id => { await removeBlob(id); set({ foto: p.foto.filter(f => f !== id) }); }} /></div>
       ${lockPos ? html`<span class="lock"><${Icon} n="lock" s=${13} /> Dati di posa bloccati dopo la firma</span>`
-        : html`<button class="btn sm danger" style="justify-self:start" onClick=${() => onDel(p)}>Elimina punto</button>`}
+        : html`<button class="btn sm danger self-start" onClick=${() => onDel(p)}>Elimina punto</button>`}
     </div>`}
   </div>`;
 }
@@ -118,7 +118,6 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
   const [openP, setOpenP] = useState(() => initial.punti.length ? {} : {});
   const [scan, setScan] = useState(null);
   const [sig, setSig] = useState(null);
-  const [busy, setBusy] = useState(false);
   const [T, setT] = useSchede('radon', ['anag', 'punti', 'firme', 'file'], initial._new, { 'p-': 'punti', 'plan-': 'punti', 'mom-': 'firme' });
   const stato = radonStato(r);
 
@@ -237,7 +236,6 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
   };
   const lastCode = [...r.punti].reverse().map(p => p.codiceF2 || p.codiceF1).find(Boolean);
   const curMom = m.findIndex((x, i) => !x.confermato && (i === 0 || m[i - 1].confermato));
-  const upload = () => OD.account ? odSync([r], settings) : sendToOneDrive(r, settings);
   const over = r.punti.filter(p => { const v = mediaPunto(r, p); return v != null && v > settings.livelloRif; }).length;
 
   return html`<div class="content form">
@@ -291,7 +289,7 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
         ${lockPos && html`
       <div class="sec-h"><h3>Esiti di laboratorio</h3><span class="hint">Bq/m³ · media pesata sui giorni</span></div>
       <div class="card tight">
-        ${best && html`<div class="bigstat" style="margin-bottom:6px"><b style=${best.v > settings.livelloRif ? 'color:var(--nc)' : ''}>${fmtN(best.v)}</b><span class="lock">Bq/m³ media più alta (R${best.n}) · ${over ? over + ' punti oltre ' + settings.livelloRif : 'nessun punto oltre ' + settings.livelloRif}</span></div>`}
+        ${best && html`<div class="bigstat" style="margin-bottom:6px"><b style=${best.v > settings.livelloRif ? 'color:var(--danger)' : ''}>${fmtN(best.v)}</b><span class="lock">Bq/m³ media più alta (R${best.n}) · ${over ? over + ' punti oltre ' + settings.livelloRif : 'nessun punto oltre ' + settings.livelloRif}</span></div>`}
         <div class="res-row h"><span></span><span>Fase 1</span><span>Fase 2</span><span style="text-align:right">Media</span></div>
         ${r.punti.map((p, i) => { const v = mediaPunto(r, p); return html`<div class="res-row" key=${p.id}><b>R${i + 1}</b>
           <input class="inp" inputmode="decimal" value=${p.valoreF1} onInput=${e => updP(p.id, { valoreF1: e.target.value })} aria-label=${'R' + (i + 1) + ' Fase 1'} />
@@ -335,17 +333,17 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
             <${Inp} label="Cognome" value=${mm.tecnicoCognome} disabled=${ro} set=${v => setM(i, { tecnicoCognome: v })} />
             <${Inp} label="Nome" value=${mm.tecnicoNome} disabled=${ro} set=${v => setM(i, { tecnicoNome: v })} />
           </div>
-          <div class="row" style="margin-top:8px">
+          <div class="row mt-2">
             <button class=${'sigbox' + (mm.firmaTecnico ? ' has' : '')} disabled=${ro} onClick=${() => setSig({ i, who: 'firmaTecnico', title: 'Firma tecnico · ' + [mm.tecnicoNome, mm.tecnicoCognome].join(' ') })}>
               ${mm.firmaTecnico ? html`<img src=${mm.firmaTecnico} alt="Firma tecnico" />` : html`<span><${Icon} n="sign" s=${18} /> Tocca per firmare</span>`}</button>
           </div>
-          ${!ro && !mm.firmaTecnico && settings.firmaTecnico && html`<button class="btn sm" style="margin-top:6px" onClick=${() => setM(i, { firmaTecnico: settings.firmaTecnico })}>Usa la firma salvata</button>`}
+          ${!ro && !mm.firmaTecnico && settings.firmaTecnico && html`<button class="btn sm mt-2" onClick=${() => setM(i, { firmaTecnico: settings.firmaTecnico })}>Usa la firma salvata</button>`}
           <div class="who">REFERENTE CLIENTE</div>
           <div class="grid2">
             <${Inp} label="Cognome" value=${mm.referenteCognome} disabled=${ro} set=${v => setM(i, { referenteCognome: v })} />
             <${Inp} label="Nome" value=${mm.referenteNome} disabled=${ro} set=${v => setM(i, { referenteNome: v })} />
           </div>
-          <div class="row" style="margin-top:8px">
+          <div class="row mt-2">
             <button class=${'sigbox' + (mm.firmaReferente ? ' has' : '')} disabled=${ro} onClick=${() => setSig({ i, who: 'firmaReferente', title: 'Firma referente · ' + [mm.referenteNome, mm.referenteCognome].join(' ') })}>
               ${mm.firmaReferente ? html`<img src=${mm.firmaReferente} alt="Firma referente" />` : html`<span><${Icon} n="sign" s=${18} /> Fai firmare il referente</span>`}</button>
           </div>

@@ -90,14 +90,14 @@ function AriaPuntoCard({ p, open, toggle, onUpd, onMet, onDel, onScan, settings 
       <div class="seg">${[['fatto', 'Eseguito'], ['non', 'Non eseguito']].map(([k, l]) => html`<button class=${p.stato === k ? 'on' : ''} onClick=${() => set({ stato: p.stato === k ? '' : k, ...(k === 'fatto' && !p.data ? { data: today() } : {}) })}>${l}</button>`)}</div>
       ${p.stato === 'fatto' && html`<div class="grid2">
         <${Inp} label="Data" type="date" value=${p.data} set=${v => set({ data: v })} />
-        <div class="fld"><span>Metodica</span><div class="seg" style="margin-top:6px">${ARIA_METODI.map(x => html`<button class=${p.metodica === x.k ? 'on' : ''} onClick=${() => onMet(p.id, x.k)}>${x.l}</button>`)}</div></div>
+        <div class="fld"><span>Metodica</span><div class="seg mt-2">${ARIA_METODI.map(x => html`<button class=${p.metodica === x.k ? 'on' : ''} onClick=${() => onMet(p.id, x.k)}>${x.l}</button>`)}</div></div>
         <${Inp} label="Ora inizio" type="time" value=${p.oraInizio} set=${v => set({ oraInizio: v })} />
         <${Inp} label="Ora fine" type="time" value=${p.oraFine} set=${v => set({ oraFine: v })} />
         <label class="fld full"><span>Campionatore e matricola</span>
           <input class="inp" list=${'dl-camp-' + p.id} value=${p.campionatore} onInput=${ev => set({ campionatore: ev.target.value })} placeholder=${camp.length ? 'Scegli o scrivi' : 'es. Modello · S/N 0000'} />
           <datalist id=${'dl-camp-' + p.id}>${camp.map(c => html`<option value=${c} />`)}</datalist></label>
         <label class="fld full"><span>Membrana · ID supporto</span>
-          <div class="row" style="gap:8px"><input class="inp" style="flex:1" value=${p.membrana} onInput=${ev => set({ membrana: ev.target.value })} placeholder="Codice sulla membrana" />
+          <div class="row" style="gap:8px"><input class="inp grow" value=${p.membrana} onInput=${ev => set({ membrana: ev.target.value })} placeholder="Codice sulla membrana" />
             <button class="btn" onClick=${() => onScan(p)}><${Icon} n="scan" s=${17} /> Scansiona</button></div></label>
         <${Inp} label="Flusso (l/min)" inputmode="decimal" value=${p.flusso} set=${v => set({ flusso: v })} />
         <${Inp} label="Litri prelevati" inputmode="decimal" value=${p.volume} set=${v => set({ volume: v })} placeholder=${vAuto != null ? fmtNum(vAuto) + ' (calcolato)' : 'flusso × durata'} />
@@ -112,7 +112,7 @@ function AriaPuntoCard({ p, open, toggle, onUpd, onMet, onDel, onScan, settings 
       <${Area} label="Note" rows=${2} value=${p.note} set=${v => set({ note: v })} />
       <div><div class="fld"><span>Foto della postazione</span></div>
         <${PhotoStrip} ids=${p.foto} max=${3} onAdd=${ids => set({ foto: [...p.foto, ...ids] })} onRemove=${async id => { await removeBlob(id); set({ foto: p.foto.filter(f => f !== id) }); }} /></div>
-      <button class="btn sm danger" style="justify-self:start" onClick=${() => onDel(p)}>Elimina punto</button>
+      <button class="btn sm danger self-start" onClick=${() => onDel(p)}>Elimina punto</button>
     </div>`}
   </div>`;
 }
@@ -121,7 +121,6 @@ function AriaPuntoCard({ p, open, toggle, onUpd, onMet, onDel, onScan, settings 
 function AriaSection({ r, up, settings, inRa }) {
   const [openP, setOpenP] = useState({});
   const [scan, setScan] = useState(null);
-  const [busy, setBusy] = useState('');
   const A = ariaOf(r), P = A.punti, R = ariaRiepilogo(r);
   const recRef = useRef(r); recRef.current = r;
   const upA = fn => up(q => { const a = ariaOf(q); return { ...q, aria: { ...a, ...fn(a) } }; });
@@ -161,7 +160,7 @@ function AriaSection({ r, up, settings, inRa }) {
       onRemove=${async d => { await removeBlob(d.blobId); upA(a => ({ rapporti: (a.rapporti || []).filter(x => x.id !== d.id) })); }} /></div>
 
     <div class="sec-h"><h3>Schede aria</h3></div>
-    <div class="card"><p class="lead" style="margin:2px 0 10px">Scheda di prelievo ed esiti, in Excel e PDF, si generano nella scheda File.</p>
+    <div class="card"><p class="lead lead-gap">Scheda di prelievo ed esiti, in Excel e PDF, si generano nella scheda File.</p>
       <button class="btn" onClick=${() => dispatchEvent(new CustomEvent('nembo-goto', { detail: 'tab:file' }))}><${Icon} n="file" s=${16} /> Vai a File</button>
       ${!ariaCampionatori(settings).length && html`<p class="lead" style="margin:10px 2px 0;font-size:var(--fs-sm)">L'elenco dei campionatori e i codici d'analisi si impostano in Impostazioni → Monitoraggio aria.</p>`}
     </div>
@@ -172,11 +171,11 @@ function AriaSection({ r, up, settings, inRa }) {
 // nel sopralluogo RA: sezione facoltativa
 function AriaInRa({ r, up, settings }) {
   if (!ariaOn(r)) return html`<div class="sec-h"><h3>Monitoraggio aria</h3><span class="hint">Facoltativo</span></div>
-    <div class="card tight"><p class="lead" style="margin:4px 0 10px">Campionamento delle fibre aerodisperse (SEM, MOCF, FAV) con scheda di prelievo e riepilogo degli esiti.</p>
+    <div class="card tight"><p class="lead lead-gap">Campionamento delle fibre aerodisperse (SEM, MOCF, FAV) con scheda di prelievo e riepilogo degli esiti.</p>
       <button class="btn block" onClick=${() => up(q => ({ ...q, aria: { ...ariaOf(q), attivo: true, punti: ariaOf(q).punti.length ? ariaOf(q).punti : [newAriaPunto({ codice: 'S1' })] } }))}><${Icon} n="plus" s=${17} /> Aggiungi monitoraggio aria</button></div>`;
   const vuoto = !ariaOf(r).punti.some(p => p.stato || p.conc || (p.foto || []).length);
   return html`<${AriaSection} r=${r} up=${up} settings=${settings} inRa=${true} />
-    ${vuoto && html`<button class="btn link sm" style="margin-top:4px" onClick=${() => up(q => ({ ...q, aria: { ...ariaOf(q), attivo: false, punti: [] } }))}>Togli il monitoraggio aria</button>`}`;
+    ${vuoto && html`<button class="btn link sm mt-1" onClick=${() => up(q => ({ ...q, aria: { ...ariaOf(q), attivo: false, punti: [] } }))}>Togli il monitoraggio aria</button>`}`;
 }
 
 /* ---------------- elenco e scheda dell'attività ---------------- */
@@ -251,11 +250,11 @@ function AriaForm({ rec: initial, records, settings, onSave, onDelete, embedded,
 function AriaSettings({ s, set }) {
   const pr = s.ariaProfili || {};
   return html`<div class="card">
-    <p class="lead" style="margin:2px 0 10px">Laboratorio, offerta, email per i referti, «prelevato da» e «verificato da» sono quelli della scheda campioni.</p>
+    <p class="lead lead-gap">Laboratorio, offerta, email per i referti, «prelevato da» e «verificato da» sono quelli della scheda campioni.</p>
     <label class="fld"><span>Campionatori e matricole (uno per riga)</span>
       <textarea class="inp" rows="5" value=${ariaCampionatori(s).join('\n')} onInput=${e => set({ ariaCampionatori: e.target.value.split('\n') })} placeholder="Modello · S/N 0000"></textarea></label>
     <${Inp} label="Addetto verifica taratura" value=${s.ariaTaratura || ''} set=${v => set({ ariaTaratura: v })} placeholder="es. Geom. Nome Cognome" />
-    <div class="grid2" style="margin-top:4px">${ARIA_METODI.map(m => html`<${Inp} label=${'Codice analisi ' + m.l} value=${pr[m.k] || ''} set=${v => set({ ariaProfili: { ...pr, [m.k]: v } })} placeholder="codice profilo del laboratorio" />`)}</div>
+    <div class="grid2 mt-1">${ARIA_METODI.map(m => html`<${Inp} label=${'Codice analisi ' + m.l} value=${pr[m.k] || ''} set=${v => set({ ariaProfili: { ...pr, [m.k]: v } })} placeholder="codice profilo del laboratorio" />`)}</div>
   </div>`;
 }
 
@@ -305,7 +304,7 @@ async function ariaSchedaXlsx(r, s) {
   const I = ariaInfo(r, s);
   const tpl = await schedaTplXlsx();
   if (tpl) { const z = await JSZip.loadAsync(tpl); if (/name="[^"]*ARIA/i.test(await z.file('xl/workbook.xml').async('string'))) return schedeXlsx(tpl, 'aria', I); }
-  const { wb, ws, row, full, head, th, box } = await ariaXlsxBase('Scheda prelievo aria', [7, 13, 34, 30, 13, 13, 30]);
+  const { wb, row, full, head, th, box } = await ariaXlsxBase('Scheda prelievo aria', [7, 13, 34, 30, 13, 13, 30]);
   full('SCHEDA DI PRELIEVO: CAMPIONI FIBRE AERODISPERSE', { b: true, sz: 14, center: true, h: 26 });
   row([]);
   head('COMMESSA - PROGETTO', [I.commessa, I.cliente].filter(Boolean).join(' · '));

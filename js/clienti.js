@@ -22,11 +22,6 @@ function mailCliente(r, s) {
   const body = `Buongiorno${c.referente ? ' ' + c.referente : ''},\n\ninvio in allegato la documentazione relativa all'attività "${att}"${placeDoc(r) ? ' presso ' + placeDoc(r) : ''}${r.data ? ' del ' + fmtD(r.data) : ''}.\n\nResto a disposizione per qualsiasi chiarimento.\n\nCordiali saluti\n${firma}`;
   location.href = `mailto:${encodeURIComponent(to)}?${c.mailCc ? 'cc=' + encodeURIComponent(c.mailCc) + '&' : ''}subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
 }
-function MailCliente({ r, settings }) {
-  const c = clienteDi(r.cliente);
-  if (!c || !c.mail || !(c.mailA || c.email)) return null;
-  return html`<button class="btn outline block" onClick=${() => mailCliente(r, settings)}><${Icon} n="share" s=${18} /> Email a ${c.nome}</button>`;
-}
 
 /* ---------------- elenco ---------------- */
 function ClientiList({ records, clienti, open, activeId, acts, onImport }) {
@@ -68,7 +63,7 @@ function ClienteForm({ rec: initial, records, settings, onSave, onDelete, embedd
     <div class="sec-h"><h3>Foglio firme</h3></div>
     <div class="card tight">
       <label class="fg-sw"><span>Prepara il foglio firme nelle nuove attività</span><${Toggle} on=${!!c.firme} label="Foglio firme nelle nuove attività" set=${v => up({ firme: v })} /></label>
-      ${c.firme && html`<label class="fld" style="margin-top:10px"><span>Modello</span><select value=${c.firmeModello || ''} onChange=${e => up({ firmeModello: e.target.value })}>
+      ${c.firme && html`<label class="fld mt-3"><span>Modello</span><select value=${c.firmeModello || ''} onChange=${e => up({ firmeModello: e.target.value })}>
         <option value="">In base all'attività</option>${mods.map(m => html`<option value=${m.id}>${m.titolo}</option>`)}</select></label>`}
       <p class="hint-p" style="margin:8px 0 0">Vale per DDA, Mappature, RA e Monitoraggi aria. Nel foglio ci sono i dati dell'attività e l'elenco dei campioni prelevati o dei manufatti valutati.</p>
     </div>
@@ -76,7 +71,7 @@ function ClienteForm({ rec: initial, records, settings, onSave, onDelete, embedd
     <div class="sec-h"><h3>Invio email</h3></div>
     <div class="card tight">
       <label class="fg-sw"><span>Invia i documenti per email</span><${Toggle} on=${!!c.mail} label="Invio per email" set=${v => up({ mail: v })} /></label>
-      ${c.mail && html`<div class="grid2" style="margin-top:10px">
+      ${c.mail && html`<div class="grid2 mt-3">
         <${Inp} cls="full" label="Destinatari" value=${c.mailA} set=${v => up({ mailA: v })} placeholder=${c.email || 'indirizzi separati da virgola'} />
         <${Inp} cls="full" label="In copia" value=${c.mailCc} set=${v => up({ mailCc: v })} placeholder="Facoltativo" />
       </div>
@@ -92,7 +87,7 @@ function ClienteForm({ rec: initial, records, settings, onSave, onDelete, embedd
       ${(r.commessa || placeLabel(r)) && html`<div class="sum">${[r.commessa, placeLabel(r)].filter(Boolean).join(' · ')}</div>`}</button>`)}</div>`
       : html`<div class="card"><div class="empty" style="padding:14px">Nessuna attività con questo nome cliente.</div></div>`}
 
-    <div class="stack" style="margin-top:16px">
+    <div class="stack mt-4">
       <button class="btn danger block" onClick=${() => onDelete(c)}><${Icon} n="trash" s=${18} /> Elimina cliente</button>
     </div>
   </div>`;

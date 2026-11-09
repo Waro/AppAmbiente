@@ -1,7 +1,5 @@
 /* Home "Oggi" e foglio "Nuova attività" */
 
-const TYPE_LABEL = { dda: 'DDA', mappatura: 'Mappatura MCA e FAV', ra: 'Sopralluogo RA', radon: 'Campagna radon' };
-const WEEKDAYS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven'];
 const isoDay = d => { const z = new Date(d); z.setMinutes(z.getMinutes() - z.getTimezoneOffset()); return z.toISOString().slice(0, 10); };
 
 // l’attività ha già dati raccolti sul campo?
@@ -135,7 +133,6 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
     .sort((a, b) => a.d.localeCompare(b.d));
   const rNext = rad[0];
   const rDays = rNext ? daysBetween(t, rNext.d) : null;
-  const rExp = rNext && rNext.start ? Math.min(1, Math.max(0, daysBetween(rNext.start, t) / Math.max(1, daysBetween(rNext.start, rNext.d)))) : 0;
   const nDos = rad.reduce((a, x) => a + x.r.punti.length, 0);
   const ras = records.filter(r => r.type === 'ra');
   const y0 = String(now.getFullYear());
@@ -144,7 +141,6 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
   const raCrit = raDue.filter(r => daysBetween(t, raScadenza(r)) <= 30);
   const raYear = ras.filter(r => (r.data || '').startsWith(y0));
   const raDoneY = raYear.filter(r => !raOpen(r)).length;
-  const raRest = Math.max(0, raYear.length - raDoneY - raCrit.length);
   const hsAll = records.filter(r => r.type === 'hs').map(hsCriticita);
   const hsP1 = hsAll.reduce((a, c) => a + c.filter(x => x.p === 1).length, 0), hsCrit = hsAll.reduce((a, c) => a + c.length, 0);
   const hsDaCaricare = records.filter(r => r.type === 'hs' && odStatus(od, r) !== 'ok').length;
@@ -208,7 +204,7 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
       ${todays.length ? html`
         <div class="hc-title">${todays.length} attività</div>
         <div class="hc-line">${todays.slice(0, 2).map(placeLabel).join(' · ')}${todays.length > 2 ? ` e altre ${todays.length - 2}` : ''}</div>
-        <div class="rings" style="margin-top:14px">
+        <div class="rings mt-4">
           <div class="ring-wrap" style="width:96px;height:96px">
             <${Ring} p=${rings[0].b ? rings[0].a / rings[0].b : 0} size=${96} w=${9} color=${rings[0].c} />
             <div style="position:absolute;inset:12px"><${Ring} p=${rings[1].b ? rings[1].a / rings[1].b : 0} size=${72} w=${9} color=${rings[1].c} /></div>
@@ -255,7 +251,7 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
 
     ${bu === 'hs' && hsTplOk === false && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${() => goSettings('modelli')}>Per generare i report carica i modelli Word HSE (Esteso e Sintetico) in Impostazioni → Modelli.</button>`}
     ${bu === 'ambiente' && onbHidden() && (!tplOk || !settings.tecnicoCognome) && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goSettings}>Prima di iniziare: in Impostazioni inserisci i tuoi dati e carica i modelli.</button>`}
-    ${installEvt && html`<button class="btn block" style="margin-top:12px" onClick=${onInstall}><${Icon} n="plus" s=${18} /> Installa l'app</button>`}
+    ${installEvt && html`<button class="btn block mt-3" onClick=${onInstall}><${Icon} n="plus" s=${18} /> Installa l'app</button>`}
     ${/* senza sopralluoghi in programma il blocco navy ha già «Nuova attività»: niente + doppione */ ''}
     ${(bu === 'sicurezza' || chiusa || nx) && html`<button class="fab" aria-label="Nuovo sopralluogo" onClick=${newAct}><${Icon} n="plus" s=${26} w=${2.4} /></button>`}
   </div>`;
@@ -312,14 +308,14 @@ function NewActivity({ records, onClose, onCreate, bu, preset }) {
             <label class="fld"><span>Cliente</span><input list="dl-cli-new" value=${cliente} onInput=${e => setCliente(e.target.value)} /></label>
           </div>
           <datalist id="dl-cli-new">${nomiClienti(records).map(c => html`<option value=${c} />`)}</datalist>
-          <div class="grid2" style="margin-top:10px">
+          <div class="grid2 mt-3">
             <label class="fld"><span>Città</span><input value=${citta} onInput=${e => setCitta(e.target.value)} /></label>
             <label class="fld"><span>Indirizzo</span><input value=${indirizzo} onInput=${e => setIndirizzo(e.target.value)} placeholder="Via e civico" /></label>
           </div>
           ${firmeOk && html`<label class="nw-firme"><input type="checkbox" checked=${firmeOn} onChange=${e => setFirme(e.target.checked)} />
             <span><b>Foglio firme</b><small>${cli && cli.firme && firme == null ? 'Preferenza del cliente: pronto con dati, attività e ' : 'Pronto con dati, attività e '}${opt.t === 'ra' ? 'manufatti valutati' : opt.t === 'aria' ? 'punti di monitoraggio' : 'campioni prelevati'}</small></span></label>`}
         </div>
-        <button class="btn pri block" style="margin-top:8px" onClick=${start}>Avvia ${opt.l.replace(' · verifica annuale', '')}</button>
+        <button class="btn pri block mt-2" onClick=${start}>Avvia ${opt.l.replace(' · verifica annuale', '')}</button>
       </div>
     </div>
   </div>`;

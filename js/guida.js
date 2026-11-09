@@ -70,7 +70,7 @@ function BenvenutoSheet({ settings, setSettings, onClose }) {
             <div class="nv-dots">${txt.map((_, i) => html`<i key=${i} class=${i === k ? 'on' : ''} onClick=${() => setK(i)}></i>`)}</div>
             ${last ? html`<span style="width:44px"></span>` : html`<button class="btn-icon" aria-label="Successiva" onClick=${() => setK(k + 1)}><${Icon} n="right" s=${20} /></button>`}
           </div></div>
-        <button class="btn pri block" style="margin-top:14px" onClick=${last ? fine : () => setK(k + 1)}>${last ? 'Inizia' : 'Avanti'}</button>
+        <button class="btn pri block mt-4" onClick=${last ? fine : () => setK(k + 1)}>${last ? 'Inizia' : 'Avanti'}</button>
       </div></div></div>`;
 }
 
@@ -129,8 +129,8 @@ function GuidaCard({ settings, setSettings }) {
   return html`<div class="card tight">
     <p class="lead" style="margin:6px 0 10px">Il benvenuto, i primi passi e i suggerimenti che compaiono la prima volta che apri una funzione.</p>
     <button class="btn block" onClick=${() => setWl(true)}><${Icon} n="spark" s=${17} /> Rivedi il benvenuto</button>
-    <button class="btn block" style="margin-top:8px" onClick=${() => { tipsReset(); toast('I suggerimenti ricompaiono quando apri ogni funzione'); }}>Mostra di nuovo i suggerimenti</button>
-    <button class="btn block" style="margin-top:8px" onClick=${() => { onbReset(); toast('I primi passi ricompaiono in Oggi'); }}>Mostra di nuovo i primi passi</button>
+    <button class="btn block mt-2" onClick=${() => { tipsReset(); toast('I suggerimenti ricompaiono quando apri ogni funzione'); }}>Mostra di nuovo i suggerimenti</button>
+    <button class="btn block mt-2" onClick=${() => { onbReset(); toast('I primi passi ricompaiono in Oggi'); }}>Mostra di nuovo i primi passi</button>
     ${wl && html`<${BenvenutoSheet} settings=${settings} setSettings=${setSettings} onClose=${() => setWl(false)} />`}
   </div>`;
 }

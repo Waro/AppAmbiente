@@ -48,7 +48,6 @@ function MappaturaList({ records, open, create, activeId, acts }) {
 /* ---------------- form ---------------- */
 function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSettings, header, embedded, onClose }) {
   const [r, up, saved] = useAutosave(initial, onSave);
-  const [busy, setBusy] = useState(null);
   const [openS, setOpenS] = useState({});
   const firmeOn = !!r.firme || (r.fogli || []).length > 0;
   const [T, setT] = useSchede('mappatura', firmeOn ? ['anag', 'camp', 'firme', 'file'] : ['anag', 'camp', 'file'], initial._new, { 's-': 'camp', 'plan-': 'camp' });
@@ -105,9 +104,9 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
     <${CampSummary} r=${r} mats=${MAP_MATS} />
     <div class="seg" style="margin-bottom:6px">${MAP_MATS.map(m => html`
       <button class=${tab === m.k ? 'on' : ''} onClick=${() => setTab(m.k)}><i class="mdot" style=${'background:' + m.c}></i>${m.l}<span class="n">${(r.campioni[m.k] || []).length}</span></button>`)}</div>
-    ${!camp.length && html`<div class="card" style="margin-top:12px"><div class="empty" style="padding:18px">Nessun campione ${mat.l}.</div></div>`}
+    ${!camp.length && html`<div class="card mt-3"><div class="empty" style="padding:18px">Nessun campione ${mat.l}.</div></div>`}
     ${byPiano(camp).map(([piano, list]) => html`<div key=${piano}>
-      <div class="sec-h" style="margin-top:14px"><h3>${piano}</h3><span class="hint">${list.length}</span></div>
+      <div class="sec-h mt-4"><h3>${piano}</h3><span class="hint">${list.length}</span></div>
       <div class="list">${list.map(c => html`<${SampleRow} key=${c.id} c=${c} mat=${mat} open=${!!openS[c.id]} toggle=${() => setOpenS(o => ({ ...o, [c.id]: !o[c.id] }))}
         onPhoto=${ids => updCamp(c.id, { foto: [...(c.foto || []), ...ids] })}>
         <${CampFields} c=${c} list="dl-piani-m" upd=${patch => updCamp(c.id, patch)} codice=${html`<div class="code-auto" style=${'width:64px;flex-shrink:0;color:' + mat.c}>${c.codice}</div>`} />
@@ -117,7 +116,7 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
         </div>
         <${PhotoStrip} ids=${c.foto || []} max=${4} onAdd=${ids => updCamp(c.id, { foto: [...(c.foto || []), ...ids] })}
           onRemove=${async id => { await removeBlob(id); updCamp(c.id, { foto: c.foto.filter(f => f !== id) }); }} />
-        <button class="btn sm danger" style="justify-self:start" onClick=${() => delCamp(c)}>Elimina campione</button>
+        <button class="btn sm danger self-start" onClick=${() => delCamp(c)}>Elimina campione</button>
       <//>`)}</div></div>`)}
     <datalist id="dl-piani-m">${[...new Set([...allCampMap(r).map(c => c.piano).filter(Boolean), ...PIANI_COMUNI])].map(x => html`<option value=${x} />`)}</datalist>
     <button class="btn dashed" style="margin:10px 0 12px" onClick=${addCamp}>+ Aggiungi campione ${nextCode(tab)}</button>

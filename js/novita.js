@@ -144,7 +144,7 @@ function NovitaSheet({ list, onClose, go }) {
         ${list.map(x => html`<div key=${x.v}>
           <div class="sec-h"><h3>v${x.v} · ${x.titolo}</h3><span class="hint">${fmtD(x.data)}</span></div>
           <div class="card tight"><ul class="nv-list">${x.voci.map((t, i) => html`<li key=${i}>${t}</li>`)}</ul></div></div>`)}
-        <button class="btn pri block" style="margin-top:14px" onClick=${onClose}>Ho capito</button>
+        <button class="btn pri block mt-4" onClick=${onClose}>Ho capito</button>
       </div>
     </div>
   </div>`;
@@ -157,7 +157,7 @@ function NovitaCard({ go }) {
   return html`<div class="card tight">
     ${tutte.slice(0, 4).map(x => html`<button class="prow nv-row" key=${x.v} onClick=${() => setOpen([x])}>
       <span class="t"><b>v${x.v} · ${x.titolo}</b><small>${fmtD(x.data)} · ${x.voci.length} ${x.voci.length === 1 ? 'novità' : 'novità'}</small></span><${Icon} n="right" s=${18} /></button>`)}
-    <button class="btn block" style="margin-top:8px" onClick=${() => setOpen(tutte)}>Tutte le novità</button>
+    <button class="btn block mt-2" onClick=${() => setOpen(tutte)}>Tutte le novità</button>
     ${open && html`<${NovitaSheet} list=${open} go=${go} onClose=${() => setOpen(null)} />`}
   </div>`;
 }

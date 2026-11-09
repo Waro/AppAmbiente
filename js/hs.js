@@ -72,13 +72,13 @@ function FrasiSheet({ gruppo, onPick, onClose }) {
     <div class="sheet-grab"></div>
     <div class="sheet-nav"><button class="btn link" onClick=${onClose}>Chiudi</button><b>Frasi ricorrenti</b><span></span></div>
     <div class="sheet-body">
-      <div class="sec-h" style="margin-top:4px"><h3>${gruppo}</h3><span class="hint">tocca per aggiungere</span></div>
+      <div class="sec-h mt-1"><h3>${gruppo}</h3><span class="hint">tocca per aggiungere</span></div>
       <div class="list">${[...(HS_FRASI[gruppo] || []), ...lista].map((f, i) => html`<div class="prow" key=${i}>
         <button class="t" style="background:none;border:0;text-align:left;padding:0;font-size:var(--fs-base)" onClick=${() => { onPick(f); onClose(); }}>${f}</button>
         ${i >= (HS_FRASI[gruppo] || []).length && html`<button class="x" aria-label="Elimina frase" onClick=${() => salva({ ...mie, [gruppo]: lista.filter(x => x !== f) })}>×</button>`}</div>`)}</div>
       <div class="sec-h"><h3>Aggiungi una tua frase</h3></div>
       <div class="card tight"><textarea class="inp" rows="2" value=${nuova} onInput=${e => setNuova(e.target.value)} placeholder="Resta su questo dispositivo"></textarea>
-        <button class="btn block" style="margin-top:8px" disabled=${!nuova.trim()} onClick=${() => { salva({ ...mie, [gruppo]: [...lista, nuova.trim()] }); setNuova(''); }}>Aggiungi</button></div>
+        <button class="btn block mt-2" disabled=${!nuova.trim()} onClick=${() => { salva({ ...mie, [gruppo]: [...lista, nuova.trim()] }); setNuova(''); }}>Aggiungi</button></div>
     </div></div></div>`;
 }
 // proposta di riformulazione tecnica (regole fisse, offline): l'utente la rivede prima di applicarla
@@ -90,10 +90,10 @@ function RiformulaSheet({ prop, testo, onApply, onClose }) {
     <div class="sheet-nav"><button class="btn link" onClick=${onClose}>Annulla</button><b>Riformulazione</b><span></span></div>
     <div class="sheet-body">
       ${!prop.sicura && html`<div class="notice" style="margin-top:0">La nota è ambigua: controlla che descriva davvero una criticità prima di applicare.</div>`}
-      <div class="card tight" style="margin-top:12px"><div class="lt-eye" style="margin-bottom:4px">La tua nota</div><div style="font-size:var(--fs-base)">${testo}</div></div>
+      <div class="card tight mt-3"><div class="lt-eye" style="margin-bottom:4px">La tua nota</div><div style="font-size:var(--fs-base)">${testo}</div></div>
       <label class="fld"><span>Situazione rilevata</span><textarea rows="5" value=${sit} onInput=${e => setSit(e.target.value)}></textarea></label>
-      ${prop.mig && html`<label class="fld" style="margin-top:12px"><span>Attività di miglioramento (in coda a quella presente)</span><textarea rows="5" value=${mig} onInput=${e => setMig(e.target.value)}></textarea></label>`}
-      <button class="btn pri block" style="margin-top:14px" onClick=${() => { onApply(sit.trim(), (mig || '').trim()); onClose(); }}>Applica</button>
+      ${prop.mig && html`<label class="fld mt-3"><span>Attività di miglioramento (in coda a quella presente)</span><textarea rows="5" value=${mig} onInput=${e => setMig(e.target.value)}></textarea></label>`}
+      <button class="btn pri block mt-4" onClick=${() => { onApply(sit.trim(), (mig || '').trim()); onClose(); }}>Applica</button>
     </div></div></div>`;
 }
 // campo di testo con dettatura, frasi ricorrenti e (per la situazione rilevata) riformulazione
@@ -173,8 +173,8 @@ function HsGallery({ r, up, items }) {
       <div class="sec-h"><h3>${G.t} · ${L.length}</h3>
         <button class="btn link sm" onClick=${() => setAperti(a => ({ ...a, [G.g]: !a[G.g] }))}>${aperti[G.g] ? 'Chiudi' : 'Apri'}</button></div>
       ${aperti[G.g] && html`<div class="row" style="margin-bottom:10px">
-          ${G.g === 'new' && html`<button class="btn" style="flex:1" onClick=${() => { target.current = 'new'; camOpen(cam.current); }}><${Icon} n="camera" s=${18} /> Scatta</button>`}
-          <button class="btn" style="flex:1" onClick=${() => { target.current = G.g; inp.current.click(); }}><${Icon} n="image" s=${18} /> Dalla galleria</button></div>
+          ${G.g === 'new' && html`<button class="btn grow" onClick=${() => { target.current = 'new'; camOpen(cam.current); }}><${Icon} n="camera" s=${18} /> Scatta</button>`}
+          <button class="btn grow" onClick=${() => { target.current = G.g; inp.current.click(); }}><${Icon} n="image" s=${18} /> Dalla galleria</button></div>
         ${L.length > 0 && html`<div class="row" style="margin:-4px 0 8px;gap:4px"><span class="lock tb-grow">Nel report:</span>
           <button class="btn link sm" onClick=${() => up(q => ({ ...q, foto: q.foto.map(x => (x.g === 'prev') === (G.g === 'prev') ? { ...x, inc: true } : x) }))}>includi tutte</button>
           <button class="btn link sm" onClick=${() => up(q => ({ ...q, foto: q.foto.map(x => (x.g === 'prev') === (G.g === 'prev') ? { ...x, inc: false } : x) }))}>escludi tutte</button>
@@ -393,7 +393,7 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
     <${ImgSlot} label="Foto di copertina" id=${(r.img || {}).copertina} set=${id => setImg('copertina', id)} />
     <div style="height:12px"></div><${ImgSlot} label="Firma / timbro (copertina)" id=${(r.img || {}).firma} set=${id => setImg('firma', id)} /></div>
     <div class="sec-h"><h3>Sopralluoghi precedenti</h3><span class="hint">nel Word con quello di oggi</span></div>
-    <div class="card tight">${(r.visite || []).map((v, i) => html`<div class="row" key=${i} style="margin-bottom:8px">
+    <div class="card tight">${(r.visite || []).map((v, i) => html`<div class="row mb-2" key=${i}>
         <input class="inp" style="max-width:150px" value=${v.data} placeholder="Data" onInput=${e => up(p => ({ ...p, visite: p.visite.map((x, j) => j === i ? { ...x, data: e.target.value } : x) }))} />
         <input class="inp" value=${v.presenti} placeholder="Presenti" onInput=${e => up(p => ({ ...p, visite: p.visite.map((x, j) => j === i ? { ...x, presenti: e.target.value } : x) }))} />
         <button class="x" aria-label="Elimina" onClick=${() => up(p => ({ ...p, visite: p.visite.filter((_, j) => j !== i) }))}>×</button></div>`)}
@@ -413,14 +413,14 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
     <div class="card"><${ImgSlot} label="Planimetria catastale 1" id=${(r.img || {}).catasto1} set=${id => setImg('catasto1', id)} />
       <div style="height:12px"></div><${ImgSlot} label="Planimetria catastale 2" id=${(r.img || {}).catasto2} set=${id => setImg('catasto2', id)} />
       <div class="divider"></div><div class="fld"><span>Catasto fabbricati</span></div>
-      ${(r.catFab || []).map((c, i) => html`<div class="row" key=${i} style="margin-top:6px">${['foglio', 'particella', 'sub', 'categoria'].map(k => html`<input class="inp" placeholder=${k[0].toUpperCase() + k.slice(1)} value=${c[k]} onInput=${e => up(p => ({ ...p, catFab: p.catFab.map((x, j) => j === i ? { ...x, [k]: e.target.value } : x) }))} />`)}
+      ${(r.catFab || []).map((c, i) => html`<div class="row mt-2" key=${i}>${['foglio', 'particella', 'sub', 'categoria'].map(k => html`<input class="inp" placeholder=${k[0].toUpperCase() + k.slice(1)} value=${c[k]} onInput=${e => up(p => ({ ...p, catFab: p.catFab.map((x, j) => j === i ? { ...x, [k]: e.target.value } : x) }))} />`)}
         <button class="x" aria-label="Elimina" onClick=${() => up(p => ({ ...p, catFab: p.catFab.filter((_, j) => j !== i) }))}>×</button></div>`)}
-      <button class="btn dashed" style="margin-top:8px" onClick=${() => up(p => ({ ...p, catFab: [...(p.catFab || []), { foglio: '', particella: '', sub: '', categoria: '' }] }))}>+ Riga catasto fabbricati</button>
-      <div class="fld" style="margin-top:14px"><span>Catasto terreni</span></div>
-      ${(r.catTer || []).map((c, i) => html`<div class="row" key=${i} style="margin-top:6px"><input class="inp" style="max-width:110px" placeholder="Foglio" value=${c.foglio} onInput=${e => up(p => ({ ...p, catTer: p.catTer.map((x, j) => j === i ? { ...x, foglio: e.target.value } : x) }))} />
+      <button class="btn dashed mt-2" onClick=${() => up(p => ({ ...p, catFab: [...(p.catFab || []), { foglio: '', particella: '', sub: '', categoria: '' }] }))}>+ Riga catasto fabbricati</button>
+      <div class="fld mt-4"><span>Catasto terreni</span></div>
+      ${(r.catTer || []).map((c, i) => html`<div class="row mt-2" key=${i}><input class="inp" style="max-width:110px" placeholder="Foglio" value=${c.foglio} onInput=${e => up(p => ({ ...p, catTer: p.catTer.map((x, j) => j === i ? { ...x, foglio: e.target.value } : x) }))} />
         <input class="inp" placeholder="Mappali (es. 953, 1181)" value=${c.mappale} onInput=${e => up(p => ({ ...p, catTer: p.catTer.map((x, j) => j === i ? { ...x, mappale: e.target.value } : x) }))} />
         <button class="x" aria-label="Elimina" onClick=${() => up(p => ({ ...p, catTer: p.catTer.filter((_, j) => j !== i) }))}>×</button></div>`)}
-      <button class="btn dashed" style="margin-top:8px" onClick=${() => up(p => ({ ...p, catTer: [...(p.catTer || []), { foglio: '', mappale: '' }] }))}>+ Riga catasto terreni</button></div>`;
+      <button class="btn dashed mt-2" onClick=${() => up(p => ({ ...p, catTer: [...(p.catTer || []), { foglio: '', mappale: '' }] }))}>+ Riga catasto terreni</button></div>`;
   else if (S && S.sch) {
     const s = S.sch, d = r.schede[s.k] || hsEmptyScheda(s);
     const riform = target => (sit, mig) => setSch(s.k, { ...(target ? { subs: { ...d.subs, [target]: sit } } : { sit }), mig: mig ? ((d.mig || '').replace(/\s+$/, '') + (d.mig && d.mig.trim() ? '\n' : '') + mig) : d.mig });
@@ -433,15 +433,15 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
     <div class="sec-h"><h3>Rischio</h3></div>
     <div class="card">
       <div class="fld"><span>Priorità di intervento</span></div>
-      <div class="seg tall" style="margin-top:6px">${[1, 2, 3].map(n => html`<button class=${d.prio === n ? 'on' : ''} onClick=${() => setSch(s.k, { prio: d.prio === n ? null : n })}><b><i class="mdot" style=${'background:' + (n === 1 ? 'var(--danger)' : n === 2 ? 'var(--warn)' : 'var(--ok)')}></i> ${n}</b><small>${HS_PRIO[n]}</small></button>`)}</div>
-      <div class="grid2" style="margin-top:12px">
+      <div class="seg tall mt-2">${[1, 2, 3].map(n => html`<button class=${d.prio === n ? 'on' : ''} onClick=${() => setSch(s.k, { prio: d.prio === n ? null : n })}><b><i class="mdot" style=${'background:' + (n === 1 ? 'var(--danger)' : n === 2 ? 'var(--warn)' : 'var(--ok)')}></i> ${n}</b><small>${HS_PRIO[n]}</small></button>`)}</div>
+      <div class="grid2 mt-3">
         <label class="fld"><span>Natura del rischio</span><select value=${d.natura} onChange=${e => setSch(s.k, { natura: e.target.value })}>${[...new Set([...HS_NATURA, d.natura || ''])].map(o => html`<option value=${o}>${o || '—'}</option>`)}</select></label>
         <${Inp} label="Costo indicativo" value=${d.costo} set=${v => setSch(s.k, { costo: v })} placeholder="es. € 2.000 – 3.000" />
         <${Inp} label="ID rischio" value=${d.idr} set=${v => setSch(s.k, { idr: v })} placeholder="facoltativo" />
         <${Inp} label="Termine di completamento" value=${d.termine} set=${v => setSch(s.k, { termine: v })} placeholder="es. entro 6 mesi" />
       </div>
-      <div class="fld" style="margin-top:12px"><span>Competenza</span></div>
-      <div class="row" style="margin-top:6px">
+      <div class="fld mt-3"><span>Competenza</span></div>
+      <div class="row mt-2">
         <label class="hsg-inc"><input type="checkbox" checked=${d.cProp} onChange=${e => setSch(s.k, { cProp: e.target.checked })} /> Proprietà</label>
         <label class="hsg-inc"><input type="checkbox" checked=${d.cCond} onChange=${e => setSch(s.k, { cCond: e.target.checked })} /> Conduttore</label></div>
     </div>`;
@@ -451,7 +451,7 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
     const groups = [];
     S.cap.items.forEach(it => { if (it.grp !== grp) { grp = it.grp; groups.push({ grp, items: [] }); } groups[groups.length - 1].items.push(it); });
     body = html`<div>${groups.map(g => html`<div key=${g.grp}>
-      <div class="sec-h" style="margin-top:16px"><h3>${g.grp}</h3><span class="hint">${g.items.filter(it => r.risp[it.id]).length}/${g.items.length}</span></div>
+      <div class="sec-h mt-4"><h3>${g.grp}</h3><span class="hint">${g.items.filter(it => r.risp[it.id]).length}/${g.items.length}</span></div>
       <div class="card ck-list">${g.items.map(it => html`<${HsCheck} key=${it.id} it=${it} r=${r} up=${up} base=${B['nt.' + it.id]} />`)}</div>
     </div>`)}</div>`;
   }
@@ -464,11 +464,11 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
     ${(r.azioni || []).map((a, i) => { const set = patch => up(p => ({ ...p, azioni: p.azioni.map((x, j) => j === i ? { ...x, ...patch } : x) })); return html`<div class="card" key=${i}>
       <div class="row"><label class="fld" style="max-width:120px"><span>Codice</span><input class="mono" list="hs-codes" value=${a.cod} onInput=${e => set({ cod: e.target.value })} placeholder="es. 3.2" /></label>
         <div class="tb-grow"></div><button class="x" aria-label="Elimina azione" onClick=${() => confirm('Eliminare l\'azione?') && up(p => ({ ...p, azioni: p.azioni.filter((_, j) => j !== i) }))}>×</button></div>
-      <label class="fld" style="margin-top:10px"><span>Situazione rilevata</span><textarea rows="3" value=${a.sit} onInput=${e => set({ sit: e.target.value })}></textarea></label>
-      <label class="fld" style="margin-top:10px"><span>Rischio evidenziato</span><textarea rows="2" value=${a.risk} onInput=${e => set({ risk: e.target.value })}></textarea></label>
-      <div class="fld" style="margin-top:10px"><span>Gravità</span></div>
-      <div class="seg sm" style="margin-top:6px">${HS_GRAV.map(g => html`<button class=${a.grav === g ? 'on' : ''} onClick=${() => set({ grav: a.grav === g ? '' : g })}>${g}</button>`)}</div>
-      <label class="fld" style="margin-top:10px"><span>Azioni consigliate / misure di prevenzione</span><textarea rows="3" value=${a.az} onInput=${e => set({ az: e.target.value })}></textarea></label>
+      <label class="fld mt-3"><span>Situazione rilevata</span><textarea rows="3" value=${a.sit} onInput=${e => set({ sit: e.target.value })}></textarea></label>
+      <label class="fld mt-3"><span>Rischio evidenziato</span><textarea rows="2" value=${a.risk} onInput=${e => set({ risk: e.target.value })}></textarea></label>
+      <div class="fld mt-3"><span>Gravità</span></div>
+      <div class="seg sm mt-2">${HS_GRAV.map(g => html`<button class=${a.grav === g ? 'on' : ''} onClick=${() => set({ grav: a.grav === g ? '' : g })}>${g}</button>`)}</div>
+      <label class="fld mt-3"><span>Azioni consigliate / misure di prevenzione</span><textarea rows="3" value=${a.az} onInput=${e => set({ az: e.target.value })}></textarea></label>
     </div>`; })}
     <datalist id="hs-codes">${HS_SINT_ALL.map(it => html`<option value=${it.ref} label=${it.grp + ' – ' + it.txt} />`)}</datalist>
     ${!(r.azioni || []).length && html`<div class="card"><div class="empty" style="padding:16px">Nessuna azione: nel Word la tabella riporta «N.A.».</div></div>`}

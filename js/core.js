@@ -213,7 +213,7 @@ function ShareAsk() {
   return html`<div class="ov" onClick=${e => e.target === e.currentTarget && done(false)}><div class="modal" role="dialog">
     <h4>${q.label || 'File pronti'}</h4>
     <p>${q.n} ${q.n === 1 ? 'file' : 'file'} · ${(q.size / 1048576).toFixed(1)} MB. Nella condivisione scegli OneDrive e la cartella di destinazione.</p>
-    <div class="row"><button class="btn" style="flex:1" onClick=${() => done(false)}>Annulla</button>
+    <div class="row"><button class="btn grow" onClick=${() => done(false)}>Annulla</button>
       <button class="btn pri" style="flex:2" onClick=${() => done(true)}><${Icon} n="share" s=${17} /> Condividi</button></div>
   </div></div>`;
 }
@@ -707,7 +707,7 @@ async function copyIssue() {
 function NotePhotos({ rec, field = 'fotoAppunti', up }) {
   const ids = rec[field] || [];
   const tk = field === 'fotoAppunti' ? 'tagAppunti' : 'tag' + field.slice(4); // tag degli appunti
-  return html`<div style="margin-top:10px"><${PhotoStrip} ids=${ids} max=${10}
+  return html`<div class="mt-3"><${PhotoStrip} ids=${ids} max=${10}
     onAdd=${add => up(p => ({ ...p, [field]: [...(p[field] || []), ...add] }))}
     onRemove=${async id => { await removeBlob(id); up(p => ({ ...p, [field]: (p[field] || []).filter(f => f !== id) })); }} />
     <${TagPicker} tags=${rec[tk] || []} set=${t => up({ [tk]: t })} /></div>`;

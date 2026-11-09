@@ -199,7 +199,6 @@
     const doc = await PDFDocument.create();
     const font = await doc.embedFont(StandardFonts.Helvetica);
     const bold = await doc.embedFont(StandardFonts.HelveticaBold);
-    const obl = await doc.embedFont(StandardFonts.HelveticaOblique);
     const boldObl = await doc.embedFont(StandardFonts.HelveticaBoldOblique);
     const nRows = SC_LINES.length - 1;
     const camp = info.campioni || [];

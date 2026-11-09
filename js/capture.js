@@ -100,7 +100,7 @@ function Scanner({ title, target, onCode, onClose }) {
         <button class="btn" onClick=${sendManual}>OK</button></div>
       <div class="row">
         ${torch !== null && html`<button class="btn" onClick=${toggleTorch}><${Icon} n="torch" s=${17} /> ${torch ? 'Spegni' : 'Torcia'}</button>`}
-        <button class="btn pri" style="flex:1" onClick=${onClose}>Fine</button>
+        <button class="btn pri grow" onClick=${onClose}>Fine</button>
       </div>
     </div>
   </div>`;
@@ -308,7 +308,7 @@ function Camera({ input, onClose }) {
       <span class="cam-n">${shots.length ? shots.length + (shots.length === 1 ? ' foto' : ' foto') : ''}</span>
       ${torch !== null ? html`<button class=${'cam-b' + (torch ? ' on' : '')} aria-label="Torcia" onClick=${toggleTorch}><${Icon} n="torch" s=${21} /></button>` : html`<span style="width:44px"></span>`}
     </div>
-    ${err && html`<div class="cam-err">${err}<button class="btn" style="margin-top:12px" onClick=${() => { onClose(); input.click(); }}><${Icon} n="camera" s=${18} /> Fotocamera del telefono</button></div>`}
+    ${err && html`<div class="cam-err">${err}<button class="btn mt-3" onClick=${() => { onClose(); input.click(); }}><${Icon} n="camera" s=${18} /> Fotocamera del telefono</button></div>`}
     <div class="cam-bot">
       <button class="cam-gal" aria-label="Scegli dalla galleria" onClick=${() => gal.current.click()}>
         ${last ? html`<img src=${last.url} alt="" />` : html`<${Icon} n="image" s=${24} />`}<small>Galleria</small></button>

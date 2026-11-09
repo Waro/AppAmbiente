@@ -367,7 +367,7 @@ function AgEvSheet({ it, put, onOpen, onMove, onDelete, onClose }) {
         <label class="fld"><span>Ora</span><input type="time" step="1800" value=${it.ora || ''} onInput=${e => put(it, { ora: e.target.value })} /></label>
         <div class="fld"><span>Durata</span><${Stepper} n=${fmtDur(it.durata)} label="Durata" dec=${() => put(it, { durata: Math.max(SLOT, it.durata - SLOT) })} inc=${() => put(it, { durata: it.durata + SLOT })} /></div>
       </div></div>
-      <div class="stack" style="margin-top:14px">
+      <div class="stack mt-4">
         <button class="btn pri block" onClick=${onOpen}>${app ? 'Modifica l\'appuntamento' : 'Apri l\'attività'}</button>
         <button class="btn block" onClick=${onMove}>Sposta in un'altra fascia o giorno</button>
         <button class="btn block" onClick=${() => shareIcs([it], `Nembo_${it.rec.codice || (app ? 'appuntamento' : 'attivita')}_${it.data}.ics`.replace(/[^\w.-]+/g, '_'))}><${Icon} n="today" s=${18} /> Aggiungi al calendario</button>
@@ -428,7 +428,7 @@ function AgAddSheet({ start, records, settings, onSave, onDelete, onJson, onClos
     ${[...new Set([...DUR_OPT, dur])].sort((a, b) => a - b).map(m => html`<option value=${m}>${fmtDur(m)}</option>`)}</select></label>`;
   return html`<div class="sheet-ov" onClick=${e => e.target === e.currentTarget && onClose()}><div class="sheet" role="dialog" aria-label="Nuovo in programmazione">
     <div class="sheet-grab"></div>
-    <div class="sheet-nav"><button class="btn link" onClick=${onClose}>Annulla</button><b>${ed ? 'Appuntamento' : 'Nuovo'}</b><button class="btn link" style="font-weight:600" onClick=${save}>Salva</button></div>
+    <div class="sheet-nav"><button class="btn link" onClick=${onClose}>Annulla</button><b>${ed ? 'Appuntamento' : 'Nuovo'}</b><button class="btn link fw-6" onClick=${save}>Salva</button></div>
     <div class="sheet-body">
       ${!ed && html`<div class="seg" style="margin-bottom:12px"><button class=${tab === 'app' ? 'on' : ''} onClick=${() => setTab('app')}>Appuntamento</button><button class=${tab === 'att' ? 'on' : ''} onClick=${() => setTab('att')}>Attività</button></div>`}
       ${tab === 'att' && html`<p class="hint-p" style="margin:0 2px 10px">L'attività compare nella programmazione e nell'elenco della sua area: la apri quando inizi il sopralluogo.</p>`}
@@ -445,7 +445,7 @@ function AgAddSheet({ start, records, settings, onSave, onDelete, onJson, onClos
           <${Inp} label="Città" value=${f.citta} set=${v => set({ citta: v })} /><${Inp} label="Indirizzo" value=${f.indirizzo} set=${v => set({ indirizzo: v })} />
           ${DRONE_TIPI.includes(tipoT) && html`<${DroneSw} on=${f.drone} set=${v => set({ drone: v })} />`}`}
       </div></div>
-      <div class="stack" style="margin-top:14px">
+      <div class="stack mt-4">
         <button class="btn pri block" onClick=${save}>${tab === 'app' ? (ed ? 'Salva l\'appuntamento' : 'Aggiungi l\'appuntamento') : 'Programma l\'attività'}</button>
         ${onDelete && html`<button class="btn block danger" onClick=${onDelete}>Elimina l'appuntamento</button>`}
         ${!ed && tab === 'att' && html`<button class="btn block" onClick=${onJson}><${Icon} n="file" s=${18} /> Programma da un file JSON</button>`}
