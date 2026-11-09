@@ -1,7 +1,8 @@
 # Nembo
 
-App web (PWA) per Android: DDA ambientali (Fase 1 e Fase 2), mappature, campagne radon, sopralluoghi RA amianto e sopralluoghi HSE.
-I dati restano sul telefono (IndexedDB), senza server, senza login e senza SharePoint.
+App web (PWA) per il lavoro sul campo: DDA ambientali (Fase 1 e Fase 2), mappature MCA e FAV, sopralluoghi RA amianto, monitoraggi dell'aria,
+campagne radon, sopralluoghi e verbali HSE, fogli firme, clienti e programmazione. Versione attuale: **nembo-v50**.
+I dati restano sul dispositivo (IndexedDB), senza server. OneDrive (cartella dell'app) è facoltativo, per caricamento e sincronizzazione.
 
 ## Pubblicazione su GitHub Pages (una volta sola)
 
@@ -29,12 +30,23 @@ poi nel file `.json` cambia `tecnicoNome`, `tecnicoCognome` e `prelevatoDa` (o l
 Il codice utente è legato a nome e cognome del tecnico: se li cambi nel file, o se il collega li cambia in Impostazioni, sul suo dispositivo il tuo codice non vale e ne viene creato uno suo.
 La firma salvata non viene mai esportata. Il file contiene dati riservati e il codice utente: mai su GitHub.
 
-## Importazione Fase 1 e checklist Fase 2
+## Importazione da JSON e checklist Fase 2
 
-**Import da JSON (Fase 1):** in fondo alla Fase 1 c'è "Carica .json" / "Scarica modello". Il modello mostra lo schema atteso
-(uso del sito, checklist, aree REC, interviste, appunti). Per compilarlo: incolla a Claude un DDA precedente o dei documenti
-e chiedigli di generare il JSON su quello schema, poi caricalo qui. Riempie solo i campi ancora vuoti della scheda corrente:
-non sovrascrive mai un dato già inserito, e lo dice quanti campi ha toccato.
+I file JSON si fanno preparare a Claude dai documenti con i prompt di `Nembo_Prompt.txt` (fuori dal repository). Riempiono solo i campi
+ancora vuoti: non sovrascrivono mai un dato già inserito, saltano codici e planimetrie già presenti e dicono cosa hanno importato.
+I dati importati sono protetti dal lucchetto (`impOf`, `markImp`).
+
+- **DDA Fase 1** (`"type": "dda-fase1"`, ⋯ Opzioni → Dati → Importa da un DDA precedente): uso del sito, checklist, aree REC, interviste, appunti, planimetrie.
+- **Indagine precedente** (`"type": "dda-fase2"`, dalla v50): campioni con esito ed `esitoDettaglio`, NC con il campione di `riferimento`,
+  `numerazione` (`prosegui` | `nuova`) e planimetrie. Si carica nel DDA (stesso comando, passa a Fase 2), nella Mappatura
+  (⋯ Opzioni → Importa l'indagine precedente, solo MCA e FAV) e nell'RA (i campioni MCA non negativi e gli NC MCA diventano manufatti).
+  Nel DDA e nella Mappatura i campioni vanno in `r.precedente` e compaiono in «Indagine precedente»: sono di riferimento e non entrano
+  nella scheda per il laboratorio; «Ricampiona» li aggiunge ai punti da campionare (DDA) o crea il nuovo campione (Mappatura).
+- **Planimetrie da JSON** (dalla v50, `importPlanimetrie` in `js/plan.js`): `"planimetrie": [{ nome, piano, didascalia, origine: "storica", fonte, formato: pdf|jpeg|png, dati }]`,
+  `dati` in base64 o data URI. Le immagini diventano un PDF di una pagina (lato lungo come un A3); le planimetrie «Storiche» mostrano la didascalia sotto il nome.
+- **Numerazione che prosegue** (dalla v50): in DDA Fase 2 e Mappatura i nuovi campioni proseguono dopo l'indagine importata o dopo le attività
+  in Nembo dello stesso immobile (`precNembo`, `precBase`): dopo A6 il primo nuovo è A7, dopo NC3 il primo NC è NC4. L'interruttore
+  «Prosegui la numerazione» (`r.numerazione`) lo spegne.
 
 **Checklist "Punti da campionare" (Fase 2):** elenco libero di cosa si prevede di campionare (matrice, cosa, dove), utile per
 non dimenticare nulla sul campo. "Da aree REC" propone una voce per ogni area REC della Fase 1 non ancora ripresa.
@@ -44,8 +56,10 @@ Il tasto "Preleva" apre la matrice giusta e crea il campione già con descrizion
 
 Terza area della home. Si parte dalla mappatura o dal PMC del sito: "Scarica modello" dà lo schema JSON
 (dati del sito e un elenco "manufatti" con codice, ubicazione, descrizione, tipologia, quantità, stato e note del sopralluogo precedente).
-Il file si fa preparare a Claude dal documento, poi si carica con "Carica .json": nasce la lista dei manufatti.
-Ricaricando un file si aggiungono solo i codici nuovi; quelli già presenti non vengono toccati.
+Il file si fa preparare a Claude dal documento, poi si carica da ⋯ Opzioni → Manufatti → Carica file JSON: nasce la lista dei manufatti
+(con le planimetrie, se il file le contiene). Ricaricando un file si aggiungono solo i codici nuovi; quelli già presenti non vengono toccati.
+Altre strade: ripresa dall'RA dell'anno precedente dello stesso immobile (`raPrecedente`, `raRiprendi`) e «Manufatti dai campioni MCA»
+di una Mappatura o DDA Fase 2 **dello stesso immobile** (`raFontiCampioni`, `stessoImmobile`).
 
 Per ogni manufatto: stato di conservazione (classi del DM 06/09/1994 più "Non ispezionabile" e "Rimosso o bonificato"),
 note e fino a 3 foto. Se il file riporta lo stato del sopralluogo precedente, compare come riferimento.
@@ -227,11 +241,11 @@ Entrambi si salvano con la finestra "Salva con nome" (si può scegliere OneDrive
 
 ## Planimetrie
 
-In ogni DDA (Fase 1 e Fase 2) e in ogni campagna radon c'è la sezione **Planimetrie**: carichi un PDF e lo apri nel visualizzatore (PDF.js).
-- **Sposta**: scorri e ingrandisci con i tasti − e +.
-- **Disegna**: a mano libera con il dito, in rosso, blu, nero o evidenziatore giallo. "Annulla" toglie l'ultimo tratto.
-- **Etichette**: nel vassoio in basso compaiono i campioni (A1, F1, S1…) e le aree REC, oppure i punti R1, R2… nel radon.
-  Tocchi l'etichetta, poi il punto sulla planimetria. Trascinandole le sposti, con × le togli. Ogni campione nuovo compare da solo nel vassoio.
+In DDA, Mappatura, RA, radon e monitoraggio aria c'è la sezione **Planimetrie**: carichi uno o più PDF (o li importi da JSON) e li apri nel visualizzatore (PDF.js 4.10, `vendor/pdfjs.min.mjs`).
+- **Due dita** ingrandiscono e spostano in ogni momento; dito, mouse o penna usano lo strumento scelto: penna, evidenziatore, linea, freccia,
+  rettangolo, cerchio, testo, gomma a oggetto, etichette. Indietro e avanti per pagina, 8 colori (`PLAN_COLORS`) e 4 spessori, «Solo penna».
+- **Etichette**: nel vassoio compaiono i campioni (A1, F1…), gli NC, le aree REC, i punti R1… del radon, i manufatti e i punti aria.
+  Ogni pianta ha il suo **Piano**: il vassoio propone le etichette di quel piano, le altre sono sotto «Altri campioni».
 
 Toccando **Fine** l'app fonde disegni ed etichette in un nuovo PDF ("_annotata"). Il PDF originale resta intatto e le annotazioni
 restano modificabili: riaprendo la planimetria le ritrovi e il PDF annotato viene rigenerato. Nello ZIP ci sono entrambi,
@@ -243,7 +257,12 @@ su OneDrive e nella condivisione va la versione annotata.
 
 **Con l'account Microsoft 365 collegato** (Impostazioni → OneDrive → Accedi): "Carica su OneDrive" invia foto, allegati,
 PDF e `dati.json` nella cartella dell'app dentro OneDrive › App, una cartella per indagine o campagna. Il nome di quella cartella dipende dal **nome registrato per l'app in Entra ID**, non dal codice: se rinomini l'app qui, per cambiare anche il nome della cartella su OneDrive va rinominata separatamente la app registration in Entra ID (basta il nome visualizzato, non serve ricreare le credenziali).
-Foto e allegati si caricano una volta sola; PDF e dati.json vengono sostituiti a ogni invio. Backup → "Carica tutto su OneDrive" invia tutto l'archivio.
+Foto e allegati si caricano una volta sola; PDF e dati.json vengono sostituiti a ogni invio.
+**Più attività insieme** (dalla v49, `js/selezione.js`): tocco prolungato su un'attività negli elenchi o in «Da completare» (su PC il tasto «Seleziona»),
+poi un solo invio su OneDrive, ognuna nella sua cartella; senza OneDrive un solo file ZIP.
+**Togli dal dispositivo** (dalla v49, Impostazioni → Dati su questo dispositivo, `ArchiviaCard`): con la sincronizzazione attiva, le attività concluse,
+non modificate da 6 mesi, 1 anno o 2 anni e già allineate su OneDrive si tolgono dal dispositivo (kv `archiviate`, saltate da `Sync`);
+«Riporta sul dispositivo» le fa tornare.
 Permesso usato: `Files.ReadWrite.AppFolder` (delegato): l'app legge e scrive solo nella propria cartella, non vede il resto del OneDrive e non cancella nulla.
 
 **Sincronizzazione tra dispositivi** (dalla v20, Impostazioni → OneDrive → *Sincronizza tra i dispositivi*, attiva di default):
@@ -278,7 +297,7 @@ cartella nel salvataggio (resta il download semplice).
 
 ## Aspetto (dalla v14, stile "Essenziale")
 
-- **Due stili, ognuno chiaro e scuro** (dalla v49): *Essenziale* (grigio freddo e blu Proj.Eco, predefinito) e *Originale*
+- **Due stili, ognuno chiaro e scuro** (dalla v49): *Essenziale* (grigio freddo e blu, predefinito) e *Originale*
   (rosa-grigio e petrolio). In Impostazioni → Aspetto e avvio si scelgono lo **stile** e l'**aspetto**: *Automatico*
   (segue il tema chiaro o scuro del dispositivo, predefinito), *Chiaro* o *Scuro*. La scelta resta solo su quel dispositivo
   (`nembo_style` e `nembo_mode` in localStorage; la vecchia `nembo_theme` della v46–v48 viene convertita al primo avvio).
@@ -295,8 +314,10 @@ cartella nel salvataggio (resta il download semplice).
 - **Font IBM Plex** inclusi in `fonts/` (woff2, licenza OFL in `fonts/OFL.txt`): funzionano anche offline.
 - **Telefono e tablet in verticale**: tab bar flottante in basso, in stile segmented control (Oggi, DDA, Mappature, RA, Radon; con BU HSE: Oggi, HSE, DDA, RA); nelle schede la barra
   azioni in basso con l'azione principale. **Tablet in orizzontale e PC**: menu laterale comprimibile + elenco e scheda.
-- **Oggi**: prossimo sopralluogo, anelli della giornata, andamento dei caricamenti, ritiri radon e scadenze RA
-  (calcolate sulla fine dell'anno di incarico indicata nel sopralluogo RA).
+- **Oggi**: prossimo sopralluogo, «Attività di oggi» con gli anelli della giornata, «Scadenze» (ritiri radon e verifiche RA, calcolate sulla fine
+  dell'anno di incarico), «Da completare», «Strumenti e dati», «Giornata chiusa». Su PC e tablet in orizzontale tre colonne.
+- **Numeri del menu laterale**: contano solo le attività aperte (`attAperta` in `js/home.js`): non quelle concluse e su OneDrive, annullate o chiuse con «Concludi l'attività».
+- **Indicatore di stato** (dalla v48): una sola barra colorata a sinistra, come nelle Notifiche, per stato di invio e criticità.
 - **Campioni** raggruppati per piano, con segnaposto rosso e foto rapida per quelli ancora senza foto.
 
 ## Assistenza e dati del dispositivo (v26)
@@ -309,10 +330,25 @@ cartella nel salvataggio (resta il download semplice).
 - La pagina dichiara `noindex` per i motori di ricerca.
 - **Firma da immagine** (v27): per la firma del tecnico (Impostazioni, momenti radon) e del relatore nei fogli firme si può caricare una foto della firma su carta bianca; lo sfondo viene tolto (soglia adattiva a blocchi) e l'immagine ritagliata. Non disponibile per chi firma con «Passa il telefono» né per il referente del cliente.
 
+## Scheda File e attività concluse
+
+- **Scheda File** (dalla v46, `js/file.js`): in ogni attività i documenti da generare (schede campioni dal modello aziendale in PDF ed Excel,
+  riepilogo Word, scheda radon, schede aria, PDF dei fogli firme). Grigio da generare, verde generato, ambra se i dati sono cambiati dopo
+  (`fileSig`); «Rigenera» crea `_rev1`, `_rev2`… senza cancellare il precedente.
+- **Concludi l'attività** (dalla v50, ⋯ Opzioni): chiude l'attività anche con manufatti non visionati o foto mancanti, con conferma, elenco di cosa manca
+  e motivo facoltativo (`r.conclusa = { il, motivo, mancanze }`). Esce da «Da completare» e dai numeri del menu; si riapre dalle Opzioni.
+  Nell'RA concluso i manufatti senza stato restano «Non visionato».
+- **Fogli firme chiusi** (dalla v49): `improntaFoglio` mette nel PDF l'impronta SHA-256 dei dati del foglio.
+
 ## Aggiornare l'app
 
-Modifica i file, poi in `sw.js` aumenta `VERSION` (es. `nembo-v2`) e ricarica su GitHub.
-Al secondo avvio dopo l'aggiornamento il telefono usa la nuova versione. I dati non vengono toccati.
+1. Lavora su un ramo della versione (es. `v51`), prova, poi unisci in `main`: GitHub Pages pubblica `main`.
+2. Aumenta insieme `VERSION` in `sw.js` e `APP_VERSION` in `js/core.js` (`nembo-v51`; una correzione urgente `nembo-v50b`, mai con il punto)
+   e aggiungi a `FILES` di `sw.js` ogni file nuovo.
+3. Aggiungi la voce in `js/novita.js` (`NOVITA`): compare al primo avvio dopo l'aggiornamento e resta in Impostazioni → Novità.
+4. Se cambia la forma dei record, aumenta `REC_SCHEMA` e aggiungi il passaggio in `migraRecord` (`js/core.js`).
+
+Al secondo avvio dopo l'aggiornamento il dispositivo usa la nuova versione. I dati non vengono toccati.
 
 ## Struttura
 
@@ -328,6 +364,14 @@ Al secondo avvio dopo l'aggiornamento il telefono usa la nuova versione. I dati 
 | `js/office.js` | scheda campioni Excel e riepilogo Word |
 | `js/ra.js` | sopralluogo RA: manufatti, stato di conservazione, anno di incarico |
 | `js/hs-data.js`, `js/hs-word.js`, `js/hs.js` | sopralluogo HSE: dati fissi, motore Word (modelli .docx con JSZip) e import, interfaccia |
+| `js/verbale.js`, `js/vs-word.js` | Verbale HSE e il suo Word |
+| `js/clienti.js` | anagrafica clienti e preferenze (foglio firme, email) |
+| `js/cerca.js` | ricerca in tutte le attività |
+| `js/riepilogo.js` | riepilogo via email |
+| `js/file.js` | scheda File: documenti, stato, revisioni |
+| `js/novita.js` | Novità di ogni versione |
+| `js/guida.js` | benvenuto, primi passi, suggerimenti |
+| `js/selezione.js` | selezione di più attività |
 | `js/agenda.js` | programmazione: ora e durata, vista a fasce orarie, JSON del piano, file .ics |
 | `js/aria.js` | monitoraggio aria: punti, calcoli, sezione per attività e RA, schede Excel/PDF |
 | `js/firme.js` | fogli firme: modelli, sezione nelle attività, attività a sé, passa il telefono, impostazioni |
@@ -338,11 +382,13 @@ Al secondo avvio dopo l'aggiornamento il telefono usa la nuova versione. I dati 
 | `js/app.js` | navigazione, impostazioni, backup ZIP e ripristino |
 | `fonts/` | IBM Plex Sans e Mono (woff2) |
 | `pdfgen.js` | compilazione PDF (pdf-lib), compreso il PDF del foglio firme |
-| `vendor/` | librerie (Preact, htm, pdf-lib, JSZip, signature_pad), incluse per l'uso offline |
+| `vendor/` | librerie incluse per l'uso offline: Preact, htm, pdf-lib, PDF.js 4.10 (modulo `.mjs` con il worker), JSZip, ExcelJS, docx, signature_pad, MSAL; le pesanti si caricano con `needLib` |
+| `globals.json` | funzioni globali per ESLint (i file sono script globali, senza import) |
 
 Se cambia il modulo radon, i nomi dei campi del nuovo PDF vanno rimappati in `RADON_ROWS` (pdfgen.js).
 Non aggiungere mai al repository file con dati reali (moduli, modelli Word, offerte, backup ZIP, configurazione).
 Se cambia la scheda campioni, vanno ricontrollate le coordinate `SC_LINES` / `SC_COLS`.
+Nembo non si apre dentro altre pagine (controllo all'inizio di `js/core.js`). Tutto ciò che entra da ripristino, sincronizzazione e import passa da `pulisciRecord` / `pulisciImpostazioni` (`js/controlli.js`).
 
 ## Da sapere
 
@@ -372,3 +418,5 @@ Nelle regole CSS e negli stili scritti dal codice non si mettono colori, dimensi
 - **Colori di stampa**: `PRINT` in `js/core.js` raccoglie i colori fissi di planimetrie, PDF, Word, Excel ed email (non cambiano col tema).
 - **Testo sui colori pieni**: `--on-accent` (bianco nei temi chiari, inchiostro scuro nei temi scuri) e `--on-dark` (sempre bianco).
 - **Contrasto**: testo almeno 4,5:1 su fondo e card in tutti e quattro i temi.
+- **Spazi negli elementi creati dal codice** (dalla v49): classi `.mt-1` … `.mt-4`, `.mb-2`, `.grow`, `.self-start`, `.fw-6`, `.lead-gap` al posto degli `style=` in linea; solo valori della scala `--sp-*` (niente 6, 10 o 14 px).
+- I vecchi nomi dei colori (`--primary`, `--nc`, `--border`, `--amber`…) non esistono più: usare i token di Rilievo.
