@@ -12,10 +12,10 @@ function riepilogoDati(r, s) {
   const conta = (n, a, b) => n + ' ' + (n === 1 ? a : b);
   if (r.type === 'ra') {
     const M = r.manufatti || [];
-    voci = M.map(m => { const st = raStato(m.stato); return { t: [m.codice, m.ubicazione].filter(Boolean).join(' – '), stato: st ? st.l : 'Da verificare', crit: m.stato === 'danneggiato',
+    voci = M.map(m => { const st = raStato(m.stato); return { t: [m.codice, m.ubicazione].filter(Boolean).join(' – '), stato: st ? st.l : r.conclusa ? 'Non visionato' : 'Da verificare', crit: m.stato === 'danneggiato',
       righe: [m.descrizione, m.note && 'Note: ' + m.note].filter(Boolean), foto: m.foto || [] }; });
     const n = k => M.filter(m => m.stato === k).length;
-    sintesi = [conta(M.length, 'manufatto', 'manufatti'), M.filter(m => m.stato).length + ' verificati', n('danneggiato') && conta(n('danneggiato'), 'danneggiato', 'danneggiati'),
+    sintesi = [conta(M.length, 'manufatto', 'manufatti'), M.filter(m => m.stato).length + ' verificati', r.conclusa && M.some(m => !m.stato) && conta(M.filter(m => !m.stato).length, 'non visionato', 'non visionati'), n('danneggiato') && conta(n('danneggiato'), 'danneggiato', 'danneggiati'),
       n('suscettibile') && n('suscettibile') + ' suscettibili di danneggiamento', n('nonispez') && n('nonispez') + ' non ispezionabili', n('rimosso') && n('rimosso') + ' rimossi o bonificati'].filter(Boolean).join(', ');
     if (ariaHas(r)) voci.push(...ariaVoci(r));
   } else if (r.type === 'dda' || r.type === 'mappatura') {

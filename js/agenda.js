@@ -101,7 +101,7 @@ const PIANO_MODELLO = { type: 'nembo-programmazione', attivita: [
   { tipo: 'ra', data: '2026-11-03', ora: '09:00', durata: 120, stato: 'confermato', commessa: '000/26', cliente: 'Cliente', citta: 'Città', indirizzo: 'Via e numero civico', sito: '', firme: true, drone: false, note: 'senza manufatti: Nembo li riprende dall\'RA precedente dello stesso immobile (codice sito, oppure indirizzo + città)' },
   { tipo: 'ra', data: '2026-11-04', ora: '09:00', durata: 120, commessa: '000/26', cliente: 'Cliente', citta: 'Città', indirizzo: 'Via e numero civico', sito: '', incaricoDal: '2026-04-01', incaricoAl: '2027-03-31', note: 'sito nuovo: manufatti come nel modello RA',
     manufatti: [{ codice: 'M1', ubicazione: 'Copertura', descrizione: 'Lastre in cemento-amianto', tipologia: 'compatto', quantita: '120 m²', statoPrecedente: '', notePrecedenti: '' }] },
-  { tipo: 'dda1', data: '2026-11-03', ora: '14:00', durata: 180, commessa: '', cliente: '', citta: '', indirizzo: '', sito: '', firme: false, note: 'tipi: ra, dda1, dda2, mappatura, radon (posa), aria, hsE, hsS, vs, firme; stato (facoltativo): confermato, in_attesa, da_programmare, annullato; firme (facoltativo, per ra, dda1, dda2, mappatura, aria): true = foglio firme pronto con dati, attività e campioni o manufatti, false = nessuno, assente = come da anagrafica cliente; drone (facoltativo, per ra, dda1, dda2, mappatura): true = sopralluogo con il drone' }] };
+  { tipo: 'dda1', data: '2026-11-03', ora: '14:00', durata: 180, commessa: '', cliente: '', citta: '', indirizzo: '', sito: '', firme: false, note: 'tipi: ra, dda1, dda2, mappatura, radon (posa), aria, hsE, hsS, vs, firme; stato (facoltativo): confermato, in_attesa, da_programmare, annullato; firme (facoltativo, per ra, dda1, dda2, mappatura, aria): true = foglio firme pronto con dati, attività e campioni o manufatti, false = nessuno, assente = come da anagrafica cliente; drone (facoltativo, per ra, dda1, dda2, mappatura): true = sopralluogo con il drone; numerazione (facoltativo, per dda2 e mappatura): "nuova" = i campioni ripartono da A1, F1, NC1; assente o "prosegui" = proseguono dopo le attività precedenti dello stesso immobile' }] };
 function newOfType(tipo, all, s, extra = {}) {
   const [t, p] = PIANO_TIPI[tipo] || [tipo, {}];
   const base = t === 'dda' ? newDda(all, s) : t === 'mappatura' ? newMappatura(all, s) : t === 'ra' ? newRa(all, s) : t === 'hs' ? newHs(all, s, p.formato) : t === 'firme' ? newFirmeRec(all, s) : t === 'aria' ? newAria(all, s) : t === 'vs' ? newVerbale(all, s) : newRadon(s);
@@ -119,7 +119,7 @@ async function agendaJson(text, slot, records, s) {
   let d; try { d = JSON.parse(text); } catch (e) { throw new Error('il file non è un JSON valido'); }
   if (d && d.type === 'nembo-programmazione') {
     const list = Array.isArray(d.attivita) ? d.attivita : [];
-    const all = [...records], out = []; let saltate = 0, ripresi = 0, conMan = 0;
+    const all = [...records], out = []; let saltate = 0, ripresi = 0, conMan = 0, conPl = 0;
     for (const x of list) {
       if (!x || !PIANO_TIPI[x.tipo] || !/^\d{4}-\d{2}-\d{2}$/.test(x.data || '')) { saltate++; continue; }
       const str = v => (v == null ? '' : String(v)).trim();
@@ -130,6 +130,7 @@ async function agendaJson(text, slot, records, s) {
       const r = newOfType(x.tipo, all, s, { data: x.data, ora, stato, durata: +x.durata || durataBase(PIANO_TIPI[x.tipo][0], s),
         commessa: str(x.commessa), cliente: str(x.cliente), citta: str(x.citta), indirizzo: str(x.indirizzo), sito: str(x.sito), firme: typeof x.firme === 'boolean' ? x.firme : undefined });
       if (DRONE_TIPI.includes(r.type)) r.drone = x.drone === true;
+      if ((r.type === 'mappatura' || (r.type === 'dda' && r.fase === 2)) && (x.numerazione === 'nuova' || x.numerazione === 'prosegui')) r.numerazione = x.numerazione;
       if (['dda', 'hs', 'ra'].includes(r.type)) markImp(r, r, IMP_ANAG); // anagrafica dal file (DDA, HSE, RA): bloccata, si sblocca col lucchetto
       if (x.note && 'appunti' in r) r.appunti = str(x.note);
       if (r.type === 'ra') {
@@ -142,10 +143,12 @@ async function agendaJson(text, slot, records, s) {
           if (prev) { Object.assign(r, await raRiprendi(prev, r)); ripresi++; }
         }
       }
+      // planimetrie nel piano (immagini o pagine dei documenti, vedi importPlanimetrie)
+      if (Array.isArray(x.planimetrie) && x.planimetrie.length && 'planimetrie' in r) { const pl = await importPlanimetrie(x.planimetrie, r.planimetrie || []); if (pl.length) { r.planimetrie = [...(r.planimetrie || []), ...pl]; conPl++; } }
       all.push(r); out.push(r);
     }
     if (!out.length) throw new Error(saltate ? 'nessuna attività nuova: righe già presenti o senza tipo/data' : 'il piano non contiene attività');
-    const det = [conMan && `${conMan} RA con i manufatti del piano`, ripresi && `${ripresi} RA con i manufatti ripresi dall'anno precedente`].filter(Boolean).join(', ');
+    const det = [conMan && `${conMan} RA con i manufatti del piano`, ripresi && `${ripresi} RA con i manufatti ripresi dall'anno precedente`, conPl && `${conPl} con planimetrie`].filter(Boolean).join(', ');
     return { recs: out, msg: `${out.length} ${out.length === 1 ? 'attività programmata' : 'attività programmate'}${det ? ': ' + det : ''}${saltate ? ` (${saltate} saltate)` : ''}` };
   }
   if (Array.isArray(d) || (d && (d.type === 'ra-mappatura' || Array.isArray(d.manufatti)))) {
