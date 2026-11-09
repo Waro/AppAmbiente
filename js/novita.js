@@ -3,6 +3,15 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
+  { v: 50, data: '2026-11-09', tipo: 'minore', titolo: 'Planimetrie e Fase 2 dai documenti, attività concluse',
+    voci: [
+      'Nuova voce «Concludi l’attività» nelle Opzioni: chiude l’attività anche con manufatti non visionati o foto mancanti, dopo una conferma che elenca cosa manca e chiede un motivo facoltativo. L’attività riporta «Conclusa» sotto il titolo e si riapre dalle Opzioni.',
+      'I file JSON preparati dai documenti (PMC, mappature, DDA Fase 1 e Fase 2) possono contenere le planimetrie: pagine o immagini con ubicazioni, sigle e perimetri. Nembo le aggiunge da sole alla sezione Planimetrie, pronte da annotare.',
+      'Le planimetrie prese da un documento precedente hanno l’indicazione «Storica» e, sotto il nome, la spiegazione dei segni (es. «Fabbricato A», «S1 = sondaggio»).',
+      'Nuovo import DDA Fase 2: i campioni e gli NC dell’indagine precedente compaiono in «Indagine precedente», con esito e foto. Sono di riferimento e non entrano nella scheda per il laboratorio; «Ricampiona» li aggiunge ai punti da campionare.',
+      'Anche la Mappatura MCA e FAV importa l’indagine precedente (⋯ → Importa l’indagine precedente), con «Ricampiona» che crea il nuovo campione con piano, ubicazione e descrizione.',
+      'I campioni integrativi proseguono la numerazione dell’indagine precedente, importata da JSON o già in Nembo per lo stesso immobile: dopo A1…A6 il primo nuovo è A7, dopo NC3 il primo NC è NC4. L’interruttore «Prosegui la numerazione» lo spegne.',
+      'Lo stesso JSON di Fase 2 si può importare in un Sopralluogo RA: i campioni MCA non negativi e gli NC MCA diventano manufatti.' ] },
   { v: 49, data: '2026-11-09', tipo: 'minore', titolo: 'Selezione di più attività, Impostazioni a gruppi e Guida',
     voci: [
       'Selezione di più attività: tieni premuta un’attività negli elenchi o in «Da completare» (su PC tocca «Seleziona»), poi tocca le altre. Un solo invio su OneDrive, ognuna nella sua cartella; senza OneDrive le salvi in un unico file ZIP.',
