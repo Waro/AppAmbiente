@@ -10,15 +10,15 @@
      testo          { t: 'text', c, fs, x, y, s }   (x, y = angolo in alto a sinistra)
    Coordinate in unità della pagina (viewport PDF.js a scala 1). */
 
-const PDFJS = () => window.pdfjsLib || window['pdfjs-dist/build/pdf'];
+const PDFJS = () => window.pdfjsLib;
 function pdfjsReady() {
   const lib = PDFJS();
-  if (lib && !lib.GlobalWorkerOptions.workerSrc) lib.GlobalWorkerOptions.workerSrc = 'vendor/pdfjs.worker.min.js';
+  if (lib && !lib.GlobalWorkerOptions.workerSrc) lib.GlobalWorkerOptions.workerSrc = 'vendor/pdfjs.worker.min.mjs';
   return lib;
 }
 async function openPdf(bytes) {
   await needLib('pdfjs');
-  // isEvalSupported:false chiude la vulnerabilità dei font nelle versioni 3.x
+  // PDF.js 4.x (CVE-2024-4367 corretta); isEvalSupported:false resta come protezione in più
   return pdfjsReady().getDocument({ data: bytes, isEvalSupported: false, disableFontFace: false }).promise;
 }
 

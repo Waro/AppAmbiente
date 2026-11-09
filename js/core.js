@@ -642,14 +642,18 @@ function notifClear() { notifQ = notifQ.then(async () => { await DB.set('notific
 const LIBS = {
   exceljs: ['vendor/exceljs.min.js', () => window.ExcelJS],
   docx: ['vendor/docx.umd.min.js', () => window.docx],
-  pdfjs: ['vendor/pdfjs.min.js', () => window.pdfjsLib || window['pdfjs-dist/build/pdf']],
+  // PDF.js 4.x è un modulo ES: si carica con import() (stessa origine, permesso dalla CSP)
+  pdfjs: ['vendor/pdfjs.min.mjs', () => window.pdfjsLib, 'module'],
   pdflib: ['vendor/pdf-lib.min.js', () => window.PDFLib],
   jszip: ['vendor/jszip.min.js', () => window.JSZip],
 };
 const libP = {};
 function needLib(k) {
-  const [src, get] = LIBS[k];
+  const [src, get, kind] = LIBS[k];
   if (get()) return Promise.resolve(get());
+  if (!libP[k] && kind === 'module') libP[k] = import(new URL(src, document.baseURI).href)
+    .then(m => { window.pdfjsLib = m; return m; })
+    .catch(() => { delete libP[k]; throw Object.assign(new Error('libreria ' + k + ' non caricata: riapri l\'app con la rete attiva'), { code: 'LIB-LOAD' }); });
   if (!libP[k]) libP[k] = new Promise((res, rej) => {
     const el = document.createElement('script'); el.src = src; el.async = true;
     el.onload = () => get() ? res(get()) : rej(Object.assign(new Error('libreria ' + k + ' non disponibile'), { code: 'LIB-LOAD' }));
