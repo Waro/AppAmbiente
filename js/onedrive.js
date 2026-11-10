@@ -1,7 +1,6 @@
 /* OneDrive tramite Microsoft Graph.
    Permesso delegato Files.ReadWrite.AppFolder: l'app legge e scrive solo nella propria cartella
-   (OneDrive › App › nome registrato in Entra ID per questa app). Non vede il resto del OneDrive.
-   Cancella solo i backup ZIP più vecchi in _nembo/backup/ (restano gli ultimi BACKUP_TIENI, vedi app.js).
+   (OneDrive › App › nome registrato in Entra ID per questa app). Non vede il resto del OneDrive e non cancella nulla.
    - cartelle leggibili per attività: "Carica su OneDrive" (foto, PDF, dati.json)
    - cartella _nembo/: copia per la sincronizzazione tra dispositivi (vedi sync.js) */
 
@@ -176,13 +175,6 @@ const OD = (() => {
       if (end === blob.size) return r.json();
     }
   }
-  // eliminazione: solo i backup ZIP in _nembo/backup/ (il resto della cartella non si cancella mai)
-  async function delRaw(path) {
-    if (!okSync(path) || !path.startsWith(BACKUP_DIR) || !/\.zip$/.test(path)) throw new Error('percorso non ammesso');
-    const t = await OD.token({ silent: true });
-    const r = await fetch(`${ROOT}:/${enc(path)}`, { method: 'DELETE', headers: { Authorization: 'Bearer ' + t } });
-    if (!r.ok && r.status !== 404) throw await gErr(r);
-  }
   // elenco dei file di una cartella: [{ name, size, lastModifiedDateTime }]; cartella assente = []
   async function list(dir) {
     if (!okSync(dir)) throw new Error('percorso non ammesso');
@@ -220,7 +212,7 @@ const OD = (() => {
   }
 
   return {
-    configured, init, login, logout, token, upload, me, sniff, putRaw, list, getRaw, delRaw,
+    configured, init, login, logout, token, upload, me, sniff, putRaw, list, getRaw,
     get account() { return account; },
     get error() { return lastError; },
     subscribe(f) { listeners.add(f); return () => listeners.delete(f); },

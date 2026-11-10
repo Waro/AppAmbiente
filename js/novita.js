@@ -7,8 +7,9 @@ const NOVITA = [
     voci: [
       'Configurazione e firma si salvano su OneDrive e si ripristinano su un nuovo dispositivo accedendo con Microsoft. Anche i backup completi vanno direttamente su OneDrive.',
       'La firma su OneDrive è protetta da un PIN di 6 cifre: lo scegli in Impostazioni → File di configurazione e ti serve solo per ripristinarla.',
-      'Su OneDrive restano gli ultimi 3 backup completi; dalla pagina Backup li ripristini con un tocco.',
-      'In Oggi, al posto della campanella, l’icona della sincronizzazione: verde aggiornata, arancione da aggiornare, rossa se non riuscita o se non sei collegato a OneDrive. Toccala per sincronizzare.' ] },
+      'Nella pagina Backup trovi gli ultimi 3 backup completi su OneDrive e li ripristini con un tocco.',
+      'In Oggi, al posto della campanella, l’icona della sincronizzazione: verde aggiornata, arancione da aggiornare, rossa se non riuscita, grigia se OneDrive non è collegato. Toccala per sincronizzare.',
+      'Gli errori non letti sono un pallino rosso sul tuo profilo; le Notifiche sono la prima voce delle Impostazioni.' ] },
   { v: 50, data: '2026-11-09', tipo: 'minore', titolo: 'Planimetrie e Fase 2 dai documenti, attività concluse',
     voci: [
       'Nuova voce «Concludi l’attività» nelle Opzioni: chiude l’attività anche con manufatti non visionati o foto mancanti, dopo una conferma che elenca cosa manca e chiede un motivo facoltativo. L’attività riporta «Conclusa» sotto il titolo e si riapre dalle Opzioni.',

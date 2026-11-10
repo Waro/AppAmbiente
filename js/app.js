@@ -370,7 +370,7 @@ function CfgRestoreSheet({ cfg, settings, setSettings, onTemplates, avvio, onClo
     <div class="sheet-grab"></div>
     <div class="sheet-nav"><button class="btn link" onClick=${nonOra}>Non ora</button><b>Configurazione</b><span></span></div>
     <div class="sheet-body">
-      <p class="lead" style="margin:4px 2px 12px">Su OneDrive c'è la tua configurazione del ${quando}. Ripristinarla? Ritrovi impostazioni, modelli e firma.</p>
+      <p class="lead lead-gap">Su OneDrive c'è la tua configurazione del ${quando}. Ripristinarla? Ritrovi impostazioni, modelli e firma.</p>
       ${cfg.firma && html`<div class="card tight"><label class="fld"><span>Inserisci il PIN della firma.</span>
         <input type="password" inputmode="numeric" autocomplete="off" maxlength="6" value=${pin} onInput=${e => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))} /></label></div>`}
       <div class="stack mt-4">
@@ -395,7 +395,7 @@ function PinSheet({ onClose }) {
     <div class="sheet-grab"></div>
     <div class="sheet-nav"><button class="btn link" onClick=${onClose}>Annulla</button><b>PIN della firma</b><span></span></div>
     <div class="sheet-body">
-      <p class="lead" style="margin:4px 2px 12px">Scegli un PIN di 6 cifre per proteggere la firma su OneDrive. Ti servirà solo per ripristinarla.</p>
+      <p class="lead lead-gap">Scegli un PIN di 6 cifre per proteggere la firma su OneDrive. Ti servirà solo per ripristinarla.</p>
       <div class="card tight"><div class="grid2">
         <label class="fld"><span>PIN</span><input type="password" inputmode="numeric" autocomplete="new-password" maxlength="6" value=${a} onInput=${e => setA(cifre(e.target.value))} /></label>
         <label class="fld"><span>Ripeti il PIN</span><input type="password" inputmode="numeric" autocomplete="new-password" maxlength="6" value=${b} onInput=${e => setB(cifre(e.target.value))} /></label>
@@ -414,10 +414,10 @@ function CfgOdCard({ settings, set, onRestore }) {
   return html`<div class="card">
     <label class="fg-sw"><span><b class="fw-6">Salva su OneDrive</b><br /><small class="lock">Impostazioni, modelli e firma restano nella cartella dell'app. Su un dispositivo nuovo li ritrovi accedendo con Microsoft.</small></span>
       <${Toggle} on=${on} label="Salva su OneDrive" set=${v => { set({ cfgOd: v }); if (v) cfgOdSchedule(1000); }} /></label>
-    ${!OD.account ? html`<p class="lead" style="margin:8px 0 0">Accedi con Microsoft in Impostazioni → OneDrive per attivarlo.</p>` : html`
+    ${!OD.account ? html`<p class="lead mt-2 mb-0">Accedi con Microsoft in Impostazioni → OneDrive per attivarlo.</p>` : html`
       ${on && html`<div class="lock mt-2">${st.last ? 'Ultimo salvataggio: ' + quandoIt(st.last) : st.ok ? '' : 'Su OneDrive c’è una configurazione: ripristinala per collegare questo dispositivo.'}</div>`}
       ${st.err && html`<div class="notice err">${st.err}</div>`}
-      ${on && settings.firmaTecnico && pinSet === false && html`<p class="lead" style="margin:10px 0 0">Scegli un PIN di 6 cifre per proteggere la firma su OneDrive. Ti servirà solo per ripristinarla.</p>`}
+      ${on && settings.firmaTecnico && pinSet === false && html`<p class="lead mt-3 mb-0">Scegli un PIN di 6 cifre per proteggere la firma su OneDrive. Ti servirà solo per ripristinarla.</p>`}
       ${on && settings.firmaTecnico && pinSet !== null && html`<button class="btn block mt-2" onClick=${() => setPinOpen(true)}><${Icon} n="lock" s=${17} /> ${pinSet ? 'Cambia il PIN della firma' : 'Scegli il PIN della firma'}</button>`}
       <button class="btn block mt-2" onClick=${onRestore}><${Icon} n="share" s=${17} /> Ripristina da OneDrive</button>`}
     ${pinOpen && html`<${PinSheet} onClose=${() => setPinOpen(false)} />`}
@@ -425,11 +425,13 @@ function CfgOdCard({ settings, set, onRestore }) {
 }
 /* ---------------- sincronizzazione dalla Home ----------------
    Icona in Oggi al posto della campanella. Verde: sincronizzata da meno di SYNC_RECENTE; arancione: più vecchia,
-   offline o mai fatta; rossa: non riuscita, accesso da rinnovare o OneDrive non collegato.
+   offline o mai fatta; rossa: non riuscita o accesso da rinnovare; grigia: OneDrive non collegato.
+   Le notifiche: pallino rosso sul profilo (errori non letti) e voce «Notifiche» in cima alle Impostazioni.
    Al tocco sincronizza; se non riesce apre un foglio con l'errore e il collegamento a Impostazioni → OneDrive. */
 const SYNC_RECENTE = 24 * 3600000;
 function syncColore(s) {
-  if (!OD.account || s.phase === 'err' || s.phase === 'login') return ['var(--danger)', 'non riuscita'];
+  if (!OD.account) return ['var(--muted)', 'non collegato'];
+  if (s.phase === 'err' || s.phase === 'login') return ['var(--danger)', 'non riuscita'];
   if (s.phase === 'ok' && s.last && Date.now() - s.last < SYNC_RECENTE) return ['var(--ok)', 'aggiornata'];
   return ['var(--warn)', 'da aggiornare'];
 }
@@ -441,7 +443,7 @@ function SyncBtn({ onErr }) {
   const [c, l] = syncColore(s);
   const tap = async () => {
     if (run) return;
-    if (!OD.account) { onErr('Non sei collegato a OneDrive: accedi con Microsoft per sincronizzare.'); return; }
+    if (!OD.account) { onErr('Non sei collegato a OneDrive: accedi con Microsoft per sincronizzare.', 'OneDrive non collegato'); return; }
     if (!navigator.onLine) { onErr('Sei offline: la sincronizzazione riparte quando torna la rete.'); return; }
     await Sync.run();
     const x = Sync.state;
@@ -452,13 +454,13 @@ function SyncBtn({ onErr }) {
   return html`<button class="btn-icon" aria-label=${lab} title=${lab} style=${'color:' + (run ? 'var(--blue)' : c)} onClick=${tap}>
     ${run ? html`<div class="spin" />` : html`<${Icon} n="sync" s=${21} w=${2.2} />`}</button>`;
 }
-function SyncErrSheet({ msg, onClose, onOd }) {
+function SyncErrSheet({ msg, title = 'Sincronizzazione non riuscita', onClose, onOd }) {
   useBackClose(onClose);
-  return html`<div class="sheet-ov" onClick=${e => e.target === e.currentTarget && onClose()}><div class="sheet" role="alertdialog" aria-label="Sincronizzazione non riuscita">
+  return html`<div class="sheet-ov" onClick=${e => e.target === e.currentTarget && onClose()}><div class="sheet" role="alertdialog" aria-label=${title}>
     <div class="sheet-grab"></div>
     <div class="sheet-nav"><button class="btn link" onClick=${onClose}>Annulla</button><b>Sincronizzazione</b><span></span></div>
     <div class="sheet-body">
-      <div class="notice err" style="margin-top:0"><b>Sincronizzazione non riuscita</b><br />${msg}</div>
+      <div class=${'notice mt-0' + (title === 'OneDrive non collegato' ? '' : ' err')}><b>${title}</b><br />${msg}</div>
       <div class="stack mt-4">
         <button class="btn pri block" onClick=${onOd}><${Icon} n="share" s=${18} /> Apri Impostazioni → OneDrive</button>
         <button class="btn block" onClick=${onClose}>Annulla</button>
@@ -514,7 +516,7 @@ const SET_GROUPS = [
   { h: 'Supporto', items: ['guida', 'assistenza', 'info'] },
 ];
 
-function Settings({ settings, setSettings, onTemplates, go, page, wide }) {
+function Settings({ settings, setSettings, onTemplates, go, page, wide, unreadErr = 0 }) {
   const [sig, setSig] = useState(false);
   const [cfgR, setCfgR] = useState(null); // configurazione da OneDrive da ripristinare
   const [k, setK] = useState(0);
@@ -645,6 +647,9 @@ function Settings({ settings, setSettings, onTemplates, go, page, wide }) {
     <button class=${'set-prof' + (wide && cur === 'tecnico' ? ' on' : '')} aria-current=${wide && cur === 'tecnico' ? 'page' : null} onClick=${() => open('tecnico')}>
       <span class="ava">${(((s.tecnicoNome || '')[0] || '') + ((s.tecnicoCognome || '')[0] || '')).toUpperCase() || html`<${Icon} n="gear" s=${20} />`}</span>
       <span class="set-t"><b>${nome || 'Tecnico'}</b><small>${s.firmaTecnico ? 'Firma salvata' : 'Nome, cognome e firma'}</small></span><${Icon} n="right" s=${18} /></button>
+    <div class="set-group mt-3"><button class="set-row" onClick=${() => go({ v: 'notifiche' })}>
+      <span class="set-ic"><${Icon} n="bell" s=${19} /></span><span class="set-t"><b>Notifiche</b><small>Esiti, promemoria ed errori</small></span>
+      ${unreadErr > 0 && html`<span class="count crit">${unreadErr}</span>`}<${Icon} n="right" s=${18} /></button></div>
     ${SET_GROUPS.map(g => html`<div class="sec-h" key=${g.h}><h3>${g.h}</h3></div><div class="set-group">${g.items.map(row)}</div>`)}
     <p class="lead" style="margin:14px 2px">Le impostazioni si salvano da sole e restano su questo telefono.</p>
   </div>`;
@@ -819,11 +824,11 @@ function Notifiche({ settings, records = [], openRec }) {
 }
 
 /* ---------------- backup ---------------- */
-// backup completo su OneDrive in _nembo/backup/: restano gli ultimi BACKUP_TIENI. La firma del tecnico non va nello ZIP.
+// backup completo su OneDrive in _nembo/backup/: Nembo non cancella nulla, la pagina Backup mostra gli ultimi BACKUP_TIENI. La firma del tecnico non va nello ZIP.
 const BACKUP_DIR = '_nembo/backup/', BACKUP_TIENI = 3;
 const backupNomeOk = n => /^Nembo_backup_[\w-]+\.zip$/.test(n);
 async function backupOdList() {
-  return (await OD.list(BACKUP_DIR)).filter(f => backupNomeOk(f.name)).sort((a, b) => b.name.localeCompare(a.name));
+  return (await OD.list(BACKUP_DIR)).filter(f => backupNomeOk(f.name)).sort((a, b) => b.name.localeCompare(a.name)).slice(0, BACKUP_TIENI);
 }
 async function backupSuOneDrive(all, settings) {
   const d = new Date(), p = n => String(n).padStart(2, '0');
@@ -835,7 +840,6 @@ async function backupSuOneDrive(all, settings) {
     await OD.putRaw(BACKUP_DIR + name, blob, 'application/zip', { onProgress: (n, t) => _progress({ title: T, text: 'MB inviati', done: mb(n), total: Math.max(1, mb(t)) }) });
     _progress(null);
     await DB.set('lastBackup', Date.now());
-    for (const f of (await backupOdList()).slice(BACKUP_TIENI)) await OD.delRaw(BACKUP_DIR + f.name).catch(e => console.warn('backup vecchio', e));
     toast(`Backup salvato su OneDrive (${(blob.size / 1048576).toFixed(1)} MB)`);
     notify('ok', 'Backup salvato su OneDrive', { detail: name });
     return true;
@@ -893,7 +897,7 @@ function Backup({ records, all, settings, reload, lastBackup }) {
     <${LargeTitle} top title="Backup" />
     <div class="card">
       <h2 style="font-size:var(--fs-xl);font-weight:600">Backup su OneDrive</h2>
-      <p class="lead" style="margin:6px 0 12px">${OD.account ? `Un unico file ZIP con tutte le attività, salvato nella cartella dell'app su OneDrive: restano gli ultimi ${BACKUP_TIENI}. La firma non è inclusa.`
+      <p class="lead lead-gap">${OD.account ? `Un unico file ZIP con tutte le attività, salvato nella cartella dell'app su OneDrive: qui trovi gli ultimi ${BACKUP_TIENI}. La firma non è inclusa.`
         : 'Un unico file ZIP con tutte le indagini e campagne, anche con centinaia di foto: cartelle con foto, allegati e PDF, più i dati in manifest.json per il ripristino. Nella finestra di salvataggio scegli OneDrive; se non compare, il file va in Download e lo carichi dall\'app OneDrive.'}</p>
       <button class="btn pri block" disabled=${busy || !records.length} onClick=${doExport}>${busy ? html`<div class="spin" />` : html`<${Icon} n="archive" s=${18} />`} ${OD.account ? 'Salva su OneDrive' : 'Crea backup completo'}</button>
       ${OD.account && html`<button class="btn outline block mt-2" disabled=${busy || !records.length} onClick=${async () => { setBusy(true); await odSync(records.filter(r => !r._new), settings); setBusy(false); }}><${Icon} n="share" s=${18} /> Carica tutto su OneDrive</button>`}
@@ -962,7 +966,7 @@ const SN_COL = {
   hsList: TIPO_COL.hs, vsList: TIPO_COL.vs, agenda: 'var(--navy-ink)', firmeList: TIPO_COL.firme, cerca: 'var(--navy-ink)', cliList: TIPO_COL.dda,
   backup: 'var(--text2)', settings: 'var(--text2)',
 };
-function SideNav({ route, go, counts, settings, min, toggle }) {
+function SideNav({ route, go, counts, settings, min, toggle, unreadErr = 0 }) {
   const nav = v => { if (route.v !== v) go({ v }); };
   const item = (x, n) => {
     const on = route.v === x.v || route.v === x.d;
@@ -985,8 +989,8 @@ function SideNav({ route, go, counts, settings, min, toggle }) {
     <div class="sn-sec">Strumenti</div><div class="sn-div"></div>
     ${NAV_TOOLS.map(x => item(x, x.d ? counts[x.d] : 0))}
     <div class="sn-grow"></div>
-    <button class=${'sn-prof' + (route.v === 'settings' ? ' on' : '')} title=${min ? 'Impostazioni' : null} aria-label="Profilo e impostazioni" onClick=${() => nav('settings')}>
-      <span class="ava">${initials || html`<${Icon} n="gear" s=${18} />`}</span><span class="l"><b>${name || 'Profilo'}</b><small>Impostazioni</small></span></button>
+    <button class=${'sn-prof' + (route.v === 'settings' ? ' on' : '')} title=${min ? 'Impostazioni' : null} aria-label=${unreadErr ? `Profilo, impostazioni e notifiche, ${unreadErr} ${unreadErr === 1 ? 'errore non letto' : 'errori non letti'}` : 'Profilo, impostazioni e notifiche'} onClick=${() => nav('settings')}>
+      <span class="ava">${initials || html`<${Icon} n="gear" s=${18} />`}${unreadErr > 0 && html`<span class="dot">${unreadErr}</span>`}</span><span class="l"><b>${name || 'Profilo'}</b><small>Impostazioni</small></span></button>
     <button class="sn-toggle" title=${min ? 'Espandi il menu' : 'Riduci il menu'} aria-expanded=${!min} onClick=${toggle}>
       <${Icon} n=${min ? 'expand' : 'collapse'} s=${19} /><span class="l">Riduci menu</span></button>
     <div class="sn-ver">${APP_VERSION}${sync && html`<br /><span class=${'sn-sync ' + syncPhase}>${sync}</span>`}</div>
@@ -1156,7 +1160,7 @@ function App() {
   const rec = route.id && allRecs.find(r => r.id === route.id);
 
   const initials = ((settings.tecnicoNome || '')[0] || '') + ((settings.tecnicoCognome || '')[0] || '');
-  const syncBtn = html`<${SyncBtn} onErr=${setSyncErr} />`;
+  const syncBtn = html`<${SyncBtn} onErr=${(msg, title) => setSyncErr({ msg, title })} />`;
   const bell = html`<button class=${'btn-icon' + (route.v === 'notifiche' ? ' on' : '')} aria-label=${unreadErr ? `Notifiche, ${unreadErr} errori non letti` : 'Notifiche'}
     onClick=${() => route.v !== 'notifiche' && go({ v: 'notifiche' })}><${Icon} n="bell" s=${21} />${unreadErr > 0 && html`<span class="dot">${unreadErr}</span>`}</button>`;
   const plus = (fn, label) => html`<button class="btn-icon pri" aria-label=${label} onClick=${fn}><${Icon} n="plus" s=${22} w=${2.4} /></button>`;
@@ -1172,7 +1176,7 @@ function App() {
   if (route.v === 'home') {
     wideCreate = () => setSheet(true);
     body = html`<${Home} records=${records} settings=${settings} open=${openRec} newAct=${() => setSheet(true)} syncBtn=${syncBtn}
-      avatar=${html`<button class="ava" aria-label="Impostazioni" onClick=${() => go({ v: 'settings' })}>${initials.toUpperCase() || html`<${Icon} n="gear" s=${20} />`}</button>`}
+      avatar=${html`<button class="ava" aria-label=${unreadErr ? `Impostazioni e notifiche, ${unreadErr} ${unreadErr === 1 ? 'errore non letto' : 'errori non letti'}` : 'Impostazioni e notifiche'} onClick=${() => go({ v: 'settings' })}>${initials.toUpperCase() || html`<${Icon} n="gear" s=${20} />`}${unreadErr > 0 && html`<span class="dot">${unreadErr}</span>`}</button>`}
       tplOk=${tplOk} lastBackup=${lastBackup} goList=${v => go({ v })} goSettings=${p => go({ v: 'settings', p: typeof p === 'string' ? p : undefined })} goBackup=${() => go({ v: 'backup' })} goCerca=${() => go({ v: 'cerca' })}
       installEvt=${installEvt} onInstall=${async () => { installEvt.prompt(); await installEvt.userChoice; setInstallEvt(null); }} />`;
   } else if (route.v === 'ddaList') {
@@ -1244,7 +1248,7 @@ function App() {
   } else if (route.v === 'radon' && rec) {
     body = html`<${RadonForm} ...${formProps(rec)} embedded=${false} onClose=${null} onSave=${r => saveRec({ ...r, _new: r._new && radonIsEmpty(r) })} />`;
   } else if (route.v === 'settings') {
-    body = html`<${Settings} settings=${settings} setSettings=${setSettings} onTemplates=${reload} go=${go} page=${route.p} wide=${wide} />`;
+    body = html`<${Settings} settings=${settings} setSettings=${setSettings} onTemplates=${reload} go=${go} page=${route.p} wide=${wide} unreadErr=${unreadErr} />`;
   } else if (route.v === 'notifiche') {
     body = html`<${Notifiche} settings=${settings} records=${records} openRec=${openRec} />`;
   } else if (route.v === 'backup') {
@@ -1259,7 +1263,7 @@ function App() {
   const aperte = t => records.filter(r => r.type === t && attAperta(r, od)).length;
   const counts = { dda: aperte('dda'), mappatura: aperte('mappatura'), cli: clienti.length, ra: aperte('ra'), hs: aperte('hs'), vs: aperte('vs'), firme: aperte('firme'), aria: aperte('aria'), radon: aperte('radon') };
   return html`<div class=${'frame' + (wide ? ' wide' : '')}>
-    ${wide && html`<${SideNav} route=${route} go=${go} counts=${counts} settings=${settings} min=${navMin} toggle=${toggleNav} />`}
+    ${wide && html`<${SideNav} route=${route} go=${go} counts=${counts} settings=${settings} min=${navMin} toggle=${toggleNav} unreadErr=${unreadErr} />`}
     <div class=${'shell' + (splitActive ? ' split' : '') + (!wide && isTop ? ' has-tabs' : '') + (Sel.active ? ' sel-on' : '')}>
     ${wide && html`<header class="wbar"><div class="tb-grow">${route.v === 'home' && html`<div class="lt-eye">${new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}</div>`}<h1>${ROUTE_TITLE[route.v] || 'Nembo'}</h1></div>
       ${DETAIL_OF[route.v] && route.v !== 'cliList' && !Sel.active && html`<span class="sel-pc"><${SelBtn} /></span>`}
@@ -1276,7 +1280,7 @@ function App() {
     <${Progress} />
     <${CameraHost} />
     ${cfgRemota && html`<${CfgRestoreSheet} cfg=${cfgRemota} settings=${settings} setSettings=${setSettings} onTemplates=${reload} avvio=${true} onClose=${() => setCfgRemota(null)} />`}
-    ${syncErr && html`<${SyncErrSheet} msg=${syncErr} onClose=${() => setSyncErr(null)}
+    ${syncErr && html`<${SyncErrSheet} msg=${syncErr.msg} title=${syncErr.title} onClose=${() => setSyncErr(null)}
       onOd=${() => { window.addEventListener('popstate', () => setTimeout(() => go({ v: 'settings', p: 'onedrive' }), 0), { once: true }); setSyncErr(null); }} />`}
     ${novita && !benvenuto && !cfgRemota && html`<${NovitaSheet} list=${novita} go=${go} onClose=${() => setNovita(null)} />`}
     ${benvenuto && !cfgRemota && html`<${BenvenutoSheet} settings=${settings} setSettings=${setSettings} onClose=${() => setBenvenuto(false)} />`}
