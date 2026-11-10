@@ -4,7 +4,36 @@ App web (PWA) per il lavoro sul campo: DDA ambientali (Fase 1 e Fase 2), mappatu
 campagne radon, sopralluoghi e verbali HSE, fogli firme, clienti e programmazione. Versione attuale: **nembo-v51**.
 I dati restano sul dispositivo (IndexedDB), senza server. OneDrive (cartella dell'app) è facoltativo, per caricamento, sincronizzazione, configurazione e backup.
 
-Come funziona nel dettaglio (architettura, dati, schemi, sicurezza): cartella [`docs/`](docs/README.md).
+## Stack e requisiti
+
+- Preact + htm senza build, script globali; IndexedDB; service worker; MSAL + Microsoft Graph; pdf-lib, PDF.js 4.10, JSZip, ExcelJS, docx (tutto in `vendor/`, nessuna CDN).
+- Uso: Chrome su Android o PC (iPhone e iPad senza scanner e scelta della cartella), HTTPS.
+- Sviluppo: Python 3 (server statico), Playwright con Chromium per le prove; ESLint facoltativo con `globals.json`.
+
+## Avvio in locale
+
+```bash
+python3 -m http.server 8080      # dalla radice del repository
+# poi http://localhost:8080/index.html
+```
+
+Per provare senza cache usare una finestra anonima o, in Playwright, `service_workers='block'`. Nessuna build: pubblicare = unire in `main`.
+
+## Documentazione
+
+| Documento | Contenuto |
+|---|---|
+| [CLAUDE.md](CLAUDE.md) | istruzioni operative per Claude Code e Copilot |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | componenti, cartelle, moduli, avvio, integrazioni, offline |
+| [docs/DATA_MODEL.md](docs/DATA_MODEL.md) | storage, diagrammi ER, dizionario dei campi, enumerazioni, esempi, migrazioni |
+| [docs/FLUSSI.md](docs/FLUSSI.md) | schemi di funzionamento delle operazioni principali |
+| [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) | Rilievo: token, componenti, stati, accessibilità |
+| [docs/PRIVACY_SECURITY.md](docs/PRIVACY_SECURITY.md) | dati personali, controlli, terze parti, segreti, audit |
+| [docs/PRD.md](docs/PRD.md) | obiettivo, utenti, requisiti, fuori ambito |
+| [docs/DECISIONS.md](docs/DECISIONS.md) | decisioni architetturali |
+| [docs/USER_GUIDE.md](docs/USER_GUIDE.md) | guida rapida per chi usa l'app |
+| [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) | verifiche prima di ogni versione |
+| [docs/CHANGELOG.md](docs/CHANGELOG.md) | storico delle versioni |
 
 ## Pubblicazione su GitHub Pages (una volta sola)
 
@@ -404,7 +433,8 @@ Al secondo avvio dopo l'aggiornamento il dispositivo usa la nuova versione. I da
 | `pdfgen.js` | compilazione PDF (pdf-lib), compreso il PDF del foglio firme |
 | `vendor/` | librerie incluse per l'uso offline: Preact, htm, pdf-lib, PDF.js 4.10 (modulo `.mjs` con il worker), JSZip, ExcelJS, docx, signature_pad, MSAL; le pesanti si caricano con `needLib` |
 | `globals.json` | funzioni globali per ESLint (i file sono script globali, senza import) |
-| `docs/` | documentazione tecnica: architettura, dati, schemi di funzionamento, sicurezza |
+| `docs/` | documentazione: architettura, modello dei dati, flussi, design system, privacy e sicurezza, requisiti, decisioni, guida rapida, checklist, changelog |
+| `CLAUDE.md` | istruzioni per le sessioni di Claude Code e Copilot |
 
 Se cambia il modulo radon, i nomi dei campi del nuovo PDF vanno rimappati in `RADON_ROWS` (pdfgen.js).
 Non aggiungere mai al repository file con dati reali (moduli, modelli Word, offerte, backup ZIP, configurazione).

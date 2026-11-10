@@ -1,4 +1,4 @@
-# Architettura di Nembo
+# Architettura
 
 Nembo è una **PWA offline-first** senza server: tutto gira nel browser del dispositivo e i dati restano in IndexedDB.
 OneDrive (cartella dell'app, via Microsoft Graph) è facoltativo: serve per consegnare i file, sincronizzare i dispositivi,
@@ -35,7 +35,26 @@ flowchart LR
 - **OneDrive solo nella cartella dell'app**: Nembo non vede il resto del OneDrive e non cancella nulla.
 - **Codice pubblico**: nessun indirizzo, ID, nome di persona, cliente o laboratorio nel codice. Tutto passa dal file di configurazione.
 
-## 2. Livelli
+## 2. Struttura delle cartelle
+
+| Cartella o file | Contenuto |
+|---|---|
+| `index.html` | pagina unica: CSP, ordine di caricamento degli script, contenitore dell'app |
+| `sw.js` | service worker: `VERSION`, elenco `FILES` messo in cache |
+| `manifest.webmanifest` | manifest della PWA (nome, icone, orientamento) |
+| `styles.css` | token di Rilievo (inizio file) e stili dei componenti |
+| `pdfgen.js` | compilazione dei PDF con pdf-lib |
+| `js/` | codice dell'app, script globali (§ 4) |
+| `vendor/` | librerie incluse: Preact, hooks, htm, MSAL, signature_pad, pdf-lib, PDF.js 4.10, JSZip, ExcelJS, docx |
+| `fonts/` | IBM Plex Sans e Mono (woff2) |
+| `icons/`, `splash/` | icone e schermate di avvio |
+| `novita/` | immagini delle presentazioni delle Novità |
+| `globals.json` | funzioni globali per ESLint |
+| `docs/` | questa documentazione |
+
+Fuori dal repository: file di configurazione, modelli aziendali, backup, audit, backlog, sorgenti di guida e presentazione.
+
+## 3. Livelli
 
 ```mermaid
 flowchart TB
@@ -50,7 +69,7 @@ flowchart TB
   B --> E
 ```
 
-## 3. Moduli
+## 4. Moduli
 
 Tutti i file sono **script globali** caricati in ordine da `index.html` (nessun `import`, nessuna build).
 Ogni file usa le funzioni dei file caricati prima; `globals.json` le elenca per ESLint.
@@ -92,7 +111,7 @@ flowchart LR
   plan --> core
 ```
 
-## 4. Avvio
+## 5. Avvio
 
 ```mermaid
 sequenceDiagram
@@ -117,7 +136,7 @@ sequenceDiagram
 - Prima del disegno `core.js` applica stile e aspetto (`nembo_style`, `nembo_mode`) e blocca l'apertura dentro un iframe.
 - Il service worker risponde dalla cache; un aggiornamento arriva al secondo avvio (nuova `VERSION` in `sw.js`).
 
-## 5. Navigazione
+## 6. Navigazione
 
 Stato `route = { v, id?, p?, from? }` in `App`; il tasto Indietro (Android e browser) passa da `Back` (pila di funzioni) e `history`.
 
@@ -133,14 +152,14 @@ Stato `route = { v, id?, p?, from? }` in `App`; il tasto Indietro (Android e bro
 - **Da 1000 px**: menu laterale, elenco e scheda affiancati (`DETAIL_OF`), barra in alto con Cerca, + e campanella.
 - **Notifiche** (v51): in Oggi l'icona di sincronizzazione prende il posto della campanella; gli errori non letti sono un pallino rosso sul profilo (avatar in Oggi, profilo nel menu laterale) e «Notifiche» è la prima voce delle Impostazioni. Nelle altre schermate la campanella resta.
 
-## 6. Stato e salvataggio
+## 7. Stato e salvataggio
 
 - `App` tiene `allRecs` (tutti i record), `records` (solo attività), `settings`, `route`.
 - Ogni scheda usa `useAutosave`: ogni modifica aggiorna `updatedAt`, salva dopo 500 ms (e subito se l'app va in background) con `saveRec` → `DB.put` → `Sync.schedule()`.
 - Le impostazioni si salvano a ogni modifica (`setSettings`); dalla v51 anche la configurazione su OneDrive, 5 s dopo.
 - Store reattivi leggeri con `subscribe`: `Sync`, `OD`, `Sel` (selezione), notifiche, configurazione su OneDrive.
 
-## 7. Librerie e offline
+## 8. Librerie e offline
 
 - Tutto in `vendor/` e `fonts/`, **nessuna CDN**; la CSP lo impone.
 - Le librerie pesanti si caricano quando servono: `needLib('pdflib' | 'pdfjs' | 'jszip' | 'exceljs' | 'docx')`. PDF.js 4.10 è un modulo ES (`import()`), con il worker in `vendor/pdfjs.worker.min.mjs`.
@@ -149,19 +168,32 @@ Stato `route = { v, id?, p?, from? }` in `App`; il tasto Indietro (Android e bro
 CSP (in `index.html`):
 `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self' https://login.microsoftonline.com https://graph.microsoft.com https://*.sharepoint.com; frame-src https://login.microsoftonline.com; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'`
 
-## 8. Interfaccia: Rilievo
+## 9. Integrazioni esterne
+
+| Servizio | Uso | Autenticazione |
+|---|---|---|
+| Microsoft Entra ID | accesso dell'utente | MSAL Browser, flusso SPA con PKCE, redirect; ID applicazione e tenant dal file di configurazione |
+| Microsoft Graph (OneDrive) | invio, sincronizzazione, configurazione, backup nella cartella dell'app (`me/drive/special/approot`) | token delegato `User.Read`, `Files.ReadWrite.AppFolder`, `offline_access`; rinnovo silenzioso, poi redirect |
+| GitHub Pages | pubblicazione del codice statico | nessuna (pagina pubblica) |
+| Riconoscimento vocale di Chrome | dettatura nei campi | gestito dal browser; l'audio va a Google (segnalato nella Guida) |
+
+Nessun altro servizio: niente CDN, font esterni, analytics o tracciamento.
+Flusso dei dati delle operazioni principali (salvataggio, sincronizzazione, invio, backup, configurazione, import, generazione dei file, aggiornamento): [FLUSSI.md](FLUSSI.md).
+
+## 10. Interfaccia: Rilievo
 
 - Token all'inizio di `styles.css`: colori dei quattro temi (Essenziale e Originale, chiaro e scuro), `--fs-*`, `--r-*`, `--sp-*`, `--sh-*`, `--t-*`.
 - `TIPO_COL` (colore per tipo di attività) e `PRINT` (colori fissi di stampa) in `core.js`.
 - Niente valori scritti a mano nel CSS o negli `style=`: classi `mt-*`, `mb-*`, `lead-gap`, `grow`… e token.
+- Dettaglio dei token e dei componenti: [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md).
 - Componenti documentati in Rilievo: pulsanti, card, blocco navy, avvisi, righe, campi, badge, indicatore di stato, scheda File, selezione, impostazioni a gruppi, suggerimenti, primi passi, sincronizzazione.
 
-## 9. Test
+## 11. Test
 
 - Server locale (`python3 -m http.server`) e Playwright con Chromium; `service_workers='block'` per i test di interfaccia.
 - Dati di prova creati con le funzioni dell'app (`newDda`, `newRa`, `DB.put`…), solo inventati.
 - Prima di un rilascio: nessun errore in console; quattro temi; telefono, tablet verticale e orizzontale, PC; selezione; offline con il service worker attivo; import di prova; Graph simulato per sincronizzazione e backup.
 
-## 10. Rilascio
+## 12. Rilascio
 
-Ramo della versione → prove → merge in `main` (GitHub Pages). `VERSION` (`sw.js`) e `APP_VERSION` (`core.js`) uguali, voce in `js/novita.js`, file nuovi in `FILES`. Se cambia la forma dei record: `REC_SCHEMA` e `migraRecord`.
+Ramo della versione → prove ([RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md)) → merge in `main` (GitHub Pages). `VERSION` (`sw.js`) e `APP_VERSION` (`core.js`) uguali, voce in `js/novita.js`, file nuovi in `FILES`. Se cambia la forma dei record: `REC_SCHEMA` e `migraRecord`.

@@ -1,0 +1,48 @@
+# Guida rapida
+
+La guida completa (38 pagine, con schermate) è il PDF `Nembo_Guida_utente.pdf`, fuori dal repository. Qui i passi essenziali.
+
+## Installazione
+
+1. Apri l'indirizzo dell'app con **Chrome** su Android o PC.
+2. Menu ⋮ → **Installa app** (oppure il tasto «Installa app» in Oggi). Da installata funziona offline.
+3. Impostazioni → **File di configurazione** → **Carica .json** con il file ricevuto.
+4. Tocca il tuo nome in Impostazioni e salva la **firma** (a schermo o da immagine).
+5. Impostazioni → **OneDrive** → **Accedi** con l'account aziendale.
+
+Su un secondo dispositivo collega prima OneDrive: se c'è già la tua configurazione, Nembo propone di ripristinarla (la firma con il PIN).
+
+## Operazioni principali
+
+| Per… | Fai così |
+|---|---|
+| Nuova attività | + in Oggi o nell'elenco → tipo → cliente e luogo |
+| Programmare | Programmazione → tocca una fascia → attività o appuntamento; oppure **Carica JSON** con il piano preparato da Claude |
+| Compilare | schede in alto (Anagrafica, contenuto, File, Firme); si salva da sola |
+| Foto | tasto fotocamera; Galleria accanto per quelle già scattate |
+| Planimetrie | cartina a sinistra nella barra → aggiungi PDF → disegna ed etichetta → Fine |
+| Fogli firme | scheda Firme o ⋯ Opzioni → Prepara il foglio firme → passa il telefono → Chiudi |
+| Documenti | scheda **File**: grigio da generare, verde generato, ambra da rigenerare |
+| Consegnare | **Invia a OneDrive** al centro della barra; ⋯ Opzioni → Riepilogo via email |
+| Più attività insieme | tieni premuta una riga (su PC «Seleziona»), tocca le altre → Carica su OneDrive |
+| Chiudere con mancanze | ⋯ Opzioni → **Concludi l'attività** (si riapre dalle Opzioni) |
+| Backup | Backup → **Salva su OneDrive** (o Crea backup completo senza OneDrive) |
+| Errori | pallino rosso sul profilo → Impostazioni → **Notifiche** → Ricarica o Copia dettagli |
+
+## Sincronizzazione
+
+L'icona in alto in Oggi è verde (aggiornata), arancione (da aggiornare o offline), rossa (non riuscita), grigia (OneDrive non collegato). Toccala per sincronizzare. Vince la modifica più recente; un conflitto crea una copia «· copia».
+
+## Domande frequenti
+
+| Problema | Cosa fare |
+|---|---|
+| Non vedo sul PC le attività del telefono | stesso account su entrambi, «Sincronizza tra i dispositivi» attivo, poi tocca l'icona di sincronizzazione |
+| L'app mostra una versione vecchia | chiudi e riapri: l'aggiornamento si attiva al secondo avvio (Impostazioni → Info app) |
+| Un campo non si modifica | ha il lucchetto: è importato, tocca il lucchetto per sbloccarlo |
+| Un allegato non viene accettato | solo foto, PDF e Word .docx; i .doc vanno salvati come .docx |
+| Il ripristino dice che la firma non corrisponde | il backup è stato modificato: usa un altro backup |
+| Il numero nel menu è basso | conta solo le attività aperte |
+| La sessione Microsoft è scaduta | Impostazioni → OneDrive → Accedi |
+
+I prompt per preparare i file JSON con Claude o Copilot sono in `Nembo_Prompt.txt`, fuori dal repository.
