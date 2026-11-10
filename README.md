@@ -1,8 +1,10 @@
 # Nembo
 
 App web (PWA) per il lavoro sul campo: DDA ambientali (Fase 1 e Fase 2), mappature MCA e FAV, sopralluoghi RA amianto, monitoraggi dell'aria,
-campagne radon, sopralluoghi e verbali HSE, fogli firme, clienti e programmazione. Versione attuale: **nembo-v50**.
-I dati restano sul dispositivo (IndexedDB), senza server. OneDrive (cartella dell'app) è facoltativo, per caricamento e sincronizzazione.
+campagne radon, sopralluoghi e verbali HSE, fogli firme, clienti e programmazione. Versione attuale: **nembo-v51**.
+I dati restano sul dispositivo (IndexedDB), senza server. OneDrive (cartella dell'app) è facoltativo, per caricamento, sincronizzazione, configurazione e backup.
+
+Come funziona nel dettaglio (architettura, dati, schemi, sicurezza): cartella [`docs/`](docs/README.md).
 
 ## Pubblicazione su GitHub Pages (una volta sola)
 
@@ -24,6 +26,9 @@ Impostazioni → **Carica configurazione** e scegli il file `.json` ricevuto (da
 Contiene impostazioni (tecnico, laboratorio, offerta, codici analisi, valori proposti HSE), i due modelli PDF e, se caricati, i due modelli Word HSE. Resta solo su quel dispositivo.
 Contiene anche il **codice utente** (dalla v48): carica la stessa configurazione su telefono, tablet e PC, così ognuno riconosce come tuoi i backup degli altri, anche senza OneDrive.
 In alternativa si caricano i modelli e si compilano i campi a mano.
+
+**Configurazione da OneDrive** (dalla v51): dopo l'accesso a Microsoft, se nella cartella dell'app c'è già una configurazione, Nembo propone di ripristinarla
+(impostazioni, modelli e, con il PIN, la firma). Con *Non ora* resta in Impostazioni → File di configurazione → *Ripristina da OneDrive*.
 
 **Preparare la configurazione per un collega:** compila le impostazioni sul tuo dispositivo, tocca **Esporta**,
 poi nel file `.json` cambia `tecnicoNome`, `tecnicoCognome` e `prelevatoDa` (o lascia che li cambi lui dopo il caricamento).
@@ -275,9 +280,24 @@ la rete e poco dopo ogni modifica; c'è anche il tasto *Sincronizza ora*. Su un 
 - Un'attività eliminata sparisce anche dagli altri dispositivi; i suoi file restano su OneDrive.
 - L'attività aperta sullo schermo non viene sovrascritta: si aggiorna quando la chiudi.
 - Non chiede mai l'accesso a Microsoft da sola: se la sessione è scaduta lo segnala in Impostazioni.
-- Modelli, configurazione e firma del tecnico non vengono sincronizzati (restano nel file di configurazione).
+- Modelli, configurazione e firma del tecnico non passano dalla sincronizzazione delle attività: dalla v51 hanno la loro copia in `_nembo/config/` (vedi sotto).
 Controlli: solo PDF, JPEG, PNG verificati sul contenuto, massimo 60 MB, nomi ripuliti, registro degli ultimi caricamenti in Impostazioni.
 ID applicazione e ID tenant stanno nel file di configurazione, non nel codice.
+
+**Configurazione su OneDrive** (dalla v51, `cfgSuOneDrive` / `cfgDaOneDrive` in `js/app.js`):
+- `_nembo/config/configurazione.json` con impostazioni e modelli; la prima copia di ogni mese resta anche in `configurazione_AAAA-MM.json`.
+- Interruttore *Salva su OneDrive* in Impostazioni → File di configurazione (`cfgOd`, attivo di default). Si aggiorna 5 s dopo ogni modifica, solo dai dispositivi «collegati» (kv `cfg_od`): uno nuovo non sovrascrive la configurazione buona prima del ripristino.
+- La **firma del tecnico** va su OneDrive solo cifrata con un **PIN di 6 cifre** (PBKDF2-SHA256 310.000 iterazioni, AES-GCM); sul dispositivo resta la chiave non esportabile, mai il PIN. Senza PIN la firma non va su OneDrive.
+- Il codice utente non va su OneDrive: resta nel file di configurazione esportato.
+
+**Backup su OneDrive** (dalla v51): con l'account collegato il pulsante della pagina Backup diventa *Salva su OneDrive* e salva lo ZIP firmato in `_nembo/backup/`
+(fino a 2 GB, a blocchi, senza la firma del tecnico). La pagina Backup mostra gli ultimi 3 e li ripristina con un tocco;
+Nembo non cancella i backup precedenti, restano su OneDrive.
+
+**Icona di sincronizzazione** (dalla v51, `SyncBtn` in Oggi al posto della campanella): verde se l'ultimo giro riuscito ha meno di 24 ore,
+arancione se è più vecchio o offline, rossa se non è riuscito, grigia «non collegato» senza OneDrive. Toccandola sincronizza;
+in errore apre il motivo con il collegamento a Impostazioni → OneDrive.
+Gli errori non letti sono un pallino rosso sul profilo (avatar in Oggi, profilo nel menu laterale); **Notifiche** è la prima voce delle Impostazioni.
 
 **Senza collegamento**: "Invia PDF e foto a OneDrive" usa la condivisione di Android (a gruppi di 10), oppure "Salva tutto in un file ZIP".
 
@@ -342,8 +362,8 @@ cartella nel salvataggio (resta il download semplice).
 
 ## Aggiornare l'app
 
-1. Lavora su un ramo della versione (es. `v51`), prova, poi unisci in `main`: GitHub Pages pubblica `main`.
-2. Aumenta insieme `VERSION` in `sw.js` e `APP_VERSION` in `js/core.js` (`nembo-v51`; una correzione urgente `nembo-v50b`, mai con il punto)
+1. Lavora su un ramo della versione (es. `v52`), prova, poi unisci in `main`: GitHub Pages pubblica `main`.
+2. Aumenta insieme `VERSION` in `sw.js` e `APP_VERSION` in `js/core.js` (`nembo-v52`; una correzione urgente `nembo-v51b`, mai con il punto)
    e aggiungi a `FILES` di `sw.js` ogni file nuovo.
 3. Aggiungi la voce in `js/novita.js` (`NOVITA`): compare al primo avvio dopo l'aggiornamento e resta in Impostazioni → Novità.
 4. Se cambia la forma dei record, aumenta `REC_SCHEMA` e aggiungi il passaggio in `migraRecord` (`js/core.js`).
@@ -377,13 +397,14 @@ Al secondo avvio dopo l'aggiornamento il dispositivo usa la nuova versione. I da
 | `js/firme.js` | fogli firme: modelli, sezione nelle attività, attività a sé, passa il telefono, impostazioni |
 | `js/home.js` | schermata Oggi e foglio Nuova attività |
 | `js/onedrive.js` | caricamento su OneDrive e stato di invio |
-| `js/controlli.js` | controlli su allegati, backup e sincronizzazione; firma dei backup |
+| `js/controlli.js` | controlli su allegati, backup e sincronizzazione; firma dei backup; cifratura della firma con il PIN |
 | `js/sync.js` | sincronizzazione tra dispositivi tramite la cartella dell'app (`_nembo/`) |
-| `js/app.js` | navigazione, impostazioni, backup ZIP e ripristino |
+| `js/app.js` | navigazione, impostazioni, backup ZIP e ripristino, configurazione e backup su OneDrive |
 | `fonts/` | IBM Plex Sans e Mono (woff2) |
 | `pdfgen.js` | compilazione PDF (pdf-lib), compreso il PDF del foglio firme |
 | `vendor/` | librerie incluse per l'uso offline: Preact, htm, pdf-lib, PDF.js 4.10 (modulo `.mjs` con il worker), JSZip, ExcelJS, docx, signature_pad, MSAL; le pesanti si caricano con `needLib` |
 | `globals.json` | funzioni globali per ESLint (i file sono script globali, senza import) |
+| `docs/` | documentazione tecnica: architettura, dati, schemi di funzionamento, sicurezza |
 
 Se cambia il modulo radon, i nomi dei campi del nuovo PDF vanno rimappati in `RADON_ROWS` (pdfgen.js).
 Non aggiungere mai al repository file con dati reali (moduli, modelli Word, offerte, backup ZIP, configurazione).
@@ -397,7 +418,8 @@ Nembo non si apre dentro altre pagine (controllo all'inizio di `js/core.js`). Tu
   (la parte segreta non esce mai dal dispositivo) e con il codice utente del file di configurazione.
   Chrome Android non permette di condividere file .zip: finisce in Download, da lì si carica con l'app OneDrive.
   I PDF singoli invece si condividono direttamente su OneDrive.
-- **Ripristino**: Backup → "Scegli file ZIP" (il selettore di Android mostra anche OneDrive).
+  Dalla v51, con OneDrive collegato, il backup va in `_nembo/backup/` (senza la firma del tecnico); il backup salvato sul dispositivo la contiene.
+- **Ripristino**: Backup → uno degli ultimi 3 su OneDrive, oppure "Scegli file ZIP" (il selettore di Android mostra anche OneDrive).
   Firma non corrispondente: ripristino annullato. Backup senza firma o di un dispositivo non riconosciuto: Nembo chiede conferma.
   File modificati, di tipo non ammesso o attività non valide vengono scartati e riportati nelle Notifiche; impostazioni e modelli passano gli stessi controlli del caricamento a mano.
 - **Allegati**: solo foto, PDF e Word (.docx). Le foto vengono ridisegnate in JPEG; i PDF si aprono nel visore di Nembo senza eseguire script
@@ -418,5 +440,5 @@ Nelle regole CSS e negli stili scritti dal codice non si mettono colori, dimensi
 - **Colori di stampa**: `PRINT` in `js/core.js` raccoglie i colori fissi di planimetrie, PDF, Word, Excel ed email (non cambiano col tema).
 - **Testo sui colori pieni**: `--on-accent` (bianco nei temi chiari, inchiostro scuro nei temi scuri) e `--on-dark` (sempre bianco).
 - **Contrasto**: testo almeno 4,5:1 su fondo e card in tutti e quattro i temi.
-- **Spazi negli elementi creati dal codice** (dalla v49): classi `.mt-1` … `.mt-4`, `.mb-2`, `.grow`, `.self-start`, `.fw-6`, `.lead-gap` al posto degli `style=` in linea; solo valori della scala `--sp-*` (niente 6, 10 o 14 px).
+- **Spazi negli elementi creati dal codice** (dalla v49): classi `.mt-0` … `.mt-4`, `.mb-0`, `.mb-2`, `.grow`, `.self-start`, `.fw-6`, `.lead-gap` al posto degli `style=` in linea; solo valori della scala `--sp-*` (niente 6, 10 o 14 px).
 - I vecchi nomi dei colori (`--primary`, `--nc`, `--border`, `--amber`…) non esistono più: usare i token di Rilievo.

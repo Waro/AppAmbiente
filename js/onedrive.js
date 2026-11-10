@@ -8,6 +8,7 @@ const OD = (() => {
   const SCOPES = ['User.Read', 'Files.ReadWrite.AppFolder'];
   const ROOT = 'https://graph.microsoft.com/v1.0/me/drive/special/approot';
   const MAX_SIZE = 60 * 1048576;
+  const BACKUP_DIR = '_nembo/backup/', BACKUP_MAX = 2048 * 1048576; // i backup ZIP completi superano facilmente i 60 MB
   let pca = null, account = null, initP = null, cfgKey = '', lastError = null;
   const listeners = new Set();
   const emit = () => listeners.forEach(f => f());
@@ -147,9 +148,11 @@ const OD = (() => {
   const SYNC = '_nembo/';
   const okSync = p => typeof p === 'string' && p.startsWith(SYNC) && !p.includes('..') && /^[\w\-./]+$/.test(p);
   const enc = p => p.split('/').map(encodeURIComponent).join('/');
-  async function putRaw(path, blob, type) {
+  // opt.onProgress(inviati, totale): avanzamento dei file grandi (backup)
+  async function putRaw(path, blob, type, opt = {}) {
     if (!okSync(path)) throw new Error('percorso non ammesso');
-    if (blob.size > MAX_SIZE) throw new Error('file oltre 60 MB');
+    const max = path.startsWith(BACKUP_DIR) ? BACKUP_MAX : MAX_SIZE;
+    if (blob.size > max) throw new Error('file oltre ' + Math.round(max / 1048576) + ' MB');
     const t = await OD.token({ silent: true });
     if (blob.size <= 4 * 1048576) {
       const r = await fetch(`${ROOT}:/${enc(path)}:/content?@microsoft.graph.conflictBehavior=replace`, {
@@ -168,6 +171,7 @@ const OD = (() => {
       const end = Math.min(o + CH, blob.size);
       const r = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Range': `bytes ${o}-${end - 1}/${blob.size}` }, body: blob.slice(o, end) });
       if (!r.ok && r.status !== 202) throw await gErr(r);
+      if (opt.onProgress) opt.onProgress(end, blob.size);
       if (end === blob.size) return r.json();
     }
   }
@@ -415,3 +419,5 @@ function OneDriveSettings({ settings, set }) {
       ${log.map(l => html`<div class="lock" style="display:block;margin-top:3px">${new Date(l.t).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })} · ${l.path}</div>`)}`}
   </div>`;
 }
+
+
