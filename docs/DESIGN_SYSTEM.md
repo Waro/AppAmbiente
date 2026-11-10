@@ -65,6 +65,7 @@ Penne della planimetria (`PLAN_COLORS` in `plan.js`), fisse perché finiscono ne
 | Sincronizzazione (v51) | `.btn-icon` con icona `sync` | colore per stato: `--ok` aggiornata, `--warn` da aggiornare, `--danger` non riuscita, `--muted` non collegato; `.spin` in corso; `aria-label` con la parola |
 | Controllo a segmenti | `.seg` | voce attiva su `--seg-thumb` |
 | Tab bar / menu laterale | `.tabbar`, `.sidenav`, `.sn-it` | voce attiva `--blue` su `--blue-soft`; menu ridotto a icone |
+| Barre in basso flottanti (v52) | `.tabbar`, `.abar`, `.selbar`, `.plan-bar` | stesso disegno ovunque: binario `--track` al 95 % sfocato, `--r-card`, `--sh-pop`, `--sp-3` dal bordo inferiore (più l'area sicura), dentro i margini `--gutter`, al massimo 528 px; pulsanti secondari trasparenti in `--text2`, principale con il gradiente. In selezione la barra dell'attività aperta accanto si nasconde |
 | Card, blocco navy | `.card`, `.card-navy` | `tight`; navy con `--navy-glow` |
 | Avviso | `.notice` | predefinito (fascia `--blue-sky`), `err` |
 | Riga di elenco | `.rcard`, `.prow`, `.list` | `on` (aperta), selezionata, indicatore di stato |
@@ -75,7 +76,8 @@ Penne della planimetria (`PLAN_COLORS` in `plan.js`), fisse perché finiscono ne
 | Pulsante file | `.fbtn` | grigio da generare, verde generato, ambra da rigenerare |
 | Elenco impostazioni | `.set-group`, `.set-row`, `.set-prof` | prima riga Notifiche (v51); voce aperta su PC |
 | Foglio / finestra | `.sheet`, `.modal`, `.ov` | `sheet-nav` con Annulla a sinistra |
-| Selezione multipla | `.selhead`, `.selbar` | una sola azione in basso |
+| Selezione multipla | `.selhead`, `.selbar` | una sola azione in basso, nella barra flottante |
+| Microfono e fotocamera nel campo | `.mic-in`, `.cam-in` | tondi 36 px in `--fill-soft` in alto a destra del campo; la fotocamera sotto il microfono (in cima se la dettatura non c'è), contatore `.ck-badge`; miniature delle foto collegate sotto il campo (`.hs-fotos`) |
 | Suggerimento, primi passi | `.tip`, `PrimiPassi` | uno solo per schermata |
 
 ## 6. Stati di schermata

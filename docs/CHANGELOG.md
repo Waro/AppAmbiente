@@ -2,6 +2,16 @@
 
 Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Nembo non usa SemVer: le versioni sono `nembo-vNN`, le correzioni urgenti `nembo-vNNb` (vedi [DECISIONS.md](DECISIONS.md), D-12). Il testo per gli utenti di ogni versione è in `js/novita.js`.
 
+## [nembo-v52] — 2026-11-10
+
+### Aggiunto
+- Report HSE Esteso: fotocamera in ogni campo «Situazione rilevata», sotto il microfono; la foto è collegata alla sezione (`foto[].ref = 'sch.<k>[.<sottosezione>]'`), le miniature sono sotto il campo, il Word riporta «ID Foto n, m» e l'import del Word ricollega le foto (`FotoIn`, `FotoCollegate`, `HS_EST_REF`).
+- In Documentazione fotografica dell'Esteso: sezione collegata a ogni foto, con numero della sezione sulla miniatura.
+
+### Modificato
+- Barre in basso flottanti come la tab bar: barra azioni delle attività (`.abar`), barra della selezione (`.selbar`), barra degli strumenti delle planimetrie (`.plan-bar`); in selezione la barra dell'attività aperta accanto si nasconde.
+- Distacco della tab bar dal bordo con il token `--sp-3`.
+
 ## [Non rilasciato]
 
 ### Aggiunto

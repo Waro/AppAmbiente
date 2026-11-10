@@ -96,14 +96,33 @@ function RiformulaSheet({ prop, testo, onApply, onClose }) {
       <button class="btn pri block mt-4" onClick=${() => { onApply(sit.trim(), (mig || '').trim()); onClose(); }}>Applica</button>
     </div></div></div>`;
 }
+// foto collegate a una sezione del report Esteso: fotocamera dentro il campo, sotto il microfono (ref = chiave della sezione, es. sch.elettrici.Illuminazione)
+const hsFotoDi = (r, ref) => (r.foto || []).filter(p => p.ref === ref);
+function FotoIn({ r, up, rif, nome }) {
+  const inp = useRef(); const n = hsFotoDi(r, rif).length; const lab = 'Foto per ' + nome;
+  return html`<button type="button" class=${'cam-in' + (SR_API ? '' : ' solo')} aria-label=${lab + (n ? ', ' + n + (n === 1 ? ' collegata' : ' collegate') : '')} title=${lab} onClick=${() => camOpen(inp.current)}>
+    <${Icon} n="camera" s=${18} />${n > 0 && html`<i class="ck-badge">${n}</i>`}
+    <input ref=${inp} type="file" accept="image/*" capture="environment" hidden onClick=${e => e.stopPropagation()}
+      onChange=${e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) hsAddPhotos(fs, 'new', rif, up, (r.foto || []).length).then(() => toast('Foto aggiunta e collegata alla sezione')); }} /></button>`;
+}
+function FotoCollegate({ r, rif }) {
+  const [view, setView] = useState(null); const L = hsFotoDi(r, rif);
+  if (!L.length) return null;
+  return html`<div class="hs-fotos">${L.map((p, i) => html`<button key=${p.id} class="ck-th" aria-label=${'Foto ' + (i + 1)} onClick=${() => setView(i)}><${Thumb44} id=${p.id} /></button>`)}
+    ${view !== null && html`<${Viewer} ids=${L.map(p => p.id)} index=${view} onClose=${() => setView(null)} />`}</div>`;
+}
+// voci a cui collegare una foto nel report Esteso: una per sezione, una per sottosezione
+const HS_EST_REF = HS_SCHEDE.flatMap((s, i) => s.subs ? s.subs.map(sb => ({ id: 'sch.' + s.k + '.' + sb, ref: String(i + 1), txt: (s.s || s.l) + ' · ' + sb }))
+  : [{ id: 'sch.' + s.k, ref: String(i + 1), txt: s.s || s.l }]);
 // campo di testo con dettatura, frasi ricorrenti e (per la situazione rilevata) riformulazione
-function HsText({ label, value, set, base, gruppo, rows = 4, onRiformula, placeholder }) {
+function HsText({ label, value, set, base, gruppo, rows = 4, onRiformula, placeholder, foto }) {
   const [frasi, setFrasi] = useState(false);
   const [rif, setRif] = useState(null);
   const [rec, toggleRec] = useDictation(() => value, set);
   const changed = base != null && base !== '' && (value || '') !== base;
   return html`<div class="fld hs-text"><span>${label}</span>
-    <div class="mic-wrap"><textarea rows=${rows} value=${value || ''} placeholder=${placeholder || ''} onInput=${e => set(e.target.value)}></textarea><${MicBtn} rec=${rec} toggle=${toggleRec} /></div>
+    <div class="mic-wrap"><textarea rows=${rows} value=${value || ''} placeholder=${placeholder || ''} onInput=${e => set(e.target.value)}></textarea><${MicBtn} rec=${rec} toggle=${toggleRec} />${foto && html`<${FotoIn} ...${foto} />`}</div>
+    ${foto && html`<${FotoCollegate} ...${foto} />`}
     <div class="hs-tools">
       ${gruppo && html`<button class="chip-btn" onClick=${() => setFrasi(true)}><${Icon} n="list" s=${15} /> Frasi</button>`}
       ${onRiformula && html`<button class="chip-btn" onClick=${() => { const p = hsRiformula(value); if (!p) toast('Nessuna formulazione tecnica per questa nota'); else setRif(p); }}><${Icon} n="spark" s=${15} /> Riformula</button>`}
@@ -146,7 +165,7 @@ async function hsAddPhotos(files, g, ref, up, cur) {
   _progress(null);
   if (out.length) up(p => ({ ...p, foto: [...(p.foto || []), ...out] }));
 }
-function HsGallery({ r, up, items }) {
+function HsGallery({ r, up, items, sezioni }) {
   const [view, setView] = useState(null);
   const [aperti, setAperti] = useState({ prev: true, new: true });
   const inp = useRef(), cam = useRef(); const target = useRef('new');
@@ -183,8 +202,8 @@ function HsGallery({ r, up, items }) {
         : html`<div class="hsg">${L.map((p, k) => html`<div class=${'hsg-card' + (num[p.id] ? '' : ' excl')} key=${p.id}>
           <button class="hsg-img" onClick=${() => setView(ord.indexOf(p))}><${HsThumb} id=${p.id} /><span class="hsg-n">${num[p.id] ? 'Foto ' + num[p.id] : 'Esclusa'}</span>${p.ref && html`<span class="hsg-ref mono">${refLab(p.ref)}</span>`}</button>
           <textarea class="inp" rows="2" placeholder="Didascalia" value=${p.cap} onInput=${e => updF(p.id, { cap: e.target.value })}></textarea>
-          ${items && html`<select class="inp" value=${p.ref || ''} onChange=${e => updF(p.id, { ref: e.target.value })} aria-label="Voce collegata">
-            <option value="">Nessuna voce collegata</option>${items.map(it => html`<option value=${it.id}>${it.ref} · ${it.txt.slice(0, 60)}</option>`)}</select>`}
+          ${items && html`<select class="inp" value=${p.ref || ''} onChange=${e => updF(p.id, { ref: e.target.value })} aria-label=${sezioni ? 'Sezione collegata' : 'Voce collegata'}>
+            <option value="">${sezioni ? 'Nessuna sezione collegata' : 'Nessuna voce collegata'}</option>${items.map(it => html`<option value=${it.id}>${it.ref} · ${it.txt.slice(0, 60)}</option>`)}</select>`}
           <label class="hsg-inc"><input type="checkbox" checked=${p.inc !== false} onChange=${e => updF(p.id, { inc: e.target.checked })} /> Nel report</label>
           <div class="hsg-act">
             <button class="x" title="Prima" disabled=${k === 0} onClick=${() => move(p, -1)}>‹</button>
@@ -426,8 +445,8 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
     const riform = target => (sit, mig) => setSch(s.k, { ...(target ? { subs: { ...d.subs, [target]: sit } } : { sit }), mig: mig ? ((d.mig || '').replace(/\s+$/, '') + (d.mig && d.mig.trim() ? '\n' : '') + mig) : d.mig });
     body = html`<div class="card">
       ${s.subs ? s.subs.map(sb => html`<${HsText} key=${sb} label=${sb} rows=${5} gruppo="Situazione rilevata" value=${(d.subs || {})[sb]} base=${B['sch.' + s.k + '.' + sb]}
-          set=${v => setSch(s.k, { subs: { ...d.subs, [sb]: v } })} onRiformula=${riform(sb)} placeholder=${'Cosa hai osservato: ' + sb.toLowerCase()} />`)
-        : html`<${HsText} label="Situazione rilevata" rows=${7} gruppo="Situazione rilevata" value=${d.sit} base=${B['sch.' + s.k + '.sit']} set=${v => setSch(s.k, { sit: v })} onRiformula=${riform(null)} placeholder="Cosa hai osservato in sito…" />`}
+          set=${v => setSch(s.k, { subs: { ...d.subs, [sb]: v } })} onRiformula=${riform(sb)} placeholder=${'Cosa hai osservato: ' + sb.toLowerCase()} foto=${{ r, up, rif: 'sch.' + s.k + '.' + sb, nome: sb }} />`)
+        : html`<${HsText} label="Situazione rilevata" rows=${7} gruppo="Situazione rilevata" value=${d.sit} base=${B['sch.' + s.k + '.sit']} set=${v => setSch(s.k, { sit: v })} onRiformula=${riform(null)} placeholder="Cosa hai osservato in sito…" foto=${{ r, up, rif: 'sch.' + s.k, nome: s.s || s.l }} />`}
       <div class="divider"></div>
       <${HsText} label="Attività di miglioramento" rows=${5} gruppo="Attività di miglioramento" value=${d.mig} base=${B['sch.' + s.k + '.mig']} set=${v => setSch(s.k, { mig: v })} placeholder="Vuoto = «Nessuna azione necessaria»" /></div>
     <div class="sec-h"><h3>Rischio</h3></div>
@@ -473,7 +492,7 @@ function HsForm({ rec: initial, records, settings, onSave, onDelete, onSettings,
     <datalist id="hs-codes">${HS_SINT_ALL.map(it => html`<option value=${it.ref} label=${it.grp + ' – ' + it.txt} />`)}</datalist>
     ${!(r.azioni || []).length && html`<div class="card"><div class="empty" style="padding:16px">Nessuna azione: nel Word la tabella riporta «N.A.».</div></div>`}
     <button class="btn dashed" onClick=${() => up(p => ({ ...p, azioni: [...(p.azioni || []), { cod: '', sit: '', risk: '', grav: '', az: '', b: {} }] }))}>+ Aggiungi azione</button></div>`;
-  else if (S && S.k === 'foto') body = html`<${HsGallery} r=${r} up=${up} items=${sint ? HS_SINT_ALL : null} />`;
+  else if (S && S.k === 'foto') body = html`<${HsGallery} r=${r} up=${up} items=${sint ? HS_SINT_ALL : HS_EST_REF} sezioni=${!sint} />`;
   else if (S && S.k === 'crit') { const docs = hsDocMancanti(r); body = html`<div>
     <div class="sec-h"><h3>Priorità 1 e 2</h3><span class="hint">${crit.length}</span></div>
     <div class="list">${crit.length ? crit.map((c, i) => html`<div class="prow" key=${i}><span class=${'badge ' + (c.p === 1 ? 'b-nc' : 'b-f1')}>P${c.p}</span>

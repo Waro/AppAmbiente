@@ -279,7 +279,7 @@ Come la DDA per `campioni` (solo `mca`, `fav`), `nc`, `congelati`, `schede`, `pr
 |---|---|---|---|
 | hs `formato` | `esteso` \| `sintetico` | no | Formato del report |
 | hs `meta` | object | sì (redatto, verificato, approvato, presenti, firma) | Dati del report |
-| hs `foto` | `[{ id, cap, inc, g: 'prev' \| 'new', ref }]` | possibile | Rilievo fotografico |
+| hs `foto` | `[{ id, cap, inc, g: 'prev' \| 'new', ref, ts }]` | possibile | Rilievo fotografico; `ref` = id della voce (Sintetico) o chiave della sezione `sch.<k>` / `sch.<k>.<sottosezione>` (Esteso, v52); vuoto = foto senza collegamento |
 | hs `base` | object | no | Testi dell'anno precedente |
 | hs Esteso `visite`, `an`, `catFab`, `catTer`, `schede` | — | sì (`visite`: nomi) | Schede per sistema: `{ sit, subs, mig, natura, costo, idr, prio, cProp, cCond, termine }` |
 | hs Sintetico `anS`, `risp`, `note`, `descr`, `azioni`, `cgFoto` | — | `anS`: sì (nomi) | Checklist e azioni |
