@@ -74,7 +74,7 @@ Con la selezione (v49) le attività scelte partono in un solo invio, ognuna nell
 ```mermaid
 flowchart TB
   subgraph Backup
-    B1["Crea backup completo / Salva su OneDrive"] --> B2["buildZip: cartelle leggibili,<br/>impronta SHA-256 di ogni file, manifest.json"]
+    B1["Crea backup completo<br/>(con OneDrive: Salva su OneDrive)"] --> B2["buildZip: cartelle leggibili,<br/>impronta SHA-256 di ogni file, manifest.json"]
     B2 --> B3["firma.json: firma del dispositivo (ECDSA)<br/>+ firma del codice utente"]
     B3 --> B4{"OneDrive collegato e online? (v51)"}
     B4 -- sì --> B5["_nembo/backup/Nembo_backup_….zip<br/>(senza firma del tecnico)"]
@@ -106,6 +106,7 @@ stateDiagram-v2
   Collegato --> Collegato: ogni modifica a impostazioni o modelli → salva dopo 5 s,\nprima copia del mese anche in configurazione_AAAA-MM.json
 ```
 
+- Interruttore «Salva su OneDrive» in Impostazioni → File di configurazione (`settings.cfgOd`, attivo di default).
 - Un dispositivo salva solo se è «collegato» (`cfg_od.ok`): così uno nuovo non sovrascrive la configurazione buona.
 - La firma va su OneDrive solo cifrata: AES-GCM con chiave PBKDF2 (310.000 iterazioni) dal PIN di 6 cifre. Sul dispositivo resta la chiave non esportabile, mai il PIN. Se al ripristino il PIN manca o è sbagliato, la firma remota resta quella e il resto viene ripristinato.
 - Il codice utente non va su OneDrive; resta nel file di configurazione esportato.

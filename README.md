@@ -286,11 +286,11 @@ ID applicazione e ID tenant stanno nel file di configurazione, non nel codice.
 
 **Configurazione su OneDrive** (dalla v51, `cfgSuOneDrive` / `cfgDaOneDrive` in `js/app.js`):
 - `_nembo/config/configurazione.json` con impostazioni e modelli; la prima copia di ogni mese resta anche in `configurazione_AAAA-MM.json`.
-- Si aggiorna 5 s dopo ogni modifica, solo dai dispositivi «collegati» (kv `cfg_od`): uno nuovo non sovrascrive la configurazione buona prima del ripristino.
+- Interruttore *Salva su OneDrive* in Impostazioni → File di configurazione (`cfgOd`, attivo di default). Si aggiorna 5 s dopo ogni modifica, solo dai dispositivi «collegati» (kv `cfg_od`): uno nuovo non sovrascrive la configurazione buona prima del ripristino.
 - La **firma del tecnico** va su OneDrive solo cifrata con un **PIN di 6 cifre** (PBKDF2-SHA256 310.000 iterazioni, AES-GCM); sul dispositivo resta la chiave non esportabile, mai il PIN. Senza PIN la firma non va su OneDrive.
 - Il codice utente non va su OneDrive: resta nel file di configurazione esportato.
 
-**Backup su OneDrive** (dalla v51): con l'account collegato *Crea backup completo* salva lo ZIP firmato in `_nembo/backup/`
+**Backup su OneDrive** (dalla v51): con l'account collegato il pulsante della pagina Backup diventa *Salva su OneDrive* e salva lo ZIP firmato in `_nembo/backup/`
 (fino a 2 GB, a blocchi, senza la firma del tecnico). La pagina Backup mostra gli ultimi 3 e li ripristina con un tocco;
 Nembo non cancella i backup precedenti, restano su OneDrive.
 
