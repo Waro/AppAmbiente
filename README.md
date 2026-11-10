@@ -8,13 +8,20 @@ I dati restano sul dispositivo (IndexedDB), senza server. OneDrive (cartella del
 
 - Preact + htm senza build, script globali; IndexedDB; service worker; MSAL + Microsoft Graph; pdf-lib, PDF.js 4.10, JSZip, ExcelJS, docx (tutto in `vendor/`, nessuna CDN).
 - Uso: Chrome su Android o PC (iPhone e iPad senza scanner e scelta della cartella), HTTPS.
-- Sviluppo: Python 3 (server statico), Playwright con Chromium per le prove; ESLint facoltativo con `globals.json`.
+- Sviluppo: Python 3 (server statico), Playwright con Chromium per le prove; ESLint con `.eslintrc.cjs` e `globals.json`, rigenerato da `tools/aggiorna-globals.py`.
 
 ## Avvio in locale
 
 ```bash
 python3 -m http.server 8080      # dalla radice del repository
 # poi http://localhost:8080/index.html
+```
+
+Controllo dei nomi globali (un nome mancante o rinominato si vedrebbe solo al tocco del pulsante):
+
+```bash
+python3 tools/aggiorna-globals.py   # rigenera globals.json dai file in index.html
+npx eslint@8.57.0 pdfgen.js sw.js js
 ```
 
 Per provare senza cache usare una finestra anonima o, in Playwright, `service_workers='block'`. Nessuna build: pubblicare = unire in `main`.
@@ -99,6 +106,21 @@ Per ogni manufatto: stato di conservazione (classi del DM 06/09/1994 più "Non i
 note e fino a 3 foto. Se il file riporta lo stato del sopralluogo precedente, compare come riferimento.
 Barra di avanzamento e filtro "Da verificare". Le planimetrie usano come etichette i codici dei manufatti, colorati per stato.
 
+## Monitoraggio aria
+
+Prelievi di fibre aerodisperse (SEM, MOCF, FAV). Si usa in due modi:
+- **da solo**: Nuova attività → *Monitoraggio aria* (menu laterale → Monitoraggio aria; in Oggi sul telefono);
+- **dentro il sopralluogo RA**: card *Aggiungi monitoraggio aria*, prima delle planimetrie. Se non contiene nulla si toglie con *Togli il monitoraggio aria*.
+
+I punti si chiamano **S** per SEM e FAV e **M** per MOCF (numerazione separata: S1, S2…, M1, M2…); cambiando metodica il nome si aggiorna. I punti ripresi dall'anno prima e quelli rinominati a mano mantengono il loro nome.
+Per ogni punto: piano, postazione, Eseguito / Non eseguito, data, metodica, ora di inizio e fine, campionatore, membrana (anche con Scansiona), flusso, litri, rapporto di prova, concentrazione, note e foto.
+La durata e i litri (flusso × minuti) si calcolano da soli; i litri scritti a mano hanno la precedenza. Le concentrazioni oltre il limite (SEM 2 ff/l, MOCF 20 ff/l) sono evidenziate.
+I punti compaiono come etichette sulle planimetrie. Il RA ripreso dall'anno prima copia i punti senza le misure.
+
+**Uscite** (Excel e PDF): *Scheda di prelievo*, da inviare con le membrane, e *Riepilogo esiti*, la tabella per la relazione (punti non eseguiti con «MONITORAGGIO NON EFFETTUATO», superamenti in rosso).
+Vanno nello ZIP, nella condivisione e su OneDrive, nella cartella `aria/`, insieme ai rapporti di prova allegati.
+Campionatori, addetto alla verifica della taratura e codici d'analisi si impostano in Impostazioni → Monitoraggio aria e viaggiano nel file di configurazione. Laboratorio, offerta, email per i referti, «prelevato da» e «verificato da» sono quelli della scheda campioni.
+
 ## Sopralluogo HSE
 
 Due formati, scelti in Nuova attività: **Esteso** (schede per sistema con situazione rilevata, attività di miglioramento,
@@ -120,6 +142,18 @@ priorità, natura del rischio, costo, competenza e termine; anagrafica, visite, 
 
 **Foto del sopralluogo precedente** (v32): non vanno su OneDrive né nella condivisione (sono già nel report dell'anno prima); restano nel backup ZIP e nella sincronizzazione. Nel Rilievo fotografico *elimina tutte* toglie in un colpo tutte le foto del sopralluogo precedente.
 **Foto di inquadramento del capitolo 8** (Sintetico): le immagini sotto «Condizioni generali dell'immobile» vengono lette dal Word importato, rimesse nel nuovo Word con le stesse dimensioni e copiate nel report dell'anno successivo. Si gestiscono nella sezione 8.
+
+## Verbale HSE
+
+Nuova attività HSE: Nuova attività → *Verbale HSE* (codice `VS-AAAA-NNN`). Dati del sopralluogo e un elenco di **note**, ognuna con titolo, testo (anche dettato), foto e tag; le note si riordinano e si filtrano per tag. La fotocamera nella barra azioni apre una nota nuova con la foto. Appunti, ZIP e OneDrive come le altre attività (foto in `note/`); niente fogli firme.
+
+**Tag**: ogni nota del verbale e gli *Appunti* di tutte le attività hanno i tag. Toccando *+ Tag* Nembo propone i tag già usati (i più frequenti per primi); se ne scrivi uno nuovo, *Crea «…»*. I tag stanno nelle attività, quindi si sincronizzano con loro. Ogni tag ha un colore suo, preso da una tavolozza diversa dai colori dei tipi di attività.
+
+## Word del Verbale HSE
+
+- Modello in Impostazioni → Modelli: *Modello Word Verbale HSE* (`vs.docx`, chiave `tpl_vs`; non va nel repository). Segnaposto: `@@TITOLO@@`, `@@INDIRIZZO@@`, `@@COMMITTENTE@@`, `@@FONDO@@`, `@@DATAREPORT@@`, `@@REDATTO@@`, `@@VERIFICATO@@`, `@@PROTOCOLLO@@`, `@@COMMESSA@@`, `@@PROCURA@@`, `@@AN_INDIRIZZO@@`, `@@DESCRAREA@@`, riga ripetuta `@@V_DATA@@`/`@@V_PRESENTI@@`, immagini con testo alternativo `@@COPERTINA@@` e `@@INQUADRAMENTO@@`, scheda prototipo `@@S_TITOLO@@` (titolo) + tabella con `@@S_SIT@@`, `@@S_FOTO@@`, `@@S_MIG@@`; piè di pagina `@@ASSET@@`, `@@MESEANNO@@`, `@@REVISIONE@@`.
+- `js/vs-word.js` (`vsBuildDocx`, `vsWord`): una scheda per nota, una per pagina; foto nella colonna «Documentazione fotografica». Il sommario si aggiorna all'apertura in Word.
+- Verbale: in Anagrafica *Dati del report* (titolo, fondo, data report, redatto, verificato, protocollo, revisione, procura, foto di copertina), *Identificazione dell'asset* (descrizione area, presenti, inquadramento), *Sopralluoghi precedenti*; nelle note *Situazione rilevata* e *Attività di miglioramento*. *Genera Word* al centro della barra in Anagrafica e in Opzioni; il Word va anche nello ZIP e su OneDrive.
 
 ## Programmazione
 
@@ -156,58 +190,7 @@ nella scheda di un'RA senza manufatti compare il riquadro "Riprendi dall'anno pr
 - Il **+** apre *Nuovo*: **Appuntamento** (titolo, data, ora, durata, stato, luogo, note: record `type: 'app'`, senza cartelle né documenti) oppure **Attività** da programmare (creata con data, ora e stato, ma non aperta). Toccando una fascia vuota si sceglie tra le stesse due opzioni.
 - *Senza ora* e *Prossime senza ora* stanno in una colonna a destra su tablet e PC (sotto la griglia sul telefono).
 
-## Verbale HSE (v34–v35, BU HSE)
-
-Nuova attività HSE: Nuova attività → *Verbale HSE* (codice `VS-AAAA-NNN`). Dati del sopralluogo e un elenco di **note**, ognuna con titolo, testo (anche dettato), foto e tag; le note si riordinano e si filtrano per tag. La fotocamera nella barra azioni apre una nota nuova con la foto. Appunti, ZIP e OneDrive come le altre attività (foto in `note/`); niente fogli firme.
-
-**Tag**: ogni nota del verbale e gli *Appunti* di tutte le attività hanno i tag. Toccando *+ Tag* Nembo propone i tag già usati (i più frequenti per primi); se ne scrivi uno nuovo, *Crea «…»*. I tag stanno nelle attività, quindi si sincronizzano con loro. Ogni tag ha un colore suo, preso da una tavolozza diversa dai colori dei tipi di attività.
-
-**v35**: nel menu laterale esteso le icone hanno i colori del foglio Nuova attività; in Programmazione, toccando un'attività della colonna «Senza ora» si apre l'attività (l'orologio accanto serve per darle un orario).
-
-**H&S → HSE**: in tutta l'app la business unit si chiama HSE.
-
-## Nuovo logo (v44)
-
-Icona dell'app e logo del menu laterale con la nuvola irezumi (`icons/`).
-
-## Word del Verbale HSE (v43)
-
-- Modello in Impostazioni → Modelli: *Modello Word Verbale HSE* (`vs.docx`, chiave `tpl_vs`; non va nel repository). Segnaposto: `@@TITOLO@@`, `@@INDIRIZZO@@`, `@@COMMITTENTE@@`, `@@FONDO@@`, `@@DATAREPORT@@`, `@@REDATTO@@`, `@@VERIFICATO@@`, `@@PROTOCOLLO@@`, `@@COMMESSA@@`, `@@PROCURA@@`, `@@AN_INDIRIZZO@@`, `@@DESCRAREA@@`, riga ripetuta `@@V_DATA@@`/`@@V_PRESENTI@@`, immagini con testo alternativo `@@COPERTINA@@` e `@@INQUADRAMENTO@@`, scheda prototipo `@@S_TITOLO@@` (titolo) + tabella con `@@S_SIT@@`, `@@S_FOTO@@`, `@@S_MIG@@`; piè di pagina `@@ASSET@@`, `@@MESEANNO@@`, `@@REVISIONE@@`.
-- `js/vs-word.js` (`vsBuildDocx`, `vsWord`): una scheda per nota, una per pagina; foto nella colonna «Documentazione fotografica». Il sommario si aggiorna all'apertura in Word.
-- Verbale: in Anagrafica *Dati del report* (titolo, fondo, data report, redatto, verificato, protocollo, revisione, procura, foto di copertina), *Identificazione dell'asset* (descrizione area, presenti, inquadramento), *Sopralluoghi precedenti*; nelle note *Situazione rilevata* e *Attività di miglioramento*. *Genera Word* al centro della barra in Anagrafica e in Opzioni; il Word va anche nello ZIP e su OneDrive.
-
-## Barra delle attività, Opzioni e riepilogo via email (v42)
-
-- **Barra in basso uguale in tutte le attività** (`BarraAtt` in core.js), flottante come la tab bar (dalla v52, come la barra della selezione e quella delle planimetrie): a sinistra uno strumento (planimetria; fotocamera negli HSE e nei Verbali; scanner dei dosimetri nel radon), al centro l'azione principale, a destra **⋯ Opzioni**. Nel sopralluogo RA al centro c'è sempre *Carica su OneDrive*; *Prossimo da verificare* è accanto ai filtri dei manufatti.
-- **Opzioni** (`OpzioniSheet`, `opzArchivio`): le azioni dell'attività raggruppate. *Condividi*: riepilogo via email, email al cliente. Poi, a seconda dell'attività: file JSON e modelli, manufatti dai campioni MCA, schede campioni PDF ed Excel, riepilogo Word, Word HSE, import del report precedente. *Archivio*: foglio firme, ZIP, elimina. Le sezioni Archivio delle schede sono state tolte.
-- **Riepilogo via email** (`js/riepilogo.js`): testo con intestazione, sintesi e una voce per elemento (prima le criticità) e fino a 12 foto ridotte. *Condividi* apre Outlook (o un'altra app) con il testo nel messaggio e le foto allegate; *Copia testo e foto* mette in appunti il testo con le foto dentro, da incollare nel messaggio; *Copia solo il testo*.
-
-## Zoom, dati protetti e Novità (v41)
-
-- **Foto con zoom** (`Viewer` in core.js): due dita o doppio tocco sul telefono, rotella o doppio clic sul PC; con la foto ingrandita si trascina, lo scorrimento alla foto successiva vale solo a foto intera.
-- **Dati importati protetti**: i campi che arrivano da un file o da un'altra attività si vedono come testo con un lucchetto (`Inp`, `InpGrow`, `Area` con `imp`, originali in `rec.imp` o `manufatto.imp`). Toccando il lucchetto si modificano; se il valore cambia, sotto resta quello importato con *Ripristina*. Valgono per i manufatti RA (PMC/mappatura JSON, anno precedente, Mappatura MCA o DDA Fase 2 in Nembo) e per l'anagrafica di DDA, HSE e RA importata da file (JSON, Word, Programmazione).
-- **RA dai campioni MCA**: se in Nembo c'è una Mappatura o una DDA Fase 2 dello stesso immobile, l'RA propone di creare i manufatti dai suoi campioni MCA (`raDaCampioni`); si può anche scegliere un'altra attività.
-- **Novità** (`js/novita.js`, immagini in `novita/`): al primo avvio dopo un aggiornamento compare il foglio con le novità, con una breve presentazione per gli aggiornamenti importanti; resta anche in Notifiche e in Impostazioni → Novità. A ogni rilascio si aggiunge una voce a `NOVITA` (testi generici, senza dati reali).
-- **Clienti sul telefono**: riga *Clienti* in Oggi.
-
-## Clienti e foglio firme pronto (v40)
-
-- **Clienti** (Strumenti → Clienti, `js/clienti.js`): anagrafica con ragione sociale, referente, telefono, email, sede e note. Preferenze: *Prepara il foglio firme nelle nuove attività* (con il modello, oppure in base all'attività) e *Invia i documenti per email* (destinatari e copia). Nella scheda ci sono le attività del cliente; dall'elenco si aggiungono in un tocco i clienti già usati nelle attività. I clienti sono record di tipo `cli`: vanno nei backup e nella sincronizzazione, non su OneDrive come cartelle.
-- **Nuova attività → Dati di partenza**: c'è anche il Cliente e, per DDA, Mappatura, RA e Monitoraggio aria, la spunta *Foglio firme* (già attiva se il cliente lo prevede). L'attività nasce con la scheda Firme e un foglio pronto: dati dell'attività, tipo di attività e l'elenco dei campioni prelevati, dei manufatti valutati o dei punti di monitoraggio, aggiornato quando generi il PDF. I testi del foglio si compilano con i dati di quando lo apri. In Anagrafica, *Prepara il foglio firme* lo aggiunge dopo.
-- **JSON**: nel modello della Programmazione e nel modello RA c'è `"firme"`: `true` foglio pronto, `false` nessuno, assente = preferenza del cliente.
-- **Email al cliente**: se il cliente ha l'invio per email, in Anagrafica di ogni attività c'è il tasto che prepara l'email (oggetto e testo); gli allegati si aggiungono nell'app di posta.
-
-## Schermata di caricamento e icona (v39)
-
-Sfondo con le nuvole irezumi (`splash/bg-desktop.webp` per schermi orizzontali, `splash/bg-phone.webp` per quelli verticali) e la scritta «Nembo» in Poppins Bold (`fonts/poppins-700-nembo.woff2`, solo le lettere della parola). Nuova icona dell'app con le nuvole sull'acqua (`icons/`, anche `apple-touch-icon.png`), usata anche in cima al menu laterale. Il vecchio `splash/bg.webp` non serve più.
-
-## Fotocamera, notifiche e ubicazioni (v38)
-
-- **Fotocamera di Nembo**: sul telefono il tasto foto apre la fotocamera dentro l'app (`Camera` e `camOpen` in capture.js): scatto al centro, **Galleria** in basso a sinistra per scegliere foto già scattate, torcia se disponibile. Dove si possono aggiungere più foto si scatta in serie e si chiude con *Fine*; chiudendo con la X le foto scattate restano. Se la fotocamera non si apre c'è il tasto *Fotocamera del telefono*; sul PC resta la scelta dei file.
-- **Notifiche di OneDrive**: un caricamento non riuscito o interrotto ricorda le attività coinvolte (`ids`): sotto la notifica ci sono *Ricarica* e *Apri attività*.
-- **Ubicazioni**: ubicazione dei manufatti RA e dei punti radon, postazione dei punti aria e «Dove» nei punti da campionare del DDA vanno a capo e crescono col testo (`InpGrow`); anche il titolo delle schede chiuse mostra fino a tre righe.
-
-## Schede delle attività (v37)
+## Schede delle attività
 
 Ogni attività è divisa in schede, con un selettore come quello Ambiente / HSE / Sicurezza della Home che resta in alto mentre si scorre:
 
@@ -229,14 +212,26 @@ Ogni attività è divisa in schede, con un selettore come quello Ambiente / HSE 
 
 **Barra in alto (v37)**: su tablet e PC la Home usa la stessa barra delle altre pagine (Oggi, lente, +, campana) e il profilo sta in fondo al menu laterale, al posto della voce Impostazioni. Sul telefono la Home ha +, campana e profilo, con il campo *Cerca in tutte le attività* sotto il titolo. In Home, la riga Programmazione dice «Nessuna attività oggi» quando non c'è niente in programma.
 
-## Cerca (v36)
+## Barra delle attività, Opzioni e riepilogo via email
 
-Ricerca in tutte le attività salvate sul dispositivo, anche offline. Si apre dalla lente in *Oggi*, dalla barra in alto su tablet e PC e dalla voce *Cerca* del menu laterale.
+- **Barra in basso uguale in tutte le attività** (`BarraAtt` in core.js), flottante come la tab bar (dalla v52, come la barra della selezione e quella delle planimetrie): a sinistra uno strumento (planimetria; fotocamera negli HSE e nei Verbali; scanner dei dosimetri nel radon), al centro l'azione principale, a destra **⋯ Opzioni**. Nel sopralluogo RA al centro c'è sempre *Carica su OneDrive*; *Prossimo da verificare* è accanto ai filtri dei manufatti.
+- **Opzioni** (`OpzioniSheet`, `opzArchivio`): le azioni dell'attività raggruppate. *Condividi*: riepilogo via email, email al cliente. Poi, a seconda dell'attività: file JSON e modelli, manufatti dai campioni MCA, schede campioni PDF ed Excel, riepilogo Word, Word HSE, import del report precedente. *Archivio*: foglio firme, ZIP, elimina. Le sezioni Archivio delle schede sono state tolte.
+- **Riepilogo via email** (`js/riepilogo.js`): testo con intestazione, sintesi e una voce per elemento (prima le criticità) e fino a 12 foto ridotte. *Condividi* apre Outlook (o un'altra app) con il testo nel messaggio e le foto allegate; *Copia testo e foto* mette in appunti il testo con le foto dentro, da incollare nel messaggio; *Copia solo il testo*.
 
-- Filtri: *Tutto*, *Immobile* (indirizzo, città, sito, commessa, cliente, codice), *Titolo* (titoli delle note, aree REC, campioni, manufatti, punti radon e aria, didascalie), *Testo* (testo delle note, appunti, note di campioni e manufatti, voci e schede HSE, azioni) e *Tag*.
-- Maiuscole e accenti non contano; con più parole devono esserci tutte, ognuna all'inizio di una parola («via esempi» trova «Via degli Esempi»).
-- Sotto il campo ci sono i tag usati, ognuno col suo colore e il numero di volte: toccandone uno compaiono tutte le note e gli appunti con quel tag.
-- I risultati sono raggruppati per attività con il punto trovato evidenziato. Toccando un risultato si apre l'attività e Nembo scorre fino alla nota, al campione, al manufatto o al punto (`cercaVai`, evento `nembo-goto` per aprire la matrice giusta nel DDA). Il codice è in `js/cerca.js`.
+## Zoom, dati protetti e Novità
+
+- **Foto con zoom** (`Viewer` in core.js): due dita o doppio tocco sul telefono, rotella o doppio clic sul PC; con la foto ingrandita si trascina, lo scorrimento alla foto successiva vale solo a foto intera.
+- **Dati importati protetti**: i campi che arrivano da un file o da un'altra attività si vedono come testo con un lucchetto (`Inp`, `InpGrow`, `Area` con `imp`, originali in `rec.imp` o `manufatto.imp`). Toccando il lucchetto si modificano; se il valore cambia, sotto resta quello importato con *Ripristina*. Valgono per i manufatti RA (PMC/mappatura JSON, anno precedente, Mappatura MCA o DDA Fase 2 in Nembo) e per l'anagrafica di DDA, HSE e RA importata da file (JSON, Word, Programmazione).
+- **RA dai campioni MCA**: se in Nembo c'è una Mappatura o una DDA Fase 2 dello stesso immobile, l'RA propone di creare i manufatti dai suoi campioni MCA (`raDaCampioni`); si può anche scegliere un'altra attività.
+- **Novità** (`js/novita.js`, immagini in `novita/`): al primo avvio dopo un aggiornamento compare il foglio con le novità, con una breve presentazione per gli aggiornamenti importanti; resta anche in Notifiche e in Impostazioni → Novità. A ogni rilascio si aggiunge una voce a `NOVITA` (testi generici, senza dati reali).
+- **Clienti sul telefono**: riga *Clienti* in Oggi.
+
+## Clienti e foglio firme pronto
+
+- **Clienti** (Strumenti → Clienti, `js/clienti.js`): anagrafica con ragione sociale, referente, telefono, email, sede e note. Preferenze: *Prepara il foglio firme nelle nuove attività* (con il modello, oppure in base all'attività) e *Invia i documenti per email* (destinatari e copia). Nella scheda ci sono le attività del cliente; dall'elenco si aggiungono in un tocco i clienti già usati nelle attività. I clienti sono record di tipo `cli`: vanno nei backup e nella sincronizzazione, non su OneDrive come cartelle.
+- **Nuova attività → Dati di partenza**: c'è anche il Cliente e, per DDA, Mappatura, RA e Monitoraggio aria, la spunta *Foglio firme* (già attiva se il cliente lo prevede). L'attività nasce con la scheda Firme e un foglio pronto: dati dell'attività, tipo di attività e l'elenco dei campioni prelevati, dei manufatti valutati o dei punti di monitoraggio, aggiornato quando generi il PDF. I testi del foglio si compilano con i dati di quando lo apri. In Anagrafica, *Prepara il foglio firme* lo aggiunge dopo.
+- **JSON**: nel modello della Programmazione e nel modello RA c'è `"firme"`: `true` foglio pronto, `false` nessuno, assente = preferenza del cliente.
+- **Email al cliente**: se il cliente ha l'invio per email, in Anagrafica di ogni attività c'è il tasto che prepara l'email (oggetto e testo); gli allegati si aggiungono nell'app di posta.
 
 ## Fogli firme
 
@@ -253,27 +248,11 @@ Nel sopralluogo RA il foglio può allegare l'elenco dei manufatti dell'attività
 **Chiudi il foglio** blocca dati e firme; riaprire cancella le firme. Il PDF lo impagina Nembo (nessun modello da caricare)
 e va nello ZIP, su OneDrive e nella condivisione, nella cartella `firme/`.
 
-## Monitoraggio aria (v29)
+## Fotocamera, notifiche e ubicazioni
 
-Prelievi di fibre aerodisperse (SEM, MOCF, FAV). Si usa in due modi:
-- **da solo**: Nuova attività → *Monitoraggio aria* (menu laterale → Monitoraggio aria; in Oggi sul telefono);
-- **dentro il sopralluogo RA**: card *Aggiungi monitoraggio aria*, prima delle planimetrie. Se non contiene nulla si toglie con *Togli il monitoraggio aria*.
-
-I punti si chiamano **S** per SEM e FAV e **M** per MOCF (numerazione separata: S1, S2…, M1, M2…); cambiando metodica il nome si aggiorna. I punti ripresi dall'anno prima e quelli rinominati a mano mantengono il loro nome.
-Per ogni punto: piano, postazione, Eseguito / Non eseguito, data, metodica, ora di inizio e fine, campionatore, membrana (anche con Scansiona), flusso, litri, rapporto di prova, concentrazione, note e foto.
-La durata e i litri (flusso × minuti) si calcolano da soli; i litri scritti a mano hanno la precedenza. Le concentrazioni oltre il limite (SEM 2 ff/l, MOCF 20 ff/l) sono evidenziate.
-I punti compaiono come etichette sulle planimetrie. Il RA ripreso dall'anno prima copia i punti senza le misure.
-
-**Uscite** (Excel e PDF): *Scheda di prelievo*, da inviare con le membrane, e *Riepilogo esiti*, la tabella per la relazione (punti non eseguiti con «MONITORAGGIO NON EFFETTUATO», superamenti in rosso).
-Vanno nello ZIP, nella condivisione e su OneDrive, nella cartella `aria/`, insieme ai rapporti di prova allegati.
-Campionatori, addetto alla verifica della taratura e codici d'analisi si impostano in Impostazioni → Monitoraggio aria e viaggiano nel file di configurazione. Laboratorio, offerta, email per i referti, «prelevato da» e «verificato da» sono quelli della scheda campioni.
-
-## Excel e Word
-
-- **Scheda campioni in Excel** (Fase 2, schede MCA e FAV): stessi dati della scheda PDF in un foglio .xlsx modificabile, con date in formato Excel.
-- **Riepilogo campioni (Word)** (Archivio della DDA): documento .docx con intestazione della commessa e tutti i campioni prelevati,
-  divisi per matrice, con data, descrizione e foto (tre per riga, ridotte per contenere il peso del file).
-Entrambi si salvano con la finestra "Salva con nome" (si può scegliere OneDrive) e finiscono anche nello ZIP e nel caricamento su OneDrive.
+- **Fotocamera di Nembo**: sul telefono il tasto foto apre la fotocamera dentro l'app (`Camera` e `camOpen` in capture.js): scatto al centro, **Galleria** in basso a sinistra per scegliere foto già scattate, torcia se disponibile. Dove si possono aggiungere più foto si scatta in serie e si chiude con *Fine*; chiudendo con la X le foto scattate restano. Se la fotocamera non si apre c'è il tasto *Fotocamera del telefono*; sul PC resta la scelta dei file.
+- **Notifiche di OneDrive**: un caricamento non riuscito o interrotto ricorda le attività coinvolte (`ids`): sotto la notifica ci sono *Ricarica* e *Apri attività*.
+- **Ubicazioni**: ubicazione dei manufatti RA e dei punti radon, postazione dei punti aria e «Dove» nei punti da campionare del DDA vanno a capo e crescono col testo (`InpGrow`); anche il titolo delle schede chiuse mostra fino a tre righe.
 
 ## Planimetrie
 
@@ -288,6 +267,32 @@ restano modificabili: riaprendo la planimetria le ritrovi e il PDF annotato vien
 su OneDrive e nella condivisione va la versione annotata.
 
 **Appunti:** campo libero separato per Fase 1 e Fase 2 del DDA; nel radon un campo per ogni sopralluogo (posa e ritiri) più gli appunti generali.
+
+## Scheda File e attività concluse
+
+- **Scheda File** (dalla v46, `js/file.js`): in ogni attività i documenti da generare (schede campioni dal modello aziendale in PDF ed Excel,
+  riepilogo Word, scheda radon, schede aria, PDF dei fogli firme). Grigio da generare, verde generato, ambra se i dati sono cambiati dopo
+  (`fileSig`); «Rigenera» crea `_rev1`, `_rev2`… senza cancellare il precedente.
+- **Concludi l'attività** (dalla v50, ⋯ Opzioni): chiude l'attività anche con manufatti non visionati o foto mancanti, con conferma, elenco di cosa manca
+  e motivo facoltativo (`r.conclusa = { il, motivo, mancanze }`). Esce da «Da completare» e dai numeri del menu; si riapre dalle Opzioni.
+  Nell'RA concluso i manufatti senza stato restano «Non visionato».
+- **Fogli firme chiusi** (dalla v49): `improntaFoglio` mette nel PDF l'impronta SHA-256 dei dati del foglio.
+
+## Excel e Word
+
+- **Scheda campioni in Excel** (Fase 2, schede MCA e FAV): stessi dati della scheda PDF in un foglio .xlsx modificabile, con date in formato Excel.
+- **Riepilogo campioni (Word)** (Archivio della DDA): documento .docx con intestazione della commessa e tutti i campioni prelevati,
+  divisi per matrice, con data, descrizione e foto (tre per riga, ridotte per contenere il peso del file).
+Entrambi si salvano con la finestra "Salva con nome" (si può scegliere OneDrive) e finiscono anche nello ZIP e nel caricamento su OneDrive.
+
+## Cerca
+
+Ricerca in tutte le attività salvate sul dispositivo, anche offline. Si apre dalla lente in *Oggi*, dalla barra in alto su tablet e PC e dalla voce *Cerca* del menu laterale.
+
+- Filtri: *Tutto*, *Immobile* (indirizzo, città, sito, commessa, cliente, codice), *Titolo* (titoli delle note, aree REC, campioni, manufatti, punti radon e aria, didascalie), *Testo* (testo delle note, appunti, note di campioni e manufatti, voci e schede HSE, azioni) e *Tag*.
+- Maiuscole e accenti non contano; con più parole devono esserci tutte, ognuna all'inizio di una parola («via esempi» trova «Via degli Esempi»).
+- Sotto il campo ci sono i tag usati, ognuno col suo colore e il numero di volte: toccandone uno compaiono tutte le note e gli appunti con quel tag.
+- I risultati sono raggruppati per attività con il punto trovato evidenziato. Toccando un risultato si apre l'attività e Nembo scorre fino alla nota, al campione, al manufatto o al punto (`cercaVai`, evento `nembo-goto` per aprire la matrice giusta nel DDA). Il codice è in `js/cerca.js`.
 
 ## File su OneDrive
 
@@ -346,7 +351,7 @@ Su tablet Android con Chrome vero (es. Galaxy Tab, Redmi Pad) tutte le funzioni 
 e salvataggio incluso. Su iPad, come su iPhone, Safari/WebKit non supporta lo scanner barcode né la scelta della
 cartella nel salvataggio (resta il download semplice).
 
-## Aspetto (dalla v14, stile "Essenziale")
+## Aspetto
 
 - **Due stili, ognuno chiaro e scuro** (dalla v49): *Essenziale* (grigio freddo e blu, predefinito) e *Originale*
   (rosa-grigio e petrolio). In Impostazioni → Aspetto e avvio si scelgono lo **stile** e l'**aspetto**: *Automatico*
@@ -371,7 +376,16 @@ cartella nel salvataggio (resta il download semplice).
 - **Indicatore di stato** (dalla v48): una sola barra colorata a sinistra, come nelle Notifiche, per stato di invio e criticità.
 - **Campioni** raggruppati per piano, con segnaposto rosso e foto rapida per quelli ancora senza foto.
 
-## Assistenza e dati del dispositivo (v26)
+## Icone e schermata di avvio
+
+Icona dell'app con la nuvola irezumi, usata anche in cima al menu laterale (`icons/`, anche `apple-touch-icon.png`).
+Schermata di avvio: sfondo con le nuvole irezumi (`splash/bg-desktop.webp` per schermi orizzontali, `splash/bg-phone.webp` per quelli verticali) e la scritta «Nembo» in Poppins Bold (`fonts/poppins-700-nembo.woff2`, solo le lettere della parola).
+
+## Design system: Rilievo
+
+Il design system di Nembo si chiama **Rilievo**: token all'inizio di `styles.css` (quattro temi, scala del testo, raggi, spazi, colori dei tipi), `TIPO_COL` e `PRINT` in `js/core.js`.
+Niente colori, dimensioni del testo, raggi o spazi scritti a mano. Token, componenti, stati e accessibilità: [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
+## Assistenza e dati del dispositivo
 
 - **Errori dell'app**: gli errori imprevisti finiscono nelle Notifiche con codice `APP-JS` (senza ripetizioni). Se una schermata va in errore compare «Qualcosa non ha funzionato» con *Torna a Oggi*, *Ricarica* e *Segnala*.
 - **Segnala un problema** (Notifiche e Impostazioni → Assistenza): prepara un'email con versione, dispositivo e ultimi errori. Il destinatario è `supportEmail`, nel file di configurazione.
@@ -380,26 +394,6 @@ cartella nel salvataggio (resta il download semplice).
 - **Avvio leggero**: ExcelJS, docx, pdf-lib e pdf.js si caricano solo quando servono (`needLib`); restano nella cache offline.
 - La pagina dichiara `noindex` per i motori di ricerca.
 - **Firma da immagine** (v27): per la firma del tecnico (Impostazioni, momenti radon) e del relatore nei fogli firme si può caricare una foto della firma su carta bianca; lo sfondo viene tolto (soglia adattiva a blocchi) e l'immagine ritagliata. Non disponibile per chi firma con «Passa il telefono» né per il referente del cliente.
-
-## Scheda File e attività concluse
-
-- **Scheda File** (dalla v46, `js/file.js`): in ogni attività i documenti da generare (schede campioni dal modello aziendale in PDF ed Excel,
-  riepilogo Word, scheda radon, schede aria, PDF dei fogli firme). Grigio da generare, verde generato, ambra se i dati sono cambiati dopo
-  (`fileSig`); «Rigenera» crea `_rev1`, `_rev2`… senza cancellare il precedente.
-- **Concludi l'attività** (dalla v50, ⋯ Opzioni): chiude l'attività anche con manufatti non visionati o foto mancanti, con conferma, elenco di cosa manca
-  e motivo facoltativo (`r.conclusa = { il, motivo, mancanze }`). Esce da «Da completare» e dai numeri del menu; si riapre dalle Opzioni.
-  Nell'RA concluso i manufatti senza stato restano «Non visionato».
-- **Fogli firme chiusi** (dalla v49): `improntaFoglio` mette nel PDF l'impronta SHA-256 dei dati del foglio.
-
-## Aggiornare l'app
-
-1. Lavora su un ramo della versione (es. `v52`), prova, poi unisci in `main`: GitHub Pages pubblica `main`.
-2. Aumenta insieme `VERSION` in `sw.js` e `APP_VERSION` in `js/core.js` (`nembo-v52`; una correzione urgente `nembo-v51b`, mai con il punto)
-   e aggiungi a `FILES` di `sw.js` ogni file nuovo.
-3. Aggiungi la voce in `js/novita.js` (`NOVITA`): compare al primo avvio dopo l'aggiornamento e resta in Impostazioni → Novità.
-4. Se cambia la forma dei record, aumenta `REC_SCHEMA` e aggiungi il passaggio in `migraRecord` (`js/core.js`).
-
-Al secondo avvio dopo l'aggiornamento il dispositivo usa la nuova versione. I dati non vengono toccati.
 
 ## Struttura
 
@@ -434,7 +428,9 @@ Al secondo avvio dopo l'aggiornamento il dispositivo usa la nuova versione. I da
 | `fonts/` | IBM Plex Sans e Mono (woff2) |
 | `pdfgen.js` | compilazione PDF (pdf-lib), compreso il PDF del foglio firme |
 | `vendor/` | librerie incluse per l'uso offline: Preact, htm, pdf-lib, PDF.js 4.10 (modulo `.mjs` con il worker), JSZip, ExcelJS, docx, signature_pad, MSAL; le pesanti si caricano con `needLib` |
-| `globals.json` | funzioni globali per ESLint (i file sono script globali, senza import) |
+| `globals.json` | nomi globali per ESLint (i file sono script globali, senza import); si rigenera con `tools/aggiorna-globals.py` |
+| `.eslintrc.cjs` | configurazione di ESLint (regola `no-undef`) |
+| `tools/` | script di sviluppo, non caricati dall'app |
 | `docs/` | documentazione: architettura, modello dei dati, flussi, design system, privacy e sicurezza, requisiti, decisioni, guida rapida, checklist, changelog |
 | `CLAUDE.md` | istruzioni per le sessioni di Claude Code e Copilot |
 
@@ -461,16 +457,7 @@ Nembo non si apre dentro altre pagine (controllo all'inizio di `js/core.js`). Tu
 - **Radon**: "Conferma e blocca" richiede data e firma del tecnico; blocca i dati di posa. "Sblocca" cancella le firme di quel momento.
   La media per punto è pesata sui giorni di esposizione di Fase 1 e Fase 2.
 
-## Design system: Rilievo
+## Aggiornare l'app
 
-Il design system di Nembo si chiama **Rilievo**. Tutti i valori grafici sono all'inizio di `styles.css`: colori dei quattro temi (Essenziale e Originale, ognuno chiaro e scuro;
-gli scuri sono in fondo, sotto `[data-mode="scuro"]` e `[data-theme="originale-scuro"]`),
-scala del testo (`--fs-2xs` … `--fs-5xl`, solo IBM Plex), raggi (`--r-*`), spazi (`--sp-*`) e i colori dei tipi di attività (`--t-*`).
-Nelle regole CSS e negli stili scritti dal codice non si mettono colori, dimensioni del testo o raggi a mano: si usano i token.
-
-- **Tipi di attività**: `TIPO_COL` in `js/core.js` dà lo stesso colore a menu, «Nuova attività», programmazione e home.
-- **Colori di stampa**: `PRINT` in `js/core.js` raccoglie i colori fissi di planimetrie, PDF, Word, Excel ed email (non cambiano col tema).
-- **Testo sui colori pieni**: `--on-accent` (bianco nei temi chiari, inchiostro scuro nei temi scuri) e `--on-dark` (sempre bianco).
-- **Contrasto**: testo almeno 4,5:1 su fondo e card in tutti e quattro i temi.
-- **Spazi negli elementi creati dal codice** (dalla v49): classi `.mt-0` … `.mt-4`, `.mb-0`, `.mb-2`, `.grow`, `.self-start`, `.fw-6`, `.lead-gap` al posto degli `style=` in linea; solo valori della scala `--sp-*` (niente 6, 10 o 14 px).
-- I vecchi nomi dei colori (`--primary`, `--nc`, `--border`, `--amber`…) non esistono più: usare i token di Rilievo.
+La procedura completa (ramo, versione, Novità, CHANGELOG, prove, pubblicazione) è in [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md).
+Al secondo avvio dopo l'aggiornamento il dispositivo usa la nuova versione; i dati non vengono toccati.

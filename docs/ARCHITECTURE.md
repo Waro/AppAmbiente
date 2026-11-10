@@ -196,4 +196,4 @@ Flusso dei dati delle operazioni principali (salvataggio, sincronizzazione, invi
 
 ## 12. Rilascio
 
-Ramo della versione → prove ([RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md)) → merge in `main` (GitHub Pages). `VERSION` (`sw.js`) e `APP_VERSION` (`core.js`) uguali, voce in `js/novita.js`, file nuovi in `FILES`. Se cambia la forma dei record: `REC_SCHEMA` e `migraRecord`.
+Ramo della versione → prove → merge in `main` (GitHub Pages). La procedura completa è in [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).

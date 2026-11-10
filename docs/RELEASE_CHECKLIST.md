@@ -6,7 +6,8 @@
 
 ## Codice
 - [ ] `VERSION` in `sw.js` e `APP_VERSION` in `js/core.js` uguali (`nembo-vNN`; correzione urgente `nembo-vNNb`, mai con il punto).
-- [ ] File nuovi in `FILES` di `sw.js`, in `index.html` (ordine di caricamento) e funzioni globali in `globals.json`.
+- [ ] File nuovi in `FILES` di `sw.js` e in `index.html` (ordine di caricamento).
+- [ ] `python3 tools/aggiorna-globals.py` e poi `npx eslint@8.57.0 pdfgen.js sw.js js` senza errori: un nome globale mancante o rinominato si vedrebbe solo al tocco del pulsante.
 - [ ] Forma dei record cambiata → `REC_SCHEMA` aumentato e passaggio in `migraRecord`; nuovo store → versione di `indexedDB.open` e `onupgradeneeded`.
 - [ ] Nessun colore, dimensione, raggio o spazio scritto a mano: token e classi di Rilievo.
 - [ ] Nessun dato reale: ricerca di nomi, domini, indirizzi, ID (`grep -riE "<azienda>|<cliente>|<cognome>|@<dominio>"`), anche nei commenti, negli esempi e nei messaggi di commit.
@@ -24,7 +25,7 @@
 ## Testi e documenti
 - [ ] Testi nuovi o modificati approvati dal titolare.
 - [ ] Voce in `js/novita.js` approvata.
-- [ ] `docs/CHANGELOG.md` aggiornato; `docs/DATA_MODEL.md`, `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md`, `docs/DECISIONS.md` se toccati; `README.md`.
+- [ ] `docs/CHANGELOG.md` aggiornato e gli altri documenti indicati nella tabella «Documentazione da tenere allineata» di [`CLAUDE.md`](../CLAUDE.md).
 - [ ] Rilievo aggiornato se è cambiato un componente.
 - [ ] Guida utente, presentazione, handoff e pacchetto Copilot se ci sono funzioni visibili.
 

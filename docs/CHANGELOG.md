@@ -4,6 +4,13 @@ Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Nem
 
 ## [Non rilasciato]
 
+### Aggiunto
+- `tools/aggiorna-globals.py` rigenera `globals.json` dai file caricati da `index.html` (728 nomi); `.eslintrc.cjs` con la regola `no-undef`: ESLint ora passa senza errori e segnala un nome globale mancante o rinominato prima del rilascio.
+
+### Modificato
+- `globals.json` aggiornato: mancavano i nomi della v50 e della v51 (`importPlanimetrie`, `importPrecedente`, `pinImposta`, `firmaCifra`…) e gli hook di Preact.
+- Documentazione senza ripetizioni: la procedura di rilascio è solo in `docs/RELEASE_CHECKLIST.md`, l'elenco dei documenti da aggiornare solo in `CLAUDE.md`, le regole di Rilievo solo in `docs/DESIGN_SYSTEM.md`; il README descrive le funzioni attuali, con titoli senza numeri di versione, nell'ordine attività → funzioni comuni → OneDrive → interfaccia (la storia è in questo CHANGELOG).
+
 ## [nembo-v52] — 2026-11-10
 
 ### Aggiunto

@@ -15,12 +15,12 @@ Nembo è una PWA offline-first per il lavoro sul campo (DDA, mappature MCA/FAV, 
 | Avvio in locale | `python3 -m http.server 8080` dalla radice → `http://localhost:8080/index.html` |
 | Build | nessuna: Preact + htm da `vendor/`, script globali caricati in ordine da `index.html` |
 | Prove | Playwright con Chromium (`chromium.launch(args=['--lang=it-IT'])`, `locale='it-IT'`, `service_workers='block'` per l'interfaccia); dati di prova creati con le funzioni dell'app (`newDda`, `newRa`, `DB.put`…), solo inventati |
-| Lint | ESLint con `globals.json` (funzioni globali condivise tra i file) |
+| Lint | `python3 tools/aggiorna-globals.py` (rigenera `globals.json`) poi `npx eslint@8.57.0 pdfgen.js sw.js js` (`.eslintrc.cjs`, regola `no-undef`): nessun errore prima di ogni rilascio |
 | Pubblicazione | merge del ramo della versione in `main` |
 
 ## Convenzioni
 
-- Nessun `import` tra i file: ogni file usa le funzioni dei file caricati prima. File nuovo → `index.html`, `FILES` di `sw.js`, `globals.json`.
+- Nessun `import` tra i file: i nomi globali si risolvono quando la funzione viene chiamata, quindi un file può usare funzioni di file caricati dopo, ma non mentre lo script viene caricato. File nuovo → `index.html`, `FILES` di `sw.js`, poi `tools/aggiorna-globals.py`.
 - Componenti con `html\`…\``; nomi di funzioni e variabili in italiano o abbreviati come nel codice esistente (`newDda`, `attAperta`, `pulisciRecord`).
 - Id con `uid(prefisso)`; date `AAAA-MM-GG`; istanti in ms.
 - Tutto ciò che entra (ripristino, sincronizzazione, import, configurazione) passa da `pulisciRecord` / `pulisciImpostazioni` / `checkTemplate` in `js/controlli.js`.
@@ -35,8 +35,7 @@ Nembo è una PWA offline-first per il lavoro sul campo (DDA, mappature MCA/FAV, 
 - **Mai nel repository**: file di configurazione, modelli Word/PDF/Excel aziendali, backup ZIP, JSON di import, report di audit, backlog.
 - **Testi**: ogni testo nuovo o modificato (interfaccia, Novità, guida, presentazione) si propone e si applica solo dopo l'approvazione; segnalare sempre i testi nuovi. Italiano semplice, seconda persona; «attività», mai «pratica»; mai «roba»; «essere», non «stare». Nelle slide niente prima persona.
 - **Rilievo**: se un elemento va fatto diversamente, segnalarlo; dopo l'approvazione aggiornare Rilievo e `docs/DESIGN_SYSTEM.md`.
-- **Versione**: a ogni rilascio `VERSION` (sw.js) e `APP_VERSION` (core.js) uguali, voce in `js/novita.js`, voce in `docs/CHANGELOG.md`. Correzione urgente `nembo-vNNb`, mai con il punto.
-- **Rilascio**: seguire [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md).
+- **Versione e rilascio**: tutto in [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) (versione, Novità, CHANGELOG, prove, pubblicazione).
 
 ## Da non modificare
 
@@ -54,3 +53,5 @@ Nembo è una PWA offline-first per il lavoro sul campo (DDA, mappature MCA/FAV, 
 | Flusso | `docs/FLUSSI.md` |
 | Dati personali o controlli | `docs/PRIVACY_SECURITY.md` |
 | Sempre | `docs/CHANGELOG.md`; `README.md` se cambia una funzione |
+
+Questa tabella è l'unico elenco dei documenti da aggiornare: la checklist di rilascio rimanda qui.

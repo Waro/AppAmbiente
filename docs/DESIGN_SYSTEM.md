@@ -3,7 +3,7 @@
 Rilievo è il design system di Nembo. I valori vivono all'inizio di `styles.css` (token) e in `js/core.js` (`TIPO_COL`, `PRINT`).
 La documentazione completa con le anteprime dei componenti è nel pacchetto di passaggio (cartella `Rilievo/`), fuori dal repository.
 
-Regola: nessun colore, dimensione del testo, raggio o spazio scritto a mano nel CSS o negli `style=` del codice; solo token e classi. Se un elemento va fatto in modo diverso da Rilievo, si segnala e, dopo l'approvazione, si aggiornano Rilievo e questo documento.
+Regola: nessun colore, dimensione del testo, raggio o spazio scritto a mano nel CSS o negli `style=` del codice; solo token e classi. I vecchi nomi dei colori (`--primary`, `--nc`, `--border`, `--amber`…) non esistono più. Se un elemento va fatto in modo diverso da Rilievo, si segnala e, dopo l'approvazione, si aggiornano Rilievo e questo documento.
 
 ## 1. Temi
 
