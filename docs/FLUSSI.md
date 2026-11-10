@@ -76,7 +76,7 @@ flowchart TB
   subgraph Backup
     B1["Crea backup completo / Salva su OneDrive"] --> B2["buildZip: cartelle leggibili,<br/>impronta SHA-256 di ogni file, manifest.json"]
     B2 --> B3["firma.json: firma del dispositivo (ECDSA)<br/>+ firma del codice utente"]
-    B3 --> B4{OneDrive collegato e online? (v51)}
+    B3 --> B4{"OneDrive collegato e online? (v51)"}
     B4 -- sì --> B5["_nembo/backup/Nembo_backup_….zip<br/>(senza firma del tecnico)"]
     B4 -- no --> B6[Download / Salva con nome]
   end
