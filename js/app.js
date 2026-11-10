@@ -252,8 +252,17 @@ async function importZip(file, opts = {}) {
 }
 
 /* ---------------- file di configurazione ---------------- */
+// opzioni: utente = codice utente (solo nel file esportato, mai su OneDrive); firma = firma cifrata con il PIN (solo su OneDrive)
+async function cfgDati(settings, o = {}) {
+  const { firmaTecnico, ...rest } = settings; // la firma in chiaro non esce mai dal dispositivo
+  const cfg = { app: 'nembo', type: 'config', version: 1, createdAt: new Date().toISOString(), settings: rest, templates: {} };
+  // codice utente: riconosce come tuoi i backup degli altri tuoi dispositivi; legato a nome e cognome del tecnico
+  if (o.utente) { const u = await chiaveUtente(true); cfg.utente = { per: u.per, k: u.k }; }
+  if (o.firma) { const f = await firmaCifra(firmaTecnico); if (f) cfg.firma = f; }
+  for (const t of Object.values(TEMPLATES)) { const b = await DB.get(t.key); if (b) cfg.templates[t.key] = bufToB64(b); }
+  return cfg;
+}
 async function exportConfig(settings) {
-  const { firmaTecnico, ...rest } = settings; // la firma resta personale
   const name = `Nembo_config_${slug(settings.tecnicoCognome || 'modello')}.json`;
   // finestra "Salva con nome" subito dopo il tocco: si può scegliere OneDrive
   let handle = null;
@@ -261,10 +270,7 @@ async function exportConfig(settings) {
     try { handle = await window.showSaveFilePicker({ suggestedName: name, types: [{ description: 'Configurazione JSON', accept: { 'application/json': ['.json'] } }] }); }
     catch (e) { if (e.name === 'AbortError') return; handle = null; }
   }
-  const cfg = { app: 'nembo', type: 'config', version: 1, createdAt: new Date().toISOString(), settings: rest, templates: {} };
-  // codice utente: riconosce come tuoi i backup degli altri tuoi dispositivi; legato a nome e cognome del tecnico
-  const u = await chiaveUtente(true); cfg.utente = { per: u.per, k: u.k };
-  for (const t of Object.values(TEMPLATES)) { const b = await DB.get(t.key); if (b) cfg.templates[t.key] = bufToB64(b); }
+  const cfg = await cfgDati(settings, { utente: true });
   const blob = new Blob([JSON.stringify(cfg, null, 1)], { type: 'application/json' });
   if (handle) {
     if (!/\.json$/i.test(handle.name)) toast('Attenzione: il file salvato non ha estensione .json');
@@ -272,22 +278,193 @@ async function exportConfig(settings) {
     toast('Configurazione salvata: ' + handle.name);
   } else { downloadBlob(blob, name); toast('Configurazione salvata in Download'); }
 }
+// carica una configurazione (file o OneDrive). firma: 'ok' ripristinata · 'pin' PIN errato · 'senza' PIN non inserito · '' nessuna firma nel file
+async function applicaConfig(cfg, current, pin) {
+  if (!isObj(cfg) || cfg.app !== 'nembo' || cfg.type !== 'config') throw new Error('il file non è una configurazione di questa app');
+  const tpl = {};
+  for (const [name, t] of Object.entries(TEMPLATES)) {
+    if (!cfg.templates || typeof cfg.templates[t.key] !== 'string') continue;
+    const buf = b64ToBuf(cfg.templates[t.key]); await checkTemplate(name, buf); tpl[t.key] = buf;
+  }
+  for (const [k, b] of Object.entries(tpl)) await DB.set(k, b);
+  const { firmaTecnico, ...incoming } = pulisciImpostazioni(cfg.settings) || {}; // la firma in chiaro non arriva mai da un file
+  let firma = current.firmaTecnico || '', esito = '';
+  if (cfg.firma) {
+    if (!pin) esito = 'senza';
+    else try { firma = await firmaDecifra(cfg.firma, pin); esito = 'ok'; } catch (e) { esito = 'pin'; }
+  }
+  const settings = { ...current, ...incoming, firmaTecnico: firma };
+  await chiaveUtenteDaConfig(cfg.utente, settings);
+  return { settings, nTpl: Object.keys(tpl).length, firma: esito };
+}
 async function importConfig(file, current) {
   if (!/\.json$/i.test(file.name || '')) throw new Error('seleziona un file .json (hai scelto "' + (file.name || 'file senza nome') + '")');
   let cfg;
   try { cfg = JSON.parse(await file.text()); } catch (e) { throw new Error('il file non è una configurazione valida'); }
-  if (cfg.app !== 'nembo' || cfg.type !== 'config') throw new Error('il file non è una configurazione di questa app');
-  const tpl = {};
-  for (const [name, t] of Object.entries(TEMPLATES)) {
-    if (!cfg.templates || !cfg.templates[t.key]) continue;
-    const buf = b64ToBuf(cfg.templates[t.key]); await checkTemplate(name, buf); tpl[t.key] = buf;
-  }
-  for (const [k, b] of Object.entries(tpl)) await DB.set(k, b);
-  const { firmaTecnico, ...incoming } = pulisciImpostazioni(cfg.settings) || {}; // la firma resta quella del dispositivo
-  await chiaveUtenteDaConfig(cfg.utente, { ...current, ...incoming });
-  return { settings: { ...current, ...incoming }, nTpl: Object.keys(tpl).length };
+  return applicaConfig(cfg, current);
 }
-
+/* ---------------- configurazione su OneDrive (dalla v50) ----------------
+   _nembo/config/configurazione.json: impostazioni, modelli e firma cifrata con il PIN, sostituito poco dopo ogni modifica;
+   _nembo/config/configurazione_AAAA-MM.json: il primo salvataggio di ogni mese, per tornare indietro dopo un errore.
+   Un dispositivo salva solo se è «collegato» (stato cfg_od.ok): dopo aver ripristinato la configurazione da OneDrive,
+   oppure se su OneDrive non ce n'era ancora una. Così un dispositivo nuovo non sovrascrive quella buona. */
+const CFG_DIR = '_nembo/config/', CFG_PATH = CFG_DIR + 'configurazione.json';
+const cfgSubs = new Set();
+let cfgTimer = null;
+const cfgOdStato = async () => (await DB.get('cfg_od')) || {}; // { ok, last, mese, err, nonOra, firmaRemota }
+async function cfgOdSet(p) { const s = { ...(await cfgOdStato()), ...p }; await DB.set('cfg_od', s); cfgSubs.forEach(f => f(s)); return s; }
+function useCfgOd() {
+  const [s, setS] = useState({});
+  useEffect(() => { cfgOdStato().then(setS); cfgSubs.add(setS); return () => cfgSubs.delete(setS); }, []);
+  return s;
+}
+async function cfgDaOneDrive() {
+  const b = await OD.getRaw(CFG_PATH); if (!b) return null;
+  try { const c = JSON.parse(await b.text()); return isObj(c) && c.app === 'nembo' && c.type === 'config' ? c : null; } catch (e) { return null; }
+}
+async function cfgSuOneDrive() {
+  const s = _settings;
+  if (!OD.account || !navigator.onLine || s.cfgOd === false) return false;
+  const st = await cfgOdStato();
+  if (!st.ok) {
+    if (await cfgDaOneDrive()) return false; // c'è già una configurazione: prima va ripristinata
+    await cfgOdSet({ ok: true });
+  }
+  const cfg = await cfgDati(s, { firma: true });
+  // firma non cifrabile da qui (PIN non inserito al ripristino): resta quella già su OneDrive
+  if (!cfg.firma && st.firmaRemota) cfg.firma = st.firmaRemota;
+  cfg.savedAt = Date.now();
+  const blob = new Blob([JSON.stringify(cfg)], { type: 'application/json' });
+  await OD.putRaw(CFG_PATH, blob, 'application/json');
+  const mese = new Date(cfg.savedAt).toISOString().slice(0, 7);
+  if (st.mese !== mese) await OD.putRaw(CFG_DIR + 'configurazione_' + mese + '.json', blob, 'application/json');
+  await cfgOdSet({ ok: true, last: cfg.savedAt, mese, err: '' });
+  return true;
+}
+function cfgOdSchedule(ms = 5000) {
+  clearTimeout(cfgTimer);
+  cfgTimer = setTimeout(() => { cfgSuOneDrive().catch(e => { console.warn('configurazione su OneDrive', e); cfgOdSet({ err: e.message }); }); }, ms);
+}
+const quandoIt = t => new Date(t).toLocaleString('it-IT', { dateStyle: 'medium', timeStyle: 'short' });
+// ripristino da OneDrive: al primo avvio (avvio = true) o da Impostazioni → File di configurazione
+function CfgRestoreSheet({ cfg, settings, setSettings, onTemplates, avvio, onClose }) {
+  useBackClose(onClose);
+  const [pin, setPin] = useState(''); const [busy, setBusy] = useState(false);
+  const quando = cfg.savedAt ? quandoIt(cfg.savedAt) : fmtD(String(cfg.createdAt || '').slice(0, 10));
+  const nonOra = () => { if (avvio) cfgOdSet({ nonOra: Date.now() }); onClose(); };
+  const go = async () => {
+    if (cfg.firma && pin && !pinOk(pin)) { toast('Il PIN ha 6 cifre'); return; }
+    setBusy(true);
+    try {
+      const res = await applicaConfig(cfg, settings, pin);
+      await cfgOdSet({ ok: true, nonOra: null, err: '', firmaRemota: res.firma === 'ok' ? null : cfg.firma || null });
+      setSettings(res.settings); onTemplates && onTemplates();
+      toast(res.firma === 'pin' ? 'PIN non corretto: la firma non è stata ripristinata, il resto sì.'
+        : res.firma === 'senza' ? 'Configurazione ripristinata senza la firma'
+        : `Configurazione ripristinata${res.nTpl ? ' con ' + res.nTpl + ' modelli' : ''}`);
+      onClose();
+    } catch (e) { fail('Configurazione non ripristinata', e); }
+    setBusy(false);
+  };
+  return html`<div class="sheet-ov" onClick=${e => e.target === e.currentTarget && nonOra()}><div class="sheet" role="dialog" aria-label="Configurazione su OneDrive">
+    <div class="sheet-grab"></div>
+    <div class="sheet-nav"><button class="btn link" onClick=${nonOra}>Non ora</button><b>Configurazione</b><span></span></div>
+    <div class="sheet-body">
+      <p class="lead" style="margin:4px 2px 12px">Su OneDrive c'è la tua configurazione del ${quando}. Ripristinarla? Ritrovi impostazioni, modelli e firma.</p>
+      ${cfg.firma && html`<div class="card tight"><label class="fld"><span>Inserisci il PIN della firma.</span>
+        <input type="password" inputmode="numeric" autocomplete="off" maxlength="6" value=${pin} onInput=${e => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))} /></label></div>`}
+      <div class="stack mt-4">
+        <button class="btn pri block" disabled=${busy} onClick=${go}>${busy ? html`<div class="spin" />` : ''} Ripristina</button>
+        <button class="btn block" disabled=${busy} onClick=${nonOra}>Non ora</button>
+      </div>
+    </div></div></div>`;
+}
+function PinSheet({ onClose }) {
+  useBackClose(onClose);
+  const [a, setA] = useState(''), [b, setB] = useState(''), [busy, setBusy] = useState(false);
+  const cifre = v => v.replace(/\D/g, '').slice(0, 6);
+  const ok = pinOk(a) && a === b;
+  const save = async () => {
+    if (!ok) { toast(pinOk(a) ? 'I due PIN non coincidono' : 'Il PIN ha 6 cifre'); return; }
+    setBusy(true);
+    try { await pinImposta(a); await cfgOdSet({ firmaRemota: null }); cfgOdSchedule(1000); toast('PIN salvato'); onClose(); }
+    catch (e) { fail('PIN non salvato', e); }
+    setBusy(false);
+  };
+  return html`<div class="sheet-ov" onClick=${e => e.target === e.currentTarget && onClose()}><div class="sheet" role="dialog" aria-label="PIN della firma">
+    <div class="sheet-grab"></div>
+    <div class="sheet-nav"><button class="btn link" onClick=${onClose}>Annulla</button><b>PIN della firma</b><span></span></div>
+    <div class="sheet-body">
+      <p class="lead" style="margin:4px 2px 12px">Scegli un PIN di 6 cifre per proteggere la firma su OneDrive. Ti servirà solo per ripristinarla.</p>
+      <div class="card tight"><div class="grid2">
+        <label class="fld"><span>PIN</span><input type="password" inputmode="numeric" autocomplete="new-password" maxlength="6" value=${a} onInput=${e => setA(cifre(e.target.value))} /></label>
+        <label class="fld"><span>Ripeti il PIN</span><input type="password" inputmode="numeric" autocomplete="new-password" maxlength="6" value=${b} onInput=${e => setB(cifre(e.target.value))} /></label>
+      </div></div>
+      <button class="btn pri block mt-4" disabled=${busy || !ok} onClick=${save}>Salva il PIN</button>
+    </div></div></div>`;
+}
+// Impostazioni → File di configurazione: salvataggio su OneDrive, PIN e ripristino
+function CfgOdCard({ settings, set, onRestore }) {
+  const st = useCfgOd();
+  const [pinSet, setPinSet] = useState(null), [pinOpen, setPinOpen] = useState(false), [, force] = useState(0);
+  useEffect(() => OD.subscribe(() => force(x => x + 1)), []);
+  useEffect(() => { pinImpostato().then(setPinSet); }, [pinOpen]);
+  if (!OD.configured(settings)) return null;
+  const on = settings.cfgOd !== false;
+  return html`<div class="card">
+    <label class="fg-sw"><span><b class="fw-6">Salva su OneDrive</b><br /><small class="lock">Impostazioni, modelli e firma restano nella cartella dell'app. Su un dispositivo nuovo li ritrovi accedendo con Microsoft.</small></span>
+      <${Toggle} on=${on} label="Salva su OneDrive" set=${v => { set({ cfgOd: v }); if (v) cfgOdSchedule(1000); }} /></label>
+    ${!OD.account ? html`<p class="lead" style="margin:8px 0 0">Accedi con Microsoft in Impostazioni → OneDrive per attivarlo.</p>` : html`
+      ${on && html`<div class="lock mt-2">${st.last ? 'Ultimo salvataggio: ' + quandoIt(st.last) : st.ok ? '' : 'Su OneDrive c’è una configurazione: ripristinala per collegare questo dispositivo.'}</div>`}
+      ${st.err && html`<div class="notice err">${st.err}</div>`}
+      ${on && settings.firmaTecnico && pinSet === false && html`<p class="lead" style="margin:10px 0 0">Scegli un PIN di 6 cifre per proteggere la firma su OneDrive. Ti servirà solo per ripristinarla.</p>`}
+      ${on && settings.firmaTecnico && pinSet !== null && html`<button class="btn block mt-2" onClick=${() => setPinOpen(true)}><${Icon} n="lock" s=${17} /> ${pinSet ? 'Cambia il PIN della firma' : 'Scegli il PIN della firma'}</button>`}
+      <button class="btn block mt-2" onClick=${onRestore}><${Icon} n="share" s=${17} /> Ripristina da OneDrive</button>`}
+    ${pinOpen && html`<${PinSheet} onClose=${() => setPinOpen(false)} />`}
+  </div>`;
+}
+/* ---------------- sincronizzazione dalla Home ----------------
+   Icona in Oggi al posto della campanella. Verde: sincronizzata da meno di SYNC_RECENTE; arancione: più vecchia,
+   offline o mai fatta; rossa: non riuscita, accesso da rinnovare o OneDrive non collegato.
+   Al tocco sincronizza; se non riesce apre un foglio con l'errore e il collegamento a Impostazioni → OneDrive. */
+const SYNC_RECENTE = 24 * 3600000;
+function syncColore(s) {
+  if (!OD.account || s.phase === 'err' || s.phase === 'login') return ['var(--danger)', 'non riuscita'];
+  if (s.phase === 'ok' && s.last && Date.now() - s.last < SYNC_RECENTE) return ['var(--ok)', 'aggiornata'];
+  return ['var(--warn)', 'da aggiornare'];
+}
+function SyncBtn({ onErr }) {
+  const s = useSync(); const [, force] = useState(0);
+  useEffect(() => OD.subscribe(() => force(x => x + 1)), []);
+  useEffect(() => { const t = setInterval(() => force(x => x + 1), 60000); return () => clearInterval(t); }, []);
+  const run = s.phase === 'run';
+  const [c, l] = syncColore(s);
+  const tap = async () => {
+    if (run) return;
+    if (!OD.account) { onErr('Non sei collegato a OneDrive: accedi con Microsoft per sincronizzare.'); return; }
+    if (!navigator.onLine) { onErr('Sei offline: la sincronizzazione riparte quando torna la rete.'); return; }
+    await Sync.run();
+    const x = Sync.state;
+    if (x.phase === 'ok') toast(!x.text || x.text === 'Tutto aggiornato' ? 'Tutto già sincronizzato' : 'Sincronizzato: ' + x.text);
+    else onErr(x.error || 'La sincronizzazione non è riuscita.');
+  };
+  const lab = 'Sincronizza ora · ' + (run ? 'in corso' : l + (s.last ? ', ultima ' + quandoIt(s.last) : ''));
+  return html`<button class="btn-icon" aria-label=${lab} title=${lab} style=${'color:' + (run ? 'var(--blue)' : c)} onClick=${tap}>
+    ${run ? html`<div class="spin" />` : html`<${Icon} n="sync" s=${21} w=${2.2} />`}</button>`;
+}
+function SyncErrSheet({ msg, onClose, onOd }) {
+  useBackClose(onClose);
+  return html`<div class="sheet-ov" onClick=${e => e.target === e.currentTarget && onClose()}><div class="sheet" role="alertdialog" aria-label="Sincronizzazione non riuscita">
+    <div class="sheet-grab"></div>
+    <div class="sheet-nav"><button class="btn link" onClick=${onClose}>Annulla</button><b>Sincronizzazione</b><span></span></div>
+    <div class="sheet-body">
+      <div class="notice err" style="margin-top:0"><b>Sincronizzazione non riuscita</b><br />${msg}</div>
+      <div class="stack mt-4">
+        <button class="btn pri block" onClick=${onOd}><${Icon} n="share" s=${18} /> Apri Impostazioni → OneDrive</button>
+        <button class="btn block" onClick=${onClose}>Annulla</button>
+      </div>
+    </div></div></div>`;
+}
 /* ---------------- impostazioni ---------------- */
 const BUS = [['ambiente', 'Ambiente'], ['hs', 'HSE'], ['sicurezza', 'Sicurezza']];
 function TemplateRow({ name, t, onChange }) {
@@ -298,7 +475,7 @@ function TemplateRow({ name, t, onChange }) {
     try {
       const bytes = await f.arrayBuffer();
       await checkTemplate(name, bytes);
-      await DB.set(t.key, bytes); setHas(true); toast('Modello salvato'); onChange && onChange();
+      await DB.set(t.key, bytes); setHas(true); toast('Modello salvato'); onChange && onChange(); cfgOdSchedule();
     } catch (err) { fail('Modello non valido', err); }
   };
   return html`<div class="row" style="padding:10px 0;border-top:.5px solid var(--sep)">
@@ -339,6 +516,7 @@ const SET_GROUPS = [
 
 function Settings({ settings, setSettings, onTemplates, go, page, wide }) {
   const [sig, setSig] = useState(false);
+  const [cfgR, setCfgR] = useState(null); // configurazione da OneDrive da ripristinare
   const [k, setK] = useState(0);
   const [cacheVer, setCacheVer] = useState(null);
   const [look, setLookSt] = useState(getLook());
@@ -356,6 +534,11 @@ function Settings({ settings, setSettings, onTemplates, go, page, wide }) {
       setSettings(res.settings); setK(x => x + 1); onTemplates && onTemplates();
       toast(`Configurazione caricata${res.nTpl ? ' con ' + res.nTpl + ' modelli' : ''}`);
     } catch (err) { fail('Configurazione non caricata', err); }
+  };
+  const cercaCfg = async () => {
+    if (!navigator.onLine) { toast('Sei offline: riprova quando c\'è rete'); return; }
+    try { const c = await cfgDaOneDrive(); if (c) setCfgR(c); else toast('Su OneDrive non c’è ancora una configurazione'); }
+    catch (e) { fail('Configurazione non letta da OneDrive', e); }
   };
   const nome = [s.tecnicoNome, s.tecnicoCognome].filter(Boolean).join(' ');
   // valore mostrato a destra della voce, quando aiuta a capire senza aprirla
@@ -396,7 +579,8 @@ function Settings({ settings, setSettings, onTemplates, go, page, wide }) {
         <button class="btn grow" onClick=${() => exportConfig(s)}>Esporta .json</button>
       </div>
       <input ref=${cfgInp} type="file" accept="application/json,text/plain,application/octet-stream,.json" hidden onChange=${loadCfg} />
-    </div>`;
+    </div>
+    <${CfgOdCard} settings=${s} set=${set} onRestore=${cercaCfg} />`;
       case 'onedrive': return html`<${OneDriveSettings} settings=${s} set=${set} />
     <${SyncCard} settings=${s} set=${set} />`;
       case 'modelli': return html`<div class="card tight"><p class="lead" style="margin:2px 0 6px">I moduli aziendali (PDF per l'Ambiente, Word per l'HSE) non sono nell'app pubblicata: caricali qui dal telefono o da OneDrive. Restano solo su questo dispositivo e finiscono nel file di configurazione e nel backup.</p>
@@ -473,6 +657,7 @@ function Settings({ settings, setSettings, onTemplates, go, page, wide }) {
   return html`<div class="content form" key=${k + (wide ? '' : '-' + (page || ''))}>
     ${!(page && !wide) && html`<${LargeTitle} top title="Impostazioni" />`}
     ${wide ? html`<div class="set-wide">${list}${pageView(cur)}</div>` : page ? pageView(page) : list}
+    ${cfgR && html`<${CfgRestoreSheet} cfg=${cfgR} settings=${s} setSettings=${x => { setSettings(x); setK(n => n + 1); }} onTemplates=${onTemplates} onClose=${() => setCfgR(null)} />`}
     ${sig && html`<${SignaturePadOverlay} title="La tua firma" allowImage=${true} onClose=${() => setSig(false)} onDone=${url => set({ firmaTecnico: url })} />`}
   </div>`;
 }
@@ -634,23 +819,52 @@ function Notifiche({ settings, records = [], openRec }) {
 }
 
 /* ---------------- backup ---------------- */
+// backup completo su OneDrive in _nembo/backup/: restano gli ultimi BACKUP_TIENI. La firma del tecnico non va nello ZIP.
+const BACKUP_DIR = '_nembo/backup/', BACKUP_TIENI = 3;
+const backupNomeOk = n => /^Nembo_backup_[\w-]+\.zip$/.test(n);
+async function backupOdList() {
+  return (await OD.list(BACKUP_DIR)).filter(f => backupNomeOk(f.name)).sort((a, b) => b.name.localeCompare(a.name));
+}
+async function backupSuOneDrive(all, settings) {
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  const name = `Nembo_backup_${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}.zip`;
+  const T = 'Backup su OneDrive', mb = n => Math.round(n / 1048576);
+  _progress({ title: T, text: 'Preparo lo ZIP…', done: 0, total: 1 });
+  try {
+    const blob = await buildZip(all, { ...settings, firmaTecnico: '' }, true);
+    await OD.putRaw(BACKUP_DIR + name, blob, 'application/zip', { onProgress: (n, t) => _progress({ title: T, text: 'MB inviati', done: mb(n), total: Math.max(1, mb(t)) }) });
+    _progress(null);
+    await DB.set('lastBackup', Date.now());
+    for (const f of (await backupOdList()).slice(BACKUP_TIENI)) await OD.delRaw(BACKUP_DIR + f.name).catch(e => console.warn('backup vecchio', e));
+    toast(`Backup salvato su OneDrive (${(blob.size / 1048576).toFixed(1)} MB)`);
+    notify('ok', 'Backup salvato su OneDrive', { detail: name });
+    return true;
+  } catch (e) { _progress(null); fail('Backup non salvato su OneDrive', e); return false; }
+}
 function Backup({ records, all, settings, reload, lastBackup }) {
   const inp = useRef(); const [busy, setBusy] = useState(false);
   const [persist, setPersist] = useState(null);
   const [est, setEst] = useState(null);
+  const [odL, setOdL] = useState(null);
+  const loadOd = () => { if (OD.account && navigator.onLine) backupOdList().then(setOdL).catch(e => { console.warn('backup su OneDrive', e); setOdL([]); }); };
   useEffect(() => {
     if (navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(setPersist);
     if (navigator.storage && navigator.storage.estimate) navigator.storage.estimate().then(setEst);
+    loadOd();
   }, []);
-  const doExport = async () => { setBusy(true); await exportRecords(all || records, settings, true); setBusy(false); reload(); };
-  const doImport = async e => {
-    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  const doExport = async () => {
     setBusy(true);
+    if (OD.account && navigator.onLine) { await backupSuOneDrive(all || records, settings); loadOd(); }
+    else { if (OD.account) toast('Sei offline: salvo lo ZIP sul dispositivo.'); await exportRecords(all || records, settings, true); }
+    setBusy(false); reload();
+  };
+  const ripristina = async f => {
     try {
       const res = await importZip(f, { conferma: m => confirm(m) });
       const hasTpl = Object.keys(res.templates || {}).length > 0;
       if ((res.settings || hasTpl) && confirm('Il backup contiene anche impostazioni e modelli PDF. Sostituire quelli attuali?')) {
-        if (res.settings) await DB.set('settings', { ...settings, ...res.settings });
+        // i backup su OneDrive non hanno la firma: resta quella del dispositivo
+        if (res.settings) { const { firmaTecnico, ...rs } = res.settings; await DB.set('settings', { ...settings, ...rs, ...(firmaTecnico ? { firmaTecnico } : {}) }); }
         for (const [k, b] of Object.entries(res.templates || {})) await DB.set(k, b);
       }
       const E = res.esito, problemi = [...E.alterati.map(x => x + ' (modificato dopo il backup)'), ...E.fileScartati, ...E.attScartate];
@@ -660,20 +874,37 @@ function Backup({ records, all, settings, reload, lastBackup }) {
         items: problemi });
       reload();
     } catch (err) { if (err.code === 'ANNULLATO') toast('Ripristino annullato'); else fail('Import non riuscito', err); }
+  };
+  const doImport = async e => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    setBusy(true); await ripristina(f); setBusy(false);
+  };
+  const daOneDrive = async f => {
+    if (!confirm(`Ripristinare il backup del ${quandoIt(f.lastModifiedDateTime)}?`)) return;
+    setBusy(true);
+    _progress({ title: 'Ripristino', text: 'Scarico il backup da OneDrive…', done: 0, total: 1 });
+    let b = null;
+    try { b = await OD.getRaw(BACKUP_DIR + f.name); } catch (e) { fail('Backup non scaricato', e); }
+    _progress(null);
+    if (b) await ripristina(b); else if (b === null) toast('Backup non trovato su OneDrive');
     setBusy(false);
   };
   return html`<div class="content form">
     <${LargeTitle} top title="Backup" />
     <div class="card">
       <h2 style="font-size:var(--fs-xl);font-weight:600">Backup su OneDrive</h2>
-      <p class="lead" style="margin:6px 0 12px">Un unico file ZIP con tutte le indagini e campagne, anche con centinaia di foto: cartelle con foto, allegati e PDF, più i dati in manifest.json per il ripristino. Nella finestra di salvataggio scegli OneDrive; se non compare, il file va in Download e lo carichi dall'app OneDrive.</p>
-      <button class="btn pri block" disabled=${busy || !records.length} onClick=${doExport}>${busy ? html`<div class="spin" />` : html`<${Icon} n="archive" s=${18} />`} Crea backup completo</button>
+      <p class="lead" style="margin:6px 0 12px">${OD.account ? `Un unico file ZIP con tutte le attività, salvato nella cartella dell'app su OneDrive: restano gli ultimi ${BACKUP_TIENI}. La firma non è inclusa.`
+        : 'Un unico file ZIP con tutte le indagini e campagne, anche con centinaia di foto: cartelle con foto, allegati e PDF, più i dati in manifest.json per il ripristino. Nella finestra di salvataggio scegli OneDrive; se non compare, il file va in Download e lo carichi dall\'app OneDrive.'}</p>
+      <button class="btn pri block" disabled=${busy || !records.length} onClick=${doExport}>${busy ? html`<div class="spin" />` : html`<${Icon} n="archive" s=${18} />`} ${OD.account ? 'Salva su OneDrive' : 'Crea backup completo'}</button>
       ${OD.account && html`<button class="btn outline block mt-2" disabled=${busy || !records.length} onClick=${async () => { setBusy(true); await odSync(records.filter(r => !r._new), settings); setBusy(false); }}><${Icon} n="share" s=${18} /> Carica tutto su OneDrive</button>`}
-      <div class="lock mt-2">${lastBackup ? 'Ultimo backup: ' + new Date(lastBackup).toLocaleString('it-IT', { dateStyle: 'medium', timeStyle: 'short' }) : 'Nessun backup ancora'}</div>
+      <div class="lock mt-2">${lastBackup ? 'Ultimo backup: ' + quandoIt(lastBackup) : 'Nessun backup ancora'}</div>
     </div>
     <div class="card">
       <h2 style="font-size:var(--fs-xl);font-weight:600">Ripristina da backup</h2>
       <p class="lead" style="margin:6px 0 12px">Scegli lo ZIP da OneDrive o dal telefono. I record già presenti vengono sostituiti solo se quelli del backup sono più recenti.</p>
+      ${OD.account && odL && odL.length > 0 && html`<div class="fld"><span>Backup su OneDrive</span></div>
+        <div class="list mb-2">${odL.map(f => html`<button key=${f.name} class="prow" style="width:100%;border:0;text-align:left" disabled=${busy} onClick=${() => daOneDrive(f)}>
+          <span class="sq plain"><${Icon} n="archive" s=${18} /></span><span class="t"><b>${quandoIt(f.lastModifiedDateTime)}</b><small>${(f.size / 1048576).toFixed(1)} MB</small></span><${Icon} n="right" s=${18} /></button>`)}</div>`}
       <button class="btn block" disabled=${busy} onClick=${() => inp.current.click()}>Scegli file ZIP</button>
       <input ref=${inp} type="file" accept="application/zip,application/x-zip-compressed,application/octet-stream,.zip" hidden onChange=${doImport} />
     </div>
@@ -791,6 +1022,8 @@ function App() {
   const [preset, setPreset] = useState(null);
   const [novita, setNovita] = useState(null);
   const [benvenuto, setBenvenuto] = useState(false);
+  const [cfgRemota, setCfgRemota] = useState(null); // configurazione su OneDrive da proporre al primo avvio
+  const [syncErr, setSyncErr] = useState(null);
   const [, odTick] = useState(0);
   useEffect(() => OD.subscribe(() => odTick(x => x + 1)), []);
 
@@ -814,7 +1047,21 @@ function App() {
     return () => { window.removeEventListener('beforeinstallprompt', bip); offRec(); };
   }, []);
 
-  const setSettings = s => { setSettingsState(s); _settings = s; DB.set('settings', s); chiaveUtenteNome(s).catch(e => console.warn('codice utente', e)); };
+  const setSettings = s => { setSettingsState(s); _settings = s; DB.set('settings', s); chiaveUtenteNome(s).catch(e => console.warn('codice utente', e)); cfgOdSchedule(); };
+  // collegato a OneDrive: dispositivo nuovo → propone il ripristino della configurazione; altrimenti la tiene aggiornata
+  const odAcc = OD.account && OD.account.homeAccountId;
+  useEffect(() => {
+    if (!ready || !odAcc) return; let alive = true;
+    (async () => {
+      const st = await cfgOdStato();
+      if (st.ok) { cfgOdSchedule(8000); return; }
+      if (_settings.cfgOd === false || !navigator.onLine) return;
+      const c = await cfgDaOneDrive().catch(() => null); if (!alive) return;
+      if (c) { if (!st.nonOra) setCfgRemota(c); }
+      else cfgSuOneDrive().catch(e => cfgOdSet({ err: e.message }));
+    })();
+    return () => { alive = false; };
+  }, [ready, odAcc]);
   const go = next => { const prev = route; setRoute({ ...next, from: ROUTE_TITLE[prev.v] }); Back.push(() => setRoute(prev)); };
   const goBack = () => history.back();
   // tab bar: dalla Home si entra in un'area (Indietro torna a Oggi); tra un'area e l'altra si sostituisce la schermata
@@ -909,6 +1156,7 @@ function App() {
   const rec = route.id && allRecs.find(r => r.id === route.id);
 
   const initials = ((settings.tecnicoNome || '')[0] || '') + ((settings.tecnicoCognome || '')[0] || '');
+  const syncBtn = html`<${SyncBtn} onErr=${setSyncErr} />`;
   const bell = html`<button class=${'btn-icon' + (route.v === 'notifiche' ? ' on' : '')} aria-label=${unreadErr ? `Notifiche, ${unreadErr} errori non letti` : 'Notifiche'}
     onClick=${() => route.v !== 'notifiche' && go({ v: 'notifiche' })}><${Icon} n="bell" s=${21} />${unreadErr > 0 && html`<span class="dot">${unreadErr}</span>`}</button>`;
   const plus = (fn, label) => html`<button class="btn-icon pri" aria-label=${label} onClick=${fn}><${Icon} n="plus" s=${22} w=${2.4} /></button>`;
@@ -923,7 +1171,7 @@ function App() {
   let body, wideCreate = null;
   if (route.v === 'home') {
     wideCreate = () => setSheet(true);
-    body = html`<${Home} records=${records} settings=${settings} open=${openRec} newAct=${() => setSheet(true)} bell=${bell}
+    body = html`<${Home} records=${records} settings=${settings} open=${openRec} newAct=${() => setSheet(true)} syncBtn=${syncBtn}
       avatar=${html`<button class="ava" aria-label="Impostazioni" onClick=${() => go({ v: 'settings' })}>${initials.toUpperCase() || html`<${Icon} n="gear" s=${20} />`}</button>`}
       tplOk=${tplOk} lastBackup=${lastBackup} goList=${v => go({ v })} goSettings=${p => go({ v: 'settings', p: typeof p === 'string' ? p : undefined })} goBackup=${() => go({ v: 'backup' })} goCerca=${() => go({ v: 'cerca' })}
       installEvt=${installEvt} onInstall=${async () => { installEvt.prompt(); await installEvt.userChoice; setInstallEvt(null); }} />`;
@@ -1015,7 +1263,7 @@ function App() {
     <div class=${'shell' + (splitActive ? ' split' : '') + (!wide && isTop ? ' has-tabs' : '') + (Sel.active ? ' sel-on' : '')}>
     ${wide && html`<header class="wbar"><div class="tb-grow">${route.v === 'home' && html`<div class="lt-eye">${new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}</div>`}<h1>${ROUTE_TITLE[route.v] || 'Nembo'}</h1></div>
       ${DETAIL_OF[route.v] && route.v !== 'cliList' && !Sel.active && html`<span class="sel-pc"><${SelBtn} /></span>`}
-      ${route.v !== 'cerca' && html`<button class="btn-icon" aria-label="Cerca" title="Cerca" onClick=${() => go({ v: 'cerca' })}><${Icon} n="search" s=${20} /></button>`}${wideCreate && plus(wideCreate, 'Nuova')}${bell}</header>`}
+      ${route.v !== 'cerca' && html`<button class="btn-icon" aria-label="Cerca" title="Cerca" onClick=${() => go({ v: 'cerca' })}><${Icon} n="search" s=${20} /></button>`}${wideCreate && plus(wideCreate, 'Nuova')}${route.v === 'home' ? syncBtn : bell}</header>`}
     ${!wide && !isTop && html`<header class="navbar">
       <button class="nb-back" onClick=${goBack}><${Icon} n="back" s=${22} /> ${route.from || 'Indietro'}</button>
       <div class="nb-grow"></div>${route.v !== 'notifiche' && bell}</header>`}
@@ -1027,8 +1275,11 @@ function App() {
     <${ConcludiAsk} />
     <${Progress} />
     <${CameraHost} />
-    ${novita && !benvenuto && html`<${NovitaSheet} list=${novita} go=${go} onClose=${() => setNovita(null)} />`}
-    ${benvenuto && html`<${BenvenutoSheet} settings=${settings} setSettings=${setSettings} onClose=${() => setBenvenuto(false)} />`}
+    ${cfgRemota && html`<${CfgRestoreSheet} cfg=${cfgRemota} settings=${settings} setSettings=${setSettings} onTemplates=${reload} avvio=${true} onClose=${() => setCfgRemota(null)} />`}
+    ${syncErr && html`<${SyncErrSheet} msg=${syncErr} onClose=${() => setSyncErr(null)}
+      onOd=${() => { window.addEventListener('popstate', () => setTimeout(() => go({ v: 'settings', p: 'onedrive' }), 0), { once: true }); setSyncErr(null); }} />`}
+    ${novita && !benvenuto && !cfgRemota && html`<${NovitaSheet} list=${novita} go=${go} onClose=${() => setNovita(null)} />`}
+    ${benvenuto && !cfgRemota && html`<${BenvenutoSheet} settings=${settings} setSettings=${setSettings} onClose=${() => setBenvenuto(false)} />`}
     <${Toast} />
     </div>
   </div>`;
@@ -1042,3 +1293,5 @@ if (splash) requestAnimationFrame(() => requestAnimationFrame(() => { splash.cla
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(e => console.warn('SW', e)));
 }
+
+

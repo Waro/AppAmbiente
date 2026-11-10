@@ -89,7 +89,7 @@ function PrimiPassi({ settings, records = [], tplOk, hsTplOk, lastBackup, goSett
   const acts = records.filter(isActivity);
   const syncOk = !!OD.account && Sync.enabled();
   const fase1 = [
-    { ok: !!(settings.tecnicoCognome && (bu !== 'ambiente' || tplOk)), l: 'Carica la configurazione', s: 'Impostazioni → File di configurazione → Carica .json', go: () => goSettings('config') },
+    { ok: !!(settings.tecnicoCognome && (bu !== 'ambiente' || tplOk)), l: 'Carica la configurazione', s: 'Impostazioni → File di configurazione: carica il .json o ripristina da OneDrive', go: () => goSettings('config') },
     bu === 'hs' && { ok: !!hsTplOk, l: 'Carica i modelli Word HSE', s: 'Impostazioni → Modelli', go: () => goSettings('modelli') },
     { ok: !!settings.firmaTecnico, l: 'Salva la tua firma', s: 'Impostazioni → Tecnico', go: () => goSettings('tecnico') },
     { ok: syncOk, l: 'Collega OneDrive', s: OD.account ? 'Impostazioni → OneDrive → Sincronizza tra i dispositivi' : 'Impostazioni → OneDrive → Accedi', go: () => goSettings('onedrive') },
@@ -135,3 +135,5 @@ function GuidaCard({ settings, setSettings }) {
     ${wl && html`<${BenvenutoSheet} settings=${settings} setSettings=${setSettings} onClose=${() => setWl(false)} />`}
   </div>`;
 }
+
+
