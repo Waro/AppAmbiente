@@ -8,7 +8,7 @@ if (window.top !== window.self) {
   try { window.top.location.replace(window.self.location.href); } catch (e) { /* riquadro isolato: la pagina resta vuota */ }
   throw new Error('Nembo aperto dentro un riquadro');
 }
-const APP_VERSION = 'nembo-v49';
+const APP_VERSION = 'nembo-v50';
 
 /* ---------------- aspetto: stile ("essenziale" o "originale") × modo ("auto", "chiaro" o "scuro") ----------------
    Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno.
@@ -298,6 +298,7 @@ const P = {
   briefcase: 'M3 8h18v12H3zM8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18',
   contrast: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 3v18M12 8h5M12 12h6M12 16h5',
   ramen: 'M3 12h18a9 7.5 0 0 1-18 0zM9 21h6M13 11.5 17 3M15.5 11.5 21 4.5M6 9c0-1.2 1.2-1.2 1.2-2.4S6 5.4 6 4.2M9.5 9c0-1.2 1.2-1.2 1.2-2.4S9.5 5.4 9.5 4.2',
+  sync: 'M21 12a9 9 0 0 1-15.4 6.4L3 16M3 12a9 9 0 0 1 15.4-6.4L21 8M21 3v5h-5M3 21v-5h5',
   torch: 'M9 2h6v4l-2 3v13h-2V9L9 6z', trash: 'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6', paper: 'M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5',
 };
 const Icon = ({ n, s = 20, w = 2 }) => html`<svg width=${s} height=${s} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width=${w} stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d=${P[n]} /></svg>`;
@@ -542,6 +543,7 @@ const DEFAULT_SETTINGS = {
   firmeEnte: '', firmeModelli: [], odSync: true, durate: {},
   hsCommEsteso: '', hsCommSint: '', hsVerificato: '', hsApprovato: '', hsFirma: '', hsDeveloper: '', hsPropertyManager: '', hsProcuratore: '', hsTecnici: '',
   msClientId: '', msTenantId: '',
+  cfgOd: true, // configurazione, modelli e firma salvati anche su OneDrive (_nembo/config/)
 };
 
 // I modelli PDF non sono nel codice pubblicato: si caricano una volta dalle Impostazioni
@@ -871,3 +873,5 @@ function Thumb44({ id, dot }) {
   const u = useBlobUrl(id);
   return html`<span class="thumb44">${u && html`<img src=${u} alt="" />`}${dot && html`<i class="md" style=${'background:' + dot}></i>`}</span>`;
 }
+
+

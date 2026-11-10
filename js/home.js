@@ -102,7 +102,7 @@ function useCritOggi() {
   return n;
 }
 
-function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk, lastBackup, goList, goSettings, goBackup, goCerca, installEvt, onInstall }) {
+function Home({ records: allRecords, settings, open, newAct, syncBtn, avatar, tplOk, lastBackup, goList, goSettings, goBackup, goCerca, installEvt, onInstall }) {
   const od = useOdSynced();
   const crit = useCritOggi();
   const [bu, setBu] = useState(settings.buDefault || 'ambiente');
@@ -168,7 +168,7 @@ function Home({ records: allRecords, settings, open, newAct, bell, avatar, tplOk
   const scadRiga = (ic, c, l, sub, num, crit, fn) => html`<button class="hc-row" onClick=${fn}>
     <span class="sq tint" style=${'--c:' + c}><${Icon} n=${ic} s=${20} /></span><span class="t"><b>${l}</b><small>${sub}</small></span><span class=${'num' + (crit ? ' crit' : '')}>${num}</span></button>`;
   return html`<div class="content home2">
-    <${LargeTitle} top eye=${eye} title="Oggi" acts=${html`<button class="btn-icon" aria-label="Cerca in tutte le attività" onClick=${goCerca}><${Icon} n="search" s=${20} /></button>${bell}${avatar}`} />
+    <${LargeTitle} top eye=${eye} title="Oggi" acts=${html`<button class="btn-icon" aria-label="Cerca in tutte le attività" onClick=${goCerca}><${Icon} n="search" s=${20} /></button>${syncBtn}${avatar}`} />
     <div class="seg" style="margin-bottom:var(--gap)">${BUS.map(([k, l]) => html`<button class=${bu === k ? 'on' : ''} onClick=${() => setBu(k)}>${l}</button>`)}</div>
     <${PrimiPassi} settings=${settings} records=${allRecords} tplOk=${tplOk} hsTplOk=${hsTplOk} lastBackup=${lastBackup} goSettings=${goSettings} goBackup=${goBackup} newAct=${newAct} installEvt=${installEvt} onInstall=${onInstall} />
 
@@ -333,3 +333,5 @@ async function radonReminders(records) {
   }
   return n;
 }
+
+

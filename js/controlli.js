@@ -339,3 +339,41 @@ async function improntaFoglio(f) {
     partecipanti: (f.partecipanti || []).map(p => [p.nome || '', p.societa || '', p.ruolo || '', p.firma || '', p.ts || null]) };
   return sha256(new TextEncoder().encode(JSON.stringify(dati)));
 }
+
+
+/* ---------------- firma del tecnico su OneDrive, cifrata con un PIN ----------------
+   La firma va nella configurazione su OneDrive solo cifrata: AES-GCM con una chiave ricavata dal PIN (PBKDF2-SHA256).
+   Su questo dispositivo resta la chiave (non esportabile) con il suo sale, così i salvataggi automatici
+   non chiedono il PIN; il PIN non viene mai salvato. Al ripristino su un altro dispositivo il PIN serve per decifrarla. */
+const PIN_ITER = 310000, PIN_ALG = 'PBKDF2-SHA256/AES-GCM';
+const pinOk = p => /^\d{6}$/.test(String(p || ''));
+async function pinChiave(pin, salt) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(String(pin)), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: PIN_ITER, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+}
+const pinImpostato = async () => !!(await DB.get('cfg_pin'));
+async function pinImposta(pin) {
+  if (!pinOk(pin)) throw new Error('il PIN deve avere 6 cifre');
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  await DB.set('cfg_pin', { salt: bufToB64(salt), key: await pinChiave(pin, salt) });
+}
+// null se manca la firma o il PIN
+async function firmaCifra(dataUrl) {
+  const p = await DB.get('cfg_pin');
+  if (!p || !p.key || !dataUrl) return null;
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, p.key, new TextEncoder().encode(dataUrl));
+  return { alg: PIN_ALG, iter: PIN_ITER, salt: p.salt, iv: bufToB64(iv), ct: bufToB64(ct) };
+}
+// firma in chiaro (PNG o JPEG verificato); errore se il PIN è sbagliato o il contenuto non è valido
+async function firmaDecifra(f, pin) {
+  if (!isObj(f) || f.alg !== PIN_ALG || typeof f.salt !== 'string' || typeof f.iv !== 'string' || typeof f.ct !== 'string') throw new Error('firma non leggibile');
+  const salt = new Uint8Array(b64ToBuf(f.salt)), key = await pinChiave(pin, salt);
+  let pt;
+  try { pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(b64ToBuf(f.iv)) }, key, b64ToBuf(f.ct)); }
+  catch (e) { throw Object.assign(new Error('PIN non corretto'), { code: 'PIN' }); }
+  const url = new TextDecoder().decode(pt);
+  if (!DATA_OK.test(url)) throw new Error('firma non valida');
+  await DB.set('cfg_pin', { salt: f.salt, key }); // stessa chiave per i prossimi salvataggi da questo dispositivo
+  return url;
+}

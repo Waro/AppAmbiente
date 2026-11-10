@@ -3,6 +3,12 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
+  { v: 50, data: '2026-11-10', tipo: 'minore', titolo: 'Configurazione e backup su OneDrive',
+    voci: [
+      'Configurazione e firma si salvano su OneDrive e si ripristinano su un nuovo dispositivo accedendo con Microsoft. Anche i backup completi vanno direttamente su OneDrive.',
+      'La firma su OneDrive è protetta da un PIN di 6 cifre: lo scegli in Impostazioni → File di configurazione e ti serve solo per ripristinarla.',
+      'Su OneDrive restano gli ultimi 3 backup completi; dalla pagina Backup li ripristini con un tocco.',
+      'In Oggi, al posto della campanella, l’icona della sincronizzazione: verde aggiornata, arancione da aggiornare, rossa se non riuscita o se non sei collegato a OneDrive. Toccala per sincronizzare.' ] },
   { v: 49, data: '2026-11-09', tipo: 'minore', titolo: 'Selezione di più attività, Impostazioni a gruppi e Guida',
     voci: [
       'Selezione di più attività: tieni premuta un’attività negli elenchi o in «Da completare» (su PC tocca «Seleziona»), poi tocca le altre. Un solo invio su OneDrive, ognuna nella sua cartella; senza OneDrive le salvi in un unico file ZIP.',
@@ -170,3 +176,5 @@ function NovitaCard({ go }) {
     ${open && html`<${NovitaSheet} list=${open} go=${go} onClose=${() => setOpen(null)} />`}
   </div>`;
 }
+
+
