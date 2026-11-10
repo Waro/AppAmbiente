@@ -114,6 +114,8 @@ priorità, natura del rischio, costo, competenza e termine; anagrafica, visite, 
 - **Scrittura**: Detta (riconoscimento vocale di Chrome, serve rete), Frasi tipo e personali, Riformula (regole locali).
 - **Foto**: salvate come nel resto dell'app; due gruppi (sopralluogo precedente e attuale), scelta di quelle da includere, didascalie,
   collegamento alla voce della checklist nel Sintetico. Massimo 250 nel report.
+  Nell'Esteso (dalla v52) ogni campo «Situazione rilevata» ha la fotocamera sotto il microfono: la foto ha `ref` = `sch.<sezione>[.<sottosezione>]`,
+  nel Word la sezione riporta «ID Foto n, m» (in rosso se c'è una foto nuova) e all'import del Word la riga ricollega le foto. La fotocamera della barra aggiunge foto senza sezione.
 - Con la BU HSE scelta in Impostazioni la tab bar diventa Oggi · HSE · DDA · RA e la home mostra criticità urgenti e report da caricare.
 
 **Foto del sopralluogo precedente** (v32): non vanno su OneDrive né nella condivisione (sono già nel report dell'anno prima); restano nel backup ZIP e nella sincronizzazione. Nel Rilievo fotografico *elimina tutte* toglie in un colpo tutte le foto del sopralluogo precedente.
@@ -176,7 +178,7 @@ Icona dell'app e logo del menu laterale con la nuvola irezumi (`icons/`).
 
 ## Barra delle attività, Opzioni e riepilogo via email (v42)
 
-- **Barra in basso uguale in tutte le attività** (`BarraAtt` in core.js): a sinistra uno strumento (planimetria; fotocamera negli HSE e nei Verbali; scanner dei dosimetri nel radon), al centro l'azione principale, a destra **⋯ Opzioni**. Nel sopralluogo RA al centro c'è sempre *Carica su OneDrive*; *Prossimo da verificare* è accanto ai filtri dei manufatti.
+- **Barra in basso uguale in tutte le attività** (`BarraAtt` in core.js), flottante come la tab bar (dalla v52, come la barra della selezione e quella delle planimetrie): a sinistra uno strumento (planimetria; fotocamera negli HSE e nei Verbali; scanner dei dosimetri nel radon), al centro l'azione principale, a destra **⋯ Opzioni**. Nel sopralluogo RA al centro c'è sempre *Carica su OneDrive*; *Prossimo da verificare* è accanto ai filtri dei manufatti.
 - **Opzioni** (`OpzioniSheet`, `opzArchivio`): le azioni dell'attività raggruppate. *Condividi*: riepilogo via email, email al cliente. Poi, a seconda dell'attività: file JSON e modelli, manufatti dai campioni MCA, schede campioni PDF ed Excel, riepilogo Word, Word HSE, import del report precedente. *Archivio*: foglio firme, ZIP, elimina. Le sezioni Archivio delle schede sono state tolte.
 - **Riepilogo via email** (`js/riepilogo.js`): testo con intestazione, sintesi e una voce per elemento (prima le criticità) e fino a 12 foto ridotte. *Condividi* apre Outlook (o un'altra app) con il testo nel messaggio e le foto allegate; *Copia testo e foto* mette in appunti il testo con le foto dentro, da incollare nel messaggio; *Copia solo il testo*.
 

@@ -3,6 +3,11 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
+  { v: 52, data: '2026-11-10', tipo: 'minore', titolo: 'Barre flottanti e foto per sezione',
+    voci: [
+      'Tutte le barre in basso sono flottanti come quella di Oggi: nelle attività, nella selezione e nelle planimetrie.',
+      'Report HSE Esteso: in ogni sezione, sotto il microfono, c’è la fotocamera. La foto resta collegata alla sezione e nel Word compare «ID Foto» con il suo numero.',
+      'In Documentazione fotografica scegli o cambi la sezione collegata a ogni foto.' ] },
   { v: 51, data: '2026-11-10', tipo: 'minore', titolo: 'Configurazione e backup su OneDrive',
     voci: [
       'Configurazione e firma si salvano su OneDrive e si ripristinano su un nuovo dispositivo accedendo con Microsoft. Anche i backup completi vanno direttamente su OneDrive.',

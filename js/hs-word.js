@@ -320,14 +320,21 @@ function hsSchedeXml(r, grigio) {
   const hdr = wTR(hc('ID', RW[0]) + hc('Natura del rischio', RW[1]) + hc('Costo indicativo', RW[2]) + hc('Priorità di intervento', RW[3]) +
     hc('Competenza\nProprietà', RW[4]) + hc('Competenza\nConduttore', RW[5]) + hc('Termine di completamento', RW[6]), { jc: 'center', hdr: true });
   let doc = '';
+  // «ID Foto 3, 4» sotto il testo della sezione con le foto collegate (numeri del rilievo fotografico); rosso se c'è una foto nuova
+  const rep = hsFotoReport(r);
+  const idFoto = ref => {
+    const nums = [], nuove = [];
+    rep.forEach((p, i) => { if (p.ref === ref) { nums.push(i + 1); if (p.g !== 'prev') nuove.push(i + 1); } });
+    return nums.length ? wP('ID Foto ' + nums.join(', '), Object.assign({ before: 60, after: 60, align: 'both', b: true }, grigio && nuove.length ? { color: HS_ROSSO } : {})) : '';
+  };
   HS_SCHEDE.forEach((s, i) => {
     const d = r.schede[s.k] || hsEmptyScheda(s);
     doc += wBreak();
     doc += wP((s.t || s.l).toUpperCase(), { style: 'Titolo2', sz: 24, b: true });
     doc += wEmpty();
     let sit = '';
-    if (s.subs) s.subs.forEach(sub => { sit += wP(sub.toUpperCase(), { style: 'Titolo3', sz: 22, align: 'both' }); sit += wBody((d.subs || {})[sub], B['sch.' + s.k + '.' + sub], grigio); });
-    else sit = wBody(d.sit, B['sch.' + s.k + '.sit'], grigio);
+    if (s.subs) s.subs.forEach(sub => { sit += wP(sub.toUpperCase(), { style: 'Titolo3', sz: 22, align: 'both' }); sit += wBody((d.subs || {})[sub], B['sch.' + s.k + '.' + sub], grigio) + idFoto('sch.' + s.k + '.' + sub); });
+    else sit = wBody(d.sit, B['sch.' + s.k + '.sit'], grigio) + idFoto('sch.' + s.k);
     const mig = d.mig ? wBody(d.mig, B['sch.' + s.k + '.mig'], grigio) : wP('Nessuna azione necessaria', { align: 'both', before: 60, after: 60 });
     doc += wTBL(wTR(wCell('Situazione rilevata', { w: 1688, fill: FILL, b: true }) + wTC(sit, { w: 7940 })) +
       wTR(wCell('Attività di miglioramento ', { w: 1688, fill: FILL, b: true }) + wTC(mig, { w: 7940 })), [1688, 7940]);
@@ -587,7 +594,9 @@ function hsMatchSub(s, testo) {
 }
 function hsReadEsteso(files, body) {
   const imgs = hsImgCollector(files);
-  const out = { formato: 'esteso', meta: {}, an: {}, schede: {}, foto: [], img: {}, visite: [], catFab: [], catTer: [], extraFoto: [] };
+  const out = { formato: 'esteso', meta: {}, an: {}, schede: {}, foto: [], img: {}, visite: [], catFab: [], catTer: [], extraFoto: [], refFoto: {} };
+  // «ID Foto 1, 2» è generato dall'app: lo uso per ricollegare le foto alla sezione e non lo tengo nel testo
+  const idFotoRiga = (l, ref) => { const m = String(l).trim().match(/^ID Foto\s+([\d,\s]+)$/i); if (!m) return false; m[1].split(/[,\s]+/).filter(Boolean).forEach(n => out.refFoto[+n] = ref); return true; };
   HS_SCHEDE.forEach(s => out.schede[s.k] = hsEmptyScheda(s));
   const blocks = kidsW(body).filter(n => n.localName === 'p' || n.localName === 'tbl');
   let cur = null, sez = 'cop'; const testa = [], prime = [];
@@ -616,7 +625,7 @@ function hsReadEsteso(files, body) {
       rowsW(tbl).forEach(tr => {
         const cs = cellsW(tr), testi = cs.map(cellLines), im = imgs(tr);
         const i = testi.findIndex(x => /FOTOGRAFIA N/.test(hsNorm(x)));
-        if (i >= 0) { if (f) out.foto.push(f); const n = String(testi[i]).match(/(\d+)/); f = { blob: im[0] && im[0].blob, cap: '', data: (testi[i + 1] || '').trim(), riga: 0, ord: n ? +n[1] : 9999 }; return; }
+        if (i >= 0) { if (f) out.foto.push(f); const n = String(testi[i]).match(/(\d+)/); f = { blob: im[0] && im[0].blob, cap: '', data: (testi[i + 1] || '').trim(), riga: 0, ord: n ? +n[1] : 9999, n: n ? +n[1] : 0 }; return; }
         if (!f) return;
         if (im.length && !f.blob) f.blob = im[0].blob;
         const u = []; testi.forEach(x => { x = (x || '').trim(); if (x && u.indexOf(x) < 0) u.push(x); });
@@ -670,12 +679,13 @@ function hsReadEsteso(files, body) {
             kidsW(c[1], 'p').forEach(p => {
               const raw = pText(p).replace(/ /g, ' ').trim().replace(/^\u2022\s*/, '- '); if (!raw) return;
               const m = !isList(p) && hsMatchSub(cur, raw); if (m) { sub = m; return; }
+              if (idFotoRiga(raw, 'sch.' + cur.k + '.' + (sub || cur.subs[0]))) return;
               const li = isList(p); const line = li && !raw.startsWith('- ') ? ' '.repeat(2 * li.lv) + '- ' + raw : raw;
               (sub ? res[sub] : pre).push(line);
             });
             if (pre.length) res[cur.subs[0]] = pre.concat(res[cur.subs[0]]);
             d.subs = Object.fromEntries(cur.subs.map(s => [s, res[s].join('\n').trim()]));
-          } else d.sit = cellLines(c[1]);
+          } else d.sit = cellLines(c[1]).split('\n').filter(l => !idFotoRiga(l, 'sch.' + cur.k)).join('\n').trim();
           imgs(c[1]).forEach(o => out.extraFoto.push({ blob: o.blob, cap: cur.s || cur.l }));
         } else if (k.indexOf('ATTIVITA DI MIGLIORAMENTO') >= 0) {
           const v = cellLines(c[1]); d.mig = /^nessuna azione necessaria$/i.test(v) ? '' : v;
