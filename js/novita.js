@@ -5,7 +5,8 @@
 const NOVITA = [
   { v: 55, data: '2026-11-11', tipo: 'minore', titolo: 'HSE in Programmazione',
     voci: [
-      'In Programmazione scegli se il sopralluogo HSE è un primo sopralluogo (a note) o un periodico, Esteso o Sintetico. Nel piano JSON i tipi sono hs1E e hs1S per il primo, hsE e hsS per il periodico.' ] },
+      'In Programmazione scegli se il sopralluogo HSE è un primo sopralluogo o un periodico. Il formato, o il report da cui partire, lo scegli quando apri l’attività.',
+      'Nel sopralluogo periodico lo stato delle sezioni è la barra colorata a sinistra con la parola, come nella Check-list.' ] },
   { v: 54, data: '2026-11-11', tipo: 'minore', titolo: 'Riordino interno',
     voci: [
       'Riordino interno del codice: nell’uso non cambia nulla.' ] },

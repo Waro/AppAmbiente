@@ -11,6 +11,7 @@ function recDone(r) {
   if (r.type === 'radon') return (r.momenti || []).some(m => m.data === today() && m.confermato);
   if (r.type === 'aria') { const R = ariaRiepilogo(r); return R.tot > 0 && R.chiusi === R.tot; }
   if (r.type === 'vs') return (r.note || []).length > 0;
+  if (r.type === 'hs' && r.daScegliere) return false;
   if (r.type === 'hs' && r.aNote) return (r.noteSop || []).length > 0;
   if (r.type === 'hs') return r.formato === 'sintetico' ? Object.keys(r.risp || {}).length > 0 : HS_SCHEDE.some(s => hsSchedaFatta(r.schede[s.k] || {}));
   return false;
@@ -38,7 +39,7 @@ function recLine(r) {
   }
   if (r.type === 'mappatura') { const n = allCampMap(r).length; return `Mappatura MCA e FAV · ${n} ${n === 1 ? 'campione' : 'campioni'}`; }
   if (r.type === 'ra') return `Verifica RA · ${r.manufatti.filter(m => m.stato).length}/${r.manufatti.length} manufatti`;
-  if (r.type === 'hs') return `HSE ${HS_FMT[r.formato]} · ${hsProgress(r)}`;
+  if (r.type === 'hs') return r.daScegliere ? `HSE · ${hsProgress(r)}` : `HSE ${HS_FMT[r.formato]} · ${hsProgress(r)}`;
   if (r.type === 'vs') { const n = (r.note || []).length; return `Verbale HSE · ${n} ${n === 1 ? 'nota' : 'note'}`; }
   if (r.type === 'aria') { const R = ariaRiepilogo(r); return `Monitoraggio aria · ${R.chiusi}/${R.tot} punti`; }
   if (r.type !== 'radon') return r.codice || '';
@@ -327,13 +328,14 @@ function NewActivity({ records, settings, onClose, onCreate, onOpenNew, bu, pres
   </div>`;
 }
 
-/* Sopralluogo HSE, seconda schermata di Nuova attività.
-   Primo sopralluogo: Esteso o Sintetico, a note (js/hs-note.js). Sopralluogo periodico: dal Word o dal JSON dell'anno precedente,
-   oppure da un report in Nembo; il formato lo decide il file o il report e il sopralluogo ha la struttura a schede o checklist. */
-function SopralluogoHse({ records, settings, dati, onBack, onClose, onPrimo, onOpenNew }) {
+/* Sopralluogo HSE: scelta del primo sopralluogo (Esteso o Sintetico, a note: js/hs-note.js) o del periodico (dal Word o dal JSON
+   dell'anno precedente, oppure da un sopralluogo in Nembo; il formato lo decide il file o il sopralluogo, struttura a schede o checklist).
+   tipo: 'primo' | 'periodico' mostra solo quella parte (attività programmata); senza tipo le mostra tutte e due (Nuova attività).
+   dati: campi da mettere nel sopralluogo creato dal file; fissi: campi che restano quelli dell'attività programmata (id, codice, data…). */
+function HsScelta({ records, settings, tipo, dati = {}, fissi = {}, onPrimo, onPeriodico }) {
   const inp = useRef(); const [daNembo, setDaNembo] = useState(false);
-  const prec = records.filter(r => r.type === 'hs' && !r._new).sort((a, b) => (b.data || '').localeCompare(a.data || ''));
-  const go = async fn => { try { const r = await fn(); if (r) { onClose(); setTimeout(() => onOpenNew(r), 0); } } catch (e) { _progress(null); fail('Sopralluogo periodico non creato', e); } };
+  const prec = records.filter(r => r.type === 'hs' && !r._new && !r.daScegliere && r.id !== fissi.id).sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+  const go = async fn => { try { const r = await fn(); if (r) onPeriodico({ ...r, ...fissi }); } catch (e) { _progress(null); fail('Sopralluogo periodico non creato', e); } };
   const daFile = f => go(async () => {
     const d = await hsLeggiFile(f);
     const r = await hsApplyImport({ ...newHs(records, settings, d.formato), ...dati }, d, (k, t) => _progress({ title: 'Importo il report', text: `Immagini ${k} di ${t}`, done: k, total: t }));
@@ -342,22 +344,25 @@ function SopralluogoHse({ records, settings, dati, onBack, onClose, onPrimo, onO
   const daRec = p => go(() => hsNextYear(p.aNote ? hsNoteAOld(p, true) : p, records, settings));
   const riga = (ic, c, l, sub, fn, on) => html`<button class=${'opt' + (on ? ' on' : '')} onClick=${fn}><span class="oi tint" style=${'--c:' + c}><${Icon} n=${ic} s=${21} /></span>
     <span class="ot"><b>${l}</b><small>${sub}</small></span></button>`;
+  return html`${tipo !== 'periodico' && html`<div class="sec-h mt-1"><h3>Primo sopralluogo</h3></div>
+      ${riga('helmet', TIPO_COL.hs, 'Esteso', '13 capitoli; le sottosezioni sono tag', () => onPrimo('esteso'))}
+      ${riga('helmet', 'var(--navy-ink)', 'Sintetico', 'Capitoli 3–7; le voci della checklist sono tag', () => onPrimo('sintetico'))}`}
+    ${tipo !== 'primo' && html`<div class=${'sec-h' + (tipo ? ' mt-1' : '')}><h3>Sopralluogo periodico</h3><span class="hint">il formato è quello del report</span></div>
+      ${riga('paper', 'var(--blue)', 'Carica Word o JSON', 'Il report dell’anno precedente', () => inp.current.click())}
+      ${riga('list', 'var(--blue)', 'Da un sopralluogo in Nembo', prec.length ? prec.length + (prec.length === 1 ? ' sopralluogo' : ' sopralluoghi') : 'Nessun sopralluogo in Nembo', () => prec.length && setDaNembo(!daNembo), daNembo)}
+      ${daNembo && html`<div class="list mb-2">${prec.slice(0, 30).map(p => html`<button class="rcard" key=${p.id} onClick=${() => daRec(p)}>
+        <div class="r1"><span class="id">${p.codice}</span><span class=${'badge ' + (p.formato === 'sintetico' ? 'b-f2' : 'b-f1')}>${HS_FMT[p.formato]}</span><span class="dt">${fmtD(p.data)}</span></div>
+        ${(p.sito || p.commessa || p.cliente) && html`<div class="ttl">${[p.cliente, p.commessa, p.sito].filter(Boolean).join(' · ')}</div>`}</button>`)}</div>`}
+      <input ref=${inp} type="file" accept=".docx,.json,application/json,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden onChange=${e => { const f = e.target.files[0]; e.target.value = ''; if (f) daFile(f); }} />`}`;
+}
+// seconda schermata di Nuova attività
+function SopralluogoHse({ records, settings, dati, onBack, onClose, onPrimo, onOpenNew }) {
   return html`<div class="sheet-ov" onClick=${e => e.target === e.currentTarget && onClose()}>
     <div class="sheet" role="dialog" aria-label="Sopralluogo HSE">
       <div class="sheet-grab"></div>
       <div class="sheet-nav"><button class="btn link" onClick=${onBack}>Indietro</button><b>Sopralluogo HSE</b><span></span></div>
-      <div class="sheet-body">
-        <div class="sec-h" style="margin-top:6px"><h3>Primo sopralluogo</h3></div>
-        ${riga('helmet', TIPO_COL.hs, 'Esteso', '13 capitoli; le sottosezioni sono tag', () => onPrimo('esteso'))}
-        ${riga('helmet', 'var(--navy-ink)', 'Sintetico', 'Capitoli 3–7; le voci della checklist sono tag', () => onPrimo('sintetico'))}
-        <div class="sec-h"><h3>Sopralluogo periodico</h3><span class="hint">il formato è quello del report</span></div>
-        ${riga('paper', 'var(--blue)', 'Carica Word o JSON', 'Il report dell’anno precedente', () => inp.current.click())}
-        ${riga('list', 'var(--blue)', 'Da un sopralluogo in Nembo', prec.length ? prec.length + (prec.length === 1 ? ' sopralluogo' : ' sopralluoghi') : 'Nessun sopralluogo in Nembo', () => prec.length && setDaNembo(!daNembo), daNembo)}
-        ${daNembo && html`<div class="list mb-2">${prec.slice(0, 30).map(p => html`<button class="rcard" key=${p.id} onClick=${() => daRec(p)}>
-          <div class="r1"><span class="id">${p.codice}</span><span class=${'badge ' + (p.formato === 'sintetico' ? 'b-f2' : 'b-f1')}>${HS_FMT[p.formato]}</span><span class="dt">${fmtD(p.data)}</span></div>
-          ${(p.sito || p.commessa || p.cliente) && html`<div class="ttl">${[p.cliente, p.commessa, p.sito].filter(Boolean).join(' · ')}</div>`}</button>`)}</div>`}
-        <input ref=${inp} type="file" accept=".docx,.json,application/json,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden onChange=${e => { const f = e.target.files[0]; e.target.value = ''; if (f) daFile(f); }} />
-      </div></div></div>`;
+      <div class="sheet-body"><${HsScelta} records=${records} settings=${settings} dati=${dati} onPrimo=${onPrimo}
+        onPeriodico=${r => { onClose(); setTimeout(() => onOpenNew(r), 0); }} /></div></div></div>`;
 }
 
 // Radon: promemoria "avvisa il conduttore" una settimana prima del ritiro (una notifica per ritiro)

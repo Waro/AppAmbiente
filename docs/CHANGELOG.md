@@ -7,7 +7,7 @@ Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Nem
 ## [nembo-v55] — 2026-11-11
 
 ### Aggiunto
-- Programmazione: tipi `hs1E` e `hs1S` (primo sopralluogo HSE a note, Esteso o Sintetico) accanto a `hsE` e `hsS` (sopralluogo periodico), nel foglio «Nuovo» e nel piano JSON (`PIANO_TIPI`, `AG_TIPI_NUOVI`).
+- Programmazione: «HSE · primo sopralluogo» e «HSE · periodico» (tipi `hsPrimo` e `hsPeriodico` nel piano JSON; `hsE` e `hsS` restano validi). L'attività nasce con `daScegliere` e senza formato: all'apertura `HsDaAvviare` mostra la scelta (`HsScelta`, la stessa della seconda schermata di Nuova attività). In calendario e negli elenchi il formato non compare finché non è scelto.
 
 ### Modificato
 - Coerenza con Rilievo: nel sopralluogo periodico HSE lo stato delle sezioni è la barra a sinistra con la parola (`hsSecStato`), come nella Check-list; etichette per i lettori di schermo sui pulsanti ‹ › ed elimina di galleria HSE e Verbale; virgolette « » ovunque.

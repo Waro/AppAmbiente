@@ -5,6 +5,7 @@ const HS_VOCI = HS_SINT_ALL.length;
 
 /* ---------------- elenco ---------------- */
 function hsProgress(r) {
+  if (r.daScegliere) return r.daScegliere === 'primo' ? 'primo sopralluogo da avviare' : 'periodico da avviare';
   if (r.aNote) { const C = hsCapi(r); return `${C.filter(c => hsStatoCap(r, c).st !== 'st-err').length}/${C.length} capitoli · ${(r.noteSop || []).length} note`; }
   if (r.formato === 'sintetico') return `${HS_SINT_ALL.filter(it => r.risp[it.id]).length}/${HS_VOCI} voci`;
   return `${HS_SCHEDE.filter(s => hsSchedaFatta(r.schede[s.k] || {})).length}/${HS_SCHEDE.length} schede`;
@@ -23,7 +24,7 @@ function HsList({ records, open, create, activeId, acts }) {
     ${Object.entries(groups).map(([c, sites]) => html`<div key=${c}><div class="grp-client">${c}</div>
       ${Object.entries(sites).map(([s, rs]) => html`<div key=${s}><div class="grp-site">${s}<span class="count">${rs.length}</span></div><div class="list">
         ${rs.map(r => { const cr = hsCriticita(r).filter(x => x.p === 1).length; return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r) + selCls(r)} key=${r.id} ...${selRow(r, () => open(r.id))}>${selCk(r)}
-          <div class="r1"><span class="id">${r.codice}</span><span class=${'badge ' + (r.formato === 'sintetico' ? 'b-f2' : 'b-f1')}>${HS_FMT[r.formato]}</span><span class="dt">${fmtD(r.data)}</span></div>
+          <div class="r1"><span class="id">${r.codice}</span>${!r.daScegliere && html`<span class=${'badge ' + (r.formato === 'sintetico' ? 'b-f2' : 'b-f1')}>${HS_FMT[r.formato]}</span>`}<span class="dt">${fmtD(r.data)}</span></div>
           ${(r.sito || r.commessa) && html`<div class="ttl">${[r.commessa, r.sito].filter(Boolean).join(' · ')}</div>`}
           <div class="sum">${r.tecnico ? r.tecnico + ' · ' : ''}${hsProgress(r)} · ${(r.foto || []).length} foto</div>
           ${cr > 0 && html`<div class="due late">${cr} ${cr === 1 ? 'criticità' : 'criticità'} ${r.formato === 'sintetico' ? 'di gravità alta' : 'con priorità 1'}</div>`}
@@ -308,7 +309,20 @@ async function hsNextYear(r, records, settings) {
 }
 
 // sopralluogo a note (primo sopralluogo dalla v53): js/hs-note.js; report a schede o checklist (periodici e report precedenti): qui sotto
-function HsForm(p) { return p.rec.aNote ? html`<${HsNoteForm} key="n" ...${p} />` : html`<${HsSchedeForm} key="s" ...${p} />`; }
+function HsForm(p) { return p.rec.daScegliere ? html`<${HsDaAvviare} key="d" ...${p} />` : p.rec.aNote ? html`<${HsNoteForm} key="n" ...${p} />` : html`<${HsSchedeForm} key="s" ...${p} />`; }
+// sopralluogo programmato: all'apertura si sceglie il formato (primo sopralluogo) o il report di partenza (periodico)
+function HsDaAvviare({ rec: r, records, settings, onSave, onDelete, embedded, onClose }) {
+  const FISSI = ['id', 'codice', 'createdAt', 'data', 'ora', 'durata', 'stato', 'drone'];
+  const fissi = Object.fromEntries(FISSI.filter(k => r[k] !== undefined).map(k => [k, r[k]]));
+  const dati = { ...fissi, ...Object.fromEntries(['commessa', 'cliente', 'citta', 'indirizzo', 'sito'].filter(k => r[k]).map(k => [k, r[k]])) };
+  const avvia = x => onSave({ ...x, daScegliere: undefined, updatedAt: Date.now() });
+  const primo = formato => avvia({ ...newHsNote(records, settings, formato), ...dati });
+  return html`<div class="content form">
+    <${DetailHead} eye="Sopralluogo HSE" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r) || r.sito].filter(Boolean).join(' · ')} onClose=${embedded ? onClose : null} />
+    <${HsScelta} records=${records} settings=${settings} tipo=${r.daScegliere} dati=${dati} fissi=${fissi} onPrimo=${primo} onPeriodico=${avvia} />
+    <${BarraAtt} r=${r} settings=${settings} center=${html`<span class="grow"></span>`} gruppi=${[opzArchivio({ r, settings, onDelete, elimina: 'Elimina il sopralluogo' })]} />
+  </div>`;
+}
 function HsSchedeForm({ rec: initial, records, settings, onSave, onDelete, onSettings, embedded, onClose, onOpenNew }) {
   const [r, up, saved] = useAutosave(initial, onSave);
   const [sec, setSec] = useState(null);

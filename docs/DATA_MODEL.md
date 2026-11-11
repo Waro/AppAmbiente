@@ -287,6 +287,7 @@ Come la DDA per `campioni` (solo `mca`, `fav`), `nc`, `congelati`, `schede`, `pr
 | hs Sintetico `anS`, `risp`, `note`, `descr`, `azioni`, `cgFoto` | — | `anS`: sì (nomi) | Checklist e azioni |
 | hs `aNote` | boolean | no | `true` = sopralluogo a note (primo sopralluogo, v53, `js/hs-note.js`); assente = report a schede (Esteso) o a checklist (Sintetico) |
 | hs `noteSop` | `[{ id, titolo, testo, mig, tag[] }]` | possibile | Note del sopralluogo a note. Capitolo = primo tag uguale a un capitolo del formato (Esteso: le 13 schede; Sintetico: capitoli 3–7); sottosezione = primo tag uguale a una sottosezione (Esteso) o a una voce (Sintetico, «3.2 Recinzione deteriorata», riconosciuta dal numero). Foto in `foto` con `ref = n.<id>` |
+| hs `daScegliere` | `primo` \| `periodico` | no | Sopralluogo programmato non ancora avviato (v55): `formato` è vuoto; all'apertura `HsDaAvviare` fa scegliere Esteso o Sintetico (primo) oppure il report di partenza (periodico), poi il campo sparisce |
 | hs `np` | `{ <capitolo>: true }` | no | Capitoli «Non pertinente» del sopralluogo a note (chiavi Esteso `agibilita`…, Sintetico `c3`…`c7`) |
 | vs `meta` | object | sì | `{ titolo, fondo, dataReport, redatto, verificato, protocollo, procura, revisione, presenti, descrArea }` |
 | vs `note` | `[{ id, titolo, testo, mig, foto[], tag[] }]` | possibile | Note del verbale |
@@ -448,7 +449,7 @@ OneDrive › App › <nome dell'app in Entra ID>/
     { "tipo": "dda2", "data": "2026-11-12", "ora": "14:00", "durata": 180, "commessa": "001/26", "cliente": "Immobiliare Esempio S.r.l.",
       "citta": "Città Demo", "indirizzo": "Via degli Esempi 12", "numerazione": "prosegui" } ] }
 ```
-Tipi: `ra`, `dda1`, `dda2`, `mappatura`, `radon`, `aria`, `hs1E` e `hs1S` (primo sopralluogo HSE a note), `hsE` e `hsS` (sopralluogo periodico HSE), `vs`, `firme`. Gli altri formati di import (`ra-mappatura`, `dda-fase1`, `dda-fase2`) sono in `RA_TEMPLATE` (ra.js), `DDA1_TEMPLATE` e `DDA2_TEMPLATE` (dda.js); prompt in `Nembo_Prompt.txt`, fuori dal repository. Campo comune `planimetrie: [{ nome, piano, didascalia, origine: "storica", fonte, formato: pdf|jpeg|png, dati }]`.
+Tipi: `ra`, `dda1`, `dda2`, `mappatura`, `radon`, `aria`, `hsPrimo` e `hsPeriodico` (sopralluogo HSE da avviare), `hsE` e `hsS` (piani preparati prima della v55), `vs`, `firme`. Gli altri formati di import (`ra-mappatura`, `dda-fase1`, `dda-fase2`) sono in `RA_TEMPLATE` (ra.js), `DDA1_TEMPLATE` e `DDA2_TEMPLATE` (dda.js); prompt in `Nembo_Prompt.txt`, fuori dal repository. Campo comune `planimetrie: [{ nome, piano, didascalia, origine: "storica", fonte, formato: pdf|jpeg|png, dati }]`.
 
 **ZIP di backup**
 ```text
