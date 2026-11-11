@@ -143,7 +143,7 @@ function TagMultiSheet({ note, fissi, altri, onSet, onClose }) {
     <div class="sheet-body">
       <input class="inp mt-1" value=${q} placeholder="Scrivi un tag o scegline uno" onInput=${e => setQ(e.target.value)}
         onKeyDown=${e => { if (e.key === 'Enter' && q.trim()) { e.preventDefault(); const t = tutti.find(x => x.toLowerCase() === qq) || q.trim().replace(/^#/, ''); if (conta(t) < N) tocca(t); setQ(''); } }} />
-      <div class="tags-row mt-3">${nuovo && html`<button class="tag new" onClick=${() => { tocca(q.trim().replace(/^#/, '')); setQ(''); }}>Crea “${q.trim()}”</button>`}${vis.map(riga)}</div>
+      <div class="tags-row mt-3">${nuovo && html`<button class="tag new" onClick=${() => { tocca(q.trim().replace(/^#/, '')); setQ(''); }}>Crea «${q.trim()}»</button>`}${vis.map(riga)}</div>
     </div></div></div>`;
 }
 
@@ -193,7 +193,7 @@ function HsNoteTab({ r, up, ns, filtro, setFiltro, addN }) {
       <div><b>${nFoto}</b><span>foto</span></div></div></div>
     ${tagsV.length > 0 && html`<div class="vs-filter mt-3"><button class=${'tag' + (!filtro ? ' on' : ' sugg')} onClick=${() => setFiltro(null)}>Tutte</button>
       ${tagsV.map(t => html`<button key=${t} class=${'tag' + (filtro === t ? ' on' : '')} style=${tagStyle(t, filtro === t)} onClick=${() => setFiltro(filtro === t ? null : t)}>#${t}</button>`)}</div>`}
-    ${!note.length && html`<div class="card mt-3"><div class="empty" style="padding:16px">Nessuna nota. Tocca “Nuova nota” per aggiungerne una.</div></div>`}
+    ${!note.length && html`<div class="card mt-3"><div class="empty" style="padding:16px">Nessuna nota. Tocca «Nuova nota» per aggiungerne una.</div></div>`}
     ${ns.sel ? G.map(g => html`<div key=${'g-' + (g.c ? g.c.k : '-')}>
       <div class="sec-h"><h3>${g.c ? g.c.n + '. ' + g.c.tag : 'Senza capitolo'}</h3><span class="hint">${g.note.length}</span></div>
       <div class="list">${g.note.map(n => html`<${NotaSelRiga} key=${n.id} n=${n} i=${note.indexOf(n)} on=${ns.sel.has(n.id)} onClick=${() => ns.click(n.id)} />`)}</div></div>`)

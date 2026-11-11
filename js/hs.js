@@ -17,7 +17,7 @@ function HsList({ records, open, create, activeId, acts }) {
   const groups = {};
   list.forEach(r => { const c = r.cliente || 'Senza committente', s = placeLabel(r); ((groups[c] = groups[c] || {})[s] = groups[c][s] || []).push(r); });
   return html`<div class="content">
-    <${LargeTitle} top eye="HSE" title="Sopralluoghi" sub=${`${all.length} ${all.length === 1 ? 'report' : 'report'}`} acts=${acts} />
+    <${LargeTitle} top eye="HSE" title="Sopralluoghi" sub=${`${all.length} ${all.length === 1 ? 'sopralluogo' : 'sopralluoghi'}`} acts=${acts} />
     <div class="pills">${[['tutti', 'Tutti'], ['esteso', 'Esteso'], ['sintetico', 'Sintetico']].map(([k, l]) => html`<button class=${'pill' + (f === k ? ' on' : '')} onClick=${() => setF(k)}>${l}<span class="n">${all.filter(r => k === 'tutti' || r.formato === k).length}</span></button>`)}</div>
     ${!list.length && html`<div class="empty"><b>Nessun sopralluogo HSE</b>Tocca + e scegli Sopralluogo HSE.</div>`}
     ${Object.entries(groups).map(([c, sites]) => html`<div key=${c}><div class="grp-client">${c}</div>
@@ -207,10 +207,10 @@ function HsGallery({ r, up, items, sezioni }) {
             <option value="">${sezioni ? 'Nessuna sezione collegata' : 'Nessuna voce collegata'}</option>${items.map(it => html`<option value=${it.id}>${it.ref} · ${it.txt.slice(0, 60)}</option>`)}</select>`}
           <label class="hsg-inc"><input type="checkbox" checked=${p.inc !== false} onChange=${e => updF(p.id, { inc: e.target.checked })} /> Nel report</label>
           <div class="hsg-act">
-            <button class="x" title="Prima" disabled=${k === 0} onClick=${() => move(p, -1)}>‹</button>
-            <button class="x" title="Dopo" disabled=${k === L.length - 1} onClick=${() => move(p, 1)}>›</button>
-            <button class="x" title=${G.g === 'prev' ? 'Sposta in questo sopralluogo' : 'Sposta nel sopralluogo precedente'} onClick=${() => updF(p.id, { g: G.g === 'prev' ? 'new' : 'prev' })}>${G.g === 'prev' ? '↓' : '↑'}</button>
-            <button class="x" title="Elimina" onClick=${() => del(p)}><${Icon} n="trash" s=${15} /></button>
+            <button class="x" title="Prima" aria-label="Sposta prima" disabled=${k === 0} onClick=${() => move(p, -1)}>‹</button>
+            <button class="x" title="Dopo" aria-label="Sposta dopo" disabled=${k === L.length - 1} onClick=${() => move(p, 1)}>›</button>
+            <button class="x" title=${G.g === 'prev' ? 'Sposta in questo sopralluogo' : 'Sposta nel sopralluogo precedente'} aria-label=${G.g === 'prev' ? 'Sposta in questo sopralluogo' : 'Sposta nel sopralluogo precedente'} onClick=${() => updF(p.id, { g: G.g === 'prev' ? 'new' : 'prev' })}>${G.g === 'prev' ? '↓' : '↑'}</button>
+            <button class="x" title="Elimina" aria-label="Elimina la foto" onClick=${() => del(p)}><${Icon} n="trash" s=${15} /></button>
           </div></div>`)}</div>`}`}
     </div>`; })}
     <input ref=${inp} type="file" accept="image/*" multiple hidden onChange=${pick} />
@@ -226,7 +226,7 @@ function HsCam({ up, r, refId, big, label = 'Scatta una foto' }) {
     <input ref=${inp} type="file" accept="image/*" capture="environment" hidden onClick=${e => e.stopPropagation()} onChange=${e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) hsAddPhotos(fs, 'new', refId, up, (r.foto || []).length).then(() => toast('Foto aggiunta' + (refId ? ' e collegata alla voce' : ''))); }} /></button>`;
 }
 
-// voce della checklist sintetica: codice, testo e SI/NO/N.A. su una riga (sotto se non ci stanno), foto e note a icone
+// voce della checklist sintetica: codice, testo e SI/NO/N.A. su una riga (sotto se non c'è spazio), foto e note a icone
 function HsCheck({ it, r, up, base }) {
   const nota = r.note[it.id] || '';
   const [open, setOpen] = useState(false);
@@ -270,12 +270,13 @@ function hsSections(r) {
     ...HS_SCHEDE.map((s, i) => ({ k: 's' + i, l: (i + 1) + '. ' + (s.s || s.l), sch: s, ic: 'check' })),
     { k: 'foto', l: 'Documentazione fotografica', ic: 'camera' }, { k: 'crit', l: 'Criticità e documenti mancanti', ic: 'shield' }, { k: 'note', l: 'Appunti e allegati', ic: 'paper' }];
 }
+// stato di una sezione: { st, w } = barra a sinistra (Rilievo) e parola, come nella Check-list del sopralluogo a note
 function hsSecStato(r, s) {
-  if (s.sch) { const d = r.schede[s.sch.k] || {}; return d.prio ? html`<span class=${'badge ' + (d.prio === 1 ? 'b-nc' : d.prio === 2 ? 'b-f1' : 'b-ok')}>P${d.prio}</span>` : hsSchedaFatta(d) ? html`<span class="badge b-ok">compilata</span>` : html`<span class="badge">da fare</span>`; }
-  if (s.cap) { const n = hsCapFatti(r, s.cap), t = s.cap.items.length; return html`<span class=${'badge' + (n === t ? ' b-ok' : '')}>${n}/${t}</span>`; }
-  if (s.k === 'foto') return html`<span class="badge">${(r.foto || []).length}</span>`;
-  if (s.k === 'azioni') return html`<span class="badge">${(r.azioni || []).length}</span>`;
-  if (s.k === 'crit') { const n = hsCriticita(r).length; return n ? html`<span class="badge b-nc">${n}</span>` : null; }
+  if (s.sch) { const d = r.schede[s.sch.k] || {}; return d.prio ? { st: d.prio === 1 ? 'st-err' : d.prio === 2 ? 'st-warn' : 'st-ok', w: 'P' + d.prio } : hsSchedaFatta(d) ? { st: 'st-ok', w: 'Compilata' } : { st: 'st-err', w: 'Da fare' }; }
+  if (s.cap) { const n = hsCapFatti(r, s.cap), t = s.cap.items.length; return { st: n === t ? 'st-ok' : n ? 'st-warn' : 'st-err', w: n + '/' + t }; }
+  if (s.k === 'foto') return { w: (r.foto || []).length + ' foto' };
+  if (s.k === 'azioni') return { w: String((r.azioni || []).length) };
+  if (s.k === 'crit') { const n = hsCriticita(r).length; return n ? { st: 'st-err', w: String(n) } : null; }
   return null;
 }
 // testi attuali come "base": servono per l'aggiornamento dell'anno successivo
@@ -349,8 +350,8 @@ function HsSchedeForm({ rec: initial, records, settings, onSave, onDelete, onSet
     setBusy(null);
   };
   const nextYear = async () => {
-    if (!confirm('Creo un nuovo report per il prossimo sopralluogo: testi e foto di questo diventano "sopralluogo precedente": nel nuovo Word restano neri, le novità escono in rosso. Continuare?')) return;
-    setBusy('next'); try { onOpenNew(await hsNextYear(r, records, settings)); } catch (e) { fail('Nuovo report non creato', e); } setBusy(null);
+    if (!confirm('Creo il sopralluogo periodico successivo: testi e foto di questo diventano «sopralluogo precedente»: nel nuovo Word restano neri, le novità escono in rosso. Continuare?')) return;
+    setBusy('next'); try { onOpenNew(await hsNextYear(r, records, settings)); } catch (e) { fail('Nuovo sopralluogo non creato', e); } setBusy(null);
   };
   const upload = () => OD.account ? odSync([r], settings) : sendToOneDrive(r, settings);
 
@@ -368,8 +369,8 @@ function HsSchedeForm({ rec: initial, records, settings, onSave, onDelete, onSet
       <div class="t"><b>Parti dal report precedente</b><small>Carica il Word dell'anno scorso (o il .json della vecchia app): testi e foto diventano la base: nel nuovo Word quello che aggiungi o modifichi esce in rosso.</small></div>
       <button class="btn sm" disabled=${busy === 'imp'} onClick=${() => imp.current.click()}>${busy === 'imp' ? html`<div class="spin" />` : 'Importa'}</button></div></div>`}
     <div class="sec-h"><h3>Sezioni</h3><span class="hint">${HS_FMT[r.formato]}</span></div>
-    <div class="list">${secs.map(s => html`<button class="rcard hs-sec" key=${s.k} onClick=${() => setSec(s.k)}>
-      <div class="r1"><span class="ttl" style="margin:0;font-size:var(--fs-lg)">${s.l}</span><span class="dt">${hsSecStato(r, s)}</span></div></button>`)}</div>
+    <div class="list">${secs.map(s => { const S = hsSecStato(r, s) || {}; return html`<button class=${'rcard hs-sec' + (S.st ? ' st-bar ' + S.st : '')} key=${s.k} onClick=${() => setSec(s.k)}>
+      <div class="r1"><span class="ttl hs-ckt">${s.l}</span><span class="dt">${S.w || ''}</span></div></button>`; })}</div>
 `;
   const archivio = html`    <div class="sec-h"><h3>Word</h3></div>
     <div class="card">
@@ -449,7 +450,7 @@ function HsSchedeForm({ rec: initial, records, settings, onSave, onDelete, onSet
       onRemove=${async d => { await removeBlob(d.blobId); up(p => ({ ...p, documenti: p.documenti.filter(x => x.id !== d.id) })); }} /></div>`;
 
   return html`<div class="content form" ref=${root}>
-    <${DetailHead} conclusa=${r.conclusa} eye=${'HSE · ' + HS_FMT[r.formato]} title=${S0 && T === 'main' ? S0.l : r.codice} sub=${S0 && T === 'main' ? [r.codice, r.sito].filter(Boolean).join(' · ') : [r.commessa, r.cliente, placeAddr(r) || r.sito].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
+    <${DetailHead} conclusa=${r.conclusa} eye=${'Sopralluogo HSE · ' + HS_FMT[r.formato]} title=${S0 && T === 'main' ? S0.l : r.codice} sub=${S0 && T === 'main' ? [r.codice, r.sito].filter(Boolean).join(' · ') : [r.commessa, r.cliente, placeAddr(r) || r.sito].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
     <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'main', l: 'Sezioni' }, { k: 'file', l: 'File' }]} />
     ${T === 'anag' ? html`${body}${archivio}` : T === 'file' ? html`<${FileTab} r=${r} up=${up} settings=${settings} />` : html`
     ${SR_API && html`<${Suggerimento} id="dettatura" />`}
@@ -464,7 +465,7 @@ function HsSchedeForm({ rec: initial, records, settings, onSave, onDelete, onSet
         ['Documenti', [
           { ic: 'share', l: OD.account ? 'Carica su OneDrive' : 'Invia foto e Word a OneDrive', fn: upload },
           { ic: 'paper', l: 'Importa report precedente', s: 'Word o JSON della vecchia app', fn: () => imp.current.click() },
-          { ic: 'plus', l: 'Nuovo report per il prossimo sopralluogo', fn: nextYear }]],
-        opzArchivio({ r, settings, onDelete, up, elimina: 'Elimina il report' })].filter(Boolean)} />
+          { ic: 'plus', l: 'Nuovo sopralluogo periodico da questo', fn: nextYear }]],
+        opzArchivio({ r, settings, onDelete, up, elimina: 'Elimina il sopralluogo' })].filter(Boolean)} />
   </div>`;
 }

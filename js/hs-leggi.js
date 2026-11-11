@@ -233,7 +233,7 @@ function hsReadSintetico(files, doc, body) {
     const cg = [];
     for (let k = iCG + 1; k < paras.length; k++) { const p = paras[k]; if (isHead(p)) break; const t = pText(p).trim(); if (pageBr(p)) { if (t) cg.push(t); break; } if (t && t !== 'Breve descrizione') cg.push(isList(p) ? '- ' + t : t); }
     out.descr = cg.join('\n').trim();
-    // foto di inquadramento sotto il capitolo 8: tutto quello che sta tra il titolo e il capitolo successivo
+    // foto di inquadramento sotto il capitolo 8: tutto quello che c'è tra il titolo e il capitolo successivo
     const nodes = kidsW(body), i0 = nodes.indexOf(paras[iCG]);
     for (let k = i0 + 1; k < nodes.length; k++) {
       const n = nodes[k]; if (n.localName === 'p' && isHead(n)) break;

@@ -241,7 +241,7 @@ function Home({ records: allRecords, settings, open, newAct, syncBtn, avatar, tp
         <div class="hc-line">${hsCrit} criticità aperte in tutto</div>
         <div class="hc-rows">
           ${scadRiga('shield', TIPO_COL.hs, 'Criticità urgenti', 'priorità 1 o gravità alta', hsP1, hsP1 > 0, () => goList('hsList'))}
-          ${scadRiga('helmet', TIPO_COL.hs, 'Report da caricare', `su OneDrive · ${records.length} report HSE in archivio`, hsDaCaricare, false, () => goList('hsList'))}
+          ${scadRiga('helmet', TIPO_COL.hs, 'Sopralluoghi da caricare', `su OneDrive · ${records.length} sopralluoghi HSE in archivio`, hsDaCaricare, false, () => goList('hsList'))}
         </div>` : html`
         <div class="hc-title">${top ? placeLabel(top.r) : 'Nessuna scadenza vicina'}</div>
         <div class="hc-line">${top ? top.riga : 'I ritiri radon e le verifiche RA dei prossimi due mesi compaiono qui.'}</div>
@@ -352,7 +352,7 @@ function SopralluogoHse({ records, settings, dati, onBack, onClose, onPrimo, onO
         ${riga('helmet', 'var(--navy-ink)', 'Sintetico', 'Capitoli 3–7; le voci della checklist sono tag', () => onPrimo('sintetico'))}
         <div class="sec-h"><h3>Sopralluogo periodico</h3><span class="hint">il formato è quello del report</span></div>
         ${riga('paper', 'var(--blue)', 'Carica Word o JSON', 'Il report dell’anno precedente', () => inp.current.click())}
-        ${riga('list', 'var(--blue)', 'Da un report in Nembo', prec.length ? prec.length + (prec.length === 1 ? ' report' : ' report') : 'Nessun report in Nembo', () => prec.length && setDaNembo(!daNembo), daNembo)}
+        ${riga('list', 'var(--blue)', 'Da un sopralluogo in Nembo', prec.length ? prec.length + (prec.length === 1 ? ' sopralluogo' : ' sopralluoghi') : 'Nessun sopralluogo in Nembo', () => prec.length && setDaNembo(!daNembo), daNembo)}
         ${daNembo && html`<div class="list mb-2">${prec.slice(0, 30).map(p => html`<button class="rcard" key=${p.id} onClick=${() => daRec(p)}>
           <div class="r1"><span class="id">${p.codice}</span><span class=${'badge ' + (p.formato === 'sintetico' ? 'b-f2' : 'b-f1')}>${HS_FMT[p.formato]}</span><span class="dt">${fmtD(p.data)}</span></div>
           ${(p.sito || p.commessa || p.cliente) && html`<div class="ttl">${[p.cliente, p.commessa, p.sito].filter(Boolean).join(' · ')}</div>`}</button>`)}</div>`}

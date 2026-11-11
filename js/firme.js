@@ -1,5 +1,5 @@
 /* Fogli firme: presenze, informative, consegne. Uno strumento unico, usato dentro le attività (DDA, Mappatura, RA)
-   o come attività a sé. I testi stanno nei modelli (Impostazioni / file di configurazione); il PDF lo impagina Nembo. */
+   o come attività a sé. I testi sono nei modelli (Impostazioni / file di configurazione); il PDF lo impagina Nembo. */
 
 // Modelli di partenza: testi generici, senza nomi. {committente} {immobile} {indirizzo} {citta} {commessa} {data} {relatore} si compilano da soli.
 const FIRME_MODELLI_BASE = [
@@ -257,7 +257,7 @@ function PassaTelefono({ f, r, societa, onAdd, onClose }) {
           ${p.firma ? html`<img src=${p.firma} alt="Firma" />` : html`<span><${Icon} n="sign" s=${20} /> Tocca per firmare</span>`}</button>
       </div>
       <button class="btn pri block mt-4" disabled=${!ok} onClick=${salva}>Conferma e passa al prossimo</button>
-      <p class="hint-p">${fatti ? `${fatti} ${fatti === 1 ? 'firma raccolta' : 'firme raccolte'} in questo giro. ` : ''}Chi firma vede solo i propri dati. Tocca “Fine” quando hanno firmato tutti.</p>
+      <p class="hint-p">${fatti ? `${fatti} ${fatti === 1 ? 'firma raccolta' : 'firme raccolte'} in questo giro. ` : ''}Chi firma vede solo i propri dati. Tocca «Fine» quando hanno firmato tutti.</p>
     </div></div>
     ${sig && html`<${SignaturePadOverlay} title=${'Firma · ' + (p.nome || '')} onClose=${() => setSig(false)} onDone=${url => setP(x => ({ ...x, firma: url }))} />`}
   </div>`;
@@ -279,7 +279,7 @@ function FirmeList({ records, open, activeId, acts }) {
   all.forEach(r => { const c = r.cliente || 'Senza cliente'; (groups[c] = groups[c] || []).push(r); });
   return html`<div class="content">
     <${LargeTitle} top eye="Strumenti" title="Fogli firme" sub="Presenze, informative e consegne fuori da un’attività" acts=${acts} />
-    ${!all.length && html`<div class="empty"><b>Nessun foglio firme</b>Tocca + e scegli “Foglio firme”. Dentro DDA, Mappature e RA c'è anche la sezione Firme.</div>`}
+    ${!all.length && html`<div class="empty"><b>Nessun foglio firme</b>Tocca + e scegli «Foglio firme». Dentro DDA, Mappature e RA c'è anche la sezione Firme.</div>`}
     ${Object.entries(groups).map(([c, rs]) => html`<div key=${c}><div class="grp-client">${c}</div><div class="list">
       ${rs.map(r => { const fg = r.fogli || [], n = fg.reduce((a, f) => a + foglioFirme(f), 0); return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r) + selCls(r)} key=${r.id} ...${selRow(r, () => open(r.id))}>${selCk(r)}
         <div class="r1"><span class="id">${r.codice}</span><span class=${'badge ' + (fg.length && fg.every(f => f.chiuso) ? 'b-ok' : n ? 'b-f2' : 'b-grey')}>${!fg.length ? 'Vuoto' : fg.every(f => f.chiuso) ? 'Chiuso' : n ? 'In corso' : 'Da firmare'}</span><span class="dt">${fmtD(r.data)}</span></div>

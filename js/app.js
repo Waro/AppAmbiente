@@ -61,7 +61,7 @@ function Boundary({ children }) {
   </div>`;
 }
 
-/* Sopra questa larghezza CSS, elenco e scheda stanno affiancati (tablet in orizzontale, PC).
+/* Sopra questa larghezza CSS, elenco e scheda sono affiancati (tablet in orizzontale, PC).
    Sotto, restano due schermate separate come su telefono e tablet in verticale. */
 const WIDE_MQ = '(min-width: 1000px)';
 function useWide() {
@@ -149,7 +149,7 @@ function App() {
   const wide = useWide();
   const [ready, setReady] = useState(false);
   const [allRecs, setRecords] = useState([]);
-  // le attività; i clienti (tipo 'cli') stanno a parte
+  // le attività; i clienti (tipo 'cli') sono a parte
   const records = useMemo(() => allRecs.filter(r => r.type !== 'cli'), [allRecs]);
   const clienti = useMemo(() => allRecs.filter(r => r.type === 'cli'), [allRecs]);
   setClienti(clienti);
@@ -295,7 +295,7 @@ function App() {
     toast(nomi.length === 1 ? 'Cliente aggiunto' : nomi.length + ' clienti aggiunti');
   };
   // un report HSE già pronto (aggiornamento per l'anno successivo): lo salvo e lo apro
-  const openNewRec = r => { saveRec(r); openRec(r); toast('Nuovo report creato: ' + r.codice); };
+  const openNewRec = r => { saveRec(r); openRec(r); toast('Nuovo sopralluogo creato: ' + r.codice); };
 
   const header = useCallback(() => {}, []); // le schede disegnano da sole la propria intestazione
   if (!ready) return html`<div class="shell"></div>`;
@@ -345,7 +345,7 @@ function App() {
     wideCreate = createHs;
     body = split(html`<${HsList} records=${records} acts=${listActs(createHs, 'Nuovo sopralluogo HSE')} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'hs', id })} create=${createHs} />`,
       dRec && html`<${HsForm} ...${formProps(dRec)} onOpenNew=${openNewRec} onSave=${r => saveRec({ ...r, _new: r._new && hsIsEmpty(r) })} />`,
-      ['Nessun report selezionato', 'Toccane uno dall\'elenco per aprirlo qui.']);
+      ['Nessun sopralluogo selezionato', 'Toccane uno dall\'elenco per aprirlo qui.']);
   } else if (route.v === 'cerca') {
     body = html`<${Cerca} records=${records} openRec=${openRec} acts=${null} />`;
   } else if (route.v === 'agenda') {

@@ -333,7 +333,7 @@ const Icon = ({ n, s = 20, w = 2 }) => html`<svg width=${s} height=${s} viewBox=
 /* ---------------- campi form ---------------- */
 /* Dati importati (PMC, anno precedente, mappatura, file JSON o Word): si vedono come testo con un lucchetto.
    Toccando il lucchetto il campo si sblocca; se lo cambi, sotto resta il valore di partenza con «Ripristina».
-   imp = valore importato (undefined = campo libero). Gli originali stanno in rec.imp / manufatto.imp. */
+   imp = valore importato (undefined = campo libero). Gli originali sono in rec.imp / manufatto.imp. */
 const impOf = (o, k) => (o && o.imp && Object.prototype.hasOwnProperty.call(o.imp, k) ? o.imp[k] : undefined);
 // registra come importati i campi non vuoti di src (chiavi elencate), con un prefisso facoltativo
 function markImp(target, src, keys, pre = '') {
@@ -790,7 +790,7 @@ function TagPicker({ tags = [], set, label = 'Tag', fissi = [] }) {
     ${open && html`<div class="tags-pick">
       <input class="inp" value=${q} placeholder="Scrivi un tag o scegline uno" onInput=${e => setQ(e.target.value)} onKeyDown=${e => { if (e.key === 'Enter') { e.preventDefault(); addT(q); } }} />
       ${fis.length > 0 && html`<div class="tags-row mb-2">${fis.map(t => html`<button class="tag sugg" key=${t} style=${'color:' + tagColor(t)} onClick=${() => addT(t)}>#${t}</button>`)}</div>`}
-      <div class="tags-row">${nuovo && html`<button class="tag new" onClick=${() => addT(q)}>Crea “${q.trim()}”</button>`}
+      <div class="tags-row">${nuovo && html`<button class="tag new" onClick=${() => addT(q)}>Crea «${q.trim()}»</button>`}
         ${sugg.map(t => html`<button class="tag sugg" key=${t} style=${'color:' + tagColor(t)} onClick=${() => addT(t)}>#${t}</button>`)}
         ${!sugg.length && !fis.length && !nuovo && html`<span class="lock">${known.length ? 'Nessun altro tag' : 'Ancora nessun tag: scrivine uno'}</span>`}</div></div>`}
   </div>`;
@@ -857,7 +857,7 @@ function ActionBar({ children }) { return html`<div class="abar">${children}</di
    gruppi: [[titolo, [{ ic, l, s, fn, danger, hide }]]] */
 function BarraAtt({ left, center, gruppi, r, settings }) {
   const [o, setO] = useState(false);
-  // il foglio sta fuori dalla barra: la barra ha un filtro di sfondo che farebbe da riferimento per position: fixed
+  // il foglio è fuori dalla barra: la barra ha un filtro di sfondo che farebbe da riferimento per position: fixed
   return html`<${ActionBar}>${left || null}${center}
     <button class="btn-icon lg" aria-label="Opzioni" title="Opzioni" onClick=${() => setO(true)}><${Icon} n="more" s=${24} w=${3} /></button><//>
     ${o && html`<${OpzioniSheet} gruppi=${gruppi} r=${r} settings=${settings} onClose=${() => setO(false)} />`}`;

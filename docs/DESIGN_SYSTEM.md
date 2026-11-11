@@ -69,13 +69,13 @@ Penne della planimetria (`PLAN_COLORS` in `plan.js`), fisse perché finiscono ne
 | Card, blocco navy | `.card`, `.card-navy` | `tight`; navy con `--navy-glow` |
 | Avviso | `.notice` | predefinito (fascia `--blue-sky`), `err` |
 | Riga di elenco | `.rcard`, `.prow`, `.list` | `on` (aperta), selezionata, indicatore di stato |
-| Indicatore di stato | `.st-bar` + `--st` | `st-ok`, `st-warn`, `st-err`, `st-info`, `st-off` (grigio `--muted`, «Non pertinente», v53): barra di 4 px a sinistra, sempre con la parola |
+| Indicatore di stato | `.st-bar` + `--st` | `st-ok`, `st-warn`, `st-err`, `st-info`, `st-off` (grigio `--muted`, «Non pertinente», v53): barra di 4 px a sinistra, sempre con la parola. Lo stato di sezioni e capitoli HSE si mostra sempre così, nel sopralluogo a note e in quello periodico (v55), non con i badge |
 | Campo | `.inp`, `.fld`, `InpGrow` | focus `--blue`; importato con lucchetto |
 | Interruttore, stepper | `Toggle`, `.stp` | acceso `--tgl-on` |
 | Badge, tag, contatore | `.badge`, `.tag`, `.count` | `.count.crit` (`--danger`, v51) |
 | Pulsante file | `.fbtn` | grigio da generare, verde generato, ambra da rigenerare |
 | Elenco impostazioni | `.set-group`, `.set-row`, `.set-prof` | prima riga Notifiche (v51); voce aperta su PC |
-| Foglio / finestra | `.sheet`, `.modal`, `.ov` | `sheet-nav` con Annulla a sinistra |
+| Foglio / finestra | `.sheet`, `.modal`, `.ov` | `sheet-nav` con il pulsante a sinistra: «Annulla» se chiudendo si perde ciò che è stato scritto o scelto, «Chiudi» se non c'è nulla da annullare (elenchi, opzioni, scelte applicate subito); «Indietro» per tornare al passo precedente, «Fine» dove si disegna o si firma |
 | Selezione multipla | `.selhead`, `.selbar` | una sola azione in basso, nella barra flottante; dentro una scheda (note HSE e Verbale, v53) `.selhead.in` resta ferma in alto e l'azione «Tag (N)» è nella barra dell'attività |
 | Tag a più elementi (v53) | `TagMultiSheet` | tag acceso = tutti, con «k/N» = alcuni, contorno = nessuno; `role="checkbox"` con `aria-checked` `mixed` |
 | Microfono e fotocamera nel campo | `.mic-in`, `.cam-in` | tondi 36 px in `--fill-soft` in alto a destra del campo; la fotocamera sotto il microfono (in cima se la dettatura non c'è), contatore `.ck-badge`; miniature delle foto collegate sotto il campo (`.hs-fotos`) |

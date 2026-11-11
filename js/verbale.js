@@ -19,7 +19,7 @@ function VerbaleList({ records, open, activeId, acts }) {
   all.forEach(r => { const c = r.cliente || 'Senza cliente'; (groups[c] = groups[c] || []).push(r); });
   return html`<div class="content">
     <${LargeTitle} top eye="HSE" title="Verbali HSE" sub=${`${all.length} ${all.length === 1 ? 'verbale' : 'verbali'}`} acts=${acts} />
-    ${!all.length && html`<div class="empty"><b>Nessun verbale</b>Tocca + e scegli “Verbale HSE”.</div>`}
+    ${!all.length && html`<div class="empty"><b>Nessun verbale</b>Tocca + e scegli «Verbale HSE».</div>`}
     ${Object.entries(groups).map(([c, rs]) => html`<div key=${c}><div class="grp-client">${c}</div><div class="list">
       ${rs.map(r => { const N = (r.note || []).length, tg = Object.keys(collectTags(r.note || [])); return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r) + selCls(r)} key=${r.id} ...${selRow(r, () => open(r.id))}>${selCk(r)}
         <div class="r1"><span class="id">${r.codice}</span><span class=${'badge ' + (N ? 'b-ok' : 'b-grey')}>${N ? N + (N === 1 ? ' nota' : ' note') : 'Da compilare'}</span><span class="dt">${fmtD(r.data)}</span></div>
@@ -100,13 +100,13 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
     <div class="sec-h"><h3>Note · ${note.length}</h3><span class="hint">Titolo, testo, foto e tag</span></div>
     ${tagsV.length > 0 && html`<div class="vs-filter"><button class=${'tag' + (!filtro ? ' on' : ' sugg')} onClick=${() => setFiltro(null)}>Tutte</button>
       ${tagsV.map(t => html`<button key=${t} class=${'tag' + (filtro === t ? ' on' : '')} style=${tagStyle(t, filtro === t)} onClick=${() => setFiltro(filtro === t ? null : t)}>#${t}</button>`)}</div>`}
-    ${!note.length && html`<div class="card"><div class="empty" style="padding:16px">Nessuna nota. Tocca “Nuova nota” per aggiungerne una.</div></div>`}
+    ${!note.length && html`<div class="card"><div class="empty" style="padding:16px">Nessuna nota. Tocca «Nuova nota» per aggiungerne una.</div></div>`}
     ${ns.sel && html`<div class="list">${vis.map(n => html`<${NotaSelRiga} key=${n.id} n=${n} i=${note.indexOf(n)} on=${ns.sel.has(n.id)} onClick=${() => ns.click(n.id)} />`)}</div>`}
     ${!ns.sel && vis.map(n => { const i = note.indexOf(n); return html`<div class="card vs-nota" key=${n.id} id=${'n-' + n.id} ...${ns.props(n.id)}>
       <div class="vs-h"><span class="vs-n">Nota ${i + 1}</span><span class="tb-grow"></span>
-        <button class="x" title="Prima" disabled=${i === 0} onClick=${() => move(n, -1)}>‹</button>
-        <button class="x" title="Dopo" disabled=${i === note.length - 1} onClick=${() => move(n, 1)}>›</button>
-        <button class="x" title="Elimina la nota" onClick=${() => delN(n)}><${Icon} n="trash" s=${15} /></button></div>
+        <button class="x" title="Prima" aria-label="Sposta prima" disabled=${i === 0} onClick=${() => move(n, -1)}>‹</button>
+        <button class="x" title="Dopo" aria-label="Sposta dopo" disabled=${i === note.length - 1} onClick=${() => move(n, 1)}>›</button>
+        <button class="x" title="Elimina la nota" aria-label="Elimina la nota" onClick=${() => delN(n)}><${Icon} n="trash" s=${15} /></button></div>
       <${Inp} label="Titolo" value=${n.titolo} set=${v => updN(n.id, { titolo: v })} placeholder="es. Uscita di emergenza lato nord" />
       <${HsText} label="Situazione rilevata" rows=${4} value=${n.testo} set=${v => updN(n.id, { testo: v })} />
       <${HsText} label="Attività di miglioramento" rows=${2} value=${n.mig} set=${v => updN(n.id, { mig: v })} />

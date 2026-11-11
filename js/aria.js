@@ -1,6 +1,6 @@
 /* Monitoraggio dell'aria (fibre aerodisperse): attività a sé o sezione facoltativa del sopralluogo RA.
    Dati in r.aria = { attivo, punti: [...], rapporti: [...] }. Laboratorio, offerta, email referti, prelevato/verificato
-   sono quelli della scheda campioni; campionatori, addetto alla taratura e profili d'analisi stanno nel file di configurazione. */
+   sono quelli della scheda campioni; campionatori, addetto alla taratura e profili d'analisi sono nel file di configurazione. */
 
 // limiti di riferimento (DM 06/09/1994): SEM 2 ff/l, MOCF 20 ff/l; per le FAV nessun limite di legge
 const ARIA_METODI = [
@@ -188,7 +188,7 @@ function AriaList({ records, open, activeId, acts }) {
   return html`<div class="content">
     <${LargeTitle} top eye="Ambiente" title="Monitoraggio aria" sub="Fibre aerodisperse: prelievi, schede ed esiti" acts=${acts} />
     ${inRa > 0 && html`<p class="lead" style="margin:0 2px 12px">${inRa === 1 ? 'Un sopralluogo RA ha' : inRa + ' sopralluoghi RA hanno'} il monitoraggio aria nella propria scheda.</p>`}
-    ${!all.length && html`<div class="empty"><b>Nessun monitoraggio</b>Tocca + e scegli “Monitoraggio aria”. Nei sopralluoghi RA c'è anche la sezione facoltativa.</div>`}
+    ${!all.length && html`<div class="empty"><b>Nessun monitoraggio</b>Tocca + e scegli «Monitoraggio aria». Nei sopralluoghi RA c'è anche la sezione facoltativa.</div>`}
     ${Object.entries(groups).map(([c, rs]) => html`<div key=${c}><div class="grp-client">${c}</div><div class="list">
       ${rs.map(r => { const R = ariaRiepilogo(r); return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r) + selCls(r)} key=${r.id} ...${selRow(r, () => open(r.id))}>${selCk(r)}
         <div class="r1"><span class="id">${r.codice}</span><span class=${'badge ' + (!R.tot ? 'b-grey' : R.over ? 'b-nc' : R.chiusi < R.tot ? 'b-f2' : R.esiti < R.fatti ? 'b-f1' : 'b-ok')}>${!R.tot ? 'Da impostare' : R.chiusi < R.tot ? `${R.chiusi}/${R.tot} prelievi` : R.esiti < R.fatti ? 'Attesa esiti' : 'Completato'}</span><span class="dt">${fmtD(r.data)}</span></div>
