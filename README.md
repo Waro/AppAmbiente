@@ -1,7 +1,7 @@
 # Nembo
 
 App web (PWA) per il lavoro sul campo: DDA ambientali (Fase 1 e Fase 2), mappature MCA e FAV, sopralluoghi RA amianto, monitoraggi dell'aria,
-campagne radon, sopralluoghi e verbali HSE, fogli firme, clienti e programmazione. Versione attuale: **nembo-v54**.
+campagne radon, sopralluoghi e verbali HSE, fogli firme, clienti e programmazione. Versione attuale: **nembo-v55**.
 I dati restano sul dispositivo (IndexedDB), senza server. OneDrive (cartella dell'app) è facoltativo, per caricamento, sincronizzazione, configurazione e backup.
 
 ## Stack e requisiti
@@ -185,7 +185,7 @@ dipende dal tipo e si cambia in Impostazioni → Programmazione · durate tipich
 
 **JSON**: una mappatura/PMC (come l'import RA) crea il sopralluogo RA nella fascia scelta; un **piano** (`"type": "nembo-programmazione"`,
 elenco `attivita` con `tipo`, `data`, `ora`, `durata`, `stato` (facoltativo), `commessa`, `cliente`, `citta`, `indirizzo`, `sito`, `note`) crea più attività nei loro giorni.
-Tipi: `ra`, `dda1`, `dda2`, `mappatura`, `radon` (posa), `hsE`, `hsS`, `firme`. Le righe già presenti vengono saltate. Modello scaricabile dalla vista.
+Tipi: `ra`, `dda1`, `dda2`, `mappatura`, `radon` (posa), `aria`, `hs1E` e `hs1S` (primo sopralluogo HSE), `hsE` e `hsS` (sopralluogo periodico HSE), `vs`, `firme`. Le righe già presenti vengono saltate. Modello scaricabile dalla vista.
 Per le righe `ra`: se contengono `manufatti` (stesso formato del modello RA, utile per i siti nuovi) l'RA nasce con quei manufatti;
 se non li contengono e in Nembo c'è già un'RA dello stesso immobile, i manufatti vengono **ripresi dall'anno precedente**.
 

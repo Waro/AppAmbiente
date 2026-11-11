@@ -3,6 +3,9 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
+  { v: 55, data: '2026-11-11', tipo: 'minore', titolo: 'HSE in Programmazione',
+    voci: [
+      'In Programmazione scegli se il sopralluogo HSE è un primo sopralluogo (a note) o un periodico, Esteso o Sintetico. Nel piano JSON i tipi sono hs1E e hs1S per il primo, hsE e hsS per il periodico.' ] },
   { v: 54, data: '2026-11-11', tipo: 'minore', titolo: 'Riordino interno',
     voci: [
       'Riordino interno del codice: nell’uso non cambia nulla.' ] },

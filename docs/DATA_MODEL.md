@@ -448,7 +448,7 @@ OneDrive › App › <nome dell'app in Entra ID>/
     { "tipo": "dda2", "data": "2026-11-12", "ora": "14:00", "durata": 180, "commessa": "001/26", "cliente": "Immobiliare Esempio S.r.l.",
       "citta": "Città Demo", "indirizzo": "Via degli Esempi 12", "numerazione": "prosegui" } ] }
 ```
-Tipi: `ra`, `dda1`, `dda2`, `mappatura`, `radon`, `aria`, `hsE`, `hsS`, `vs`, `firme`. Gli altri formati di import (`ra-mappatura`, `dda-fase1`, `dda-fase2`) sono in `RA_TEMPLATE` (ra.js), `DDA1_TEMPLATE` e `DDA2_TEMPLATE` (dda.js); prompt in `Nembo_Prompt.txt`, fuori dal repository. Campo comune `planimetrie: [{ nome, piano, didascalia, origine: "storica", fonte, formato: pdf|jpeg|png, dati }]`.
+Tipi: `ra`, `dda1`, `dda2`, `mappatura`, `radon`, `aria`, `hs1E` e `hs1S` (primo sopralluogo HSE a note), `hsE` e `hsS` (sopralluogo periodico HSE), `vs`, `firme`. Gli altri formati di import (`ra-mappatura`, `dda-fase1`, `dda-fase2`) sono in `RA_TEMPLATE` (ra.js), `DDA1_TEMPLATE` e `DDA2_TEMPLATE` (dda.js); prompt in `Nembo_Prompt.txt`, fuori dal repository. Campo comune `planimetrie: [{ nome, piano, didascalia, origine: "storica", fonte, formato: pdf|jpeg|png, dati }]`.
 
 **ZIP di backup**
 ```text

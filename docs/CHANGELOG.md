@@ -4,6 +4,11 @@ Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Nem
 
 ## [Non rilasciato]
 
+## [nembo-v55] — 2026-11-11
+
+### Aggiunto
+- Programmazione: tipi `hs1E` e `hs1S` (primo sopralluogo HSE a note, Esteso o Sintetico) accanto a `hsE` e `hsS` (sopralluogo periodico), nel foglio «Nuovo» e nel piano JSON (`PIANO_TIPI`, `AG_TIPI_NUOVI`).
+
 ## [nembo-v54] — 2026-11-11
 
 ### Modificato
