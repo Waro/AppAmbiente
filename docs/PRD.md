@@ -45,8 +45,18 @@ Trasformare il sopralluogo in documento: raccogliere sul campo dati, foto, plani
 
 ## Criteri di accettazione
 
-- Ogni attività si compila e si genera il suo documento senza rete.
-- Una modifica su un dispositivo arriva sugli altri al giro successivo, senza perdere la versione in conflitto.
-- Un backup alterato non viene ripristinato.
-- Nessun errore in console nelle prove di regressione; quattro temi leggibili; nessun dato reale nel repository.
-- I testi dell'interfaccia sono approvati dal titolare.
+Ogni criterio ha la sua prova: si esegue prima di ogni rilascio, insieme alla [checklist di rilascio](RELEASE_CHECKLIST.md).
+
+| Criterio | Prova | Tipo |
+|---|---|---|
+| Ogni attività si compila e genera il suo documento senza rete | Regressione Playwright: una attività per tipo creata con le funzioni dell'app, documenti della scheda File generati; avvio offline con il service worker attivo | automatica |
+| Una modifica su un dispositivo arriva sugli altri al giro successivo, senza perdere la versione in conflitto | Graph simulato: invio, sincronizzazione con conflitto (copia della versione perdente) ed eliminazione | automatica |
+| Un backup alterato non viene ripristinato | Ripristino di uno ZIP con un file modificato e con firma non corrispondente: annullato e riportato nelle Notifiche | automatica |
+| Nessun errore in console nelle prove di regressione | Raccolta di `pageerror` e `console.error` in tutte le prove | automatica |
+| Quattro temi leggibili | Schermate nei quattro temi su telefono, tablet e PC; contrasto 4,5:1 | automatica (schermate) e a vista |
+| Nessun dato reale nel repository | Ricerca di nomi, domini, indirizzi e ID in codice, commenti, esempi e messaggi di commit | automatica (`grep`) |
+| I testi dell'interfaccia sono approvati dal titolare | Elenco dei testi nuovi a ogni versione, applicati dopo l'approvazione (D-13) | manuale |
+| I nomi globali esistono tutti | `tools/aggiorna-globals.py` e ESLint `no-undef` senza errori | automatica |
+| Fotocamera, scanner e installazione funzionano | Prova su un dispositivo Android reale | manuale |
+
+> ⚠️ Da verificare: gli script delle prove automatiche non sono nel repository; vivono nelle sessioni di lavoro e usano solo dati inventati. Portarli in `tools/prove/` li renderebbe ripetibili da chiunque.
