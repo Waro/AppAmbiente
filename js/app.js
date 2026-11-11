@@ -1273,7 +1273,7 @@ function App() {
       <div class="nb-grow"></div>${route.v !== 'notifiche' && bell}</header>`}
     ${body}
     ${!wide && isTop && html`<${TabBar} route=${route} tab=${tab} bu=${settings.buDefault} />`}
-    ${sheet && html`<${NewActivity} records=${records} preset=${preset} bu=${sheet === 'hs' ? 'hs' : settings.buDefault} onClose=${() => { setSheet(false); setPreset(null); }} onCreate=${(t, patch) => { window.addEventListener('popstate', () => setTimeout(() => create(t, patch), 0), { once: true }); setSheet(false); }} />`}
+    ${sheet && html`<${NewActivity} records=${records} settings=${settings} onOpenNew=${openNewRec} preset=${preset} bu=${sheet === 'hs' ? 'hs' : settings.buDefault} onClose=${() => { setSheet(false); setPreset(null); }} onCreate=${(t, patch) => { window.addEventListener('popstate', () => setTimeout(() => create(t, patch), 0), { once: true }); setSheet(false); }} />`}
     ${Sel.active && html`<${SelBars} records=${allRecs} settings=${settings} />`}
     <${ShareAsk} />
     <${ConcludiAsk} />

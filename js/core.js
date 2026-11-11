@@ -8,7 +8,7 @@ if (window.top !== window.self) {
   try { window.top.location.replace(window.self.location.href); } catch (e) { /* riquadro isolato: la pagina resta vuota */ }
   throw new Error('Nembo aperto dentro un riquadro');
 }
-const APP_VERSION = 'nembo-v52';
+const APP_VERSION = 'nembo-v53';
 
 /* ---------------- aspetto: stile ("essenziale" o "originale") × modo ("auto", "chiaro" o "scuro") ----------------
    Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno.
@@ -774,21 +774,25 @@ function setTagList(list) {
 function tagColor(t) { return _tagCol[String(t).toLowerCase()] || TAG_PAL[tagHash(t) % TAG_PAL.length]; }
 const tagStyle = (t, on) => { const c = tagColor(t); return on ? `background:color-mix(in srgb, ${c} 75%, #000);color:var(--on-dark)` : `background:color-mix(in srgb, ${c} 16%, var(--card));color:${c}`; };
 async function knownTags() { const cnt = collectTags(await DB.all()); const L = Object.keys(cnt); setTagList(L); return L.sort((a, b) => cnt[b] - cnt[a] || a.localeCompare(b, 'it')); }
-function TagPicker({ tags = [], set, label = 'Tag' }) {
+// fissi: tag proposti sempre per primi (i capitoli del report HSE)
+function TagPicker({ tags = [], set, label = 'Tag', fissi = [] }) {
   const [open, setOpen] = useState(false); const [q, setQ] = useState(''); const [known, setKnown] = useState([]);
   useEffect(() => { if (open) knownTags().then(setKnown); }, [open]);
   const has = t => tags.some(x => x.toLowerCase() === t.toLowerCase());
   const addT = t => { t = (t || '').trim().replace(/^#/, ''); if (!t || has(t)) { setQ(''); return; } if (!known.some(x => x.toLowerCase() === t.toLowerCase())) { const L = [...known, t]; setKnown(L); setTagList(L); } set([...tags, t]); setQ(''); };
-  const sugg = known.filter(t => !has(t) && (!q || t.toLowerCase().includes(q.trim().toLowerCase()))).slice(0, 12);
-  const nuovo = q.trim() && !known.some(t => t.toLowerCase() === q.trim().toLowerCase()) && !has(q.trim());
+  const qq = q.trim().toLowerCase(), isF = t => fissi.some(f => f.toLowerCase() === t.toLowerCase());
+  const fis = fissi.filter(t => !has(t) && (!qq || t.toLowerCase().includes(qq)));
+  const sugg = known.filter(t => !has(t) && !isF(t) && (!qq || t.toLowerCase().includes(qq))).slice(0, 12);
+  const nuovo = q.trim() && !known.some(t => t.toLowerCase() === qq) && !isF(q.trim()) && !has(q.trim());
   return html`<div class="tags">
     <div class="tags-row">${tags.map(t => html`<span class="tag" key=${t} style=${tagStyle(t)}>#${t}<button aria-label=${'Togli il tag ' + t} onClick=${() => set(tags.filter(x => x !== t))}>×</button></span>`)}
       <button class="tag add" onClick=${() => setOpen(o => !o)}>${open ? 'Chiudi' : '+ ' + label}</button></div>
     ${open && html`<div class="tags-pick">
       <input class="inp" value=${q} placeholder="Scrivi un tag o scegline uno" onInput=${e => setQ(e.target.value)} onKeyDown=${e => { if (e.key === 'Enter') { e.preventDefault(); addT(q); } }} />
+      ${fis.length > 0 && html`<div class="tags-row mb-2">${fis.map(t => html`<button class="tag sugg" key=${t} style=${'color:' + tagColor(t)} onClick=${() => addT(t)}>#${t}</button>`)}</div>`}
       <div class="tags-row">${nuovo && html`<button class="tag new" onClick=${() => addT(q)}>Crea “${q.trim()}”</button>`}
         ${sugg.map(t => html`<button class="tag sugg" key=${t} style=${'color:' + tagColor(t)} onClick=${() => addT(t)}>#${t}</button>`)}
-        ${!sugg.length && !nuovo && html`<span class="lock">${known.length ? 'Nessun altro tag' : 'Ancora nessun tag: scrivine uno'}</span>`}</div></div>`}
+        ${!sugg.length && !fis.length && !nuovo && html`<span class="lock">${known.length ? 'Nessun altro tag' : 'Ancora nessun tag: scrivine uno'}</span>`}</div></div>`}
   </div>`;
 }
 

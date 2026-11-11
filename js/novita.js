@@ -3,6 +3,13 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
+  { v: 53, data: '2026-11-11', tipo: 'minore', titolo: 'Sopralluogo HSE a note',
+    voci: [
+      'Nuova attività → «Sopralluogo HSE» → Avanti: scegli Esteso o Sintetico per il primo sopralluogo, oppure carica il Word o il JSON dell’anno precedente o parti da un report in Nembo per il sopralluogo periodico.',
+      'Il primo sopralluogo funziona come il Verbale HSE: scrivi note con testo, foto e tag. I tag proposti sono i capitoli del formato; dopo il capitolo compaiono le sue sottosezioni (Esteso) o le voci della checklist (Sintetico).',
+      'Le note si raggruppano da sole per capitolo. Tieni premuta una nota per selezionarne altre e dare o togliere i tag a tutte con «Tag (N)». Funziona anche nel Verbale HSE.',
+      'Nuova scheda «Check-list»: ogni capitolo è verde con note, rosso senza note, grigio se non pertinente.',
+      'Il Word segue il modello scelto: Nembo mette ogni nota nel suo capitolo. Tabella di rischio e risposte Sì/No/N.A. le completi nel Word.' ] },
   { v: 52, data: '2026-11-10', tipo: 'minore', titolo: 'Barre flottanti e foto per sezione',
     voci: [
       'Tutte le barre in basso sono flottanti come quella di Oggi: nelle attività, nella selezione e nelle planimetrie.',

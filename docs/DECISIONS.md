@@ -77,6 +77,13 @@ Una voce per decisione. Le date mancanti sono segnate: la decisione è precedent
 ## D-13 — Testi approvati prima dell'applicazione
 - **Decisione:** ogni testo nuovo o modificato (interfaccia, Novità, guida, presentazione) si propone e si applica dopo l'approvazione del titolare. «Attività», mai «pratica»; mai «roba»; «essere», non «stare».
 
+## D-15 — Primo sopralluogo HSE a note
+- **Data:** 2026-11-11 (v53).
+- **Contesto:** in sopralluogo il tecnico prende appunti sparsi e non riesce a seguire la checklist o a cercare ogni volta la voce da compilare.
+- **Decisione:** il primo sopralluogo HSE ha l'interfaccia del Verbale HSE; i tag proposti sono i capitoli del formato scelto e, quando si usa un capitolo, le sue sottosezioni (Esteso) o voci (Sintetico). Nembo compila il Word del formato associando le note ai capitoli (`hsNoteAOld`). La tabella di rischio e le risposte Sì/No/N.A. si compilano nel Word. I sopralluoghi periodici e i report già salvati restano a schede o a checklist; il Verbale HSE resta un'attività a sé.
+- **Alternative scartate:** convertire i report esistenti in note; tabella di rischio nella Check-list.
+- **Conseguenze:** due interfacce HSE per lo stesso tipo `hs`, distinte da `aNote`.
+
 ## D-14 — Unione manuale delle proposte di Copilot
 - **Data:** 2026-11-10.
 - **Contesto:** Copilot non legge il repository da solo e la sua proposta v51 partiva dalla v49.

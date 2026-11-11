@@ -9,7 +9,7 @@ const TIPO_NOME = r => r.type === 'dda' ? 'DDA Fase ' + (r.fase || 1) : r.type =
   : r.type === 'mappatura' ? 'Mappatura MCA e FAV' : r.type === 'ra' ? 'Sopralluogo RA' : r.type === 'radon' ? 'Campagna radon' : r.type === 'aria' ? 'Monitoraggio aria'
   : r.type === 'firme' ? 'Foglio firme' : r.type === 'app' ? 'Appuntamento' : r.type;
 
-const CERCA_TAB = { dda: 'sop', mappatura: 'camp', ra: 'man', radon: 'punti', aria: 'punti', vs: 'note', hs: 'main' };
+const CERCA_TAB = { dda: 'sop', mappatura: 'camp', ra: 'man', radon: 'punti', aria: 'punti', vs: 'note', hs: 'main', hsN: 'note' };
 // voci ricercabili di un'attività: { ambito, etichetta, testo, anchor }
 function cercaVoci(r) {
   const V = [], add = (ambito, etichetta, testo, anchor) => { if (testo && String(testo).trim()) V.push({ ambito, etichetta, testo: String(testo), anchor }); };
@@ -38,6 +38,10 @@ function cercaVoci(r) {
   if (r.type === 'hs') {
     Object.entries(r.note || {}).forEach(([k, v]) => { const it = (typeof HS_SINT_ALL !== 'undefined' ? HS_SINT_ALL : []).find(x => x.id === k); add('testo', 'Voce ' + (it ? it.ref : k), v); });
     add('testo', 'Condizioni generali', r.descr);
+    (r.noteSop || []).forEach((n, i) => {
+      const c = hsCapDi(n, hsCapi(r)), et = `Nota ${i + 1}${c ? ' · ' + c.n + '. ' + c.tag : ''}`;
+      add('titolo', et, n.titolo, 'n-' + n.id); add('testo', et, n.testo, 'n-' + n.id); add('testo', et, n.mig, 'n-' + n.id); tags(n.tag, et, 'n-' + n.id);
+    });
     Object.entries(r.schede || {}).forEach(([k, d]) => { const s = HS_SCHEDE.find(x => x.k === k); const et = 'Scheda ' + (s ? s.l : k); add('testo', et, hsSchedaText(d)); add('testo', et, d.mig); });
     (r.azioni || []).forEach(a => add('testo', 'Azione ' + (a.cod || ''), [a.sit, a.az].filter(Boolean).join(' · ')));
     (r.foto || []).forEach(p => add('titolo', 'Didascalia foto', p.cap));
@@ -45,7 +49,7 @@ function cercaVoci(r) {
   (r.fogli || []).forEach(f => add('titolo', 'Foglio firme', f.titolo, 'tab:firme'));
   if (r.type === 'radon') add('testo', 'Appunti generali', r.note);
   // senza un punto preciso si apre la scheda giusta: Anagrafica per i dati dell'immobile, altrimenti quella del contenuto
-  V.forEach(v => { if (!v.anchor) v.anchor = v.ambito === 'immobile' ? 'tab:anag' : /Fase 2/.test(v.etichetta) ? 'tab:camp' : CERCA_TAB[r.type] && 'tab:' + CERCA_TAB[r.type]; });
+  V.forEach(v => { if (!v.anchor) v.anchor = v.ambito === 'immobile' ? 'tab:anag' : /Fase 2/.test(v.etichetta) ? 'tab:camp' : (t => t && 'tab:' + t)(CERCA_TAB[r.type === 'hs' && r.aNote ? 'hsN' : r.type]); });
   return V;
 }
 // risultati: attività con le voci che contengono tutte le parole cercate (o il tag scelto)

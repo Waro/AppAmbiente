@@ -69,6 +69,7 @@ function newHs(records, settings, formato) {
 }
 const hsSchedaText = d => (d.subs ? Object.values(d.subs).join('\n') : d.sit || '');
 function hsIsEmpty(r) {
+  if (r.aNote && (r.noteSop || []).some(n => n.titolo || n.testo || n.mig || (n.tag || []).length)) return false;
   return !r.commessa && !r.sito && !r.indirizzo && !r.citta && !(r.foto || []).length && !r.appunti && !(r.documenti || []).length
     && !Object.values(r.schede || {}).some(d => hsSchedaText(d).trim() || d.mig || d.prio)
     && !Object.keys(r.risp || {}).length && !Object.values(r.note || {}).some(Boolean) && !r.descr && !(r.azioni || []).length;
@@ -333,6 +334,7 @@ function hsSchedeXml(r, grigio) {
     doc += wP((s.t || s.l).toUpperCase(), { style: 'Titolo2', sz: 24, b: true });
     doc += wEmpty();
     let sit = '';
+    if (s.subs && (d.sit || '').trim()) sit += wBody(d.sit, B['sch.' + s.k + '.sit'], grigio) + idFoto('sch.' + s.k);
     if (s.subs) s.subs.forEach(sub => { sit += wP(sub.toUpperCase(), { style: 'Titolo3', sz: 22, align: 'both' }); sit += wBody((d.subs || {})[sub], B['sch.' + s.k + '.' + sub], grigio) + idFoto('sch.' + s.k + '.' + sub); });
     else sit = wBody(d.sit, B['sch.' + s.k + '.sit'], grigio) + idFoto('sch.' + s.k);
     const mig = d.mig ? wBody(d.mig, B['sch.' + s.k + '.mig'], grigio) : wP('Nessuna azione necessaria', { align: 'both', before: 60, after: 60 });
@@ -516,6 +518,7 @@ async function hsBuildSintetico(r, settings, tpl, opt = {}) {
   return hsZip(files);
 }
 async function hsBuildDocx(r, settings, opt) {
+  if (r.aNote) r = hsNoteAOld(r); // sopralluogo a note: si compila come un report del formato scelto
   const t = TEMPLATES[r.formato === 'sintetico' ? 'hs_sintetico.docx' : 'hs_esteso.docx'];
   const tpl = await DB.get(t.key);
   if (!tpl) throw new Error('carica prima il "' + t.label + '" in Impostazioni → Modelli');
@@ -592,6 +595,8 @@ function hsMatchSub(s, testo) {
   const k = hsNorm(testo).replace(/^\d+(\s\d+)*\s/, '');
   return s.subs.find(sb => hsNorm(sb) === k) || s.subs.find(sb => { const n = hsNorm(sb); return Math.abs(n.length - k.length) <= 2 && (n.indexOf(k) === 0 || k.indexOf(n) === 0); }) || null;
 }
+// frase che Nembo scrive nelle sezioni senza note: all'import non diventa testo della sezione
+const HS_NESSUNA = /^nessuna criticità rilevata\.?$/i;
 function hsReadEsteso(files, body) {
   const imgs = hsImgCollector(files);
   const out = { formato: 'esteso', meta: {}, an: {}, schede: {}, foto: [], img: {}, visite: [], catFab: [], catTer: [], extraFoto: [], refFoto: {} };
@@ -679,13 +684,13 @@ function hsReadEsteso(files, body) {
             kidsW(c[1], 'p').forEach(p => {
               const raw = pText(p).replace(/ /g, ' ').trim().replace(/^\u2022\s*/, '- '); if (!raw) return;
               const m = !isList(p) && hsMatchSub(cur, raw); if (m) { sub = m; return; }
-              if (idFotoRiga(raw, 'sch.' + cur.k + '.' + (sub || cur.subs[0]))) return;
+              if (idFotoRiga(raw, 'sch.' + cur.k + '.' + (sub || cur.subs[0])) || HS_NESSUNA.test(raw)) return;
               const li = isList(p); const line = li && !raw.startsWith('- ') ? ' '.repeat(2 * li.lv) + '- ' + raw : raw;
               (sub ? res[sub] : pre).push(line);
             });
             if (pre.length) res[cur.subs[0]] = pre.concat(res[cur.subs[0]]);
             d.subs = Object.fromEntries(cur.subs.map(s => [s, res[s].join('\n').trim()]));
-          } else d.sit = cellLines(c[1]).split('\n').filter(l => !idFotoRiga(l, 'sch.' + cur.k)).join('\n').trim();
+          } else d.sit = cellLines(c[1]).split('\n').filter(l => !idFotoRiga(l, 'sch.' + cur.k) && !HS_NESSUNA.test(l.trim())).join('\n').trim();
           imgs(c[1]).forEach(o => out.extraFoto.push({ blob: o.blob, cap: cur.s || cur.l }));
         } else if (k.indexOf('ATTIVITA DI MIGLIORAMENTO') >= 0) {
           const v = cellLines(c[1]); d.mig = /^nessuna azione necessaria$/i.test(v) ? '' : v;

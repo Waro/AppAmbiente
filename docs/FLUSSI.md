@@ -128,6 +128,27 @@ flowchart LR
 
 Numerazione che prosegue (v50): `precBase` prende il numero più alto tra indagine importata e attività in Nembo dello stesso immobile (`precNembo`, `stessoImmobile`); i nuovi campioni partono da lì, salvo `numerazione: "nuova"` o interruttore spento.
 
+## 6b. Sopralluogo HSE (v53)
+
+```mermaid
+flowchart TD
+  N["Nuova attività → Sopralluogo HSE → Avanti"] --> T{scelta}
+  T -- "Primo sopralluogo: Esteso o Sintetico" --> E["sopralluogo a note (aNote)"]
+  T -- "Carica Word o JSON" --> L["hsLeggiFile → hsApplyImport<br/>formato dal file"]
+  T -- "Da un report in Nembo" --> Y["hsNextYear<br/>(da un sopralluogo a note: hsNoteAOld)"]
+  L & Y --> S["report a schede (Esteso) o checklist (Sintetico),<br/>nero e rosso come prima"]
+  E --> NT["Note: tag dei capitoli del formato;<br/>con il capitolo compaiono le sottosezioni o le voci"]
+  NT --> CL["Check-list: verde N note · rosso Senza note ·<br/>grigio Non pertinente"]
+  CL --> W{"Genera Word"}
+  W -- "capitoli rossi" --> SH["foglio «N capitoli senza note»:<br/>Non pertinente · Aggiungi una nota · Genera lo stesso"]
+  W -- "nessun rosso" --> WD["hsNoteAOld → motore Word del formato"]
+  SH --> WD
+```
+
+- Esteso: le note vanno nella scheda del capitolo (prima quelle senza sottosezione, poi le sottosezioni); sezioni senza note e capitoli non pertinenti riportano «Nessuna criticità rilevata»; la tabella di rischio resta vuota.
+- Sintetico: nota con capitolo e voce → annotazioni della voce; nota con il solo capitolo → «Condizioni generali» come «Capitolo: testo»; risposte Sì/No/N.A. e azioni vuote.
+- Le foto seguono l'ordine dei capitoli; «ID Foto» (Esteso) e la voce collegata (Sintetico) vengono dalla nota.
+
 ## 7. Scheda File
 
 ```mermaid

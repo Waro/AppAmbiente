@@ -74,6 +74,8 @@ erDiagram
   HS ||--o{ FOTO_HS : foto
   HS ||--o{ SCHEDA_HS : "schede (Esteso)"
   HS ||--o{ AZIONE : "azioni (Sintetico)"
+  HS ||--o{ NOTA_HS : "noteSop (sopralluogo a note, v53)"
+  FOTO_HS }o--o| NOTA_HS : "ref = n.<id nota>"
   VS ||--o{ NOTA : note
   PLANIMETRIA ||--o{ ETICHETTA : "annot[pagina].labels"
   ETICHETTA }o--o| CAMPIONE : ref
@@ -283,6 +285,9 @@ Come la DDA per `campioni` (solo `mca`, `fav`), `nc`, `congelati`, `schede`, `pr
 | hs `base` | object | no | Testi dell'anno precedente |
 | hs Esteso `visite`, `an`, `catFab`, `catTer`, `schede` | — | sì (`visite`: nomi) | Schede per sistema: `{ sit, subs, mig, natura, costo, idr, prio, cProp, cCond, termine }` |
 | hs Sintetico `anS`, `risp`, `note`, `descr`, `azioni`, `cgFoto` | — | `anS`: sì (nomi) | Checklist e azioni |
+| hs `aNote` | boolean | no | `true` = sopralluogo a note (primo sopralluogo, v53, `js/hs-note.js`); assente = report a schede (Esteso) o a checklist (Sintetico) |
+| hs `noteSop` | `[{ id, titolo, testo, mig, tag[] }]` | possibile | Note del sopralluogo a note. Capitolo = primo tag uguale a un capitolo del formato (Esteso: le 13 schede; Sintetico: capitoli 3–7); sottosezione = primo tag uguale a una sottosezione (Esteso) o a una voce (Sintetico, «3.2 Recinzione deteriorata», riconosciuta dal numero). Foto in `foto` con `ref = n.<id>` |
+| hs `np` | `{ <capitolo>: true }` | no | Capitoli «Non pertinente» del sopralluogo a note (chiavi Esteso `agibilita`…, Sintetico `c3`…`c7`) |
 | vs `meta` | object | sì | `{ titolo, fondo, dataReport, redatto, verificato, protocollo, procura, revisione, presenti, descrArea }` |
 | vs `note` | `[{ id, titolo, testo, mig, foto[], tag[] }]` | possibile | Note del verbale |
 

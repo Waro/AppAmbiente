@@ -49,6 +49,11 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
   const visite = r.visite || [];
   const setV = (i, patch) => up(q => ({ ...q, visite: (q.visite || []).map((x, j) => j === i ? { ...x, ...patch } : x) }));
   const [tplOk, setTplOk] = useState(null);
+  // selezione di più note (tocco prolungato) per dare o togliere i tag a tutte insieme
+  const ns = useNoteSel(); const [tagSheet, setTagSheet] = useState(false);
+  useEffect(() => { if (T !== 'note') ns.setSel(null); }, [T]);
+  const selNote = ns.sel ? note.filter(n => ns.sel.has(n.id)) : [];
+  const setNote = (ids, fn) => up(q => ({ ...q, note: (q.note || []).map(n => ids.includes(n.id) ? { ...n, ...fn(n) } : n) }));
   useEffect(() => { DB.get(TEMPLATES['vs.docx'].key).then(b => setTplOk(!!b)); }, []);
   return html`<div class="content form">
     <${DetailHead} conclusa=${r.conclusa} eye="Verbale HSE" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
@@ -87,6 +92,7 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
     ${tplOk === false && html`<div class="notice">Per il Word carica il «Modello Word Verbale HSE» in Impostazioni → Modelli.</div>`}
 `}
     ${T === 'note' && html`
+    ${ns.sel && html`<${NoteSelHead} n=${ns.sel.size} onStop=${() => ns.setSel(null)} onAll=${() => ns.setSel(s => s.size === vis.length ? new Set() : new Set(vis.map(n => n.id)))} />`}
     <div class="card-navy"><div class="sum3">
       <div><b>${note.length}</b><span>${note.length === 1 ? 'nota' : 'note'}</span></div>
       <div><b>${nFoto}</b><span>foto</span></div>
@@ -95,7 +101,8 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
     ${tagsV.length > 0 && html`<div class="vs-filter"><button class=${'tag' + (!filtro ? ' on' : ' sugg')} onClick=${() => setFiltro(null)}>Tutte</button>
       ${tagsV.map(t => html`<button key=${t} class=${'tag' + (filtro === t ? ' on' : '')} style=${tagStyle(t, filtro === t)} onClick=${() => setFiltro(filtro === t ? null : t)}>#${t}</button>`)}</div>`}
     ${!note.length && html`<div class="card"><div class="empty" style="padding:16px">Nessuna nota. Tocca “Nuova nota” per aggiungerne una.</div></div>`}
-    ${vis.map(n => { const i = note.indexOf(n); return html`<div class="card vs-nota" key=${n.id} id=${'n-' + n.id}>
+    ${ns.sel && html`<div class="list">${vis.map(n => html`<${NotaSelRiga} key=${n.id} n=${n} i=${note.indexOf(n)} on=${ns.sel.has(n.id)} onClick=${() => ns.click(n.id)} />`)}</div>`}
+    ${!ns.sel && vis.map(n => { const i = note.indexOf(n); return html`<div class="card vs-nota" key=${n.id} id=${'n-' + n.id} ...${ns.props(n.id)}>
       <div class="vs-h"><span class="vs-n">Nota ${i + 1}</span><span class="tb-grow"></span>
         <button class="x" title="Prima" disabled=${i === 0} onClick=${() => move(n, -1)}>‹</button>
         <button class="x" title="Dopo" disabled=${i === note.length - 1} onClick=${() => move(n, 1)}>›</button>
@@ -108,17 +115,19 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
         onRemove=${async id => { await removeBlob(id); up(q => ({ ...q, note: q.note.map(x => x.id === n.id ? { ...x, foto: x.foto.filter(f => f !== id) } : x) })); }} />
       <${TagPicker} tags=${n.tag || []} set=${t => updN(n.id, { tag: t })} />
     </div>`; })}
-    <button class="btn dashed block mt-1" onClick=${addN}>+ Nuova nota</button>
-    <div class="sec-h"><h3>Appunti</h3><span class="hint">Testo libero</span></div>
+    ${!ns.sel && html`<button class="btn dashed block mt-1" onClick=${addN}>+ Nuova nota</button>`}
+    ${!ns.sel && html`<div class="sec-h"><h3>Appunti</h3><span class="hint">Testo libero</span></div>
     <div class="card"><textarea class="inp" rows="3" value=${r.appunti} onInput=${e => up({ appunti: e.target.value })} aria-label="Appunti"></textarea>
-      <${NotePhotos} rec=${r} up=${up} /></div>
+      <${NotePhotos} rec=${r} up=${up} /></div>`}
     `}
     ${T === 'file' && html`<${FileTab} r=${r} up=${up} settings=${settings} />`}
-    <${BarraAtt} r=${r} settings=${settings}
+    ${ns.sel ? html`<${ActionBar}><button class="btn pri" disabled=${!selNote.length} onClick=${() => setTagSheet(true)}><${Icon} n="tag" s=${20} /> Tag (${selNote.length})</button><//>`
+    : html`<${BarraAtt} r=${r} settings=${settings}
       left=${html`<${VsCam} onAdd=${ids => { const nn = { ...newNotaVs(), foto: ids }; setT('note'); up(q => ({ ...q, note: [...(q.note || []), nn] })); setFiltro(null); setTimeout(() => scrollToId('n-' + nn.id), 80); }} />`}
       center=${T === 'note' ? html`<button class="btn pri" onClick=${addN}><${Icon} n="plus" s=${20} w=${2.4} /> Nuova nota</button>`
         : html`<${DocBtn} r=${r} up=${up} settings=${settings} k="vs_docx" />`}
-      gruppi=${[['Documenti', [{ ic: 'share', l: OD.account ? 'Carica su OneDrive' : 'Invia a OneDrive', fn: upload }]], opzArchivio({ r, settings, onDelete, up, elimina: 'Elimina il verbale' })]} />
+      gruppi=${[['Documenti', [{ ic: 'share', l: OD.account ? 'Carica su OneDrive' : 'Invia a OneDrive', fn: upload }]], opzArchivio({ r, settings, onDelete, up, elimina: 'Elimina il verbale' })]} />`}
+    ${tagSheet && ns.sel && html`<${TagMultiSheet} note=${selNote} fissi=${[]} altri=${tagsV} onSet=${setNote} onClose=${() => setTagSheet(false)} />`}
   </div>`;
 }
 

@@ -186,7 +186,8 @@ function ripulisci(o) {
   if (Array.isArray(o)) { o.forEach(ripulisci); return; }
   if (!isObj(o)) return;
   for (const [k, v] of Object.entries(o)) {
-    if (ARR_FOTO.has(k)) o[k] = Array.isArray(v) ? v.filter(x => typeof x === 'string') : [];
+    // foto: id (testo) o, nei report HSE, oggetti { id, cap, … } con l'id di testo
+    if (ARR_FOTO.has(k)) o[k] = Array.isArray(v) ? v.filter(x => typeof x === 'string' || (isObj(x) && typeof x.id === 'string')) : [];
     else if (ARR_OGG.has(k) && v != null) o[k] = Array.isArray(v) ? v.filter(isObj) : [];
     else if (typeof v === 'string' && /^\s*data:/i.test(v) && !DATA_OK.test(v)) o[k] = '';
     if (typeof o[k] === 'object') ripulisci(o[k]);

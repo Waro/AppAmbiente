@@ -24,6 +24,9 @@ Su un secondo dispositivo collega prima OneDrive: se c'è già la tua configuraz
 | Fogli firme | scheda Firme o ⋯ Opzioni → Prepara il foglio firme → passa il telefono → Chiudi |
 | Documenti | scheda **File**: grigio da generare, verde generato, ambra da rigenerare |
 | Consegnare | **Invia a OneDrive** al centro della barra; ⋯ Opzioni → Riepilogo via email |
+| Sopralluogo HSE | + → **Sopralluogo HSE** → Avanti → Esteso o Sintetico (primo sopralluogo), oppure Word, JSON o un report in Nembo (periodico) |
+| Note HSE | scheda **Note**: scrivi, detta, fotografa; dai il tag del capitolo e poi quello della sottosezione o voce; tieni premuta una nota per taggarne più insieme |
+| Check-list HSE | scheda **Check-list**: verde con note, rosso senza note, grigio non pertinente |
 | Più attività insieme | tieni premuta una riga (su PC «Seleziona»), tocca le altre → Carica su OneDrive |
 | Chiudere con mancanze | ⋯ Opzioni → **Concludi l'attività** (si riapre dalle Opzioni) |
 | Backup | Backup → **Salva su OneDrive** (o Crea backup completo senza OneDrive) |

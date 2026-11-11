@@ -4,10 +4,25 @@ Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Nem
 
 ## [Non rilasciato]
 
+## [nembo-v53] — 2026-11-11
+
 ### Aggiunto
-- `tools/aggiorna-globals.py` rigenera `globals.json` dai file caricati da `index.html` (728 nomi); `.eslintrc.cjs` con la regola `no-undef`: ESLint ora passa senza errori e segnala un nome globale mancante o rinominato prima del rilascio.
+- Primo sopralluogo HSE a note (`js/hs-note.js`, `aNote`, `noteSop`, `np`): interfaccia del Verbale HSE con schede Anagrafica · Note · Check-list · File; tag dei capitoli del formato e, con il capitolo, delle sottosezioni (Esteso) o voci (Sintetico); gruppi automatici per capitolo.
+- Check-list dei capitoli con stato verde, rosso, grigio (`hsStatoCap`, `.st-off`) e «Non pertinente»; foglio «N capitoli senza note» prima del Word (`DocBtn` con `prima`).
+- Word del sopralluogo a note con il motore del formato (`hsNoteAOld`): Esteso nelle schede, Sintetico nelle annotazioni delle voci o in «Condizioni generali».
+- Nuova attività HSE: «Sopralluogo HSE» con seconda schermata (`SopralluogoHse`): primo sopralluogo Esteso o Sintetico, sopralluogo periodico da Word, JSON o report in Nembo.
+- Selezione di più note con tocco prolungato e «Tag (N)» (`useNoteSel`, `TagMultiSheet`), anche nel Verbale HSE; `TagPicker` con tag proposti per primi (`fissi`).
 
 ### Modificato
+- Word Esteso: il testo del capitolo (`sit`) esce anche nei capitoli con sottosezioni, prima di esse; all'import «Nessuna criticità rilevata» non diventa testo.
+- Anagrafica Esteso e Sintetico in componenti comuni (`HsDatiEst`, `HsAnagEst`, `HsInqEst`, `HsDatiSint`, `HsAnagSint`).
+
+### Corretto
+- Ripristino e sincronizzazione svuotavano le foto dei report HSE: `pulisciRecord` teneva solo gli id di testo e scartava gli oggetti `{ id, cap, … }`.
+- «Nuovo report per il prossimo sopralluogo» copiava i file Word generati e lo stato «Conclusa» del report precedente.
+
+### Strumenti
+- `tools/aggiorna-globals.py` rigenera `globals.json` dai file caricati da `index.html` (728 nomi); `.eslintrc.cjs` con la regola `no-undef`: ESLint ora passa senza errori e segnala un nome globale mancante o rinominato prima del rilascio.
 - `globals.json` aggiornato: mancavano i nomi della v50 e della v51 (`importPlanimetrie`, `importPrecedente`, `pinImposta`, `firmaCifra`…) e gli hook di Preact.
 - Documentazione senza ripetizioni: la procedura di rilascio è solo in `docs/RELEASE_CHECKLIST.md`, l'elenco dei documenti da aggiornare solo in `CLAUDE.md`, le regole di Rilievo solo in `docs/DESIGN_SYSTEM.md`; il README descrive le funzioni attuali, con titoli senza numeri di versione, nell'ordine attività → funzioni comuni → OneDrive → interfaccia (la storia è in questo CHANGELOG).
 

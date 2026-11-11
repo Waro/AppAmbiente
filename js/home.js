@@ -11,6 +11,7 @@ function recDone(r) {
   if (r.type === 'radon') return (r.momenti || []).some(m => m.data === today() && m.confermato);
   if (r.type === 'aria') { const R = ariaRiepilogo(r); return R.tot > 0 && R.chiusi === R.tot; }
   if (r.type === 'vs') return (r.note || []).length > 0;
+  if (r.type === 'hs' && r.aNote) return (r.noteSop || []).length > 0;
   if (r.type === 'hs') return r.formato === 'sintetico' ? Object.keys(r.risp || {}).length > 0 : HS_SCHEDE.some(s => hsSchedaFatta(r.schede[s.k] || {}));
   return false;
 }
@@ -268,14 +269,14 @@ const NEW_OPTS = [
   { k: 'ra', t: 'ra', patch: {}, l: 'RA · verifica annuale', s: 'Manufatti da mappatura o PMC', ic: 'shield', c: TIPO_COL.ra },
   { k: 'radon', t: 'radon', patch: {}, l: 'Campagna radon', s: 'Posa e ritiro dosimetri', ic: 'radon', c: TIPO_COL.radon },
   { k: 'aria', t: 'aria', patch: {}, l: 'Monitoraggio aria', s: 'Fibre aerodisperse: prelievi, scheda ed esiti', ic: 'air', c: TIPO_COL.aria },
-  { k: 'hsE', t: 'hs', bu: 'hs', patch: { formato: 'esteso' }, l: 'HSE · Esteso', s: '13 schede, rischio e priorità, documentazione fotografica', ic: 'helmet', c: TIPO_COL.hs },
+  { k: 'hsSop', t: 'hs', bu: 'hs', patch: {}, l: 'Sopralluogo HSE', s: 'Primo sopralluogo o periodico', ic: 'helmet', c: TIPO_COL.hs },
   { k: 'firme', t: 'firme', bu: 'altro', patch: {}, l: 'Foglio firme', s: 'Presenze, informative, consegne fuori da un’attività', ic: 'sign', c: TIPO_COL.firme },
-  { k: 'hsS', t: 'hs', bu: 'hs', patch: { formato: 'sintetico' }, l: 'HSE · Sintetico', s: 'Checklist Sì/No/N.A., azioni consigliate, rilievo fotografico', ic: 'helmet', c: 'var(--navy-ink)' },
   { k: 'vs', t: 'vs', bu: 'hs', patch: {}, l: 'Verbale HSE', s: 'Note con titolo, testo, foto e tag', ic: 'note', c: TIPO_COL.vs },
 ];
-function NewActivity({ records, onClose, onCreate, bu, preset }) {
+function NewActivity({ records, settings, onClose, onCreate, onOpenNew, bu, preset }) {
   useBackClose(onClose);
-  const [k, setK] = useState(bu === 'hs' ? 'hsE' : 'dda1');
+  const [k, setK] = useState(bu === 'hs' ? 'hsSop' : 'dda1');
+  const [passo2, setPasso2] = useState(false); // Sopralluogo HSE: schermata della scelta (primo o periodico)
   const gruppi = [['Ambiente', NEW_OPTS.filter(o => !o.bu)], ['HSE', NEW_OPTS.filter(o => o.bu === 'hs')]];
   if (bu === 'hs') gruppi.reverse();
   gruppi.push(['Altro', NEW_OPTS.filter(o => o.bu === 'altro')]);
@@ -291,7 +292,10 @@ function NewActivity({ records, onClose, onCreate, bu, preset }) {
   // prossima scadenza RA non critica (oltre 30 giorni): avviso sobrio sulla riga
   const raNext = records.filter(r => r.type === 'ra' && raOpen(r) && raScadenza(r) && raScadenza(r) >= today()).map(raScadenza).sort()[0];
   const raSoft = raNext && daysBetween(today(), raNext) > 30;
-  const start = () => onCreate(opt.t, { ...opt.patch, ...(preset || {}), commessa: commessa.trim(), cliente: cliente.trim(), citta: citta.trim(), indirizzo: indirizzo.trim(), ...(firmeOk ? { firme: firmeOn } : {}) });
+  const dati = () => ({ ...(preset || {}), commessa: commessa.trim(), cliente: cliente.trim(), citta: citta.trim(), indirizzo: indirizzo.trim() });
+  if (passo2) return html`<${SopralluogoHse} records=${records} settings=${settings} dati=${dati()} onBack=${() => setPasso2(false)} onClose=${onClose}
+    onPrimo=${formato => onCreate('hs', { formato, aNote: true, noteSop: [], np: {}, ...dati() })} onOpenNew=${onOpenNew} />`;
+  const start = () => k === 'hsSop' ? setPasso2(true) : onCreate(opt.t, { ...opt.patch, ...(preset || {}), commessa: commessa.trim(), cliente: cliente.trim(), citta: citta.trim(), indirizzo: indirizzo.trim(), ...(firmeOk ? { firme: firmeOn } : {}) });
   return html`<div class="sheet-ov" onClick=${e => e.target === e.currentTarget && onClose()}>
     <div class="sheet" role="dialog" aria-label="Nuova attività">
       <div class="sheet-grab"></div>
@@ -317,10 +321,43 @@ function NewActivity({ records, onClose, onCreate, bu, preset }) {
           ${firmeOk && html`<label class="nw-firme"><input type="checkbox" checked=${firmeOn} onChange=${e => setFirme(e.target.checked)} />
             <span><b>Foglio firme</b><small>${cli && cli.firme && firme == null ? 'Preferenza del cliente: pronto con dati, attività e ' : 'Pronto con dati, attività e '}${opt.t === 'ra' ? 'manufatti valutati' : opt.t === 'aria' ? 'punti di monitoraggio' : 'campioni prelevati'}</small></span></label>`}
         </div>
-        <button class="btn pri block mt-2" onClick=${start}>Avvia ${opt.l.replace(' · verifica annuale', '')}</button>
+        <button class="btn pri block mt-2" onClick=${start}>${k === 'hsSop' ? html`Avanti <${Icon} n="right" s=${20} />` : 'Avvia ' + opt.l.replace(' · verifica annuale', '')}</button>
       </div>
     </div>
   </div>`;
+}
+
+/* Sopralluogo HSE, seconda schermata di Nuova attività.
+   Primo sopralluogo: Esteso o Sintetico, a note (js/hs-note.js). Sopralluogo periodico: dal Word o dal JSON dell'anno precedente,
+   oppure da un report in Nembo; il formato lo decide il file o il report e il sopralluogo ha la struttura a schede o checklist. */
+function SopralluogoHse({ records, settings, dati, onBack, onClose, onPrimo, onOpenNew }) {
+  const inp = useRef(); const [daNembo, setDaNembo] = useState(false);
+  const prec = records.filter(r => r.type === 'hs' && !r._new).sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+  const go = async fn => { try { const r = await fn(); if (r) { onClose(); setTimeout(() => onOpenNew(r), 0); } } catch (e) { _progress(null); fail('Sopralluogo periodico non creato', e); } };
+  const daFile = f => go(async () => {
+    const d = await hsLeggiFile(f);
+    const r = await hsApplyImport({ ...newHs(records, settings, d.formato), ...dati }, d, (k, t) => _progress({ title: 'Importo il report', text: `Immagini ${k} di ${t}`, done: k, total: t }));
+    _progress(null); return r;
+  });
+  const daRec = p => go(() => hsNextYear(p.aNote ? hsNoteAOld(p, true) : p, records, settings));
+  const riga = (ic, c, l, sub, fn, on) => html`<button class=${'opt' + (on ? ' on' : '')} onClick=${fn}><span class="oi tint" style=${'--c:' + c}><${Icon} n=${ic} s=${21} /></span>
+    <span class="ot"><b>${l}</b><small>${sub}</small></span></button>`;
+  return html`<div class="sheet-ov" onClick=${e => e.target === e.currentTarget && onClose()}>
+    <div class="sheet" role="dialog" aria-label="Sopralluogo HSE">
+      <div class="sheet-grab"></div>
+      <div class="sheet-nav"><button class="btn link" onClick=${onBack}>Indietro</button><b>Sopralluogo HSE</b><span></span></div>
+      <div class="sheet-body">
+        <div class="sec-h" style="margin-top:6px"><h3>Primo sopralluogo</h3></div>
+        ${riga('helmet', TIPO_COL.hs, 'Esteso', '13 capitoli; le sottosezioni sono tag', () => onPrimo('esteso'))}
+        ${riga('helmet', 'var(--navy-ink)', 'Sintetico', 'Capitoli 3–7; le voci della checklist sono tag', () => onPrimo('sintetico'))}
+        <div class="sec-h"><h3>Sopralluogo periodico</h3><span class="hint">il formato è quello del report</span></div>
+        ${riga('paper', 'var(--blue)', 'Carica Word o JSON', 'Il report dell’anno precedente', () => inp.current.click())}
+        ${riga('list', 'var(--blue)', 'Da un report in Nembo', prec.length ? prec.length + (prec.length === 1 ? ' report' : ' report') : 'Nessun report in Nembo', () => prec.length && setDaNembo(!daNembo), daNembo)}
+        ${daNembo && html`<div class="list mb-2">${prec.slice(0, 30).map(p => html`<button class="rcard" key=${p.id} onClick=${() => daRec(p)}>
+          <div class="r1"><span class="id">${p.codice}</span><span class=${'badge ' + (p.formato === 'sintetico' ? 'b-f2' : 'b-f1')}>${HS_FMT[p.formato]}</span><span class="dt">${fmtD(p.data)}</span></div>
+          ${(p.sito || p.commessa || p.cliente) && html`<div class="ttl">${[p.cliente, p.commessa, p.sito].filter(Boolean).join(' · ')}</div>`}</button>`)}</div>`}
+        <input ref=${inp} type="file" accept=".docx,.json,application/json,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden onChange=${e => { const f = e.target.files[0]; e.target.value = ''; if (f) daFile(f); }} />
+      </div></div></div>`;
 }
 
 // Radon: promemoria "avvisa il conduttore" una settimana prima del ritiro (una notifica per ritiro)

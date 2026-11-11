@@ -1,7 +1,7 @@
 # Nembo
 
 App web (PWA) per il lavoro sul campo: DDA ambientali (Fase 1 e Fase 2), mappature MCA e FAV, sopralluoghi RA amianto, monitoraggi dell'aria,
-campagne radon, sopralluoghi e verbali HSE, fogli firme, clienti e programmazione. Versione attuale: **nembo-v51**.
+campagne radon, sopralluoghi e verbali HSE, fogli firme, clienti e programmazione. Versione attuale: **nembo-v53**.
 I dati restano sul dispositivo (IndexedDB), senza server. OneDrive (cartella dell'app) è facoltativo, per caricamento, sincronizzazione, configurazione e backup.
 
 ## Stack e requisiti
@@ -123,7 +123,21 @@ Campionatori, addetto alla verifica della taratura e codici d'analisi si imposta
 
 ## Sopralluogo HSE
 
-Due formati, scelti in Nuova attività: **Esteso** (schede per sistema con situazione rilevata, attività di miglioramento,
+Nuova attività → **Sopralluogo HSE** → *Avanti*: **Primo sopralluogo** (Esteso o Sintetico) oppure **Sopralluogo periodico**
+(*Carica Word o JSON*, *Da un report in Nembo*; il formato è quello del report).
+
+**Primo sopralluogo a note** (`js/hs-note.js`, v53): stessa interfaccia del Verbale HSE, schede Anagrafica · Note · Check-list · File.
+- I tag proposti sono i capitoli del formato (Esteso: le 13 schede; Sintetico: capitoli 3–7). Quando una nota ha il tag di un capitolo
+  compaiono anche le sue sottosezioni (Esteso) o voci della checklist (Sintetico, es. «3.2 Recinzione deteriorata»).
+- Le note si raggruppano da sole per capitolo; quelle senza capitolo restano in fondo e non vanno nel Word. Tenendo premuta una nota
+  si selezionano più note e *Tag (N)* dà o toglie i tag a tutte. La fotocamera della barra crea una nota con la foto.
+- **Check-list**: elenco dei capitoli, verde con note, rosso senza note, grigio *Non pertinente* (scelto toccando il capitolo).
+  Prima del Word, se ci sono capitoli rossi, un foglio propone *Non pertinente*, *Aggiungi una nota* o *Genera lo stesso*.
+- **Word**: Esteso, note nella scheda del capitolo e della sottosezione, «Nessuna criticità rilevata» dove non ci sono note, tabella di
+  rischio vuota; Sintetico, nota con capitolo e voce nelle annotazioni della voce, nota con il solo capitolo in «Condizioni generali»
+  («Aree esterne: testo»), risposte Sì/No/N.A. vuote. Rischio e risposte si completano nel Word.
+
+**Report a schede o checklist** (sopralluogo periodico e report salvati prima della v53): **Esteso** (schede per sistema con situazione rilevata, attività di miglioramento,
 priorità, natura del rischio, costo, competenza e termine; anagrafica, visite, catasto, inquadramento) e **Sintetico**
 (checklist SI / NO / N.A. con note per voce, descrizione generale, azioni con gravità).
 
@@ -201,7 +215,7 @@ Ogni attività è divisa in schede, con un selettore come quello Ambiente / HSE 
 | Sopralluogo RA | Anagrafica · Manufatti (con monitoraggio aria) |
 | Campagna radon | Anagrafica · Punti · Firme |
 | Monitoraggio aria | Anagrafica · Punti |
-| Sopralluogo HSE | Anagrafica (dati del report, Word e archivio) · Sezioni |
+| Sopralluogo HSE | a note: Anagrafica · Note · Check-list · File; a schede o checklist: Anagrafica · Sezioni · File |
 | Verbale HSE | Anagrafica · Note |
 
 - **Anagrafica**: dati della commessa, data, ora e stato, e in fondo l'archivio (ZIP, Elimina; documenti allegati nel DDA, scheda PDF nel radon). La barra in basso ha *Carica su OneDrive*.
@@ -408,7 +422,7 @@ Niente colori, dimensioni del testo, raggi o spazi scritti a mano. Token, compon
 | `js/plan.js` | planimetrie: visualizzatore, disegno, etichette, PDF annotato |
 | `js/office.js` | scheda campioni Excel e riepilogo Word |
 | `js/ra.js` | sopralluogo RA: manufatti, stato di conservazione, anno di incarico |
-| `js/hs-data.js`, `js/hs-word.js`, `js/hs.js` | sopralluogo HSE: dati fissi, motore Word (modelli .docx con JSZip) e import, interfaccia |
+| `js/hs-data.js`, `js/hs-word.js`, `js/hs.js`, `js/hs-note.js` | sopralluogo HSE: dati fissi, motore Word (modelli .docx con JSZip) e import, report a schede e checklist, sopralluogo a note |
 | `js/verbale.js`, `js/vs-word.js` | Verbale HSE e il suo Word |
 | `js/clienti.js` | anagrafica clienti e preferenze (foglio firme, email) |
 | `js/cerca.js` | ricerca in tutte le attività |

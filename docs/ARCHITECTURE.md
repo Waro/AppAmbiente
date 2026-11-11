@@ -84,7 +84,7 @@ Ogni file usa le funzioni dei file caricati prima; `globals.json` le elenca per 
 | 6 | `js/plan.js` | Planimetrie: visualizzatore PDF.js, strumenti di disegno, etichette, PDF annotato, import da JSON |
 | 7 | `js/office.js` | Excel (ExcelJS, JSZip sul modello) e Word (docx) |
 | 8 | `js/dda.js`, `js/mappatura.js`, `js/radon.js`, `js/ra.js` | Attività ambientali, import e indagine precedente |
-| 9 | `js/hs-data.js`, `js/hs-word.js`, `js/hs.js` | Sopralluogo HSE: dati fissi, motore Word, interfaccia |
+| 9 | `js/hs-data.js`, `js/hs-word.js`, `js/hs.js`, `js/hs-note.js` | Sopralluogo HSE: dati fissi, motore Word, report a schede e checklist, sopralluogo a note (v53) |
 | 10 | `js/verbale.js`, `js/vs-word.js` | Verbale HSE |
 | 11 | `js/clienti.js`, `js/novita.js`, `js/guida.js`, `js/riepilogo.js`, `js/cerca.js` | Clienti, Novità, guida, riepilogo email, ricerca |
 | 12 | `js/firme.js`, `js/aria.js`, `js/file.js` | Fogli firme, monitoraggio aria, scheda File |

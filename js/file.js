@@ -134,7 +134,8 @@ function FileTab({ r, up, settings }) {
   </div>`;
 }
 // tasto principale nella barra (HSE, Verbale): genera / apri / aggiorna il Word
-function DocBtn({ r, up, settings, k, label = 'Word' }) {
+// prima: funzione facoltativa chiamata prima di generare; se risponde false (anche con una promessa) il file non si crea
+function DocBtn({ r, up, settings, k, label = 'Word', prima }) {
   const d = recDocs(r, settings).find(x => x.key === k); const [busy, setBusy] = useState(false);
   if (!d) return null;
   const st = fileState(r, d);
@@ -142,6 +143,7 @@ function DocBtn({ r, up, settings, k, label = 'Word' }) {
     const L = fileRevs(r, d);
     if (st === 'green') { fileOpen(L[L.length - 1]); return; }
     if (d.tpl && !(await DB.get(d.tpl))) { toast('Carica prima il modello in Impostazioni → Modelli'); return; }
+    if (prima && !(await prima())) return;
     setBusy(true); try { await fileGenerate(r, up, settings, d); } catch (err) { _progress(null); fail('Word non creato', err, recordTitle(r)); } setBusy(false);
   };
   return html`<button class=${'btn pri' + (st === 'amber' ? ' amber' : '')} disabled=${busy} onClick=${go}>${busy ? html`<div class="spin" />` : html`<${Icon} n="file" s=${20} />`}
