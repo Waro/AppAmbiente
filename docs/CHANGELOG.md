@@ -4,6 +4,14 @@ Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Nem
 
 ## [Non rilasciato]
 
+## [nembo-v54] — 2026-11-11
+
+### Modificato
+- Solo struttura, nessuna modifica al funzionamento. `js/app.js` diviso: ZIP, ripristino e pagina Backup in `js/backup.js`; file di configurazione in `js/config.js`; Impostazioni, dati sul dispositivo e Notifiche in `js/impostazioni.js`.
+- `js/hs-word.js` diviso: struttura dei formati e modello dell'attività in `js/hs-data.js`, lettura dei report precedenti in `js/hs-leggi.js`; resta il motore Word.
+- Campioni e NC condivisi da DDA e Mappatura in `js/campioni.js` (prima in `js/dda.js`).
+- README senza ripetizioni: contenuto del file di configurazione, struttura dello ZIP di backup e controlli in ingresso rimandano a `docs/DATA_MODEL.md` e `docs/PRIVACY_SECURITY.md`.
+
 ## [nembo-v53] — 2026-11-11
 
 ### Aggiunto

@@ -3,6 +3,9 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
+  { v: 54, data: '2026-11-11', tipo: 'minore', titolo: 'Riordino interno',
+    voci: [
+      'Riordino interno del codice: nell’uso non cambia nulla.' ] },
   { v: 53, data: '2026-11-11', tipo: 'minore', titolo: 'Sopralluogo HSE a note',
     voci: [
       'Nuova attività → «Sopralluogo HSE» → Avanti: scegli Esteso o Sintetico per il primo sopralluogo, oppure carica il Word o il JSON dell’anno precedente o parti da un report in Nembo per il sopralluogo periodico.',

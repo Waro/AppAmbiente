@@ -1,4 +1,4 @@
-/* Sopralluoghi HSE — dati fissi: regole di riformulazione, frasi ricorrenti, voci del formato Sintetico.
+/* Sopralluoghi HSE — dati fissi (regole di riformulazione, frasi ricorrenti, voci del Sintetico), struttura dei due formati e modello dell'attività.
    Nessun dato di clienti o persone: i testi dei report stanno nei modelli Word caricati dall'utente. */
 
 const HS_TEC_RULES = [
@@ -230,3 +230,108 @@ const HS_FRASI = {
 // Formato Sintetico: capitoli e voci della checklist (Sì / No / N.A., nota, foto collegata)
 const HS_SINT_ITEMS = [{"sez": "FATTORI DI RISCHIO AREE ESTERNE", "cap": 3, "items": [{"id": "0_1", "grp": "RECINZIONE", "cod": "1", "txt": "Presenza di recinzione su tutto il perimetro/l’asset risulta correttamente segregato", "ref": "3.1"}, {"id": "0_2", "grp": "RECINZIONE", "cod": "2", "txt": "Recinzione deteriorata", "ref": "3.2"}, {"id": "0_3", "grp": "RECINZIONE", "cod": "3", "txt": "Recinzione manomessa o divelta", "ref": "3.3"}, {"id": "0_4", "grp": "RECINZIONE", "cod": "4", "txt": "Ingressi manomessi e/o non efficienti", "ref": "3.4"}, {"id": "0_5", "grp": "AREE DI TRANSITO", "cod": "5", "txt": "Vi sono aree di transito promiscue", "ref": "3.5"}, {"id": "0_6", "grp": "AREE DI TRANSITO", "cod": "6", "txt": "Sono presenti camminamenti pedonali segnalati e/o segregati", "ref": "3.6"}, {"id": "0_7", "grp": "AREE DI TRANSITO", "cod": "7", "txt": "È presente un'adeguata illuminazione", "ref": "3.7"}, {"id": "0_8", "grp": "AREE DI TRANSITO", "cod": "8", "txt": "Le aree di transito risultano percorribili", "ref": "3.8"}, {"id": "0_9", "grp": "AREE DI TRANSITO", "cod": "9", "txt": "Sono presenti persone non autorizzate", "ref": "3.9"}, {"id": "0_10", "grp": "PAVIMENTAZIONE E AREE VERDI", "cod": "10", "txt": "La pavimentazione si presenta stabile", "ref": "3.10"}, {"id": "0_11", "grp": "PAVIMENTAZIONE E AREE VERDI", "cod": "11", "txt": "Sono presenti sporgenze, cavità, piani inclinati pericolosi o aperture verso il vuoto prive di parapetti", "ref": "3.11"}, {"id": "0_12", "grp": "PAVIMENTAZIONE E AREE VERDI", "cod": "12", "txt": "La pavimentazione viene mantenuta regolarmente pulita ed in ordine", "ref": "3.12"}, {"id": "0_13", "grp": "PAVIMENTAZIONE E AREE VERDI", "cod": "13", "txt": "Presenza di pozzetti scoperti", "ref": "3.13"}, {"id": "0_14", "grp": "PAVIMENTAZIONE E AREE VERDI", "cod": "14", "txt": "Presenza di scavi o buche in area di pertinenza", "ref": "3.14"}, {"id": "0_15", "grp": "PAVIMENTAZIONE E AREE VERDI", "cod": "15", "txt": "Le aree verdi si presentano manutenute", "ref": "3.15"}]}, {"sez": "FATTORI DI RISCHIO FABBRICATI", "cap": 4, "items": [{"id": "1_1", "grp": "ACCESSI", "cod": "1", "txt": "Ingressi manomessi e/o non efficienti", "ref": "4.1"}, {"id": "1_2", "grp": "ACCESSI", "cod": "2", "txt": "Esistono punti di ingresso facilmente accessibili o manomettibili (es. da bambini)", "ref": "4.2"}, {"id": "1_3", "grp": "ACCESSI", "cod": "3", "txt": "È presente un'adeguata illuminazione", "ref": "4.3"}, {"id": "1_4", "grp": "ACCESSI", "cod": "4", "txt": "Sono presenti occupanti non autorizzati", "ref": "4.4"}, {"id": "1_5", "grp": "FACCIATA", "cod": "5", "txt": "Sono presenti vetrate o porte in vetro mal segnalate", "ref": "4.5"}, {"id": "1_6", "grp": "FACCIATA", "cod": "6", "txt": "Infissi esterni danneggiati o divelti", "ref": "4.6"}, {"id": "1_7", "grp": "FACCIATA", "cod": "7", "txt": "Presenza di problematiche in facciata", "ref": "4.7"}, {"id": "1_8", "grp": "FACCIATA", "cod": "8", "txt": "Sono presenti adeguati parapetti protettivi", "ref": "4.8"}, {"id": "1_9", "grp": "FACCIATA", "cod": "9", "txt": "Presenza di elementi il cui crollo o distacco può provocare danni a persone/proprietà", "ref": "4.9"}, {"id": "1_10", "grp": "PAVIMENTAZIONE", "cod": "10", "txt": "La pavimentazione si presenta integra", "ref": "4.10"}, {"id": "1_11", "grp": "PAVIMENTAZIONE", "cod": "11", "txt": "Sono presenti sporgenze, cavità, piani inclinati pericolosi o presenza di aperture verso il vuoto prive di parapetti", "ref": "4.11"}, {"id": "1_12", "grp": "PAVIMENTAZIONE", "cod": "12", "txt": "La pavimentazione è pulita ed in ordine", "ref": "4.12"}, {"id": "1_13", "grp": "PAVIMENTAZIONE", "cod": "13", "txt": "Presenza di pozzetti scoperti", "ref": "4.13"}, {"id": "1_14", "grp": "SCALE", "cod": "14", "txt": "Le scale si presentano stabili, antisdrucciolevoli, esenti da protuberanze o cavità?", "ref": "4.14"}, {"id": "1_15", "grp": "SCALE", "cod": "15", "txt": "Sono presenti i corrimani", "ref": "4.15"}, {"id": "1_16", "grp": "SCALE", "cod": "16", "txt": "La struttura delle scale presenta segni di degrado", "ref": "4.16"}]}, {"sez": "FATTORI DI RISCHIO FABBRICATI", "cap": 4, "items": [{"id": "2_1", "grp": "COPERTURA", "cod": "17", "txt": "La copertura è accessibile", "ref": "4.17"}, {"id": "2_2", "grp": "COPERTURA", "cod": "18", "txt": "Presenza di elementi il cui crollo o distacco può provocare danni a persone/cose", "ref": "4.18"}, {"id": "2_3", "grp": "COPERTURA", "cod": "19", "txt": "La copertura comporta rischi di caduta dall'alto", "ref": "4.19"}, {"id": "2_4", "grp": "COPERTURA", "cod": "20", "txt": "Sono presenti adeguati parapetti protettivi", "ref": "4.20"}, {"id": "2_5", "grp": "COPERTURA", "cod": "21", "txt": "Sono presenti dispositivi anticaduta permanenti (es. punti di ancoraggio, linee vita)", "ref": "4.21"}, {"id": "2_6", "grp": "COPERTURA", "cod": "22", "txt": "È presente la relativa cartellonistica", "ref": "4.22"}, {"id": "2_7", "grp": "COPERTURA", "cod": "23", "txt": "Sono presenti ostacoli, dislivelli", "ref": "4.23"}, {"id": "2_8", "grp": "COPERTURA", "cod": "24", "txt": "Sono presenti evidenze di degrado su elementi strutturali/non strutturali", "ref": "4.24"}, {"id": "2_9", "grp": "COPERTURA", "cod": "25", "txt": "La copertura, nel complesso, si presenta in buono stato di conservazione", "ref": "4.25"}, {"id": "2_10", "grp": "COPERTURA", "cod": "26", "txt": "Sono presenti situazioni puntuali di degrado", "ref": "4.26"}, {"id": "2_11", "grp": "COPERTURA", "cod": "27", "txt": "Sono presenti infiltrazioni/ristagni", "ref": "4.27"}, {"id": "2_12", "grp": "COPERTURA", "cod": "28", "txt": "Sono presenti lucernai", "ref": "4.28"}, {"id": "2_13", "grp": "ASCENSORI", "cod": "29", "txt": "Ascensori e/o montacarichi sono attivi (indicare numero di impianti presenti)", "ref": "4.29"}, {"id": "2_14", "grp": "ASCENSORI", "cod": "30", "txt": "È presente all’interno della cabina la targa di identificazione del soggetto addetto alla manutenzione con relativo numero di telefono d’emergenza", "ref": "4.30"}, {"id": "2_15", "grp": "ASCENSORI", "cod": "31", "txt": "L’impianto è dotato di sistema di allarme", "ref": "4.31"}]}, {"sez": "FATTORI DI RISCHIO FABBRICATI", "cap": 4, "items": [{"id": "3_1", "grp": "STRUTTURE", "cod": "32", "txt": "Sono presenti evidenze di degrado su elementi strutturali/non strutturali", "ref": "4.32"}, {"id": "3_2", "grp": "STRUTTURE", "cod": "33", "txt": "Sono presenti infiltrazioni", "ref": "4.33"}, {"id": "3_3", "grp": "STRUTTURE", "cod": "34", "txt": "Sono presenti vetrate o porte in vetro non o mal segnalate", "ref": "4.34"}, {"id": "3_4", "grp": "AUTORIMESSA", "cod": "35", "txt": "È presente l’autorimessa (indicare il piano)", "ref": "4.35"}, {"id": "3_5", "grp": "AUTORIMESSA", "cod": "36", "txt": "Sono presenti porte, uscite, scale di emergenza", "ref": "4.36"}, {"id": "3_6", "grp": "AUTORIMESSA", "cod": "37", "txt": "Sono presenti rilevatori di fumo/gas", "ref": "4.37"}, {"id": "3_7", "grp": "AUTORIMESSA", "cod": "38", "txt": "Sono presenti estintori", "ref": "4.38"}, {"id": "3_8", "grp": "AUTORIMESSA", "cod": "39", "txt": "Sono presenti idranti/naspi", "ref": "4.39"}, {"id": "3_9", "grp": "AUTORIMESSA", "cod": "40", "txt": "È presente un impianto sprinkler", "ref": "4.40"}, {"id": "3_10", "grp": "AUTORIMESSA", "cod": "41", "txt": "È presente la segnaletica orizzontale", "ref": "4.41"}, {"id": "3_11", "grp": "IMPRESE TERZE", "cod": "42", "txt": "È presente il servizio di portierato", "ref": "4.42"}, {"id": "3_12", "grp": "IMPRESE TERZE", "cod": "43", "txt": "È presente il servizio di vigilanza H24", "ref": "4.43"}, {"id": "3_13", "grp": "IMPRESE TERZE", "cod": "44", "txt": "Al momento del sopralluogo sono presenti imprese terze (manutenzione, derattizzazione, cura del verde etc.)", "ref": "4.44"}, {"id": "3_14", "grp": "AREE DI DEPOSITO", "cod": "45", "txt": "Sono presenti magazzini – scaffalature", "ref": "4.45"}, {"id": "3_15", "grp": "AREE DI DEPOSITO", "cod": "46", "txt": "È indicata la porta massima degli scaffali", "ref": "4.46"}, {"id": "3_16", "grp": "AREE DI DEPOSITO", "cod": "47", "txt": "Le aree di deposito sono mantenute in ordine", "ref": "4.47"}, {"id": "3_17", "grp": "AREE DI DEPOSITO", "cod": "48", "txt": "Sono presenti aree di deposito rifiuti", "ref": "4.48"}, {"id": "3_18", "grp": "AREE DI DEPOSITO", "cod": "49", "txt": "Sono presenti aree di deposito di materiali pericolosi", "ref": "4.49"}]}, {"sez": "LOCALI TECNICI ED IMPIANTI", "cap": 5, "items": [{"id": "4_1", "grp": "LOCALI TECNICI", "cod": "1", "txt": "Sono presenti locali tecnici", "ref": "5.1"}, {"id": "4_2", "grp": "LOCALI TECNICI", "cod": "2", "txt": "I locali tecnici sono chiusi a chiave", "ref": "5.2"}, {"id": "4_3", "grp": "LOCALI TECNICI", "cod": "3", "txt": "È presente la segnaletica di divieto di accesso", "ref": "5.3"}, {"id": "4_4", "grp": "LOCALI TECNICI", "cod": "4", "txt": "I locali tecnici sono adeguatamente illuminati", "ref": "5.4"}, {"id": "4_5", "grp": "LOCALI TECNICI", "cod": "5", "txt": "Le vie di accesso risultano regolari, uniformi ed adeguatamente illuminate", "ref": "5.5"}, {"id": "4_6", "grp": "LOCALI TECNICI", "cod": "6", "txt": "Il pavimento dei locali tecnici è mantenuto in condizioni idonee al suo uso", "ref": "5.6"}, {"id": "4_7", "grp": "LOCALI TECNICI", "cod": "7", "txt": "Sono presenti a terra tracce di olio/acqua che possono costituire causa di scivolamento", "ref": "5.7"}, {"id": "4_8", "grp": "LOCALI TECNICI", "cod": "8", "txt": "Sono presenti tubi, passerelle che costituiscono inciampo o ostacolo", "ref": "5.8"}, {"id": "4_9", "grp": "LOCALI TECNICI", "cod": "9", "txt": "Eventuali elementi di pericolo sono segnalati attraverso idonea cartellonistica", "ref": "5.9"}, {"id": "4_10", "grp": "LOCALI TECNICI", "cod": "10", "txt": "Nelle aree tecniche sono presenti materiali estranei", "ref": "5.10"}, {"id": "4_11", "grp": "LOCALI TECNICI", "cod": "11", "txt": "Sono presenti aperture verso il vuoto prive di parapetto", "ref": "5.11"}, {"id": "4_12", "grp": "LOCALI TECNICI", "cod": "12", "txt": "È presente l’interruttore di sgancio dell’energia elettrica e lo stesso risulta segnalato", "ref": "5.12"}, {"id": "4_13", "grp": "LOCALI TECNICI", "cod": "13", "txt": "È presente la valvola di intercettazione del combustibile (caldaia/gruppo elettrogeno) e la stessa risulta segnalata", "ref": "5.13"}, {"id": "4_14", "grp": "LOCALI TECNICI", "cod": "14", "txt": "Sono presenti spazi confinati", "ref": "5.14"}]}, {"sez": "CONDIZIONI AMBIENTALI", "cap": 6, "items": [{"id": "5_1", "grp": "CONDIZIONI AMBIENTALI", "cod": "1", "txt": "Sono presenti Manufatti Contenenti Amianto o sospetti", "ref": "6.1"}, {"id": "5_2", "grp": "CONDIZIONI AMBIENTALI", "cod": "2", "txt": "Sono presenti Fibre Artificiali Vetrose", "ref": "6.2"}, {"id": "5_3", "grp": "CONDIZIONI AMBIENTALI", "cod": "3", "txt": "Sono presenti rifiuti non adeguatamente stoccati o in stato di abbandono", "ref": "6.3"}, {"id": "5_4", "grp": "CONDIZIONI AMBIENTALI", "cod": "4", "txt": "Sono presenti serbatoi interrati", "ref": "6.4"}, {"id": "5_5", "grp": "CONDIZIONI AMBIENTALI", "cod": "5", "txt": "Sono presenti condizioni igieniche sufficienti", "ref": "6.5"}, {"id": "5_6", "grp": "CONDIZIONI AMBIENTALI", "cod": "6", "txt": "Sono presenti situazioni di rischio biologico", "ref": "6.6"}, {"id": "5_7", "grp": "CONDIZIONI AMBIENTALI", "cod": "7", "txt": "Presenza di macchinari /apparecchiature / attrezzature con potenziali criticità ambientali", "ref": "6.7"}]}, {"sez": "EMERGENZA", "cap": 7, "items": [{"id": "6_1", "grp": "EMERGENZA", "cod": "1", "txt": "Le attività presenti sono soggette a Prevenzione Incendi", "ref": "7.1"}, {"id": "6_2", "grp": "EMERGENZA", "cod": "2", "txt": "È presente un Piano di Emergenza ed Evacuazione", "ref": "7.2"}, {"id": "6_3", "grp": "EMERGENZA", "cod": "3", "txt": "Sono presenti idonee vie di fuga ed uscite di sicurezza", "ref": "7.3"}, {"id": "6_4", "grp": "EMERGENZA", "cod": "4", "txt": "Le vie e uscite di emergenza sono mantenute sgombre e facilmente accessibili", "ref": "7.4"}, {"id": "6_5", "grp": "EMERGENZA", "cod": "5", "txt": "È presente la segnaletica di sicurezza", "ref": "7.5"}, {"id": "6_6", "grp": "EMERGENZA", "cod": "6", "txt": "È presente un sistema di allarme acustico/visivo", "ref": "7.6"}, {"id": "6_7", "grp": "EMERGENZA", "cod": "7", "txt": "Sono presenti estintori, idranti, naspi", "ref": "7.7"}, {"id": "6_8", "grp": "EMERGENZA", "cod": "8", "txt": "Sono presenti rilevatori di fumo e/o calore", "ref": "7.8"}, {"id": "6_9", "grp": "EMERGENZA", "cod": "9", "txt": "I presidi antincendio sono regolarmente verificati", "ref": "7.9"}]}];
 const HS_SINT_AN = ["Indirizzo:", "Destinazione uso:", "Anno di costruzione:", "Superficie:", "Classificazione sismica:", "Intera u.i./Porzione:", "Libero/Occupato:", "Data sopralluogo:", "Descrizione sintetica dell’immobile:", "Porzioni non visionate", "Developer:", "Property Manager", "Procuratore in ambito HSE:", "Tecnici incaricati del sopralluogo:"];
+
+/* ---------------- struttura dei due formati e modello dell'attività ---------------- */
+const HS_SCHEDE = [
+  { k: 'agibilita', l: 'Agibilità', t: 'AGIBILITA’' },
+  { k: 'prevenzione', l: 'Prevenzione incendi' },
+  { k: 'esterne', l: 'Aree esterne', subs: ['Accessi', 'Aree di transito – Pavimentazione esterna', 'Facciata'] },
+  { k: 'involucro', l: 'Involucro e copertura', subs: ['Copertura', 'Accesso alla copertura', 'Impianto anticaduta'] },
+  { k: 'strutture', l: 'Strutture' },
+  { k: 'interni', l: 'Interni' },
+  { k: 'elettrici', l: 'Impianti elettrici e speciali', subs: ['Impianto elettrico', 'Illuminazione', 'Gruppo elettrogeno/UPS', 'Messa a terra', 'Protezione scariche atmosferiche'] },
+  { k: 'meccanici', l: 'Impianti meccanici', subs: ['Impianto idrico sanitario', 'Impianto trattamento aria'] },
+  { k: 'antincendio', l: 'Impianti e presidi antincendio' },
+  { k: 'sollevamento', l: 'Impianti di sollevamento (ascensori, montacarichi, montascale, baie di carico)', s: 'Impianti di sollevamento', subs: ['Impianto ascensori, montacarichi, montascale', 'Baie di carico'] },
+  { k: 'pericolosi', l: 'Materiali, apparecchiature, ambienti pericolosi' },
+  { k: 'ambientali', l: 'Analisi ambientali e campionamenti', subs: ['Serbatoi (UST, AST)', 'Amianto/FAV', 'Autorizzazione agli scarichi', 'Rifiuti', 'Autorizzazione pozzi'] },
+  { k: 'emergenze', l: 'Gestione delle emergenze' },
+];
+const HS_NATURA = ['', 'Penale', 'Amministrativa', 'Penale/Amministrativa', 'Nessuna'];
+const HS_PRIO = { 1: 'non conforme', 2: 'da monitorare', 3: 'conforme' };
+const HS_GRAV = ['Alto', 'Medio', 'Basso'];
+const HS_RISP = [['si', 'Sì'], ['no', 'No'], ['na', 'N.A.']];
+// capitoli del Sintetico: le tre tabelle "Fabbricati" sono un unico capitolo 4
+const HS_SINT_SEZ = (() => {
+  const out = [];
+  HS_SINT_ITEMS.forEach(t => {
+    let s = out.find(x => x.cap === t.cap);
+    if (!s) { s = { cap: t.cap, titolo: t.sez, items: [] }; out.push(s); }
+    s.items.push(...t.items);
+  });
+  return out;
+})();
+const HS_SINT_ALL = HS_SINT_SEZ.flatMap(s => s.items);
+const HS_SINT_TIT = { 3: 'Aree esterne', 4: 'Fabbricati', 5: 'Locali tecnici ed impianti', 6: 'Condizioni ambientali', 7: 'Gestione emergenze' };
+const HS_MAX_FOTO = 250;
+const HS_AN_KEYS = [
+  ['anno', 'Anno di costruzione'], ['destinazione', 'Destinazione d’uso'], ['stato', 'Stato occupazionale'], ['baie', 'Numero baie di carico'],
+  ['descrizione', 'Descrizione sintetica dell’immobile'], ['parcheggiEst', 'Parcheggi esterni'], ['parcheggiInt', 'Parcheggi interni'],
+  ['autorimesse', 'Autorimesse / Box'], ['fotovoltaico', 'Impianto fotovoltaico'], ['manutOrd', 'Manutenzione ordinaria'],
+  ['manutStr', 'Manutenzione straordinaria'], ['adeguamenti', 'Adeguamenti normativi'], ['sismica', 'Classificazione sismica'], ['tenant', 'Ragione sociale Tenant'],
+];
+const HS_AN_OPT = {
+  destinazione: ['', 'Logistica', 'Industriale - Logistica', 'Industriale', 'Direzionale / Uffici', 'Commerciale', 'Residenziale', 'Misto'],
+  stato: ['', 'Occupato', 'Parzialmente occupato', 'Sfitto'], parcheggiEst: ['', 'Si', 'No'], parcheggiInt: ['', 'Si', 'No'], autorimesse: ['', 'Si', 'No'],
+  fotovoltaico: ['', 'Presente', 'No'], manutOrd: ['', 'Tenant', 'Proprietà', 'Tenant / Proprietà'],
+  manutStr: ['', 'Proprietà', 'Proprietà (per la parte relativa all’immobile)', 'Tenant'],
+};
+
+const hsEmptyScheda = s => ({ sit: '', subs: s.subs ? Object.fromEntries(s.subs.map(x => [x, ''])) : null, mig: '', natura: '', costo: '', idr: '', prio: null, cProp: false, cCond: false, termine: '' });
+function newHs(records, settings, formato) {
+  const y = new Date().getFullYear();
+  const n = records.filter(r => r.type === 'hs' && (r.codice || '').startsWith('HS-' + y)).map(r => +r.codice.slice(-3)).reduce((a, b) => Math.max(a, b), 0) + 1;
+  const s = settings;
+  const sint = formato === 'sintetico';
+  return {
+    id: uid('hs'), type: 'hs', formato: sint ? 'sintetico' : 'esteso', codice: `HS-${y}-${String(n).padStart(3, '0')}`,
+    createdAt: Date.now(), updatedAt: Date.now(),
+    commessa: '', cliente: sint ? (s.hsCommSint || '') : (s.hsCommEsteso || ''), citta: '', indirizzo: '', sito: '', data: today(),
+    tecnico: `${s.tecnicoNome} ${s.tecnicoCognome}`.trim(),
+    meta: { proprieta: '', redatto: `${s.tecnicoCognome} ${s.tecnicoNome}`.trim(), verificato: s.hsVerificato || '', approvato: s.hsApprovato || '',
+      protocollo: '', revisione: sint ? '-' : '00', emissione: '', presenti: '', superficie: '', fondo: '', firma: s.hsFirma || '' },
+    img: {}, foto: [], base: {}, visite: [],
+    an: {}, inquadramento: '', catFab: [], catTer: [], schede: Object.fromEntries(HS_SCHEDE.map(x => [x.k, hsEmptyScheda(x)])),
+    anS: HS_SINT_AN.map((l, i) => i === 10 ? (s.hsDeveloper || '') : i === 11 ? (s.hsPropertyManager || '') : i === 12 ? (s.hsProcuratore || '') : i === 13 ? (s.hsTecnici || '') : ''),
+    risp: {}, note: {}, descr: '', azioni: [], cgFoto: [],
+    appunti: '', fotoAppunti: [], documenti: [],
+  };
+}
+const hsSchedaText = d => (d.subs ? Object.values(d.subs).join('\n') : d.sit || '');
+function hsIsEmpty(r) {
+  if (r.aNote && (r.noteSop || []).some(n => n.titolo || n.testo || n.mig || (n.tag || []).length)) return false;
+  return !r.commessa && !r.sito && !r.indirizzo && !r.citta && !(r.foto || []).length && !r.appunti && !(r.documenti || []).length
+    && !Object.values(r.schede || {}).some(d => hsSchedaText(d).trim() || d.mig || d.prio)
+    && !Object.keys(r.risp || {}).length && !Object.values(r.note || {}).some(Boolean) && !r.descr && !(r.azioni || []).length;
+}
+// stato di compilazione di una scheda Esteso / di un capitolo Sintetico
+const hsSchedaFatta = d => !!(hsSchedaText(d).trim() || d.prio);
+const hsCapFatti = (r, sez) => sez.items.filter(it => r.risp[it.id]).length;
+// criticità: Esteso priorità 1 e 2, Sintetico azioni con gravità
+function hsCriticita(r) {
+  if (r.formato === 'sintetico') return (r.azioni || []).filter(a => a.grav === 'Alto' || a.grav === 'Medio')
+    .map(a => ({ p: a.grav === 'Alto' ? 1 : 2, t: [a.cod, a.sit].filter(Boolean).join(' · '), az: a.az }));
+  return HS_SCHEDE.map((s, i) => ({ s, i, d: r.schede[s.k] })).filter(x => x.d && (x.d.prio === 1 || x.d.prio === 2))
+    .map(x => ({ p: x.d.prio, t: (x.i + 1) + '. ' + (x.s.s || x.s.l), az: x.d.mig, costo: x.d.costo, termine: x.d.termine }))
+    .sort((a, b) => a.p - b.p);
+}
+// documenti dichiarati mancanti nelle schede (recap per il sopralluogo)
+const HS_RE_DOC = /(non\s+è\s+stat[ao]\s+(resa|reso|possibile|reperit|disponibile)|non\s+risulta\s+(disponibile|aggiornat)|mancant|assent|non\s+reperit|scadut)/i;
+function hsDocMancanti(r) {
+  const out = [];
+  HS_SCHEDE.forEach((s, i) => {
+    hsSchedaText(r.schede[s.k] || {}).replace(/\.\s+/g, '.\n').split(/\n/).forEach(fr => {
+      const f = fr.replace(/\s+/g, ' ').trim();
+      if (f.length > 25 && HS_RE_DOC.test(f)) out.push({ n: i + 1, s: s.s || s.l, f });
+    });
+  });
+  return out;
+}
+const MESI_IT = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+const meseAnno = iso => { const d = iso ? new Date(iso + 'T12:00:00') : new Date(); return isNaN(d) ? '' : MESI_IT[d.getMonth()] + ' ' + d.getFullYear(); };
+const hsEmissione = r => r.meta.emissione || meseAnno(r.data);
+function hsFileBase(r) {
+  const pul = t => String(t || '').replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const nome = r.formato === 'sintetico' ? [pul(r.meta.fondo), pul(r.sito)].filter(Boolean).join('_') : pul(r.citta || r.sito);
+  return [pul(r.meta.protocollo), nome || 'Immobile', r.formato === 'sintetico' ? 'Report Procurato HS' : 'Report HS', hsEmissione(r)].filter(Boolean).join(' - ');
+}

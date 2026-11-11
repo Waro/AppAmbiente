@@ -58,10 +58,10 @@ Fuori dal repository: file di configurazione, modelli aziendali, backup, audit, 
 
 ```mermaid
 flowchart TB
-  A["Shell e navigazione<br/>app.js: App, SideNav, TabBar, Settings, Backup, Notifiche"]
+  A["Shell e navigazione<br/>app.js: App, SideNav, TabBar · impostazioni.js · backup.js · config.js"]
   B["Schermate delle attività<br/>dda · mappatura · ra · radon · aria · hs · verbale · firme · clienti · agenda · cerca · home"]
   C["Funzioni condivise<br/>plan.js (planimetrie) · file.js (scheda File) · riepilogo.js · selezione.js · guida.js · novita.js"]
-  D["Documenti<br/>pdfgen.js (PDF) · office.js (Excel/Word) · hs-word.js · vs-word.js"]
+  D["Documenti<br/>pdfgen.js (PDF) · office.js (Excel/Word) · hs-word.js · hs-leggi.js · vs-word.js"]
   E["Dati, controlli e rete<br/>core.js (DB, foto, componenti, versione) · controlli.js (verifiche, firme) · onedrive.js (Graph) · sync.js"]
   F["Librerie in vendor/<br/>Preact, hooks, htm, MSAL, signature_pad; su richiesta: pdf-lib, PDF.js 4.10, JSZip, ExcelJS, docx"]
   A --> B --> C --> D --> E --> F
@@ -83,8 +83,8 @@ Ogni file usa le funzioni dei file caricati prima; `globals.json` le elenca per 
 | 5 | `js/capture.js` | Scanner codici a barre, firma a schermo intero, fotocamera interna |
 | 6 | `js/plan.js` | Planimetrie: visualizzatore PDF.js, strumenti di disegno, etichette, PDF annotato, import da JSON |
 | 7 | `js/office.js` | Excel (ExcelJS, JSZip sul modello) e Word (docx) |
-| 8 | `js/dda.js`, `js/mappatura.js`, `js/radon.js`, `js/ra.js` | Attività ambientali, import e indagine precedente |
-| 9 | `js/hs-data.js`, `js/hs-word.js`, `js/hs.js`, `js/hs-note.js` | Sopralluogo HSE: dati fissi, motore Word, report a schede e checklist, sopralluogo a note (v53) |
+| 8 | `js/campioni.js`, `js/dda.js`, `js/mappatura.js`, `js/radon.js`, `js/ra.js` | Attività ambientali, import e indagine precedente; campioni e NC condivisi da DDA e Mappatura in `campioni.js` (v54) |
+| 9 | `js/hs-data.js`, `js/hs-word.js`, `js/hs-leggi.js`, `js/hs.js`, `js/hs-note.js` | Sopralluogo HSE: dati fissi e modello dell'attività, motore Word, lettura dei report precedenti (v54), report a schede e checklist, sopralluogo a note (v53) |
 | 10 | `js/verbale.js`, `js/vs-word.js` | Verbale HSE |
 | 11 | `js/clienti.js`, `js/novita.js`, `js/guida.js`, `js/riepilogo.js`, `js/cerca.js` | Clienti, Novità, guida, riepilogo email, ricerca |
 | 12 | `js/firme.js`, `js/aria.js`, `js/file.js` | Fogli firme, monitoraggio aria, scheda File |
@@ -94,13 +94,14 @@ Ogni file usa le funzioni dei file caricati prima; `globals.json` le elenca per 
 | 16 | `js/onedrive.js` | `OD` (MSAL + Graph), caricamento per attività, stato di invio |
 | 17 | `js/sync.js` | Sincronizzazione tra dispositivi (`_nembo/`) |
 | 18 | `js/home.js` | Oggi, Nuova attività, `attAperta`, `daCompletare` |
-| 19 | `js/app.js` | `App`: stato globale, navigazione, impostazioni, backup, configurazione su OneDrive, avvio |
+| 19 | `js/backup.js`, `js/config.js`, `js/impostazioni.js` | ZIP, ripristino e pagina Backup; file di configurazione e copia su OneDrive; Impostazioni, dati sul dispositivo e Notifiche (v54, prima in `app.js`) |
+| 20 | `js/app.js` | `App`: stato globale, sincronizzazione dalla Home, navigazione, avvio |
 
 ```mermaid
 flowchart LR
   app[app.js] --> home[home.js]
   app --> sync[sync.js] --> od[onedrive.js]
-  app --> ctl[controlli.js]
+  app --> imp["impostazioni.js · config.js · backup.js"] --> ctl[controlli.js]
   home --> forms["dda / mappatura / ra / radon / aria / hs / verbale / firme"]
   forms --> plan[plan.js]
   forms --> file[file.js] --> docs["pdfgen.js · office.js · hs-word.js · vs-word.js"]

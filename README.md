@@ -1,7 +1,7 @@
 # Nembo
 
 App web (PWA) per il lavoro sul campo: DDA ambientali (Fase 1 e Fase 2), mappature MCA e FAV, sopralluoghi RA amianto, monitoraggi dell'aria,
-campagne radon, sopralluoghi e verbali HSE, fogli firme, clienti e programmazione. Versione attuale: **nembo-v53**.
+campagne radon, sopralluoghi e verbali HSE, fogli firme, clienti e programmazione. Versione attuale: **nembo-v54**.
 I dati restano sul dispositivo (IndexedDB), senza server. OneDrive (cartella dell'app) è facoltativo, per caricamento, sincronizzazione, configurazione e backup.
 
 ## Stack e requisiti
@@ -59,8 +59,8 @@ Da installata funziona anche offline e Chrome protegge i dati dalla pulizia auto
 ## Primo avvio su ogni dispositivo
 
 Impostazioni → **Carica configurazione** e scegli il file `.json` ricevuto (da OneDrive, email o Teams).
-Contiene impostazioni (tecnico, laboratorio, offerta, codici analisi, valori proposti HSE), i due modelli PDF e, se caricati, i due modelli Word HSE. Resta solo su quel dispositivo.
-Contiene anche il **codice utente** (dalla v48): carica la stessa configurazione su telefono, tablet e PC, così ognuno riconosce come tuoi i backup degli altri, anche senza OneDrive.
+Contiene impostazioni, modelli e **codice utente** (il contenuto è descritto in [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md), «Impostazioni» ed «Esempi»). Resta solo su quel dispositivo.
+Carica la stessa configurazione su telefono, tablet e PC, così ognuno riconosce come tuoi i backup degli altri, anche senza OneDrive.
 In alternativa si caricano i modelli e si compilano i campi a mano.
 
 **Configurazione da OneDrive** (dalla v51): dopo l'accesso a Microsoft, se nella cartella dell'app c'è già una configurazione, Nembo propone di ripristinarla
@@ -416,13 +416,14 @@ Niente colori, dimensioni del testo, raggi o spazi scritti a mano. Token, compon
 | `index.html`, `styles.css` | pagina e stile |
 | `js/core.js` | archivio locale, foto, condivisione, componenti comuni |
 | `js/capture.js` | scanner codici a barre (BarcodeDetector di Chrome) e firma a schermo intero |
-| `js/dda.js` | modulo DDA: checklist, aree REC con GPS, campioni per matrice, risultati CSC, scheda campioni |
+| `js/campioni.js` | campioni e NC condivisi da DDA Fase 2 e Mappatura: matrici, indagine precedente, numerazione, righe dei campioni |
+| `js/dda.js` | modulo DDA: checklist, aree REC con GPS, import JSON, risultati CSC, elenco e scheda |
 | `js/radon.js` | modulo radon: punti R1…Rn, tre momenti con firme, esiti e media pesata |
 | `js/mappatura.js` | modulo Mappatura MCA e FAV |
 | `js/plan.js` | planimetrie: visualizzatore, disegno, etichette, PDF annotato |
 | `js/office.js` | scheda campioni Excel e riepilogo Word |
 | `js/ra.js` | sopralluogo RA: manufatti, stato di conservazione, anno di incarico |
-| `js/hs-data.js`, `js/hs-word.js`, `js/hs.js`, `js/hs-note.js` | sopralluogo HSE: dati fissi, motore Word (modelli .docx con JSZip) e import, report a schede e checklist, sopralluogo a note |
+| `js/hs-data.js`, `js/hs-word.js`, `js/hs-leggi.js`, `js/hs.js`, `js/hs-note.js` | sopralluogo HSE: dati fissi e modello dell'attività, motore Word (modelli .docx con JSZip), lettura dei report precedenti e import, report a schede e checklist, sopralluogo a note |
 | `js/verbale.js`, `js/vs-word.js` | Verbale HSE e il suo Word |
 | `js/clienti.js` | anagrafica clienti e preferenze (foglio firme, email) |
 | `js/cerca.js` | ricerca in tutte le attività |
@@ -438,7 +439,10 @@ Niente colori, dimensioni del testo, raggi o spazi scritti a mano. Token, compon
 | `js/onedrive.js` | caricamento su OneDrive e stato di invio |
 | `js/controlli.js` | controlli su allegati, backup e sincronizzazione; firma dei backup; cifratura della firma con il PIN |
 | `js/sync.js` | sincronizzazione tra dispositivi tramite la cartella dell'app (`_nembo/`) |
-| `js/app.js` | navigazione, impostazioni, backup ZIP e ripristino, configurazione e backup su OneDrive |
+| `js/backup.js` | file delle attività, ZIP, ripristino, pagina Backup e backup su OneDrive |
+| `js/config.js` | file di configurazione: esportazione, import, copia su OneDrive con la firma cifrata dal PIN |
+| `js/impostazioni.js` | Impostazioni, segnala un problema, dati su questo dispositivo, Notifiche |
+| `js/app.js` | sincronizzazione dalla Home, navigazione, menu e avvio |
 | `fonts/` | IBM Plex Sans e Mono (woff2) |
 | `pdfgen.js` | compilazione PDF (pdf-lib), compreso il PDF del foglio firme |
 | `vendor/` | librerie incluse per l'uso offline: Preact, htm, pdf-lib, PDF.js 4.10 (modulo `.mjs` con il worker), JSZip, ExcelJS, docx, signature_pad, MSAL; le pesanti si caricano con `needLib` |
@@ -451,13 +455,12 @@ Niente colori, dimensioni del testo, raggi o spazi scritti a mano. Token, compon
 Se cambia il modulo radon, i nomi dei campi del nuovo PDF vanno rimappati in `RADON_ROWS` (pdfgen.js).
 Non aggiungere mai al repository file con dati reali (moduli, modelli Word, offerte, backup ZIP, configurazione).
 Se cambia la scheda campioni, vanno ricontrollate le coordinate `SC_LINES` / `SC_COLS`.
-Nembo non si apre dentro altre pagine (controllo all'inizio di `js/core.js`). Tutto ciò che entra da ripristino, sincronizzazione e import passa da `pulisciRecord` / `pulisciImpostazioni` (`js/controlli.js`).
+Nembo non si apre dentro altre pagine (controllo all'inizio di `js/core.js`). I controlli su ciò che entra (ripristino, sincronizzazione, import) sono descritti in [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) e [`docs/PRIVACY_SECURITY.md`](docs/PRIVACY_SECURITY.md).
 
 ## Da sapere
 
-- **Backup**: lo ZIP contiene cartelle leggibili (foto, allegati, PDF) e `manifest.json` per il ripristino.
-  Dalla v48 `manifest.json` ha l'impronta SHA-256 di ogni file e `firma.json` lo firma due volte: con la chiave del dispositivo
-  (la parte segreta non esce mai dal dispositivo) e con il codice utente del file di configurazione.
+- **Backup**: lo ZIP contiene cartelle leggibili (foto, allegati, PDF) ed è firmato; struttura e firma sono descritte in
+  [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) («OneDrive» ed «Esempi»).
   Chrome Android non permette di condividere file .zip: finisce in Download, da lì si carica con l'app OneDrive.
   I PDF singoli invece si condividono direttamente su OneDrive.
   Dalla v51, con OneDrive collegato, il backup va in `_nembo/backup/` (senza la firma del tecnico); il backup salvato sul dispositivo la contiene.
