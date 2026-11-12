@@ -141,3 +141,49 @@ function RiepilogoSheet({ r, settings, onClose }) {
     </div></div>`;
 }
 function RpThumb({ id }) { const u = useBlobUrl(id); return u ? html`<img src=${u} alt="" />` : html`<i></i>`; }
+
+/* ---------------- Riepilogo del sopralluogo (v56) ----------------
+   Pannello che sale dal basso, solo consultazione: per modificare si torna alla scheda.
+   HSE a note: check-list dei capitoli, osservazioni per capitolo con le foto, appunti; in fondo «Genera report».
+   Campioni (DDA Fase 2, Mappatura): campioni per matrice, avvisi (senza foto, non in pianta), campioni per piano, appunti; in fondo «Genera file». */
+function RiepilogoPanel({ r, mats, onClose, onFile, azione }) {
+  useBackClose(onClose);
+  const hs = r.type === 'hs';
+  const fotoN = hs ? (r.foto || []).length : 0;
+  let corpo, sub;
+  if (hs) {
+    const C = hsCapi(r), num = hsNumNote(r), G = hsNoteGruppi(r), note = r.noteSop || [];
+    sub = note.length + (note.length === 1 ? ' osservazione' : ' osservazioni') + ' · ' + fotoN + ' foto';
+    corpo = html`<div class="sec-h mt-1"><h3>Check-list</h3></div>
+      <div class="list">${C.map(c => { const S = hsStatoCap(r, c); return html`<div class=${'rcard st-bar ' + S.st} key=${c.k}><div class="r1"><span class="ttl hs-ckt">${c.n}. ${c.tag}</span><span class="dt">${S.w}</span></div></div>`; })}</div>
+      ${G.map(g => html`<div key=${'g-' + (g.c ? g.c.k : '-')}><div class="list mt-3"><div class="list-h"><b>${g.c ? g.c.n + '. ' + g.c.tag : 'Senza capitolo'}</b><span>${g.note.length}</span></div>
+        ${g.note.map(n => { const F = (r.foto || []).filter(p => p.ref === 'n.' + n.id); return html`<div class="riep-row" key=${n.id}>
+          ${F.length ? html`<${Thumb44} id=${F[0].id} />` : html`<span class="thumb44 vuota"><${Icon} n="image" s=${18} /></span>`}
+          <div class="t"><b>${n.titolo || 'Osservazione ' + num[n.id]}</b>${n.testo && html`<small>${n.testo}</small>`}<small class="riep-meta">${F.length ? F.length + ' foto' : 'Nessuna foto'}</small></div></div>`; })}</div></div>`)}`;
+  } else {
+    const all = mats.flatMap(m => (r.campioni[m.k] || []).map(c => ({ ...c, m })));
+    const placed = placedRefs(r), noFoto = all.filter(c => !(c.foto || []).length), noPlan = all.filter(c => !placed.has(c.id));
+    sub = all.length + (all.length === 1 ? ' campione' : ' campioni') + ' · ' + all.reduce((a, c) => a + (c.foto || []).length, 0) + ' foto';
+    corpo = html`<div class="riep-mat mt-1">${mats.filter(m => (r.campioni[m.k] || []).length).map(m => html`<div key=${m.k} style=${'--c:' + m.c}><b>${r.campioni[m.k].length}</b><span><i class="mdot" style=${'background:' + m.c}></i>${m.l}</span></div>`)}</div>
+      ${noFoto.length > 0 && html`<div class="card st-bar st-warn riep-av"><b>${noFoto.length === 1 ? '1 campione senza foto' : noFoto.length + ' campioni senza foto'}</b><small>${noFoto.map(c => c.codice).join(', ')}</small></div>`}
+      ${noPlan.length > 0 && html`<div class="card st-bar st-warn riep-av"><b>${noPlan.length === 1 ? '1 campione non posizionato' : noPlan.length + ' campioni non posizionati'}</b><small>${noPlan.map(c => c.codice).join(', ')}</small></div>`}
+      ${byPiano(all).map(([piano, list]) => html`<div class="list mt-3" key=${piano}><div class="list-h"><b>${piano}</b><span>${list.length}</span></div>
+        ${list.map(c => html`<div class="riep-row" key=${c.id}>${(c.foto || []).length ? html`<${Thumb44} id=${c.foto[0]} dot=${c.m.c} />` : html`<span class="thumb44 vuota"><${Icon} n="image" s=${18} /></span>`}
+          <div class="t"><b><span class="mono" style=${'color:' + c.m.c}>${c.codice || '—'}</span> ${c.descrizione || 'Descrizione da indicare'}</b><small>${[c.ubicazione, c.m.l].filter(Boolean).join(' · ')}</small></div></div>`)}</div>`)}`;
+  }
+  const ap = r.type === 'dda' ? r.appunti2 : r.appunti, apF = (r.type === 'dda' ? r.fotoAppunti2 : r.fotoAppunti) || [];
+  return html`<div class="sheet-ov" onClick=${e => e.target === e.currentTarget && onClose()}><div class="sheet riep-sheet" role="dialog" aria-label="Riepilogo">
+    <div class="sheet-grab"></div>
+    <div class="sheet-nav"><button class="btn link" onClick=${onClose}>Chiudi</button><b>Riepilogo</b><span></span></div>
+    <div class="sheet-body">
+      <div class="notice mt-0">Solo consultazione. Per modificare, torna alla scheda.</div>
+      <p class="lead lead-gap">${sub}</p>
+      ${corpo}
+      ${(ap || apF.length > 0) && html`<div class="sec-h"><h3>Appunti</h3></div><div class="card">${ap && html`<div class="riep-ap">${ap}</div>`}
+        ${apF.length > 0 && html`<div class="hs-fotos">${apF.map(id => html`<${Thumb44} key=${id} id=${id} />`)}</div>`}
+        ${hs && html`<div class="mt-2"><span class="badge b-grey">Non va nel Word</span></div>`}</div>`}
+      <div class="riep-dock">${azione || html`<button class="btn pri block" onClick=${() => { onClose(); onFile(); }}>Genera file</button>`}</div>
+    </div></div></div>`;
+}
+// tasto «Riepilogo» nel blocco navy dei contatori
+const RiepGo = ({ onOpen }) => html`<button type="button" class="riep-go" onClick=${onOpen}>Riepilogo <${Icon} n="chev" s=${16} /></button>`;

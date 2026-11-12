@@ -1165,3 +1165,25 @@ img.logo { background: none; object-fit: cover; }
 .list-h b { font-size: var(--fs-xl); font-weight: 600; }
 .list-h span { font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
 .vs-nota > .fld { margin-bottom: var(--sp-2); }
+
+/* Riepilogo (v56): pannello dal basso, solo consultazione */
+.riep-go { display: flex; align-items: center; justify-content: flex-end; gap: var(--sp-1); width: 100%; min-height: var(--tap); margin-top: var(--sp-2); padding: 0; border: 0; border-top: .5px solid color-mix(in srgb, var(--navy-tx) 35%, transparent); background: none; color: var(--on-dark); font-size: var(--fs-base); font-weight: 600; }
+.riep-go svg { transform: rotate(-90deg); }
+.riep-row { display: flex; gap: var(--sp-3); align-items: flex-start; padding: var(--sp-3) var(--sp-4); }
+.riep-row + .riep-row { border-top: .5px solid var(--sep); }
+.riep-row .t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.riep-row .t b { font-size: var(--fs-base); font-weight: 600; }
+.riep-row .t small { font-size: var(--fs-md); color: var(--text2); white-space: pre-line; }
+.riep-row .t .riep-meta { font-size: var(--fs-xs); color: var(--muted); }
+.thumb44.vuota { display: grid; place-items: center; background: var(--fill-soft); color: var(--muted); }
+.riep-mat { display: flex; gap: var(--sp-2); }
+.riep-mat > div { flex: 1; background: color-mix(in srgb, var(--c) 14%, var(--card)); border-radius: var(--r-ctl); padding: var(--sp-2) var(--sp-3); display: flex; flex-direction: column; }
+.riep-mat b { font-size: var(--fs-4xl); font-weight: 700; line-height: 1.1; }
+.riep-mat span { font-size: var(--fs-sm); color: var(--text2); display: flex; align-items: center; gap: var(--sp-1); }
+.riep-av { margin: var(--sp-2) 0 0; display: flex; flex-direction: column; gap: 2px; }
+.riep-av small { color: var(--muted); font-size: var(--fs-md); }
+.riep-ap { font-size: var(--fs-base); white-space: pre-line; }
+.riep-dock { position: sticky; bottom: 0; padding: var(--sp-3) 0 var(--sp-2); background: var(--bg); margin-top: var(--sp-4); }
+.riep-dock .btn { width: 100%; }
+.riep-sheet .rcard::after { display: none; }
+.riep-sheet .rcard { padding-right: var(--sp-4); }

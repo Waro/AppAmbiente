@@ -179,7 +179,7 @@ function HsNotaCard({ n, i, r, up, updN, delN, move, primo, ultimo, selProps }) 
 }
 
 /* ---------------- scheda Note ---------------- */
-function HsNoteTab({ r, up, ns, filtro, setFiltro, addN }) {
+function HsNoteTab({ r, up, ns, filtro, setFiltro, addN, onRiep }) {
   const note = r.noteSop || [], C = hsCapi(r), num = hsNumNote(r);
   const tagsV = Object.keys(collectTags(note)).sort((a, b) => a.localeCompare(b, 'it'));
   const updN = (id, p) => up(q => ({ ...q, noteSop: (q.noteSop || []).map(n => n.id === id ? { ...n, ...p } : n) }));
@@ -205,7 +205,7 @@ function HsNoteTab({ r, up, ns, filtro, setFiltro, addN }) {
     <div class="card-navy"><div class="sum3">
       <div><b>${note.length}</b><span>${note.length === 1 ? 'osservazione' : 'osservazioni'}</span></div>
       <div><b>${caps}<small>/${C.length}</small></b><span>capitoli</span></div>
-      <div><b>${nFoto}</b><span>foto</span></div></div></div>
+      <div><b>${nFoto}</b><span>foto</span></div></div>${onRiep && html`<${RiepGo} onOpen=${onRiep} />`}</div>
     ${tagsV.length > 0 && html`<div class="vs-filter mt-3"><button class=${'tag' + (!filtro ? ' on' : ' sugg')} onClick=${() => setFiltro(null)}>Tutte</button>
       ${tagsV.map(t => html`<button key=${t} class=${'tag' + (filtro === t ? ' on' : '')} style=${tagStyle(t, filtro === t)} onClick=${() => setFiltro(filtro === t ? null : t)}>#${t}</button>`)}</div>`}
     ${!note.length && html`<div class="card mt-3"><div class="empty" style="padding:16px">Nessuna osservazione. Tocca «Nuova osservazione» per aggiungerne una.</div></div>`}
@@ -366,6 +366,7 @@ function HsNoteForm({ rec: initial, settings, onSave, onDelete, onSettings, embe
   const [filtro0, setFiltro] = useState(null);
   const filtro = filtro0 && (r.noteSop || []).some(n => (n.tag || []).includes(filtro0)) ? filtro0 : null; // il tag filtrato non c'è più: nessun filtro
   const [aperto, setAperto] = useState(null);
+  const [riep, setRiep] = useState(false);
   const [chiedi, setChiedi] = useState(null); // attesa del foglio «capitoli senza note»
   const [hasTpl, setHasTpl] = useState(null);
   const ns = useNoteSel();
@@ -393,7 +394,7 @@ function HsNoteForm({ rec: initial, settings, onSave, onDelete, onSettings, embe
       ${hasTpl === false && html`<div class="notice err">Manca il modello Word ${HS_FMT[r.formato]}: caricalo in Impostazioni → Modelli. <button class="btn link" onClick=${onSettings}>Apri</button></div>`}`}
     ${T === 'note' && html`${SR_API && !ns.sel && html`<${Suggerimento} id="dettatura" />`}
       ${!ns.sel && html`<${Appunti} rec=${r} up=${up} rows=${3} label="Appunti (non vanno nel Word)" />`}
-      <${HsNoteTab} r=${r} up=${up} ns=${ns} filtro=${filtro} setFiltro=${setFiltro} addN=${() => nuovaNota(null)} />
+      <${HsNoteTab} r=${r} up=${up} ns=${ns} filtro=${filtro} setFiltro=${setFiltro} addN=${() => nuovaNota(null)} onRiep=${() => setRiep(true)} />
       ${!ns.sel && html`<${HsAppunti} r=${r} up=${up} />`}`}
     ${T === 'check' && html`<${HsChecklist} r=${r} up=${up} aperto=${aperto} setAperto=${setAperto} vaiNota=${vaiNota} addN=${c => nuovaNota(c)} />`}
     ${T === 'file' && html`<${FileTab} r=${r} up=${up} settings=${settings} />`}
@@ -405,6 +406,7 @@ function HsNoteForm({ rec: initial, settings, onSave, onDelete, onSettings, embe
       gruppi=${[['Documenti', [{ ic: 'share', l: OD.account ? 'Carica su OneDrive' : 'Invia foto e Word a OneDrive', fn: upload }]],
         opzArchivio({ r, settings, onDelete, up, elimina: 'Elimina il sopralluogo' })]} />`}
     ${tagSheet && ns.sel && html`<${TagMultiSheet} note=${selNote} fissi=${hsTagFissi(r, selNote)} altri=${Object.keys(collectTags(r.noteSop || []))} onSet=${setNote} onClose=${() => setTagSheet(false)} />`}
+    ${riep && html`<${RiepilogoPanel} r=${r} onClose=${() => setRiep(false)} azione=${html`<${DocBtn} r=${r} up=${up} settings=${settings} k="hs_docx" label="report" prima=${prima} />`} />`}
     ${chiedi && html`<${HsSenzaNoteSheet} r=${r} up=${up} onDone=${fineChiedi} />`}
   </div>`;
 }

@@ -149,6 +149,21 @@ flowchart TD
 - Sintetico: nota con capitolo e voce → annotazioni della voce; nota con il solo capitolo → «Condizioni generali» come «Capitolo: testo»; risposte Sì/No/N.A. e azioni vuote.
 - Le foto seguono l'ordine dei capitoli; «ID Foto» (Esteso) e la voce collegata (Sintetico) vengono dalla nota.
 
+## 6c. Campioni e Riepilogo (v56)
+
+```mermaid
+flowchart TD
+  C["Scheda Campioni: nuovo campione"] --> F["prima foto del campione"]
+  F -- "non in pianta e planimetrie presenti" --> P["si apre la pianta del suo piano<br/>(PlanList apri, PlanViewer pre: strumento Etichette, etichetta scelta)"]
+  F -- "già in pianta o nessuna planimetria" --> C
+  P --> E["tocco: etichetta; disegno e appunti"] --> X["Fine: torna alla scheda Campioni"]
+  B["tasto Planimetria sopra l'elenco"] --> P2["pianta del piano dell'ultimo campione,<br/>senza aggiungere campioni"]
+  S["Riepilogo nel blocco navy"] --> R["RiepilogoPanel dal basso, solo consultazione:<br/>matrici, avvisi senza foto e non in pianta, campioni per piano, appunti"]
+  R --> G["Genera file → scheda File"]
+```
+
+Nel sopralluogo HSE a note il Riepilogo mostra check-list, osservazioni per capitolo con le foto e appunti; in fondo «Genera report» (lo stesso `DocBtn` della barra).
+
 ## 7. Scheda File
 
 ```mermaid

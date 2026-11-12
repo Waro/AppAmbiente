@@ -181,17 +181,17 @@ function pianoDaNome(nome, noti = []) {
 // plan: { id, nome, piano, blobId, annot, mergedBlobId }
 // labels: [{ ref, text, color, piano }] disponibili (campioni o punti R); altrove: etichette già posizionate su altre planimetrie
 // Nel vassoio: prima le etichette dello stesso piano della planimetria, poi «Altri campioni» (piano diverso o vuoto).
-function PlanViewer({ plan, labels, altrove, onChange, onClose }) {
+function PlanViewer({ plan, labels, altrove, pre, onChange, onClose }) {
   useBackClose(() => close());
   const [doc, setDoc] = useState(null);
   const [err, setErr] = useState(null);
   const [pageN, setPageN] = useState(0);
-  const [tool, setTool] = useState(() => lsGet('nembo_plan_tool', 'pen'));
+  const [tool, setTool] = useState(() => pre ? 'label' : lsGet('nembo_plan_tool', 'pen'));
   const [color, setColor] = useState(() => lsGet('nembo_plan_color', PLAN_COLORS[0]));
   const [size, setSize] = useState(() => lsGet('nembo_plan_size', 1));
   const [soloPenna, setSoloPenna] = useState(() => lsGet('nembo_solo_penna', false));
   const [pop, setPop] = useState(false);       // pannello colore e spessore
-  const [sel, setSel] = useState(null);        // etichetta scelta dal vassoio
+  const [sel, setSel] = useState(() => (pre && labels.find(l => l.ref === pre)) || null); // etichetta scelta dal vassoio (pre: quella del campione appena fotografato)
   const [edit, setEdit] = useState(null);      // testo in modifica { i (indice o -1), x, y, fs, c, s }
   const [annot, setAnnot] = useState(() => JSON.parse(JSON.stringify(plan.annot || {})));
   const [dims, setDims] = useState(null);      // pagina disegnata: { w, h (px CSS), scale (px per unità), dpr, bw, bh (unità) }
@@ -206,7 +206,7 @@ function PlanViewer({ plan, labels, altrove, onChange, onClose }) {
   const dimsRef = useRef(dims); dimsRef.current = dims;
   const editRef = useRef(edit); editRef.current = edit;
   const settle = useRef();
-  useEffect(() => lsSet('nembo_plan_tool', tool), [tool]);
+  useEffect(() => { if (!(pre && tool === 'label')) lsSet('nembo_plan_tool', tool); }, [tool]); // l'apertura dopo la foto non cambia lo strumento di sempre
   useEffect(() => lsSet('nembo_plan_color', color), [color]);
   useEffect(() => lsSet('nembo_plan_size', size), [size]);
   useEffect(() => lsSet('nembo_solo_penna', soloPenna), [soloPenna]);
@@ -581,7 +581,8 @@ async function importPlanimetrie(list, existing = []) {
 function PlanList({ items = [], labels, onUpdate, onAdd, onRemove, apri }) {
   const inp = useRef(); const [open, setOpen] = useState(null);
   // apertura chiesta da fuori (tasto Planimetria): la pianta del piano indicato, altrimenti la prima
-  useEffect(() => { if (apri && Date.now() - apri.n < 2000 && items.length) setOpen((items.find(p => apri.piano && p.piano === apri.piano) || items[0]).id); }, [apri && apri.n]);
+  const [pre, setPre] = useState(null); // etichetta da posizionare subito (dopo la foto del campione)
+  useEffect(() => { if (apri && Date.now() - apri.n < 2000 && items.length) { const pn = apri.piano && pianoNorm(apri.piano); setPre(apri.ref || null); setOpen((items.find(p => pn && pianoNorm(p.piano) === pn) || items[0]).id); } }, [apri && apri.n]);
   const noti = [...new Set([...(labels || []).map(l => l.piano).filter(Boolean), ...PIANI_COMUNI])];
   const pick = async e => {
     for (const f of [...e.target.files]) {
@@ -615,6 +616,6 @@ function PlanList({ items = [], labels, onUpdate, onAdd, onRemove, apri }) {
     <button class="btn dashed" onClick=${() => inp.current.click()}><${Icon} n="paper" s=${17} /> Aggiungi planimetrie (PDF)</button>
     <div class="lock" style="margin:-4px 2px 0">Per sceglierne più di una, tieni premuto il primo file e poi tocca gli altri.</div>
     <input ref=${inp} type="file" accept="application/pdf,.pdf" multiple hidden onChange=${pick} />
-    ${cur && html`<${PlanViewer} key=${cur.id} plan=${cur} labels=${labels} altrove=${altrove} onChange=${patch => onUpdate(cur.id, patch)} onClose=${() => setOpen(null)} />`}
+    ${cur && html`<${PlanViewer} key=${cur.id} plan=${cur} labels=${labels} altrove=${altrove} pre=${pre} onChange=${patch => onUpdate(cur.id, patch)} onClose=${() => { setOpen(null); setPre(null); }} />`}
   </div>`;
 }

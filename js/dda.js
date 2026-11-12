@@ -161,8 +161,9 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
   const importInp = useRef();
   // tasto Planimetria della scheda Campioni: apre la pianta del piano dell'ultimo campione, senza aggiungere campioni
   const [planReq, setPlanReq] = useState(null);
-  const apriPlan = list => { if (!(r.planimetrie || []).length) { scrollToId('plan-' + r.id); toast('Carica prima una planimetria'); return; }
-    const u = (list || [])[(list || []).length - 1]; setPlanReq({ n: Date.now(), piano: u ? u.piano : '' }); };
+  const [riep, setRiep] = useState(false);
+  const apriPlan = (list, ref) => { if (!(r.planimetrie || []).length) { scrollToId('plan-' + r.id); toast('Carica prima una planimetria'); return; }
+    const u = (list || [])[(list || []).length - 1]; setPlanReq({ n: Date.now(), piano: u ? u.piano : '', ref: ref || null }); };
   const planLabels = [
     ...r.recs.map(x => ({ ref: x.id, text: x.nome || 'REC', color: PRINT.rec })),
     ...campPlanLabels(r, MATS),
@@ -323,19 +324,19 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
       <div class="sec-h"><h3>Campioni</h3>${mat.auto && (r.congelati[tab] || numHint(r, mat)) && html`<span class="hint">${r.congelati[tab] ? 'Codici bloccati dalla scheda' : numHint(r, mat)}</span>`}</div>
       <${Suggerimento} id="campioni" />
       ${r.fase === 2 && html`<${NumSection} r=${r} up=${up} mats=${MATS} />`}
-      <${CampSummary} r=${r} mats=${MATS} todo=${(r.checklist || []).filter(c => !c.fatto).length} />
+      <${CampSummary} r=${r} mats=${MATS} onRiep=${() => setRiep(true)} todo=${(r.checklist || []).filter(c => !c.fatto).length} />
       <div class="mtabs" role="tablist">${MATS.map(m => html`<button role="tab" aria-selected=${tab === m.k} class=${tab === m.k ? 'on' : ''} onClick=${() => setTab(m.k)}>${m.l}<small><i class="mdot" style=${'background:' + m.c}></i>${r.campioni[m.k].length}</small></button>`)}</div>
       ${!camp.length && html`<div class="card"><div class="empty" style="padding:18px">Nessun campione ${mat.l}.</div></div>`}
       <button class="btn block mt-3" onClick=${() => apriPlan(camp)}><${Icon} n="map" s=${20} /> Planimetria</button>
       ${byPiano(camp).map(([piano, list]) => html`<div key=${piano}>
         <div class="list mt-3"><div class="list-h"><b>${piano}</b><span>${list.length}</span></div>${list.map(c => html`<${SampleRow} key=${c.id} c=${c} mat=${mat} open=${!!openS[c.id]} toggle=${() => setOpenS(o => ({ ...o, [c.id]: !o[c.id] }))}
-          onPhoto=${ids => updCamp(c.id, { foto: [...(c.foto || []), ...ids] })}>
+          onPhoto=${ids => { dopoFoto(r, c, apriPlan); updCamp(c.id, { foto: [...(c.foto || []), ...ids] }); }}>
           <${CampFields} c=${c} list="dl-piani-c" upd=${patch => updCamp(c.id, patch)} codice=${mat.auto ? html`<${SiglaAuto} codice=${c.codice} c=${mat.c} />`
               : html`<label class="fld"><span>Sigla</span><input class="code-free" value=${c.codice} placeholder=" " onInput=${e => updCamp(c.id, { codice: e.target.value })} /></label>`} />
           ${tab === 'altro' && html`<label class="fld"><span>Tipo di campione</span><input placeholder="es. rifiuto, aria, sedimento" value=${c.tipo} onInput=${e => updCamp(c.id, { tipo: e.target.value })} /></label>`}
           <label class="fld"><span>Data prelievo</span><input type="date" value=${c.data || ''} onInput=${e => updCamp(c.id, { data: e.target.value })} /></label>
           ${(tab === 'mca' || tab === 'fav') && html`<label class="fld"><span>Quantità</span><input placeholder="es. 180 mq" value=${c.quantita || ''} onInput=${e => updCamp(c.id, { quantita: e.target.value })} /></label>`}
-          <${PhotoStrip} ids=${c.foto || []} max=${4} onAdd=${ids => updCamp(c.id, { foto: [...(c.foto || []), ...ids] })}
+          <${PhotoStrip} ids=${c.foto || []} max=${4} onAdd=${ids => { dopoFoto(r, c, apriPlan); updCamp(c.id, { foto: [...(c.foto || []), ...ids] }); }}
             onRemove=${async id => { await removeBlob(id); updCamp(c.id, { foto: c.foto.filter(f => f !== id) }); }} />
           <button class="btn sm danger self-start" onClick=${() => delCamp(c)}>Elimina campione</button>
         <//>`)}</div></div>`)}
@@ -374,6 +375,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
     ${T === 'firme' && html`<${FogliFirme} r=${r} up=${up} settings=${settings} />`}
     ${T === 'file' && html`<${FileTab} r=${r} up=${up} settings=${settings} />`}
     <input ref=${importInp} type="file" accept="application/json,text/plain,application/octet-stream,.json" hidden onChange=${doImport1} />
+    ${riep && html`<${RiepilogoPanel} r=${r} mats=${MATS} onClose=${() => setRiep(false)} onFile=${() => setT('file')} />`}
     <${BarraAtt} r=${r} settings=${settings}
       left=${html`<button class="btn-icon lg" aria-label="Planimetrie" title="Planimetrie" onClick=${() => { if (T === 'anag' || T === 'firme') setT(r.fase === 2 ? 'camp' : 'sop'); setTimeout(() => scrollToId('plan-' + r.id), 120); }}><${Icon} n="map" s=${22} /></button>`}
       center=${T === 'sop' ? html`<button class="btn pri" onClick=${addRec}><${Icon} n="plus" s=${20} w=${2.4} /> Nuova area REC</button>`

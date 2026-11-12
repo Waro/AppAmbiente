@@ -14,6 +14,10 @@ Redesign grafico (stile e impaginazione), Rilievo v56.
 - Appunti ovunque con il nuovo componente `Appunti` (fotocamera, galleria e dettatura dentro il campo; miniature e tag sotto): DDA Fase 1 e 2, Mappatura, RA, Radon, Aria, Verbale HSE, Firme (solo dettatura), sopralluogo HSE.
 - «Note» diventano «Osservazioni» ovunque nei testi (sopralluogo HSE a note, Verbale HSE, ricerca, riepilogo, Word del verbale, Nuova attività); nel sopralluogo HSE la card Appunti è in cima alla scheda Osservazioni e sono tolti i tasti Frasi e Riformula.
 - Foto degli appunti senza limite di numero (prima 10).
+
+### Aggiunto
+- Riepilogo (`RiepilogoPanel` in `js/riepilogo.js`): pannello dal basso, solo consultazione, aperto da «Riepilogo» nel blocco navy dei contatori. Campioni (DDA Fase 2, Mappatura): conteggio per matrice, avvisi sui campioni senza foto e non posizionati, campioni per piano, appunti, «Genera file». Sopralluogo HSE a note: check-list, osservazioni per capitolo con le foto, appunti, «Genera report».
+- Dopo la prima foto di un campione non ancora in pianta si apre la planimetria del suo piano con lo strumento Etichette e l'etichetta del campione già scelta (`dopoFoto`; `PlanViewer` con `pre`); alla chiusura si torna alla scheda Campioni.
 - Schede di un'attività (`Schede`): si passa alla scheda accanto anche scorrendo a sinistra o a destra sul contenuto.
 - Campioni (DDA Fase 2 e Mappatura): campi del campione uno per riga con l'etichetta dentro (Sigla, Piano, Ubicazione, Descrizione con dettatura, Data prelievo, Quantità); titoli dei piani e dei manufatti non campionati dentro la card a tutta larghezza (`.list-h`); tolti gli esempi accanto ai titoli («Codici automatici A1, A2…», «NC1, NC2…»); nuovo tasto Planimetria sopra l'elenco dei campioni, che apre la pianta del piano dell'ultimo campione (`PlanList` con `apri`).
 

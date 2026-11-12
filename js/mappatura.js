@@ -97,8 +97,9 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
 
   // tasto Planimetria della scheda Campioni: apre la pianta del piano dell'ultimo campione, senza aggiungere campioni
   const [planReq, setPlanReq] = useState(null);
-  const apriPlan = list => { if (!(r.planimetrie || []).length) { scrollToId('plan-' + r.id); toast('Carica prima una planimetria'); return; }
-    const u = (list || [])[(list || []).length - 1]; setPlanReq({ n: Date.now(), piano: u ? u.piano : '' }); };
+  const [riep, setRiep] = useState(false);
+  const apriPlan = (list, ref) => { if (!(r.planimetrie || []).length) { scrollToId('plan-' + r.id); toast('Carica prima una planimetria'); return; }
+    const u = (list || [])[(list || []).length - 1]; setPlanReq({ n: Date.now(), piano: u ? u.piano : '', ref: ref || null }); };
   const planLabels = campPlanLabels(r, MAP_MATS);
   const plans = r.planimetrie || [];
   const planSection = html`<div class="sec-h" id=${'plan-' + r.id}><h3>Planimetrie</h3><span class="hint">Disegno ed etichette dei campioni</span></div>
@@ -131,18 +132,18 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
     <div class="sec-h"><h3>Campioni</h3>${(r.congelati[tab] || numHint(r, mat)) && html`<span class="hint">${r.congelati[tab] ? 'Codici bloccati dalla scheda' : numHint(r, mat)}</span>`}</div>
     <${Suggerimento} id="campioni" />
     <${NumSection} r=${r} up=${up} mats=${MAP_MATS} />
-    <${CampSummary} r=${r} mats=${MAP_MATS} />
+    <${CampSummary} r=${r} mats=${MAP_MATS} onRiep=${() => setRiep(true)} />
     <div class="seg" style="margin-bottom:6px">${MAP_MATS.map(m => html`
       <button class=${tab === m.k ? 'on' : ''} onClick=${() => setTab(m.k)}><i class="mdot" style=${'background:' + m.c}></i>${m.l}<span class="n">${(r.campioni[m.k] || []).length}</span></button>`)}</div>
     ${!camp.length && html`<div class="card mt-3"><div class="empty" style="padding:18px">Nessun campione ${mat.l}.</div></div>`}
     <button class="btn block mt-3" onClick=${() => apriPlan(camp)}><${Icon} n="map" s=${20} /> Planimetria</button>
     ${byPiano(camp).map(([piano, list]) => html`<div key=${piano}>
       <div class="list mt-3"><div class="list-h"><b>${piano}</b><span>${list.length}</span></div>${list.map(c => html`<${SampleRow} key=${c.id} c=${c} mat=${mat} open=${!!openS[c.id]} toggle=${() => setOpenS(o => ({ ...o, [c.id]: !o[c.id] }))}
-        onPhoto=${ids => updCamp(c.id, { foto: [...(c.foto || []), ...ids] })}>
+        onPhoto=${ids => { dopoFoto(r, c, apriPlan); updCamp(c.id, { foto: [...(c.foto || []), ...ids] }); }}>
         <${CampFields} c=${c} list="dl-piani-m" upd=${patch => updCamp(c.id, patch)} codice=${html`<${SiglaAuto} codice=${c.codice} c=${mat.c} />`} />
         <label class="fld"><span>Data prelievo</span><input type="date" value=${c.data || ''} onInput=${e => updCamp(c.id, { data: e.target.value })} /></label>
         <label class="fld"><span>Quantità</span><input placeholder="es. 180 mq" value=${c.quantita || ''} onInput=${e => updCamp(c.id, { quantita: e.target.value })} /></label>
-        <${PhotoStrip} ids=${c.foto || []} max=${4} onAdd=${ids => updCamp(c.id, { foto: [...(c.foto || []), ...ids] })}
+        <${PhotoStrip} ids=${c.foto || []} max=${4} onAdd=${ids => { dopoFoto(r, c, apriPlan); updCamp(c.id, { foto: [...(c.foto || []), ...ids] }); }}
           onRemove=${async id => { await removeBlob(id); updCamp(c.id, { foto: c.foto.filter(f => f !== id) }); }} />
         <button class="btn sm danger self-start" onClick=${() => delCamp(c)}>Elimina campione</button>
       <//>`)}</div></div>`)}
@@ -163,6 +164,7 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
     ${T === 'firme' && html`<${FogliFirme} r=${r} up=${up} settings=${settings} />`}
     ${T === 'file' && html`<${FileTab} r=${r} up=${up} settings=${settings} />`}
     <input ref=${importInp} type="file" accept="application/json,text/plain,application/octet-stream,.json" hidden onChange=${doImport} />
+    ${riep && html`<${RiepilogoPanel} r=${r} mats=${MAP_MATS} onClose=${() => setRiep(false)} onFile=${() => setT('file')} />`}
     <${BarraAtt} r=${r} settings=${settings}
       left=${html`<button class="btn-icon lg" aria-label="Planimetrie" title="Planimetrie" onClick=${() => { if (T !== 'camp') setT('camp'); setTimeout(() => scrollToId('plan-' + r.id), 120); }}><${Icon} n="map" s=${22} /></button>`}
       center=${T === 'camp' ? html`<button class="btn pri" onClick=${addCamp}><${Icon} n="plus" s=${20} w=${2.4} /> Nuovo campione ${nextCode(tab)}</button>` : html`<${OdBtn} r=${r} settings=${settings} />`}

@@ -18,15 +18,17 @@ Su un secondo dispositivo collega prima OneDrive: se c'è già la tua configuraz
 |---|---|
 | Nuova attività | + in Oggi o nell'elenco → tipo → cliente e luogo |
 | Programmare | Programmazione → tocca una fascia → attività o appuntamento; oppure **Carica JSON** con il piano preparato da Claude |
-| Compilare | schede in alto (Anagrafica, contenuto, File, Firme); si salva da sola |
+| Compilare | schede in alto (Anagrafica, contenuto, File, Firme), anche scorrendo a destra o a sinistra; si salva da sola. L'etichetta è dentro il campo e sale quando scrivi |
 | Foto | tasto fotocamera; Galleria accanto per quelle già scattate |
-| Planimetrie | cartina a sinistra nella barra → aggiungi PDF → disegna ed etichetta → Fine |
+| Planimetrie | cartina a sinistra nella barra → aggiungi PDF → disegna ed etichetta → Fine. Nei campioni: tasto **Planimetria** sopra l'elenco; dopo la prima foto di un campione la pianta del suo piano si apre da sola con l'etichetta pronta |
+| Appunti | fotocamera, galleria e microfono dentro la casella, in colonna a destra; foto senza limite |
+| Riepilogo | tocca **Riepilogo** nel blocco blu dei contatori (Campioni, Osservazioni HSE): pannello di sola consultazione con avvisi, poi Genera file o Genera report |
 | Fogli firme | scheda Firme o ⋯ Opzioni → Prepara il foglio firme → passa il telefono → Chiudi |
 | Documenti | scheda **File**: grigio da generare, verde generato, ambra da rigenerare |
 | Consegnare | **Invia a OneDrive** al centro della barra; ⋯ Opzioni → Riepilogo via email |
 | Sopralluogo HSE | + → **Sopralluogo HSE** → Avanti → Esteso o Sintetico (primo sopralluogo), oppure Word, JSON o un report in Nembo (periodico) |
-| Note HSE | scheda **Note**: scrivi, detta, fotografa; dai il tag del capitolo e poi quello della sottosezione o voce; tieni premuta una nota (su PC «Seleziona») per taggarne più insieme; la × sulla miniatura elimina la foto |
-| Check-list HSE | scheda **Check-list**: verde con note, rosso senza note, grigio non pertinente |
+| Osservazioni HSE | scheda **Osservazioni**: appunti in cima; scrivi, detta, fotografa; dai il tag del capitolo e poi quello della sottosezione o voce; tieni premuta un'osservazione (su PC «Seleziona») per taggarne più insieme; la × sulla miniatura elimina la foto |
+| Check-list HSE | scheda **Check-list**: verde con osservazioni, rosso senza osservazioni, grigio non pertinente |
 | Più attività insieme | tieni premuta una riga (su PC «Seleziona»), tocca le altre → Carica su OneDrive |
 | Chiudere con mancanze | ⋯ Opzioni → **Concludi l'attività** (si riapre dalle Opzioni) |
 | Backup | Backup → **Salva su OneDrive** (o Crea backup completo senza OneDrive) |

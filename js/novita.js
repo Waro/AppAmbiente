@@ -3,6 +3,13 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
+  { v: 56, data: '2026-11-12', tipo: 'minore', titolo: 'Nuova grafica dei campi',
+    voci: [
+      'Campi più chiari: l’etichetta è dentro il campo e sale quando scrivi.',
+      'Negli appunti trovi fotocamera, galleria e microfono dentro la casella.',
+      'Scorri a destra o a sinistra per cambiare scheda.',
+      'Nei campioni il tasto Planimetria apre la pianta senza aggiungere campioni.',
+      'Nel sopralluogo HSE le note si chiamano osservazioni.' ] },
   { v: 55.1, data: '2026-11-12', tipo: 'minore', titolo: 'Correzioni al sopralluogo HSE',
     voci: [
       'Note: il primo tocco dopo il tocco prolungato seleziona la nota; sul computer c’è «Seleziona».',

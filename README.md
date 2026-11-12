@@ -215,13 +215,16 @@ Ogni attività è divisa in schede, con un selettore come quello Ambiente / HSE 
 | Sopralluogo RA | Anagrafica · Manufatti (con monitoraggio aria) |
 | Campagna radon | Anagrafica · Punti · Firme |
 | Monitoraggio aria | Anagrafica · Punti |
-| Sopralluogo HSE | a note: Anagrafica · Note · Check-list · File; a schede o checklist: Anagrafica · Sezioni · File |
-| Verbale HSE | Anagrafica · Note |
+| Sopralluogo HSE | a note: Anagrafica · Osservazioni · Check-list · File; a schede o checklist: Anagrafica · Sezioni · File |
+| Verbale HSE | Anagrafica · Osservazioni |
 
 - **Anagrafica**: dati della commessa, data, ora e stato, e in fondo l'archivio (ZIP, Elimina; documenti allegati nel DDA, scheda PDF nel radon). La barra in basso ha *Carica su OneDrive*.
 - La scheda del contenuto ha gli appunti e le planimetrie; la barra in basso cambia con la scheda (*Nuova area REC*, *Nuovo campione*, *Prossimo da verificare*, *Salva e firma*…).
 - **Firme**: solo nella campagna radon. Nelle altre attività la scheda compare solo se l'attività ha già fogli firme salvati; per i nuovi fogli c'è *Fogli firme* negli Strumenti.
 - Nel DDA la fase (1 o 2) si sceglie in Anagrafica.
+- Si passa alla scheda accanto anche scorrendo a destra o a sinistra sul contenuto (v56).
+- **Riepilogo** (v56): nel blocco blu dei contatori di Campioni e Osservazioni HSE; pannello dal basso di sola consultazione, con «Genera file» o «Genera report». Dopo la prima foto di un campione non ancora in pianta si apre la planimetria del suo piano con l'etichetta pronta; il tasto *Planimetria* sopra l'elenco apre la pianta senza aggiungere campioni.
+- Campi (v56): etichetta dentro il campo, un campo per riga; negli appunti fotocamera, galleria e microfono dentro la casella, foto senza limite.
 - Nembo ricorda l'ultima scheda aperta per ogni tipo di attività; un'attività nuova si apre su Anagrafica. La ricerca apre la scheda giusta (`useSchede`, `Schede` in core.js, evento `nembo-goto` con `tab:chiave`).
 
 **Barra in alto (v37)**: su tablet e PC la Home usa la stessa barra delle altre pagine (Oggi, lente, +, campana) e il profilo sta in fondo al menu laterale, al posto della voce Impostazioni. Sul telefono la Home ha +, campana e profilo, con il campo *Cerca in tutte le attività* sotto il titolo. In Home, la riga Programmazione dice «Nessuna attività oggi» quando non c'è niente in programma.

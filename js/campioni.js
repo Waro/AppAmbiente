@@ -136,7 +136,7 @@ function byPiano(list) {
   for (const c of list) { const k = (c.piano || '').trim() || 'Piano non indicato'; if (!g.has(k)) g.set(k, []); g.get(k).push(c); }
   return [...g.entries()];
 }
-function CampSummary({ r, mats, todo = 0 }) {
+function CampSummary({ r, mats, todo = 0, onRiep }) {
   const [per, setPer] = useState('pratica');
   const all = mats.flatMap(m => (r.campioni[m.k] || []).map(c => ({ ...c, k: m.k })));
   const noFoto = all.filter(c => !(c.foto || []).length).length;
@@ -147,13 +147,15 @@ function CampSummary({ r, mats, todo = 0 }) {
   return html`<div class="card-navy"><div class="sum3">
       <div><b>${all.length}${todo > 0 && html`<small>/${all.length + todo}</small>`}</b><span>prelevati</span></div>
       <div><b class=${noFoto ? 'crit' : ''}>${noFoto}</b><span>senza foto</span></div>
-      <div><b>${inP}<small>/${all.length}</small></b><span>in pianta</span></div></div></div>
+      <div><b>${inP}<small>/${all.length}</small></b><span>in pianta</span></div></div>${onRiep && all.length > 0 && html`<${RiepGo} onOpen=${onRiep} />`}</div>
     ${all.length > 0 && html`<div class="card">
       <div class="card-h"><h4>Per matrice</h4><div class="seg sm" style="width:150px">
         <button class=${per === 'oggi' ? 'on' : ''} onClick=${() => setPer('oggi')}>Oggi</button><button class=${per === 'pratica' ? 'on' : ''} onClick=${() => setPer('pratica')}>Attività</button></div></div>
       ${rows.map(x => html`<div class="mbar"><span class="nm"><i class="mdot" style=${'background:' + x.m.c}></i>${x.m.l}</span>
         <div class="track"><i style=${'width:' + Math.round(x.n / max * 100) + '%'}></i></div><b>${x.n}</b></div>`)}</div>`}`;
 }
+// prima foto di un campione non ancora in pianta: si apre la pianta del suo piano con l'etichetta pronta da posizionare (v56)
+const dopoFoto = (r, c, apriPlan) => { if (!(c.foto || []).length && !placedRefs(r).has(c.id) && (r.planimetrie || []).length) setTimeout(() => apriPlan([c], c.id), 150); };
 // etichette per le planimetrie: campioni e NC, con il piano per il vassoio
 const campPlanLabels = (r, mats) => [...mats.flatMap(m => (r.campioni[m.k] || []).map(c => ({ ref: c.id, text: c.codice || m.l, color: m.h, piano: c.piano || '' }))),
   ...ncOf(r).map(x => ({ ref: x.id, text: x.codice, color: (MATS.find(m => m.k === x.k) || MATS[2]).h, piano: x.piano || '' }))];

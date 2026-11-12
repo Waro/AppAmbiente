@@ -73,6 +73,7 @@ Penne della planimetria (`PLAN_COLORS` in `plan.js`), fisse perché finiscono ne
 | Campo | `.inp`, `.fld`, `InpGrow`, `Appunti` | etichetta dentro il campo che sale quando scrivi (v56); un campo per riga; focus `--blue` 2 px; icone fotocamera, galleria, microfono in colonna sul bordo destro, in `--blue`, microfono pieno se attivo; importato con lucchetto |
 | Schede | `Schede` (`.seg.schede`) | anche con lo scorrimento laterale sul contenuto (v56) |
 | Elenco con titolo | `.list` + `.list-h` | titolo dentro la card, a tutta larghezza (v56) |
+| Riepilogo | `RiepilogoPanel` (`.sheet.riep-sheet`), `RiepGo` | pannello dal basso, solo consultazione; avvisi con `st-bar st-warn` e la parola; azione principale in fondo (v56) |
 | Interruttore, stepper | `Toggle`, `.stp` | acceso `--tgl-on` |
 | Badge, tag, contatore | `.badge`, `.tag`, `.count` | `.count.crit` (`--danger`, v51) |
 | Pulsante file | `.fbtn` | grigio da generare, verde generato, ambra da rigenerare |
