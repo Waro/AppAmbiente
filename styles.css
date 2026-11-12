@@ -1113,8 +1113,11 @@ img.logo { background: none; object-fit: cover; }
 .selbar { position: absolute; left: var(--gutter); right: var(--gutter); bottom: calc(var(--sp-3) + env(safe-area-inset-bottom, 0px)); z-index: 8; max-width: 528px; margin: 0 auto; }
 /* in selezione l'unica azione in basso è quella della selezione: la barra dell'attività aperta accanto (PC) si nasconde */
 .shell.sel-on .abar { visibility: hidden; }
-.sel-pc { display: none; }
-@media (hover: hover) and (pointer: fine) { .sel-pc { display: inline-flex; align-items: center; } }
+.sel-pc, .sel-riga { display: none; }
+/* note (Verbale e Sopralluogo HSE): il tocco prolungato seleziona, quindi niente menu né selezione del testo fuori dai campi */
+.vs-nota { -webkit-touch-callout: none; }
+.vs-nota .vs-h, .vs-nota .fld > span { -webkit-user-select: none; user-select: none; }
+@media (hover: hover) and (pointer: fine) { .sel-pc { display: inline-flex; align-items: center; } .sel-riga { display: flex; justify-content: flex-end; margin-top: var(--sp-2); } }
 .frame.wide .selhead { min-height: 76px; padding: 0 16px; }
 .sel-on .fab { display: none; }
 

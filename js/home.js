@@ -333,12 +333,18 @@ function NewActivity({ records, settings, onClose, onCreate, onOpenNew, bu, pres
    tipo: 'primo' | 'periodico' mostra solo quella parte (attività programmata); senza tipo le mostra tutte e due (Nuova attività).
    dati: campi da mettere nel sopralluogo creato dal file; fissi: campi che restano quelli dell'attività programmata (id, codice, data…). */
 function HsScelta({ records, settings, tipo, dati = {}, fissi = {}, onPrimo, onPeriodico }) {
-  const inp = useRef(); const [daNembo, setDaNembo] = useState(false);
+  const inp = useRef(); const [daNembo, setDaNembo] = useState(false); const busy = useRef(false);
+  // dati scritti in Nuova attività o nel piano: valgono solo se compilati (un campo vuoto non cancella il committente proposto né i dati del report)
+  const D = Object.fromEntries(Object.entries(dati).filter(([, v]) => v !== '' && v != null));
   const prec = records.filter(r => r.type === 'hs' && !r._new && !r.daScegliere && r.id !== fissi.id).sort((a, b) => (b.data || '').localeCompare(a.data || ''));
-  const go = async fn => { try { const r = await fn(); if (r) onPeriodico({ ...r, ...fissi }); } catch (e) { _progress(null); fail('Sopralluogo periodico non creato', e); } };
+  const go = async fn => {
+    if (busy.current) return; busy.current = true; // un secondo tocco durante la copia delle foto non crea un doppione
+    try { const r = await fn(); if (r) onPeriodico({ ...r, ...D, ...fissi }); } catch (e) { _progress(null); fail('Sopralluogo periodico non creato', e); }
+    busy.current = false;
+  };
   const daFile = f => go(async () => {
     const d = await hsLeggiFile(f);
-    const r = await hsApplyImport({ ...newHs(records, settings, d.formato), ...dati }, d, (k, t) => _progress({ title: 'Importo il report', text: `Immagini ${k} di ${t}`, done: k, total: t }));
+    const r = await hsApplyImport({ ...newHs(records, settings, d.formato), ...D }, d, (k, t) => _progress({ title: 'Importo il report', text: `Immagini ${k} di ${t}`, done: k, total: t }));
     _progress(null); return r;
   });
   const daRec = p => go(() => hsNextYear(p.aNote ? hsNoteAOld(p, true) : p, records, settings));
@@ -357,12 +363,15 @@ function HsScelta({ records, settings, tipo, dati = {}, fissi = {}, onPrimo, onP
 }
 // seconda schermata di Nuova attività
 function SopralluogoHse({ records, settings, dati, onBack, onClose, onPrimo, onOpenNew }) {
+  const vivo = useRef(true); useEffect(() => () => { vivo.current = false; }, []);
+  // come per le altre attività: il sopralluogo si apre dopo che il foglio è uscito dalla cronologia; se il foglio è già chiuso si apre subito
+  const periodico = r => { if (!vivo.current) { onOpenNew(r); return; } window.addEventListener('popstate', () => setTimeout(() => onOpenNew(r), 0), { once: true }); onClose(); };
   return html`<div class="sheet-ov" onClick=${e => e.target === e.currentTarget && onClose()}>
     <div class="sheet" role="dialog" aria-label="Sopralluogo HSE">
       <div class="sheet-grab"></div>
       <div class="sheet-nav"><button class="btn link" onClick=${onBack}>Indietro</button><b>Sopralluogo HSE</b><span></span></div>
       <div class="sheet-body"><${HsScelta} records=${records} settings=${settings} dati=${dati} onPrimo=${onPrimo}
-        onPeriodico=${r => { onClose(); setTimeout(() => onOpenNew(r), 0); }} /></div></div></div>`;
+        onPeriodico=${periodico} /></div></div></div>`;
 }
 
 // Radon: promemoria "avvisa il conduttore" una settimana prima del ritiro (una notifica per ritiro)

@@ -161,7 +161,7 @@ const TIPI_REC = ['dda', 'mappatura', 'radon', 'ra', 'hs', 'vs', 'firme', 'aria'
 const ID_OK = /^[A-Za-z0-9_-]{1,80}$/;
 const CHIAVI_VIETATE = new Set(['__proto__', 'constructor', 'prototype']);
 const ARR_FOTO = new Set(['foto', 'fotoPrec', 'fotoAppunti', 'fotoAppunti2']);
-const ARR_OGG = new Set(['manufatti', 'punti', 'momenti', 'recs', 'checklist', 'documenti', 'rapporti', 'planimetrie', 'fogli', 'partecipanti']);
+const ARR_OGG = new Set(['manufatti', 'punti', 'momenti', 'recs', 'checklist', 'documenti', 'rapporti', 'planimetrie', 'fogli', 'partecipanti', 'noteSop']);
 const DATA_OK = /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=\s]*$/;
 const REC_MAX = 20 * 1048576;
 function chiaviVietate(o) {
@@ -182,12 +182,12 @@ function modelloDi(r) {
   return {};
 }
 // ripulisce in profondità: elenchi di foto solo con testi, elenchi di oggetti solo con oggetti, data: solo immagini
-function ripulisci(o) {
-  if (Array.isArray(o)) { o.forEach(ripulisci); return; }
+// fotoOgg: solo per l'elenco «foto» in cima a un sopralluogo HSE, che contiene oggetti { id, cap, … } con l'id di testo
+function ripulisci(o, fotoOgg) {
+  if (Array.isArray(o)) { o.forEach(x => ripulisci(x)); return; }
   if (!isObj(o)) return;
   for (const [k, v] of Object.entries(o)) {
-    // foto: id (testo) o, nei report HSE, oggetti { id, cap, … } con l'id di testo
-    if (ARR_FOTO.has(k)) o[k] = Array.isArray(v) ? v.filter(x => typeof x === 'string' || (isObj(x) && typeof x.id === 'string')) : [];
+    if (ARR_FOTO.has(k)) o[k] = Array.isArray(v) ? v.filter(x => typeof x === 'string' || (fotoOgg && k === 'foto' && isObj(x) && typeof x.id === 'string')) : [];
     else if (ARR_OGG.has(k) && v != null) o[k] = Array.isArray(v) ? v.filter(isObj) : [];
     else if (typeof v === 'string' && /^\s*data:/i.test(v) && !DATA_OK.test(v)) o[k] = '';
     if (typeof o[k] === 'object') ripulisci(o[k]);
@@ -211,7 +211,13 @@ function pulisciRecord(r) {
       else for (const [kk, d2] of Object.entries(def)) if (Array.isArray(d2) && !Array.isArray(c[k][kk])) c[k][kk] = [];
     } else if (c[k] === undefined) c[k] = def;
   }
-  ripulisci(c);
+  ripulisci(c, c.type === 'hs');
+  if (c.type === 'hs' && Array.isArray(c.noteSop)) {
+    // note del sopralluogo: id e testi sono testi, i tag un elenco di testi
+    const tx = v => typeof v === 'string' ? v : '';
+    c.noteSop = c.noteSop.map(n => ({ ...n, id: typeof n.id === 'string' && n.id ? n.id : uid('n'), titolo: tx(n.titolo), testo: tx(n.testo), mig: tx(n.mig), tag: Array.isArray(n.tag) ? n.tag.filter(t => typeof t === 'string') : [] }));
+    if (!isObj(c.np)) c.np = {};
+  }
   if (typeof c.updatedAt !== 'number') c.updatedAt = 0;
   return [migraRecord(c), null];
 }

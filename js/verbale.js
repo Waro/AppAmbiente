@@ -31,16 +31,19 @@ function VerbaleList({ records, open, activeId, acts }) {
 
 function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedded, onClose }) {
   const [r, up, saved] = useAutosave(initial, onSave);
-  const [filtro, setFiltro] = useState(null);
+  const [filtro0, setFiltro] = useState(null);
   const [T, setT] = useSchede('vs', ['anag', 'note', 'file'], initial._new, { 'n-': 'note' });
   const clienti = nomiClienti(records);
   const upload = () => OD.account ? odSync([r], settings) : sendToOneDrive(r, settings);
   const note = r.note || [];
   const tagsV = Object.keys(collectTags(note)).sort((a, b) => a.localeCompare(b, 'it'));
+  const filtro = filtro0 && note.some(n => (n.tag || []).includes(filtro0)) ? filtro0 : null; // il tag filtrato non c'è più: nessun filtro
   const updN = (id, p) => up(q => ({ ...q, note: (q.note || []).map(n => n.id === id ? { ...n, ...p } : n) }));
   const addN = () => { const n = newNotaVs(); setT('note'); up(q => ({ ...q, note: [...(q.note || []), n] })); setFiltro(null); setTimeout(() => scrollToId('n-' + n.id), 80); };
   const delN = async n => { if (!confirm('Eliminare la nota' + (n.titolo ? ' «' + n.titolo + '»' : '') + '?')) return; for (const f of n.foto || []) await removeBlob(f); up(q => ({ ...q, note: q.note.filter(x => x.id !== n.id) })); };
-  const move = (n, d) => up(q => { const L = q.note.slice(); const i = L.findIndex(x => x.id === n.id), j = i + d; if (j < 0 || j >= L.length) return q; [L[i], L[j]] = [L[j], L[i]]; return { ...q, note: L }; });
+  // ‹ › con il filtro: la nota si scambia con la vicina visibile
+  const move = (n, d) => up(q => { const L = q.note.slice(), V = L.filter(x => !filtro || (x.tag || []).includes(filtro)); const a = V.findIndex(x => x.id === n.id), b = a + d; if (a < 0 || b < 0 || b >= V.length) return q;
+    const i = L.indexOf(V[a]), j = L.indexOf(V[b]); [L[i], L[j]] = [L[j], L[i]]; return { ...q, note: L }; });
   const vis = note.filter(n => !filtro || (n.tag || []).includes(filtro));
   const nFoto = note.reduce((a, n) => a + (n.foto || []).length, 0);
   const m = r.meta || {};
@@ -52,7 +55,7 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
   // selezione di più note (tocco prolungato) per dare o togliere i tag a tutte insieme
   const ns = useNoteSel(); const [tagSheet, setTagSheet] = useState(false);
   useEffect(() => { if (T !== 'note') ns.setSel(null); }, [T]);
-  const selNote = ns.sel ? note.filter(n => ns.sel.has(n.id)) : [];
+  const selNote = ns.sel ? vis.filter(n => ns.sel.has(n.id)) : [];
   const setNote = (ids, fn) => up(q => ({ ...q, note: (q.note || []).map(n => ids.includes(n.id) ? { ...n, ...fn(n) } : n) }));
   useEffect(() => { DB.get(TEMPLATES['vs.docx'].key).then(b => setTplOk(!!b)); }, []);
   return html`<div class="content form">
@@ -92,7 +95,7 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
     ${tplOk === false && html`<div class="notice">Per il Word carica il «Modello Word Verbale HSE» in Impostazioni → Modelli.</div>`}
 `}
     ${T === 'note' && html`
-    ${ns.sel && html`<${NoteSelHead} n=${ns.sel.size} onStop=${() => ns.setSel(null)} onAll=${() => ns.setSel(s => s.size === vis.length ? new Set() : new Set(vis.map(n => n.id)))} />`}
+    ${ns.sel && html`<${NoteSelHead} n=${selNote.length} onStop=${() => ns.setSel(null)} onAll=${() => ns.setSel(s => vis.every(n => s.has(n.id)) ? new Set() : new Set(vis.map(n => n.id)))} />`}
     <div class="card-navy"><div class="sum3">
       <div><b>${note.length}</b><span>${note.length === 1 ? 'nota' : 'note'}</span></div>
       <div><b>${nFoto}</b><span>foto</span></div>
@@ -101,11 +104,12 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
     ${tagsV.length > 0 && html`<div class="vs-filter"><button class=${'tag' + (!filtro ? ' on' : ' sugg')} onClick=${() => setFiltro(null)}>Tutte</button>
       ${tagsV.map(t => html`<button key=${t} class=${'tag' + (filtro === t ? ' on' : '')} style=${tagStyle(t, filtro === t)} onClick=${() => setFiltro(filtro === t ? null : t)}>#${t}</button>`)}</div>`}
     ${!note.length && html`<div class="card"><div class="empty" style="padding:16px">Nessuna nota. Tocca «Nuova nota» per aggiungerne una.</div></div>`}
+    ${note.length > 0 && !ns.sel && html`<${NoteSelBtn} ns=${ns} />`}
     ${ns.sel && html`<div class="list">${vis.map(n => html`<${NotaSelRiga} key=${n.id} n=${n} i=${note.indexOf(n)} on=${ns.sel.has(n.id)} onClick=${() => ns.click(n.id)} />`)}</div>`}
     ${!ns.sel && vis.map(n => { const i = note.indexOf(n); return html`<div class="card vs-nota" key=${n.id} id=${'n-' + n.id} ...${ns.props(n.id)}>
       <div class="vs-h"><span class="vs-n">Nota ${i + 1}</span><span class="tb-grow"></span>
-        <button class="x" title="Prima" aria-label="Sposta prima" disabled=${i === 0} onClick=${() => move(n, -1)}>‹</button>
-        <button class="x" title="Dopo" aria-label="Sposta dopo" disabled=${i === note.length - 1} onClick=${() => move(n, 1)}>›</button>
+        <button class="x" title="Prima" aria-label="Sposta prima" disabled=${vis[0] === n} onClick=${() => move(n, -1)}>‹</button>
+        <button class="x" title="Dopo" aria-label="Sposta dopo" disabled=${vis[vis.length - 1] === n} onClick=${() => move(n, 1)}>›</button>
         <button class="x" title="Elimina la nota" aria-label="Elimina la nota" onClick=${() => delN(n)}><${Icon} n="trash" s=${15} /></button></div>
       <${Inp} label="Titolo" value=${n.titolo} set=${v => updN(n.id, { titolo: v })} placeholder="es. Uscita di emergenza lato nord" />
       <${HsText} label="Situazione rilevata" rows=${4} value=${n.testo} set=${v => updN(n.id, { testo: v })} />

@@ -6,7 +6,7 @@ const HS_VOCI = HS_SINT_ALL.length;
 /* ---------------- elenco ---------------- */
 function hsProgress(r) {
   if (r.daScegliere) return r.daScegliere === 'primo' ? 'primo sopralluogo da avviare' : 'periodico da avviare';
-  if (r.aNote) { const C = hsCapi(r); return `${C.filter(c => hsStatoCap(r, c).st !== 'st-err').length}/${C.length} capitoli · ${(r.noteSop || []).length} note`; }
+  if (r.aNote) { const C = hsCapi(r); return `${C.filter(c => hsStatoCap(r, c).st !== 'st-err').length}/${C.length} capitoli · ${(r.noteSop || []).length} ${(r.noteSop || []).length === 1 ? 'nota' : 'note'}`; }
   if (r.formato === 'sintetico') return `${HS_SINT_ALL.filter(it => r.risp[it.id]).length}/${HS_VOCI} voci`;
   return `${HS_SCHEDE.filter(s => hsSchedaFatta(r.schede[s.k] || {})).length}/${HS_SCHEDE.length} schede`;
 }
@@ -107,9 +107,13 @@ function FotoIn({ r, up, rif, nome }) {
     <input ref=${inp} type="file" accept="image/*" capture="environment" hidden onClick=${e => e.stopPropagation()}
       onChange=${e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) hsAddPhotos(fs, 'new', rif, up, (r.foto || []).length).then(() => toast('Foto aggiunta e collegata alla sezione')); }} /></button>`;
 }
-function FotoCollegate({ r, rif }) {
+// togli: le miniature si possono eliminare (note del sopralluogo, dove non c'è la galleria)
+function FotoCollegate({ r, rif, up, togli }) {
   const [view, setView] = useState(null); const L = hsFotoDi(r, rif);
   if (!L.length) return null;
+  const via = async p => { if (!confirm('Eliminare la foto?')) return; setView(null); await removeBlob(p.id); up(q => ({ ...q, foto: (q.foto || []).filter(x => x.id !== p.id) })); };
+  if (togli) return html`<div class="photos mt-2">${L.map((p, i) => html`<${Thumb} key=${p.id} id=${p.id} onOpen=${() => setView(i)} onRemove=${() => via(p)} />`)}
+    ${view !== null && html`<${Viewer} ids=${L.map(p => p.id)} index=${view} onClose=${() => setView(null)} />`}</div>`;
   return html`<div class="hs-fotos">${L.map((p, i) => html`<button key=${p.id} class="ck-th" aria-label=${'Foto ' + (i + 1)} onClick=${() => setView(i)}><${Thumb44} id=${p.id} /></button>`)}
     ${view !== null && html`<${Viewer} ids=${L.map(p => p.id)} index=${view} onClose=${() => setView(null)} />`}</div>`;
 }
@@ -166,6 +170,7 @@ async function hsAddPhotos(files, g, ref, up, cur) {
   }
   _progress(null);
   if (out.length) up(p => ({ ...p, foto: [...(p.foto || []), ...out] }));
+  return out.length;
 }
 function HsGallery({ r, up, items, sezioni }) {
   const [view, setView] = useState(null);
@@ -301,7 +306,7 @@ async function hsNextYear(r, records, settings) {
   for (const p of (x.foto || [])) { const id = await copy(p.id); if (id) foto.push({ ...p, id, g: 'prev', ts: p.ts || '' }); }
   const img = {}; for (const [k, v] of Object.entries(x.img || {})) { const id = await copy(v); if (id) img[k] = id; }
   const cgFoto = []; for (const o of (x.cgFoto || [])) { const id = await copy(o.id); if (id) cgFoto.push({ ...o, id }); }
-  const out = { ...x, id: n.id, codice: n.codice, createdAt: Date.now(), updatedAt: Date.now(), data: today(), tecnico: n.tecnico,
+  const out = { ...x, id: n.id, codice: n.codice, createdAt: Date.now(), updatedAt: Date.now(), data: today(), ora: '', durata: undefined, stato: undefined, drone: undefined, tecnico: n.tecnico,
     visite: hsVisite(r), foto, img, cgFoto, appunti: '', fotoAppunti: [], documenti: [], files: {}, conclusa: null, azioni: (x.azioni || []).map(a => ({ ...a, b: { cod: a.cod, sit: a.sit, risk: a.risk, grav: a.grav, az: a.az } })) };
   out.meta = { ...x.meta, presenti: '', emissione: '', redatto: n.meta.redatto };
   out.base = hsBaseOf({ ...out, foto });
@@ -315,7 +320,8 @@ function HsDaAvviare({ rec: r, records, settings, onSave, onDelete, embedded, on
   const FISSI = ['id', 'codice', 'createdAt', 'data', 'ora', 'durata', 'stato', 'drone'];
   const fissi = Object.fromEntries(FISSI.filter(k => r[k] !== undefined).map(k => [k, r[k]]));
   const dati = { ...fissi, ...Object.fromEntries(['commessa', 'cliente', 'citta', 'indirizzo', 'sito'].filter(k => r[k]).map(k => [k, r[k]])) };
-  const avvia = x => onSave({ ...x, daScegliere: undefined, updatedAt: Date.now() });
+  // restano la nota del piano (appunti) e i campi bloccati perché arrivati dal piano (imp)
+  const avvia = x => onSave({ ...x, appunti: x.appunti || r.appunti || '', imp: { ...(r.imp || {}), ...(x.imp || {}) }, daScegliere: undefined, updatedAt: Date.now() });
   const primo = formato => avvia({ ...newHsNote(records, settings, formato), ...dati });
   return html`<div class="content form">
     <${DetailHead} eye="Sopralluogo HSE" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r) || r.sito].filter(Boolean).join(' · ')} onClose=${embedded ? onClose : null} />

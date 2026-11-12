@@ -62,7 +62,7 @@ function agendaItems(records, s) {
       if (r.data) out.push({ key: r.id, rec: r, i: null, data: r.data, ora: r.ora || '', durata: r.durata || 60, tipo: 'app', stato: progDi(r.stato, r.ora), titolo: r.titolo || 'Appuntamento', sub: r.luogo || '' });
     } else if (r.data && TIPI_AG[r.type]) {
       out.push({ key: r.id, rec: r, i: null, data: r.data, ora: r.ora || '', durata: r.durata || durataBase(r.type, s), tipo: r.type, stato: progDi(r.stato, r.ora), drone: DRONE_TIPI.includes(r.type) && !!r.drone,
-        titolo: [TIPI_AG[r.type].l + (r.type === 'dda' ? ' F' + r.fase : r.type === 'hs' ? (r.aNote || r.daScegliere === 'primo' ? ' primo sopralluogo' : ' periodico') : ''), r.commessa || r.codice].filter(Boolean).join(' · '),
+        titolo: [TIPI_AG[r.type].l + (r.type === 'dda' ? ' F' + r.fase : r.type === 'hs' ? (r.aNote || r.daScegliere === 'primo' ? ' primo sopralluogo' : r.daScegliere || Object.keys(r.base || {}).length ? ' periodico' : '') : ''), r.commessa || r.codice].filter(Boolean).join(' · '),
         sub: [r.cliente, placeLabel(r)].filter(Boolean).join(' · ') });
     }
   }
@@ -111,6 +111,7 @@ function newOfType(tipo, all, s, extra = {}) {
   const r = { ...base, ...p };
   const { data, ora, durata, stato, ...rest } = extra;
   Object.assign(r, rest);
+  if (t === 'hs' && !p.daScegliere && !rest.cliente) r.cliente = base.cliente; // committente proposto nelle Impostazioni
   const st = stato || progDi('', ora);
   if (t === 'radon') r.momenti = r.momenti.map((m, i) => i ? m : { ...m, data: data || '', ora: ora || '', durata, stato: st });
   else Object.assign(r, { data: data || r.data, ora: ora || '', durata, stato: st });
@@ -134,7 +135,7 @@ async function agendaJson(text, slot, records, s) {
         commessa: str(x.commessa), cliente: str(x.cliente), citta: str(x.citta), indirizzo: str(x.indirizzo), sito: str(x.sito), firme: typeof x.firme === 'boolean' ? x.firme : undefined });
       if (DRONE_TIPI.includes(r.type)) r.drone = x.drone === true;
       if ((r.type === 'mappatura' || (r.type === 'dda' && r.fase === 2)) && (x.numerazione === 'nuova' || x.numerazione === 'prosegui')) r.numerazione = x.numerazione;
-      if (['dda', 'hs', 'ra'].includes(r.type)) markImp(r, r, IMP_ANAG); // anagrafica dal file (DDA, HSE, RA): bloccata, si sblocca col lucchetto
+      if (['dda', 'hs', 'ra'].includes(r.type)) markImp(r, r, str(x.cliente) ? IMP_ANAG : IMP_ANAG.filter(k => k !== 'cliente')); // anagrafica dal file (DDA, HSE, RA): bloccata, si sblocca col lucchetto
       if (x.note && 'appunti' in r) r.appunti = str(x.note);
       if (r.type === 'ra') {
         for (const k of ['fonte', 'incaricoDal', 'incaricoAl']) if (x[k]) r[k] = str(x[k]);

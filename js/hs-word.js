@@ -158,7 +158,8 @@ async function hsImgPara(ctx, id, wCm, hCm, ppr) {
   return '<w:p>' + (ppr || '<w:pPr><w:spacing w:before="0" w:after="60"/><w:jc w:val="center"/></w:pPr>') + hsImgRun(ctx, hsAddMedia(ctx, im.u8, im.png), im.w, im.h, Math.round(wCm * CMx), Math.round(hCm * CMx)) + '</w:p>';
 }
 // foto del report: prima "sopralluogo precedente", poi "ultimo", solo quelle incluse
-const hsFotoOrd = r => [...(r.foto || []).filter(p => p.g === 'prev'), ...(r.foto || []).filter(p => p.g !== 'prev')];
+// per il sopralluogo a note l'ordine è quello dei capitoli (hsNoteAOld), così «ID Foto n» e i file 00n coincidono
+const hsFotoOrd = r0 => { const r = r0.aNote ? hsNoteAOld(r0) : r0; return [...(r.foto || []).filter(p => p.g === 'prev'), ...(r.foto || []).filter(p => p.g !== 'prev')]; };
 const hsFotoReport = r => hsFotoOrd(r).filter(p => p.inc !== false);
 
 /* ---------------- tabelle generate (Esteso) ---------------- */
