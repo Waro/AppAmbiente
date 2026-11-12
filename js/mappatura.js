@@ -95,10 +95,14 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
     rd.readAsText(f);
   };
 
+  // tasto Planimetria della scheda Campioni: apre la pianta del piano dell'ultimo campione, senza aggiungere campioni
+  const [planReq, setPlanReq] = useState(null);
+  const apriPlan = list => { if (!(r.planimetrie || []).length) { scrollToId('plan-' + r.id); toast('Carica prima una planimetria'); return; }
+    const u = (list || [])[(list || []).length - 1]; setPlanReq({ n: Date.now(), piano: u ? u.piano : '' }); };
   const planLabels = campPlanLabels(r, MAP_MATS);
   const plans = r.planimetrie || [];
   const planSection = html`<div class="sec-h" id=${'plan-' + r.id}><h3>Planimetrie</h3><span class="hint">Disegno ed etichette dei campioni</span></div>
-    <div class="card"><${PlanList} items=${plans} labels=${planLabels}
+    <div class="card"><${PlanList} items=${plans} labels=${planLabels} apri=${planReq}
       onAdd=${p => up(q => ({ ...q, planimetrie: [...(q.planimetrie || []), p] }))}
       onUpdate=${(id, patch) => up(q => ({ ...q, planimetrie: (q.planimetrie || []).map(x => x.id === id ? { ...x, ...patch } : x) }))}
       onRemove=${async p => { for (const b of blobIds(p)) await removeBlob(b); up(q => ({ ...q, planimetrie: (q.planimetrie || []).filter(x => x.id !== p.id) })); }} /></div>`;
@@ -124,22 +128,20 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
     <${PrecSection} r=${r} onRicampiona=${c => { const m = MAP_MATS.find(x => x.k === c.k) || mat; const id = uid('c'); if (tab !== m.k) setTab(m.k);
       setCamp(m.k, l => [...l, { id, codice: nextCode(m.k), descrizione: c.descrizione || '', quantita: c.quantita || '', piano: c.piano || '', ubicazione: c.ubicazione || '', data: today(), foto: [] }]);
       setOpenS({ [id]: true }); setTimeout(() => scrollToId('s-' + id), 120); toast('Nuovo campione ' + nextCode(m.k) + ' da ' + c.codice); }} />
-    <div class="sec-h"><h3>Campioni</h3><span class="hint">${r.congelati[tab] ? 'Codici bloccati dalla scheda' : numHint(r, mat)}</span></div>
+    <div class="sec-h"><h3>Campioni</h3>${(r.congelati[tab] || numHint(r, mat)) && html`<span class="hint">${r.congelati[tab] ? 'Codici bloccati dalla scheda' : numHint(r, mat)}</span>`}</div>
     <${Suggerimento} id="campioni" />
     <${NumSection} r=${r} up=${up} mats=${MAP_MATS} />
     <${CampSummary} r=${r} mats=${MAP_MATS} />
     <div class="seg" style="margin-bottom:6px">${MAP_MATS.map(m => html`
       <button class=${tab === m.k ? 'on' : ''} onClick=${() => setTab(m.k)}><i class="mdot" style=${'background:' + m.c}></i>${m.l}<span class="n">${(r.campioni[m.k] || []).length}</span></button>`)}</div>
     ${!camp.length && html`<div class="card mt-3"><div class="empty" style="padding:18px">Nessun campione ${mat.l}.</div></div>`}
+    <button class="btn block mt-3" onClick=${() => apriPlan(camp)}><${Icon} n="map" s=${20} /> Planimetria</button>
     ${byPiano(camp).map(([piano, list]) => html`<div key=${piano}>
-      <div class="sec-h mt-4"><h3>${piano}</h3><span class="hint">${list.length}</span></div>
-      <div class="list">${list.map(c => html`<${SampleRow} key=${c.id} c=${c} mat=${mat} open=${!!openS[c.id]} toggle=${() => setOpenS(o => ({ ...o, [c.id]: !o[c.id] }))}
+      <div class="list mt-3"><div class="list-h"><b>${piano}</b><span>${list.length}</span></div>${list.map(c => html`<${SampleRow} key=${c.id} c=${c} mat=${mat} open=${!!openS[c.id]} toggle=${() => setOpenS(o => ({ ...o, [c.id]: !o[c.id] }))}
         onPhoto=${ids => updCamp(c.id, { foto: [...(c.foto || []), ...ids] })}>
-        <${CampFields} c=${c} list="dl-piani-m" upd=${patch => updCamp(c.id, patch)} codice=${html`<div class="code-auto" style=${'width:64px;flex-shrink:0;color:' + mat.c}>${c.codice}</div>`} />
-        <div class="row">
-          <input class="inp" type="date" style="max-width:180px" value=${c.data || ''} onInput=${e => updCamp(c.id, { data: e.target.value })} aria-label="Data prelievo" />
-          <input class="inp" placeholder="Quantità (es. 180 mq)" value=${c.quantita || ''} onInput=${e => updCamp(c.id, { quantita: e.target.value })} aria-label="Quantità" />
-        </div>
+        <${CampFields} c=${c} list="dl-piani-m" upd=${patch => updCamp(c.id, patch)} codice=${html`<${SiglaAuto} codice=${c.codice} c=${mat.c} />`} />
+        <label class="fld"><span>Data prelievo</span><input type="date" value=${c.data || ''} onInput=${e => updCamp(c.id, { data: e.target.value })} /></label>
+        <label class="fld"><span>Quantità</span><input placeholder="es. 180 mq" value=${c.quantita || ''} onInput=${e => updCamp(c.id, { quantita: e.target.value })} /></label>
         <${PhotoStrip} ids=${c.foto || []} max=${4} onAdd=${ids => updCamp(c.id, { foto: [...(c.foto || []), ...ids] })}
           onRemove=${async id => { await removeBlob(id); updCamp(c.id, { foto: c.foto.filter(f => f !== id) }); }} />
         <button class="btn sm danger self-start" onClick=${() => delCamp(c)}>Elimina campione</button>
@@ -155,8 +157,7 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
 
 
     <div class="sec-h"><h3>Appunti</h3></div>
-    <div class="card"><${Area} rows=${4} value=${r.appunti} set=${v => up({ appunti: v })} placeholder="Note generali del censimento" />
-      <${NotePhotos} rec=${r} up=${up} /></div>
+    <${Appunti} rec=${r} up=${up} placeholder="Note generali del censimento" />
 
     `}
     ${T === 'firme' && html`<${FogliFirme} r=${r} up=${up} settings=${settings} />`}

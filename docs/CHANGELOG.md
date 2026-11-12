@@ -4,6 +4,18 @@ Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Nem
 
 ## [Non rilasciato]
 
+## [nembo-v56] — 2026-11-12
+
+### Cambiato
+Redesign grafico (stile e impaginazione), Rilievo v56.
+- Campi: l'etichetta è dentro il campo, fa da segnaposto nel campo vuoto e sale in alto quando scrivi (animazione di 180 ms, spenta con la riduzione del movimento); campo attivo con contorno `blue` di 2 px. Solo CSS su `.fld` (`:has`, `:placeholder-shown`); `fldSegnaposto()` mette uno spazio come segnaposto ai campi che non ne hanno.
+- Un campo per riga: `.grid2` con campi diventa una colonna.
+- Icone nei campi di testo in colonna sul bordo destro, dall'alto fotocamera, galleria, microfono; solo l'icona in `blue`, senza fondo; microfono pieno durante la dettatura (`MicBtn`). Le foto collegate alle sezioni HSE (`FotoIn`) hanno anche la galleria.
+- Appunti ovunque con il nuovo componente `Appunti` (fotocamera, galleria e dettatura dentro il campo; miniature e tag sotto): DDA Fase 1 e 2, Mappatura, RA, Radon, Aria, Verbale HSE, Firme (solo dettatura), sopralluogo HSE.
+- Sopralluogo HSE a note: «Note» diventano «Osservazioni» nei testi; la card Appunti è in cima alla scheda Osservazioni; tolti i tasti Frasi e Riformula.
+- Schede di un'attività (`Schede`): si passa alla scheda accanto anche scorrendo a sinistra o a destra sul contenuto.
+- Campioni (DDA Fase 2 e Mappatura): campi del campione uno per riga con l'etichetta dentro (Sigla, Piano, Ubicazione, Descrizione con dettatura, Data prelievo, Quantità); titoli dei piani e dei manufatti non campionati dentro la card a tutta larghezza (`.list-h`); tolti gli esempi accanto ai titoli («Codici automatici A1, A2…», «NC1, NC2…»); nuovo tasto Planimetria sopra l'elenco dei campioni, che apre la pianta del piano dell'ultimo campione (`PlanList` con `apri`).
+
 ## [nembo-v55b] — 2026-11-12
 
 ### Corretto

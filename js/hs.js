@@ -56,11 +56,12 @@ function useDictation(get, set) {
   };
   return [on, toggle];
 }
-// microfono dentro il campo di testo, in alto a destra
+// microfono dentro il campo di testo, ultimo della colonna a destra: pieno mentre detti (Rilievo: Campo)
 function MicBtn({ rec, toggle }) {
   if (!SR_API) return null;
   return html`<button type="button" class=${'mic-in' + (rec ? ' rec' : '')} aria-label=${rec ? 'Ferma la dettatura' : 'Detta'} title=${rec ? 'Ferma la dettatura' : 'Detta'} aria-pressed=${rec}
-    onPointerDown=${e => e.preventDefault()} onClick=${toggle}><${Icon} n=${rec ? 'stop' : 'mic'} s=${18} /></button>`;
+    onPointerDown=${e => e.preventDefault()} onClick=${toggle}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="9" y="2" width="6" height="13" rx="3" fill=${rec ? 'currentColor' : 'none'} /><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3" /></svg></button>`;
 }
 // frasi ricorrenti: predefinite + personali (salvate sul dispositivo)
 function FrasiSheet({ gruppo, onPick, onClose }) {
@@ -102,10 +103,11 @@ function RiformulaSheet({ prop, testo, onApply, onClose }) {
 const hsFotoDi = (r, ref) => (r.foto || []).filter(p => p.ref === ref);
 function FotoIn({ r, up, rif, nome }) {
   const inp = useRef(); const n = hsFotoDi(r, rif).length; const lab = 'Foto per ' + nome;
-  return html`<button type="button" class=${'cam-in' + (SR_API ? '' : ' solo')} aria-label=${lab + (n ? ', ' + n + (n === 1 ? ' collegata' : ' collegate') : '')} title=${lab} onClick=${() => camOpen(inp.current)}>
-    <${Icon} n="camera" s=${18} />${n > 0 && html`<i class="ck-badge">${n}</i>`}
-    <input ref=${inp} type="file" accept="image/*" capture="environment" hidden onClick=${e => e.stopPropagation()}
-      onChange=${e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) hsAddPhotos(fs, 'new', rif, up, (r.foto || []).length).then(() => toast('Foto aggiunta e collegata alla sezione')); }} /></button>`;
+  return html`<button type="button" class="cam-in" aria-label=${lab + (n ? ', ' + n + (n === 1 ? ' collegata' : ' collegate') : '')} title=${lab} onClick=${() => camOpen(inp.current)}>
+    <${Icon} n="camera" s=${22} />${n > 0 && html`<i class="ck-badge">${n}</i>`}</button>
+    <button type="button" class="gal-in" aria-label=${'Galleria: ' + lab} title="Scegli dalla galleria" onClick=${() => galOpen(inp.current)}><${Icon} n="image" s=${22} /></button>
+    <input ref=${inp} type="file" accept="image/*" capture="environment" multiple hidden onClick=${e => e.stopPropagation()}
+      onChange=${e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) hsAddPhotos(fs, 'new', rif, up, (r.foto || []).length).then(() => toast(fs.length > 1 ? 'Foto aggiunte e collegate alla sezione' : 'Foto aggiunta e collegata alla sezione')); }} />`;
 }
 // togli: le miniature si possono eliminare (note del sopralluogo, dove non c'è la galleria)
 function FotoCollegate({ r, rif, up, togli }) {
@@ -127,11 +129,9 @@ function HsText({ label, value, set, base, gruppo, rows = 4, onRiformula, placeh
   const [rec, toggleRec] = useDictation(() => value, set);
   const changed = base != null && base !== '' && (value || '') !== base;
   return html`<div class="fld hs-text"><span>${label}</span>
-    <div class="mic-wrap"><textarea rows=${rows} value=${value || ''} placeholder=${placeholder || ''} onInput=${e => set(e.target.value)}></textarea><${MicBtn} rec=${rec} toggle=${toggleRec} />${foto && html`<${FotoIn} ...${foto} />`}</div>
+    <div class="mic-wrap"><textarea rows=${rows} value=${value || ''} placeholder=${placeholder || ' '} onInput=${e => set(e.target.value)}></textarea><div class="ico-col">${foto && html`<${FotoIn} ...${foto} />`}<${MicBtn} rec=${rec} toggle=${toggleRec} /></div></div>
     ${foto && html`<${FotoCollegate} ...${foto} />`}
     <div class="hs-tools">
-      ${gruppo && html`<button class="chip-btn" onClick=${() => setFrasi(true)}><${Icon} n="list" s=${15} /> Frasi</button>`}
-      ${onRiformula && html`<button class="chip-btn" onClick=${() => { const p = hsRiformula(value); if (!p) toast('Nessuna formulazione tecnica per questa nota'); else setRif(p); }}><${Icon} n="spark" s=${15} /> Riformula</button>`}
       ${base ? html`<span class="hs-base">${changed ? 'Modificato: le righe nuove escono in rosso' : 'Dal report precedente (nero nel Word)'}</span>` : null}
     </div>
     ${frasi && html`<${FrasiSheet} gruppo=${gruppo} onClose=${() => setFrasi(false)} onPick=${f => set((value || '').replace(/\s+$/, '') + (value && value.trim() ? '\n' : '') + f)} />`}
@@ -255,7 +255,7 @@ function HsCheck({ it, r, up, base }) {
       ${linked.map((p, i) => html`<button key=${p.id} class="ck-th" aria-label=${'Foto ' + (i + 1)} onClick=${() => setView(i)}><${Thumb44} id=${p.id} /></button>`)}
       ${!open && nota ? html`<button class="ck-nota" onClick=${() => setOpen(true)}>${nota}</button>` : null}</div>` : null}
     ${open && html`<div class="ck-ed">
-      <div class="mic-wrap"><textarea ref=${ta} class="inp" rows="2" placeholder="Annotazioni" value=${nota} onInput=${e => setNota(e.target.value)}></textarea><${MicBtn} rec=${rec} toggle=${toggleRec} /></div>
+      <div class="mic-wrap"><textarea ref=${ta} class="inp" rows="2" placeholder="Annotazioni" value=${nota} onInput=${e => setNota(e.target.value)}></textarea><div class="ico-col"><${MicBtn} rec=${rec} toggle=${toggleRec} /></div></div>
       <div class="hs-tools">
         ${base ? html`<span class="hs-base">${nota === base ? 'Dal report precedente (nero nel Word)' : 'Modificato: le righe nuove escono in rosso'}</span>` : null}
         <button class="btn link sm" style="margin-left:auto" onClick=${() => setOpen(false)}>Fatto</button>
@@ -462,8 +462,7 @@ function HsSchedeForm({ rec: initial, records, settings, onSave, onDelete, onSet
       <div class="t"><b>${c.t}</b><small>${[c.costo, c.termine].filter(Boolean).join(' · ') || (c.az || '').slice(0, 120)}</small></div></div>`) : html`<div class="prow"><div class="t"><small>Nessuna scheda con priorità 1 o 2.</small></div></div>`}</div>
     <div class="sec-h"><h3>Documenti da chiedere o verificare</h3><span class="hint">${docs.length}</span></div>
     <div class="list">${docs.length ? docs.slice(0, 40).map((x, i) => html`<div class="prow" key=${i}><div class="t"><b>${x.n}. ${x.s}</b><small style="white-space:normal">${x.f}</small></div></div>`) : html`<div class="prow"><div class="t"><small>Nessun documento segnalato come mancante nelle schede.</small></div></div>`}</div></div>`; }
-  else if (S && S.k === 'note') body = html`<div class="card"><${HsText} label="Appunti (non vanno nel Word)" rows=${6} value=${r.appunti} set=${v => up({ appunti: v })} />
-      <${NotePhotos} rec=${r} up=${up} /></div>
+  else if (S && S.k === 'note') body = html`<${Appunti} rec=${r} up=${up} rows=${6} label="Appunti (non vanno nel Word)" />
     <div class="sec-h"><h3>Documenti allegati</h3><span class="hint">restano sul dispositivo e vanno su OneDrive</span></div>
     <div class="card"><${FileList} items=${r.documenti || []}
       onAdd=${d => up(p => ({ ...p, documenti: [...(p.documenti || []), d] }))}

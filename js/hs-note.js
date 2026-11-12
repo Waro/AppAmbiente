@@ -23,8 +23,8 @@ const hsNoteDi = (r, c) => (r.noteSop || []).filter(n => { const x = hsCapDi(n, 
 // stato del capitolo nella Check-list: verde con note, grigio «Non pertinente» (scelto a mano, vale solo senza note), rosso senza note
 function hsStatoCap(r, c) {
   const L = hsNoteDi(r, c);
-  if (L.length) return { st: 'st-ok', w: L.length + (L.length === 1 ? ' nota' : ' note') };
-  return (r.np || {})[c.k] ? { st: 'st-off', w: 'Non pertinente' } : { st: 'st-err', w: 'Senza note' };
+  if (L.length) return { st: 'st-ok', w: L.length + (L.length === 1 ? ' osservazione' : ' osservazioni') };
+  return (r.np || {})[c.k] ? { st: 'st-off', w: 'Non pertinente' } : { st: 'st-err', w: 'Senza osservazioni' };
 }
 const hsCapRossi = r => hsCapi(r).filter(c => hsStatoCap(r, c).st === 'st-err');
 // note in ordine di Word: capitoli nell'ordine del modello, poi quelle senza capitolo
@@ -131,7 +131,7 @@ const NoteSelBtn = ({ ns }) => html`<div class="sel-riga"><button class="btn lin
 function NotaSelRiga({ n, i, on, onClick }) {
   return html`<button class=${'rcard sel-mode' + (on ? ' sel' : '')} key=${n.id} onClick=${onClick} aria-pressed=${on}>
     <span class="selck" aria-hidden="true">${on && html`<${Icon} n="check" s=${15} w=${3} />`}</span>
-    <div class="r1"><span class="id">Nota ${i + 1}</span></div>
+    <div class="r1"><span class="id">Osservazione ${i + 1}</span></div>
     <div class="ttl">${n.titolo || (n.testo || '').split('\n')[0] || '—'}</div>
     ${(n.tag || []).length > 0 && html`<div class="sum">${n.tag.map(t => html`<span key=${t} class="hs-tagtx" style=${'color:' + tagColor(t)}>#${t}</span>`)}</div>`}</button>`;
 }
@@ -166,13 +166,13 @@ function TagMultiSheet({ note, fissi, altri, onSet, onClose }) {
 function HsNotaCard({ n, i, r, up, updN, delN, move, primo, ultimo, selProps }) {
   const riform = (sit, mig) => updN(n.id, { testo: sit, mig: mig ? ((n.mig || '').replace(/\s+$/, '') + (n.mig && n.mig.trim() ? '\n' : '') + mig) : n.mig });
   return html`<div class="card vs-nota" id=${'n-' + n.id} ...${selProps}>
-    <div class="vs-h"><span class="vs-n">Nota ${i + 1}</span><span class="tb-grow"></span>
+    <div class="vs-h"><span class="vs-n">Osservazione ${i + 1}</span><span class="tb-grow"></span>
       <button class="x" title="Prima" aria-label="Sposta prima" disabled=${primo} onClick=${() => move(n, -1)}>‹</button>
       <button class="x" title="Dopo" aria-label="Sposta dopo" disabled=${ultimo} onClick=${() => move(n, 1)}>›</button>
-      <button class="x" title="Elimina la nota" aria-label="Elimina la nota" onClick=${() => delN(n)}><${Icon} n="trash" s=${15} /></button></div>
+      <button class="x" title="Elimina l'osservazione" aria-label="Elimina l'osservazione" onClick=${() => delN(n)}><${Icon} n="trash" s=${15} /></button></div>
     <${Inp} label="Titolo" value=${n.titolo} set=${v => updN(n.id, { titolo: v })} placeholder="es. Uscita di emergenza lato nord" />
     <${HsText} label="Situazione rilevata" rows=${4} gruppo="Situazione rilevata" value=${n.testo} set=${v => updN(n.id, { testo: v })}
-      onRiformula=${riform} foto=${{ r, up, rif: 'n.' + n.id, nome: n.titolo || 'Nota ' + (i + 1), togli: true }} />
+      onRiformula=${riform} foto=${{ r, up, rif: 'n.' + n.id, nome: n.titolo || 'Osservazione ' + (i + 1), togli: true }} />
     <${HsText} label="Attività di miglioramento" rows=${2} gruppo="Attività di miglioramento" value=${n.mig} set=${v => updN(n.id, { mig: v })} />
     <${TagPicker} tags=${n.tag || []} set=${t => updN(n.id, { tag: t })} fissi=${hsTagFissi(r, [n])} />
   </div>`;
@@ -184,7 +184,7 @@ function HsNoteTab({ r, up, ns, filtro, setFiltro, addN }) {
   const tagsV = Object.keys(collectTags(note)).sort((a, b) => a.localeCompare(b, 'it'));
   const updN = (id, p) => up(q => ({ ...q, noteSop: (q.noteSop || []).map(n => n.id === id ? { ...n, ...p } : n) }));
   const delN = async n => {
-    if (!confirm('Eliminare la nota' + (n.titolo ? ' «' + n.titolo + '»' : '') + '?')) return;
+    if (!confirm('Eliminare l\'osservazione' + (n.titolo ? ' «' + n.titolo + '»' : '') + '?')) return;
     const fs = (r.foto || []).filter(p => p.ref === 'n.' + n.id);
     for (const p of fs) await removeBlob(p.id);
     up(q => ({ ...q, noteSop: q.noteSop.filter(x => x.id !== n.id), foto: (q.foto || []).filter(p => p.ref !== 'n.' + n.id) }));
@@ -203,12 +203,12 @@ function HsNoteTab({ r, up, ns, filtro, setFiltro, addN }) {
   return html`<div>
     ${ns.sel && html`<${NoteSelHead} n=${ord.filter(n => ns.sel.has(n.id)).length} onStop=${() => ns.setSel(null)} onAll=${() => ns.setSel(s => ord.every(n => s.has(n.id)) ? new Set() : new Set(ord.map(n => n.id)))} />`}
     <div class="card-navy"><div class="sum3">
-      <div><b>${note.length}</b><span>${note.length === 1 ? 'nota' : 'note'}</span></div>
+      <div><b>${note.length}</b><span>${note.length === 1 ? 'osservazione' : 'osservazioni'}</span></div>
       <div><b>${caps}<small>/${C.length}</small></b><span>capitoli</span></div>
       <div><b>${nFoto}</b><span>foto</span></div></div></div>
     ${tagsV.length > 0 && html`<div class="vs-filter mt-3"><button class=${'tag' + (!filtro ? ' on' : ' sugg')} onClick=${() => setFiltro(null)}>Tutte</button>
       ${tagsV.map(t => html`<button key=${t} class=${'tag' + (filtro === t ? ' on' : '')} style=${tagStyle(t, filtro === t)} onClick=${() => setFiltro(filtro === t ? null : t)}>#${t}</button>`)}</div>`}
-    ${!note.length && html`<div class="card mt-3"><div class="empty" style="padding:16px">Nessuna nota. Tocca «Nuova nota» per aggiungerne una.</div></div>`}
+    ${!note.length && html`<div class="card mt-3"><div class="empty" style="padding:16px">Nessuna osservazione. Tocca «Nuova osservazione» per aggiungerne una.</div></div>`}
     ${note.length > 0 && !ns.sel && html`<${NoteSelBtn} ns=${ns} />`}
     ${ns.sel ? G.map(g => html`<div key=${'g-' + (g.c ? g.c.k : '-')}>
       <div class="sec-h"><h3>${g.c ? g.c.n + '. ' + g.c.tag : 'Senza capitolo'}</h3><span class="hint">${g.note.length}</span></div>
@@ -216,21 +216,21 @@ function HsNoteTab({ r, up, ns, filtro, setFiltro, addN }) {
     // elenco piatto con le intestazioni dei capitoli: la nota che cambia capitolo si sposta senza richiudere la scelta dei tag
     : G.flatMap(g => [
       html`<div class="sec-h" key=${'h-' + (g.c ? g.c.k : '-')}><h3>${g.c ? g.c.n + '. ' + g.c.tag : 'Senza capitolo'}</h3><span class="hint">${g.note.length}</span></div>`,
-      !g.c && html`<div class="notice mb-2" key="h-senza">Queste note non vanno nel Word: aggiungi il tag di un capitolo.</div>`,
+      !g.c && html`<div class="notice mb-2" key="h-senza">Queste osservazioni non vanno nel Word: aggiungi il tag di un capitolo.</div>`,
       ...g.note.map((n, k) => html`<${HsNotaCard} key=${n.id} n=${n} i=${num[n.id] - 1} r=${r} up=${up} updN=${updN} delN=${delN} move=${move} primo=${k === 0} ultimo=${k === g.note.length - 1} selProps=${ns.props(n.id)} />`)]).filter(Boolean)}
-    ${!ns.sel && html`<button class="btn dashed block mt-1" onClick=${() => addN()}>+ Nuova nota</button>`}
+    ${!ns.sel && html`<button class="btn dashed block mt-1" onClick=${() => addN()}>+ Nuova osservazione</button>`}
   </div>`;
 }
 // fotocamera nella barra: la foto apre una nota nuova
 function HsNotaCam({ r, up, onNota }) {
   const inp = useRef();
-  return html`<button class="btn-icon lg" aria-label="Foto in una nuova nota" title="Foto in una nuova nota" onClick=${() => camOpen(inp.current)}><${Icon} n="camera" s=${22} />
+  return html`<button class="btn-icon lg" aria-label="Foto in una nuova osservazione" title="Foto in una nuova osservazione" onClick=${() => camOpen(inp.current)}><${Icon} n="camera" s=${22} />
     <input ref=${inp} type="file" accept="image/*" capture="environment" hidden onClick=${e => e.stopPropagation()}
       onChange=${async e => {
         const fs = [...e.target.files]; e.target.value = ''; if (!fs.length) return;
         if ((r.foto || []).length >= HS_MAX_FOTO) { toast('Limite di ' + HS_MAX_FOTO + ' foto per report'); return; }
         const n = onNota(), k = await hsAddPhotos(fs, 'new', 'n.' + n.id, up, (r.foto || []).length);
-        if (k) toast('Foto aggiunta in una nuova nota'); else up(q => ({ ...q, noteSop: (q.noteSop || []).filter(x => x.id !== n.id) })); // foto non salvata: la nota vuota non resta
+        if (k) toast('Foto aggiunta in una nuova osservazione'); else up(q => ({ ...q, noteSop: (q.noteSop || []).filter(x => x.id !== n.id) })); // foto non salvata: la nota vuota non resta
       }} /></button>`;
 }
 
@@ -291,9 +291,7 @@ function HsInqEst({ r, up }) {
       <button class="btn dashed mt-2" onClick=${() => up(p => ({ ...p, catTer: [...(p.catTer || []), { foglio: '', mappale: '' }] }))}>+ Riga catasto terreni</button></div>`;
 }
 function HsAppunti({ r, up }) {
-  return html`<div class="card"><${HsText} label="Appunti (non vanno nel Word)" rows=${6} value=${r.appunti} set=${v => up({ appunti: v })} />
-      <${NotePhotos} rec=${r} up=${up} /></div>
-    <div class="sec-h"><h3>Documenti allegati</h3><span class="hint">restano sul dispositivo e vanno su OneDrive</span></div>
+  return html`<div class="sec-h"><h3>Documenti allegati</h3><span class="hint">restano sul dispositivo e vanno su OneDrive</span></div>
     <div class="card"><${FileList} items=${r.documenti || []}
       onAdd=${d => up(p => ({ ...p, documenti: [...(p.documenti || []), d] }))}
       onRemove=${async d => { await removeBlob(d.blobId); up(p => ({ ...p, documenti: p.documenti.filter(x => x.id !== d.id) })); }} /></div>`;
@@ -337,11 +335,11 @@ function HsChecklist({ r, up, aperto, setAperto, vaiNota, addN }) {
       <div class="sec-h mt-0"><h3>${c.n}. ${c.tag}</h3><span class="hint">${S.w}</span></div>
       ${!L.length && html`<div class="card"><div class="optline" style="padding:0"><div class="t"><b>Non pertinente</b>${r.formato !== 'sintetico' && html`<small>Nel Word: «Nessuna criticità rilevata»</small>`}</div>
         <${Toggle} on=${np} set=${v => up(p => ({ ...p, np: { ...(p.np || {}), [c.k]: v } }))} label="Non pertinente" /></div></div>`}
-      <div class="sec-h"><h3>Note · ${L.length}</h3></div>
+      <div class="sec-h"><h3>Osservazioni · ${L.length}</h3></div>
       ${L.length > 0 && html`<div class="list">${L.map(n => { const sb = hsSubDi(n, C); return html`<button class="rcard" key=${n.id} onClick=${() => vaiNota(n.id)}>
-        <div class="r1"><span class="id">Nota ${num[n.id]}</span></div>
+        <div class="r1"><span class="id">Osservazione ${num[n.id]}</span></div>
         <div class="ttl">${n.titolo || (n.testo || '').split('\n')[0] || '—'}</div>${sb && html`<div class="sum">${sb.tag}</div>`}</button>`; })}</div>`}
-      <button class="btn dashed block mt-2" onClick=${() => addN(c)}>+ Aggiungi una nota</button>`;
+      <button class="btn dashed block mt-2" onClick=${() => addN(c)}>+ Aggiungi un'osservazione</button>`;
   }
   return html`<div class="list">${C.map(x => { const S = hsStatoCap(r, x); return html`<button class=${'rcard st-bar ' + S.st} key=${x.k} onClick=${() => setAperto(x.k)}>
       <div class="r1"><span class="ttl hs-ckt">${x.n}. ${x.tag}</span><span class="dt">${S.w}</span></div></button>`; })}</div>`;
@@ -350,13 +348,13 @@ function HsChecklist({ r, up, aperto, setAperto, vaiNota, addN }) {
 function HsSenzaNoteSheet({ r, up, onDone }) {
   useBackClose(() => onDone(false));
   const L = hsCapRossi(r);
-  return html`<div class="sheet-ov" onClick=${e => e.target === e.currentTarget && onDone(false)}><div class="sheet" role="dialog" aria-label=${L.length + ' capitoli senza note'}>
+  return html`<div class="sheet-ov" onClick=${e => e.target === e.currentTarget && onDone(false)}><div class="sheet" role="dialog" aria-label=${L.length + ' capitoli senza osservazioni'}>
     <div class="sheet-grab"></div>
-    <div class="sheet-nav"><button class="btn link" onClick=${() => onDone(false)}>Annulla</button><b>${L.length === 1 ? '1 capitolo senza note' : L.length + ' capitoli senza note'}</b><span></span></div>
+    <div class="sheet-nav"><button class="btn link" onClick=${() => onDone(false)}>Annulla</button><b>${L.length === 1 ? '1 capitolo senza osservazioni' : L.length + ' capitoli senza osservazioni'}</b><span></span></div>
     <div class="sheet-body">
       <div class="list mt-1">${L.map(c => html`<div class="prow st-bar st-err" key=${c.k}><div class="t"><b>${c.n}. ${c.tag}</b>
         <div class="row mt-2"><button class="btn sm" onClick=${() => up(p => ({ ...p, np: { ...(p.np || {}), [c.k]: true } }))}>Non pertinente</button>
-        <button class="btn sm" onClick=${() => onDone(false, c)}>Aggiungi una nota</button></div></div></div>`)}</div>
+        <button class="btn sm" onClick=${() => onDone(false, c)}>Aggiungi un'osservazione</button></div></div></div>`)}</div>
       <button class="btn pri block mt-4" onClick=${() => onDone(true)}>${L.length ? 'Genera lo stesso' : 'Genera Word'}</button>
     </div></div></div>`;
 }
@@ -388,20 +386,21 @@ function HsNoteForm({ rec: initial, settings, onSave, onDelete, onSettings, embe
   const nRossi = hsCapRossi(r).length;
   return html`<div class="content form">
     <${DetailHead} conclusa=${r.conclusa} eye=${'Sopralluogo HSE · ' + HS_FMT[r.formato]} title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r) || r.sito].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
-    <${Schede} value=${T} set=${k => { setT(k); setAperto(null); }} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'note', l: 'Note', n: (r.noteSop || []).length }, { k: 'check', l: 'Check-list', n: nRossi || undefined }, { k: 'file', l: 'File' }]} />
+    <${Schede} value=${T} set=${k => { setT(k); setAperto(null); }} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'note', l: 'Osservazioni', n: (r.noteSop || []).length }, { k: 'check', l: 'Check-list', n: nRossi || undefined }, { k: 'file', l: 'File' }]} />
     ${T === 'anag' && html`${sint ? html`<${HsDatiSint} r=${r} up=${up} /><div class="sec-h"><h3>Anagrafica immobile</h3></div><${HsAnagSint} r=${r} up=${up} />`
       : html`<${HsDatiEst} r=${r} up=${up} /><div class="sec-h"><h3>Anagrafica immobile</h3></div><${HsAnagEst} r=${r} up=${up} />
         <div class="sec-h"><h3>Inquadramento e catasto</h3></div><${HsInqEst} r=${r} up=${up} />`}
       ${hasTpl === false && html`<div class="notice err">Manca il modello Word ${HS_FMT[r.formato]}: caricalo in Impostazioni → Modelli. <button class="btn link" onClick=${onSettings}>Apri</button></div>`}`}
     ${T === 'note' && html`${SR_API && !ns.sel && html`<${Suggerimento} id="dettatura" />`}
+      ${!ns.sel && html`<${Appunti} rec=${r} up=${up} rows=${3} label="Appunti (non vanno nel Word)" />`}
       <${HsNoteTab} r=${r} up=${up} ns=${ns} filtro=${filtro} setFiltro=${setFiltro} addN=${() => nuovaNota(null)} />
-      ${!ns.sel && html`<div class="sec-h"><h3>Appunti e allegati</h3></div><${HsAppunti} r=${r} up=${up} />`}`}
+      ${!ns.sel && html`<${HsAppunti} r=${r} up=${up} />`}`}
     ${T === 'check' && html`<${HsChecklist} r=${r} up=${up} aperto=${aperto} setAperto=${setAperto} vaiNota=${vaiNota} addN=${c => nuovaNota(c)} />`}
     ${T === 'file' && html`<${FileTab} r=${r} up=${up} settings=${settings} />`}
     ${ns.sel ? html`<${ActionBar}><button class="btn pri" disabled=${!selNote.length} onClick=${() => setTagSheet(true)}><${Icon} n="tag" s=${20} /> Tag (${selNote.length})</button><//>`
     : html`<${BarraAtt} r=${r} settings=${settings}
       left=${html`<${HsNotaCam} r=${r} up=${up} onNota=${() => nuovaNota(null)} />`}
-      center=${T === 'note' ? html`<button class="btn pri" onClick=${() => nuovaNota(null)}><${Icon} n="plus" s=${20} w=${2.4} /> Nuova nota</button>`
+      center=${T === 'note' ? html`<button class="btn pri" onClick=${() => nuovaNota(null)}><${Icon} n="plus" s=${20} w=${2.4} /> Nuova osservazione</button>`
         : html`<${DocBtn} r=${r} up=${up} settings=${settings} k="hs_docx" prima=${prima} />`}
       gruppi=${[['Documenti', [{ ic: 'share', l: OD.account ? 'Carica su OneDrive' : 'Invia foto e Word a OneDrive', fn: upload }]],
         opzArchivio({ r, settings, onDelete, up, elimina: 'Elimina il sopralluogo' })]} />`}

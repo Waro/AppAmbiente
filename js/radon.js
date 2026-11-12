@@ -308,8 +308,7 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
       onRemove=${async p => { for (const b of blobIds(p)) await removeBlob(b); up(q => ({ ...q, planimetrie: (q.planimetrie || []).filter(x => x.id !== p.id) })); }} /></div>
 
     <div class="sec-h"><h3>Appunti generali</h3></div>
-    <div class="card"><textarea class="inp" rows="3" value=${r.note} onInput=${e => up({ note: e.target.value })} aria-label="Note"></textarea>
-      <${NotePhotos} rec=${r} up=${up} /></div>
+    <${Appunti} rec=${r} up=${up} k="note" rows=${3} />
 
 `}
 

@@ -8,7 +8,7 @@ if (window.top !== window.self) {
   try { window.top.location.replace(window.self.location.href); } catch (e) { /* riquadro isolato: la pagina resta vuota */ }
   throw new Error('Nembo aperto dentro un riquadro');
 }
-const APP_VERSION = 'nembo-v55b';
+const APP_VERSION = 'nembo-v56';
 
 /* ---------------- aspetto: stile ("essenziale" o "originale") × modo ("auto", "chiaro" o "scuro") ----------------
    Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno.
@@ -362,7 +362,7 @@ function Inp({ label, value, set, type = 'text', disabled, placeholder, list, re
   const L = useLock(imp, value, type);
   if (L.locked) return html`<${LockView} label=${label} value=${value} L=${L} cls=${cls} req=${req} />`;
   return html`<label class=${'fld ' + (req ? 'req ' : '') + cls}><span>${label}</span>
-    <input ref=${L.ref} type=${type} value=${value ?? ''} disabled=${disabled} placeholder=${placeholder || ''} list=${list} inputmode=${inputmode}
+    <input ref=${L.ref} type=${type} value=${value ?? ''} disabled=${disabled} placeholder=${placeholder || ' '} list=${list} inputmode=${inputmode}
       onInput=${e => set(e.target.value)} /><${ImpNote} L=${L} imp=${imp} set=${set} /></label>`;
 }
 // campo di una riga che va a capo e cresce col testo (ubicazioni lunghe leggibili sul telefono)
@@ -373,7 +373,7 @@ function InpGrow({ label, value, set, disabled, placeholder, cls = '', list, imp
   useEffect(() => { const f = () => growFit(L.ref.current); addEventListener('resize', f); return () => removeEventListener('resize', f); }, []);
   if (L.locked) return html`<${LockView} label=${label} value=${value} L=${L} cls=${cls} />`;
   return html`<label class=${'fld ' + cls}>${label && html`<span>${label}</span>`}
-    <textarea ref=${L.ref} class="grow" rows="1" disabled=${disabled} placeholder=${placeholder || ''} value=${value ?? ''}
+    <textarea ref=${L.ref} class="grow" rows="1" disabled=${disabled} placeholder=${placeholder || ' '} value=${value ?? ''}
       onKeyDown=${e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } }}
       onInput=${e => { set(e.target.value.replace(/\n/g, ' ')); growFit(e.target); }}></textarea><${ImpNote} L=${L} imp=${imp} set=${set} /></label>`;
 }
@@ -381,7 +381,7 @@ function Area({ label, value, set, rows = 3, disabled, placeholder, cls = '', im
   const L = useLock(imp, value);
   if (L.locked) return html`<${LockView} label=${label} value=${value} L=${L} cls=${cls} />`;
   return html`<label class=${'fld ' + cls}><span>${label}</span>
-    <textarea ref=${L.ref} rows=${rows} disabled=${disabled} placeholder=${placeholder || ''} value=${value || ''} onInput=${e => set(e.target.value)}></textarea><${ImpNote} L=${L} imp=${imp} set=${set} /></label>`;
+    <textarea ref=${L.ref} rows=${rows} disabled=${disabled} placeholder=${placeholder || ' '} value=${value || ''} onInput=${e => set(e.target.value)}></textarea><${ImpNote} L=${L} imp=${imp} set=${set} /></label>`;
 }
 
 /* ---------------- foto ---------------- */
@@ -390,7 +390,7 @@ function Thumb({ id, onRemove, onOpen }) {
   return html`<div class="ph">${u && html`<img src=${u} alt="Foto" onClick=${() => onOpen && onOpen()} />`}
     ${onRemove && html`<button class="x" aria-label="Elimina foto" onClick=${onRemove}>×</button>`}</div>`;
 }
-function PhotoStrip({ ids = [], max = 10, onAdd, onRemove, readonly, gallery, labelOf }) {
+function PhotoStrip({ ids = [], max = 10, onAdd, onRemove, readonly, gallery, labelOf, noAdd }) {
   const inp = useRef(); const [busy, setBusy] = useState(false); const [view, setView] = useState(null);
   const gal = gallery && gallery.length ? gallery : ids;
   const pick = async e => {
@@ -402,7 +402,7 @@ function PhotoStrip({ ids = [], max = 10, onAdd, onRemove, readonly, gallery, la
   };
   return html`<div class="photos">
     ${ids.map(id => html`<${Thumb} key=${id} id=${id} onOpen=${() => setView(Math.max(0, gal.indexOf(id)))} onRemove=${readonly ? null : () => { if (confirm('Eliminare la foto?')) onRemove(id); }} />`)}
-    ${!readonly && ids.length < max && html`<button class="addph" aria-label="Aggiungi foto" onClick=${() => camOpen(inp.current)}>
+    ${!readonly && !noAdd && ids.length < max && html`<button class="addph" aria-label="Aggiungi foto" onClick=${() => camOpen(inp.current)}>
       ${busy ? html`<div style="display:grid;place-items:center;gap:3px"><div class="spin" />${typeof busy === 'string' && html`<small style="font-size:var(--fs-2xs);font-weight:700">${busy}</small>`}</div>` : html`<${Icon} n="camera" s=${22} />`}</button>
       ${!busy && html`<button class="addph gal" aria-label="Scegli dalla galleria" title="Scegli dalla galleria" onClick=${() => galOpen(inp.current)}><${Icon} n="image" s=${20} /></button>`}`}
     <input ref=${inp} type="file" accept="image/*" capture="environment" multiple hidden onChange=${pick} />
@@ -737,13 +737,45 @@ async function copyIssue() {
 
 
 /* ---------------- foto negli appunti ---------------- */
-function NotePhotos({ rec, field = 'fotoAppunti', up }) {
+function NotePhotos({ rec, field = 'fotoAppunti', up, noAdd }) {
   const ids = rec[field] || [];
   const tk = field === 'fotoAppunti' ? 'tagAppunti' : 'tag' + field.slice(4); // tag degli appunti
-  return html`<div class="mt-3"><${PhotoStrip} ids=${ids} max=${10}
+  return html`<div class="mt-3"><${PhotoStrip} ids=${ids} max=${10} noAdd=${noAdd}
     onAdd=${add => up(p => ({ ...p, [field]: [...(p[field] || []), ...add] }))}
     onRemove=${async id => { await removeBlob(id); up(p => ({ ...p, [field]: (p[field] || []).filter(f => f !== id) })); }} />
     <${TagPicker} tags=${rec[tk] || []} set=${t => up({ [tk]: t })} /></div>`;
+}
+
+/* ---------------- appunti (v56) ----------------
+   Campo con l'etichetta dentro e, in colonna sul bordo destro, fotocamera, galleria e microfono (Rilievo: Campo).
+   foto = campo delle foto degli appunti (null: solo dettatura). Le miniature e i tag restano sotto il campo. */
+function IcoFoto({ inp }) {
+  return html`<button type="button" class="cam-in" aria-label="Scatta una foto" title="Scatta una foto" onClick=${() => camOpen(inp.current)}><${Icon} n="camera" s=${22} /></button>
+    <button type="button" class="gal-in" aria-label="Scegli dalla galleria" title="Scegli dalla galleria" onClick=${() => galOpen(inp.current)}><${Icon} n="image" s=${22} /></button>`;
+}
+function Appunti({ rec, up, k = 'appunti', foto = 'fotoAppunti', rows = 4, label = 'Appunti', placeholder }) {
+  const inp = useRef();
+  const [on, toggle] = useDictation(() => rec[k] || '', v => up({ [k]: v }));
+  const add = async e => {
+    const fs = [...e.target.files]; e.target.value = ''; if (!fs.length) return;
+    const room = 10 - (rec[foto] || []).length, out = [];
+    for (const f of fs.slice(0, Math.max(0, room))) { try { out.push(await saveImage(f)); } catch (err) { fail('Foto non salvata', err); } }
+    if (fs.length > room) toast('Al massimo 10 foto negli appunti');
+    if (out.length) up(p => ({ ...p, [foto]: [...(p[foto] || []), ...out] }));
+  };
+  return html`<div class="card"><div class="fld"><span>${label}</span>
+    <div class="mic-wrap"><textarea rows=${rows} placeholder=${placeholder || ' '} value=${rec[k] || ''} onInput=${e => up({ [k]: e.target.value })}></textarea>
+      <div class="ico-col">${foto && html`<${IcoFoto} inp=${inp} />`}<${MicBtn} rec=${on} toggle=${toggle} /></div></div></div>
+    ${foto && html`<input ref=${inp} type="file" accept="image/*" capture="environment" multiple hidden onChange=${add} />
+      <${NotePhotos} rec=${rec} field=${foto} up=${up} noAdd />`}</div>`;
+}
+// campi senza segnaposto: uno spazio come segnaposto, così l'etichetta resta dentro il campo vuoto (Rilievo: Campo)
+function fldSegnaposto() {
+  let t = 0;
+  const sel = '.fld > input:not([placeholder]), .fld > input[placeholder=""], .fld > textarea:not([placeholder]), .fld > textarea[placeholder=""], .fld .mic-wrap textarea:not([placeholder]), .fld .mic-wrap textarea[placeholder=""]';
+  const run = () => { t = 0; document.querySelectorAll(sel).forEach(el => el.setAttribute('placeholder', ' ')); };
+  new MutationObserver(() => { if (!t) t = requestAnimationFrame(run); }).observe(document.body, { childList: true, subtree: true });
+  run();
 }
 
 /* ---------------- tag delle note ----------------
@@ -844,6 +876,23 @@ function useSchede(type, keys, isNew, map = {}) {
 function Schede({ tabs, value, set }) {
   const ref = useRef();
   const pick = k => { if (k === value) return; set(k); const c = ref.current && ref.current.closest('.content'); if (c) c.scrollTop = 0; };
+  // scorrimento laterale sul contenuto: passa alla scheda accanto (non su campi, planimetrie, fogli o elenchi che scorrono di lato)
+  const st = useRef(); st.current = { tabs, value, pick };
+  useEffect(() => {
+    const c = ref.current && ref.current.closest('.content'); if (!c) return;
+    let p0 = null;
+    const no = el => !!el.closest('input, textarea, select, canvas, .seg, .pills, .vs-filter, .tags-pick, .photos, .sheet-ov, [data-noswipe]');
+    const down = e => { p0 = e.touches.length === 1 && !no(e.target) ? { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() } : null; };
+    const end = e => {
+      if (!p0) return; const t = e.changedTouches[0], dx = t.clientX - p0.x, dy = t.clientY - p0.y, dt = Date.now() - p0.t; p0 = null;
+      if (dt > 700 || Math.abs(dx) < 70 || Math.abs(dx) < 1.8 * Math.abs(dy)) return;
+      const { tabs: T, value: v, pick: pk } = st.current; const i = T.findIndex(x => x.k === v), j = i + (dx < 0 ? 1 : -1);
+      if (i >= 0 && j >= 0 && j < T.length) pk(T[j].k);
+    };
+    c.addEventListener('touchstart', down, { passive: true }); c.addEventListener('touchend', end, { passive: true });
+    return () => { c.removeEventListener('touchstart', down); c.removeEventListener('touchend', end); };
+  }, []);
+
   return html`<div class="seg schede" ref=${ref} role="tablist">${tabs.map(x => html`<button key=${x.k} role="tab" aria-selected=${value === x.k} class=${value === x.k ? 'on' : ''} onClick=${() => pick(x.k)}>
     ${x.l}${x.n > 0 && html`<small class="sch-n">${x.n}</small>`}</button>`)}</div>`;
 }

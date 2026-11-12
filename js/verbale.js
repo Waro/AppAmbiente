@@ -121,8 +121,7 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
     </div>`; })}
     ${!ns.sel && html`<button class="btn dashed block mt-1" onClick=${addN}>+ Nuova nota</button>`}
     ${!ns.sel && html`<div class="sec-h"><h3>Appunti</h3><span class="hint">Testo libero</span></div>
-    <div class="card"><textarea class="inp" rows="3" value=${r.appunti} onInput=${e => up({ appunti: e.target.value })} aria-label="Appunti"></textarea>
-      <${NotePhotos} rec=${r} up=${up} /></div>`}
+    <${Appunti} rec=${r} up=${up} rows=${3} />`}
     `}
     ${T === 'file' && html`<${FileTab} r=${r} up=${up} settings=${settings} />`}
     ${ns.sel ? html`<${ActionBar}><button class="btn pri" disabled=${!selNote.length} onClick=${() => setTagSheet(true)}><${Icon} n="tag" s=${20} /> Tag (${selNote.length})</button><//>`

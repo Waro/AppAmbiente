@@ -305,7 +305,7 @@ function FirmeForm({ rec: initial, records, settings, onSave, onDelete, embedded
     </div><datalist id="dl-cli-fir">${clienti.map(c => html`<option value=${c} />`)}</datalist></div>
     <${FogliFirme} r=${r} up=${up} settings=${settings} />
     <div class="sec-h"><h3>Appunti</h3><span class="hint">Testo libero</span></div>
-    <div class="card"><textarea class="inp" rows="3" value=${r.appunti} onInput=${e => up({ appunti: e.target.value })} aria-label="Appunti"></textarea></div>
+    <${Appunti} rec=${r} up=${up} foto=${null} rows=${3} />
     <${BarraAtt} r=${r} settings=${settings} center=${html`<${OdBtn} r=${r} settings=${settings} />`} gruppi=${[opzArchivio({ r, settings, onDelete, elimina: 'Elimina' })]} />
   </div>`;
 }

@@ -232,8 +232,7 @@ function AriaForm({ rec: initial, records, settings, onSave, onDelete, embedded,
       onUpdate=${(id, patch) => up(q => ({ ...q, planimetrie: (q.planimetrie || []).map(x => x.id === id ? { ...x, ...patch } : x) }))}
       onRemove=${async p => { for (const b of blobIds(p)) await removeBlob(b); up(q => ({ ...q, planimetrie: (q.planimetrie || []).filter(x => x.id !== p.id) })); }} /></div>
     <div class="sec-h"><h3>Appunti</h3><span class="hint">Testo libero</span></div>
-    <div class="card"><textarea class="inp" rows="3" value=${r.appunti} onInput=${e => up({ appunti: e.target.value })} aria-label="Appunti"></textarea>
-      <${NotePhotos} rec=${r} up=${up} /></div>
+    <${Appunti} rec=${r} up=${up} rows=${3} />
     `}
     ${T === 'firme' && html`<${FogliFirme} r=${r} up=${up} settings=${settings} />`}
     ${T === 'file' && html`<${FileTab} r=${r} up=${up} settings=${settings} />`}

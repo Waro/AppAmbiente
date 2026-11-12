@@ -434,6 +434,7 @@ function App() {
 
 
 render(html`<${Boundary}><${App} /></${Boundary}>`, document.getElementById('root'));
+fldSegnaposto();
 const splash = document.getElementById('splash');
 if (splash) requestAnimationFrame(() => requestAnimationFrame(() => { splash.classList.add('hide'); setTimeout(() => splash.remove(), 550); }));
 

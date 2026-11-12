@@ -344,8 +344,7 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
       onRemove=${async p => { for (const b of blobIds(p)) await removeBlob(b); up(q => ({ ...q, planimetrie: (q.planimetrie || []).filter(x => x.id !== p.id) })); }} /></div>
 
     <div class="sec-h"><h3>Appunti</h3><span class="hint">Testo libero</span></div>
-    <div class="card"><textarea class="inp" rows="4" placeholder="Note generali del sopralluogo" value=${r.appunti} onInput=${e => up({ appunti: e.target.value })} aria-label="Appunti"></textarea>
-      <${NotePhotos} rec=${r} up=${up} /></div>
+    <${Appunti} rec=${r} up=${up} placeholder="Note generali del sopralluogo" />
 
     `}
     ${T === 'firme' && html`<${FogliFirme} r=${r} up=${up} settings=${settings} />`}

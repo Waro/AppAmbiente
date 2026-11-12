@@ -1126,3 +1126,42 @@ img.logo { background: none; object-fit: cover; }
 .mb-2 { margin-bottom: var(--sp-2); } .mb-0 { margin-bottom: 0; } .mt-0 { margin-top: 0; }
 .grow { flex: 1; } .self-start { justify-self: start; } .fw-6 { font-weight: 600; }
 .lead.lead-gap, .lead-gap { margin: var(--sp-1) 0 var(--sp-3); }
+
+/* ---------------- v56: campi con l'etichetta dentro (Rilievo: Campo) ----------------
+   L'etichetta fa da segnaposto nel campo vuoto e sale in alto, sempre dentro il campo, quando scrivi o c'è un valore.
+   Serve un segnaposto (anche uno spazio, vedi fldSegnaposto) perché il CSS sappia se il campo è vuoto. */
+.fld:is(:has(> input:not([type=checkbox]):not([type=radio])), :has(> textarea), :has(> select), :has(> .mic-wrap), .sigla) { position: relative; gap: 0; }
+.fld:is(:has(> input:not([type=checkbox]):not([type=radio])), :has(> textarea), :has(> select), :has(> .mic-wrap), .sigla) > span:first-child {
+  position: absolute; left: 13.5px; top: var(--sp-2); z-index: 1; max-width: calc(100% - 64px); pointer-events: none;
+  font-size: var(--fs-xs); font-weight: 600; line-height: 1.3; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: top .18s ease-out, font-size .18s ease-out, color .18s ease-out; }
+.fld > input:not([type=checkbox]):not([type=radio]), .fld > textarea, .fld > select, .fld > .mic-wrap textarea { padding-top: var(--sp-6); padding-bottom: var(--sp-2); min-height: 56px; }
+.fld:has(> :is(input:not([type=checkbox]):not([type=radio]):not([type=date]):not([type=time]):not([type=datetime-local]):not([type=month]), textarea):placeholder-shown:not(:focus)) > span:first-child,
+.fld:has(> .mic-wrap textarea:placeholder-shown:not(:focus)) > span:first-child { top: var(--sp-4); font-size: var(--fs-lg); font-weight: 400; }
+.fld:focus-within > span:first-child { color: var(--blue); }
+.fld > :is(input, textarea):not(:focus)::placeholder, .fld > .mic-wrap textarea:not(:focus)::placeholder { color: transparent; }
+.fld input:focus, .fld textarea:focus, .fld select:focus { border-color: var(--blue); border-width: 2px; padding-left: 11.5px; }
+.grid2:has(> .fld) { grid-template-columns: minmax(0, 1fr); gap: var(--sp-2); }
+/* sigla del campione: sola lettura, nello stesso campo con l'etichetta dentro */
+.fld.sigla .code-auto { height: auto; min-height: 56px; padding: var(--sp-6) var(--sp-3) var(--sp-2); display: block; text-align: left; font-size: var(--fs-lg); }
+/* dati importati: stessa forma, etichetta dentro */
+.fld.lockf { position: relative; gap: 0; }
+.fld.lockf > span:first-child { position: absolute; left: 13.5px; top: var(--sp-2); z-index: 1; font-size: var(--fs-xs); font-weight: 600; color: var(--muted); }
+.fld.lockf .lockv { padding-top: var(--sp-6); min-height: 56px; }
+@media (prefers-reduced-motion: reduce) { .fld > span:first-child { transition: none; } }
+
+/* icone nei campi di testo: in colonna sul bordo destro, dall'alto fotocamera, galleria, microfono; solo l'icona in blue */
+.mic-wrap textarea { padding-right: 52px; }
+.ico-col { position: absolute; top: var(--sp-1); right: var(--sp-1); display: flex; flex-direction: column; }
+.ico-col .mic-in, .ico-col .cam-in, .ico-col .gal-in { position: relative; top: auto; right: auto; width: var(--tap); height: var(--tap); border: 0; border-radius: var(--r-sm); background: none; color: var(--blue); display: grid; place-items: center; padding: 0; animation: none; box-shadow: none; }
+.ico-col :is(.mic-in, .cam-in, .gal-in):focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+.ico-col .mic-in.rec { background: none; color: var(--blue); }
+.ico-col .ck-badge { top: 2px; right: 2px; }
+.mic-wrap:has(.gal-in) textarea { min-height: 140px; }
+.mic-wrap:has(.ico-col > :nth-child(2):last-child) textarea { min-height: 100px; }
+
+/* elenchi con il titolo dentro la card, a tutta larghezza (piani dei campioni, manufatti non campionati) */
+.list-h { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-2); padding: var(--sp-3) var(--sp-4); border-bottom: .5px solid var(--sep); }
+.list-h b { font-size: var(--fs-xl); font-weight: 600; }
+.list-h span { font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+.vs-nota > .fld { margin-bottom: var(--sp-2); }

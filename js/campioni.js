@@ -87,7 +87,7 @@ function numFonte(r) {
   const p = r.precedente;
   return p && ((p.campioni || []).length || (p.nc || []).length) ? (p.fonte || 'indagine importata') : '';
 }
-const numHint = (r, m) => { const n = precBase(r, m.auto); const f = n && numFonte(r); return n ? `Dopo ${m.auto}${n}${f ? ' · ' + f : ''}` : `Codici automatici ${m.auto}1, ${m.auto}2…`; };
+const numHint = (r, m) => { const n = precBase(r, m.auto); const f = n && numFonte(r); return n ? `Dopo ${m.auto}${n}${f ? ' · ' + f : ''}` : ''; }; // niente esempi accanto al titolo (v56)
 // interruttore «Prosegui la numerazione» (Rilievo: riga con l'etichetta a sinistra), solo se c'è da cosa proseguire
 function NumSection({ r, up, mats }) {
   const c = [...mats.filter(m => m.auto).map(m => m.auto), 'NC'].some(p => precBaseAll(r, p));
@@ -161,14 +161,18 @@ const campPlanLabels = (r, mats) => [...mats.flatMap(m => (r.campioni[m.k] || []
 const campDesc = c => [c.piano, c.ubicazione, c.descrizione].map(x => String(x || '').trim()).filter(Boolean).join(' - ');
 // campo Piano: il gruppo cambia solo a fine modifica (uscendo dal campo o con Invio), così il campo non perde il fuoco
 function PianoInp({ value, set, list }) {
-  return html`<input class="inp" list=${list} placeholder="Piano" defaultValue=${value || ''} aria-label="Piano"
-    onChange=${e => { const v = e.target.value.trim(); if (v !== (value || '')) set(v); }} onKeyDown=${e => { if (e.key === 'Enter') e.target.blur(); }} />`;
+  return html`<label class="fld"><span>Piano</span><input list=${list} placeholder=" " defaultValue=${value || ''}
+    onChange=${e => { const v = e.target.value.trim(); if (v !== (value || '')) set(v); }} onKeyDown=${e => { if (e.key === 'Enter') e.target.blur(); }} /></label>`;
 }
-// campi comuni del campione: Piano, Ubicazione, Descrizione
+// sigla del campione: assegnata da Nembo (sola lettura) o libera
+const SiglaAuto = ({ codice, c }) => html`<div class="fld sigla"><span>Sigla</span><div class="code-auto" style=${'color:' + c}>${codice || '—'}</div></div>`;
+// campi comuni del campione, uno per riga: Sigla, Piano, Ubicazione, Descrizione (con la dettatura)
 function CampFields({ c, upd, list, codice }) {
-  return html`<div class="row">${codice}<${PianoInp} value=${c.piano} list=${list} set=${v => upd({ piano: v })} /></div>
-    <input class="inp" placeholder="Ubicazione" value=${c.ubicazione || ''} onInput=${e => upd({ ubicazione: e.target.value })} aria-label="Ubicazione" />
-    <textarea class="inp" rows="2" placeholder="Descrizione" value=${c.descrizione} onInput=${e => upd({ descrizione: e.target.value })} aria-label="Descrizione"></textarea>`;
+  const [rec, toggle] = useDictation(() => c.descrizione || '', v => upd({ descrizione: v }));
+  return html`${codice}<${PianoInp} value=${c.piano} list=${list} set=${v => upd({ piano: v })} />
+    <label class="fld"><span>Ubicazione</span><input placeholder=" " value=${c.ubicazione || ''} onInput=${e => upd({ ubicazione: e.target.value })} /></label>
+    <div class="fld"><span>Descrizione</span><div class="mic-wrap"><textarea rows="2" placeholder=" " aria-label="Descrizione" value=${c.descrizione} onInput=${e => upd({ descrizione: e.target.value })}></textarea>
+      <div class="ico-col"><${MicBtn} rec=${rec} toggle=${toggle} /></div></div></div>`;
 }
 
 /* ---------------- NC: manufatti non campionati (MCA e FAV, numerazione unica NC1, NC2…) ----------------
@@ -188,21 +192,18 @@ function NcSection({ r, up, mat, list }) {
   const del = async x => { if (!confirm('Eliminare ' + x.codice + '?')) return; for (const b of blobIds(x)) await removeBlob(b); setNc(l => l.filter(y => y.id !== x.id)); };
   const next = 'NC' + (precBase(r, 'NC') + ncOf(r).length + 1);
   const precC = ((r.precedente || {}).campioni || []).filter(c => c.k === mat.k);
-  return html`<div class="sec-h mt-4"><h3>Manufatti non campionati</h3><span class="hint">${precBase(r, 'NC') ? 'Dopo NC' + precBase(r, 'NC') + ' · MCA e FAV' : 'NC1, NC2… unica per MCA e FAV'}</span></div>
-    ${L.length > 0 && html`<div class="list">${L.map(x => { const rc = ncRif(r, x); const cx = { ...x, descrizione: x.descrizione, quantita: [x.quantita, rc && 'come ' + rc].filter(Boolean).join(' · ') };
+  return html`<div class="list mt-4"><div class="list-h"><b>Manufatti non campionati</b><span>${L.length}</span></div>${L.map(x => { const rc = ncRif(r, x); const cx = { ...x, descrizione: x.descrizione, quantita: [x.quantita, rc && 'come ' + rc].filter(Boolean).join(' · ') };
       return html`<${SampleRow} key=${x.id} c=${cx} mat=${mat} open=${!!openN[x.id]} toggle=${() => setOpenN(o => ({ ...o, [x.id]: !o[x.id] }))}
         onPhoto=${ids => upd(x.id, { foto: [...(x.foto || []), ...ids] })}>
-        <${CampFields} c=${x} list=${list} upd=${patch => upd(x.id, patch)} codice=${html`<div class="code-auto" style=${'width:64px;flex-shrink:0;color:' + mat.c}>${x.codice}</div>`} />
-        <div class="row">
-          <input class="inp" placeholder="Quantità (es. 180 mq)" value=${x.quantita || ''} onInput=${e => upd(x.id, { quantita: e.target.value })} aria-label="Quantità" />
-          <select class="inp" value=${x.rif || ''} onChange=${e => upd(x.id, { rif: e.target.value })} aria-label="Campione di riferimento">
+        <${CampFields} c=${x} list=${list} upd=${patch => upd(x.id, patch)} codice=${html`<${SiglaAuto} codice=${x.codice} c=${mat.c} />`} />
+        <label class="fld"><span>Quantità</span><input placeholder="es. 180 mq" value=${x.quantita || ''} onInput=${e => upd(x.id, { quantita: e.target.value })} /></label>
+        <label class="fld"><span>Campione di riferimento</span><select value=${x.rif || ''} onChange=${e => upd(x.id, { rif: e.target.value })}>
             <option value="">Nessun campione di riferimento</option>${camp.map(c => html`<option value=${c.id}>Come ${c.codice}${c.descrizione ? ' · ' + c.descrizione.slice(0, 40) : ''}</option>`)}
-            ${precC.length > 0 && html`<optgroup label="Indagine precedente">${precC.map(c => html`<option value=${c.id}>Come ${c.codice} (precedente)${c.esito ? ' · ' + c.esito : ''}${c.descrizione ? ' · ' + c.descrizione.slice(0, 30) : ''}</option>`)}</optgroup>`}</select>
-        </div>
+            ${precC.length > 0 && html`<optgroup label="Indagine precedente">${precC.map(c => html`<option value=${c.id}>Come ${c.codice} (precedente)${c.esito ? ' · ' + c.esito : ''}${c.descrizione ? ' · ' + c.descrizione.slice(0, 30) : ''}</option>`)}</optgroup>`}</select></label>
         <${PhotoStrip} ids=${x.foto || []} max=${4} onAdd=${ids => upd(x.id, { foto: [...(x.foto || []), ...ids] })}
           onRemove=${async id => { await removeBlob(id); upd(x.id, { foto: x.foto.filter(f => f !== id) }); }} />
         <button class="btn sm danger self-start" onClick=${() => del(x)}>Elimina ${x.codice}</button>
-      <//>`; })}</div>`}
+      <//>`; })}</div>
     <button class="btn dashed mt-3" onClick=${add}>+ Aggiungi manufatto non campionato ${next}</button>`;
 }
 

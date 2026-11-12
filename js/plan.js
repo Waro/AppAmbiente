@@ -578,8 +578,10 @@ async function importPlanimetrie(list, existing = []) {
 }
 
 /* ---------------- sezione nelle schede ---------------- */
-function PlanList({ items = [], labels, onUpdate, onAdd, onRemove }) {
+function PlanList({ items = [], labels, onUpdate, onAdd, onRemove, apri }) {
   const inp = useRef(); const [open, setOpen] = useState(null);
+  // apertura chiesta da fuori (tasto Planimetria): la pianta del piano indicato, altrimenti la prima
+  useEffect(() => { if (apri && Date.now() - apri.n < 2000 && items.length) setOpen((items.find(p => apri.piano && p.piano === apri.piano) || items[0]).id); }, [apri && apri.n]);
   const noti = [...new Set([...(labels || []).map(l => l.piano).filter(Boolean), ...PIANI_COMUNI])];
   const pick = async e => {
     for (const f of [...e.target.files]) {
