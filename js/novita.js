@@ -9,7 +9,10 @@ const NOVITA = [
       'Negli appunti trovi fotocamera, galleria e microfono dentro la casella.',
       'Scorri a destra o a sinistra per cambiare scheda.',
       'Nei campioni il tasto Planimetria apre la pianta senza aggiungere campioni.',
-      'Nel sopralluogo HSE le note si chiamano osservazioni.' ] },
+      'Nel sopralluogo HSE le note si chiamano osservazioni.',
+      'Dal blocco blu dei contatori apri il Riepilogo: tutto il sopralluogo in sola lettura.',
+      'Dopo la prima foto di un campione si apre la pianta del suo piano, pronta per l’etichetta.',
+      'Sopralluogo HSE: scegli Esteso o Sintetico quando generi il report; le osservazioni sono le stesse.' ] },
   { v: 55.1, data: '2026-11-12', tipo: 'minore', titolo: 'Correzioni al sopralluogo HSE',
     voci: [
       'Note: il primo tocco dopo il tocco prolungato seleziona la nota; sul computer c’è «Seleziona».',
