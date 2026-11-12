@@ -3,6 +3,14 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
+  { v: 55.1, data: '2026-11-12', tipo: 'minore', titolo: 'Correzioni al sopralluogo HSE',
+    voci: [
+      'Note: il primo tocco dopo il tocco prolungato seleziona la nota; sul computer c’è «Seleziona».',
+      'Un capitolo con note va sempre nel Word, anche se era segnato «Non pertinente».',
+      'Le foto di una nota si eliminano con la ×.',
+      'Il committente proposto nelle Impostazioni resta anche quando il sopralluogo nasce da Nuova attività o dalla Programmazione.',
+      'Nel periodico creato da un sopralluogo a note le righe nuove tornano rosse; data, ora e note del piano restano quelle della Programmazione.',
+      'Le foto caricate su OneDrive, nello ZIP e nel riepilogo hanno lo stesso numero del Word; il riepilogo elenca le note.' ] },
   { v: 55, data: '2026-11-11', tipo: 'minore', titolo: 'HSE in Programmazione',
     voci: [
       'In Programmazione scegli se il sopralluogo HSE è un primo sopralluogo o un periodico. Il formato, o il report da cui partire, lo scegli quando apri l’attività.',
@@ -143,7 +151,9 @@ const NOVITA = [
       'Notifiche di OneDrive con i tasti Ricarica e Apri attività.',
       'Ubicazioni e postazioni lunghe leggibili per intero.' ] },
 ];
-const verNum = v => +String(v || '').replace(/\D/g, '') || 0;
+// nembo-v55 → 55, nembo-v55b (correzione) → 55.1; nelle Novità la correzione si scrive «v55b»
+const verNum = v => { const m = String(v || '').match(/(\d+)(b?)\s*$/); return m ? +m[1] + (m[2] ? 0.1 : 0) : 0; };
+const vEt = x => x.v % 1 ? Math.floor(x.v) + 'b' : String(x.v);
 const novitaFino = n => NOVITA.filter(x => x.v <= verNum(APP_VERSION) && x.v > n);
 
 // novità da mostrare a questo avvio (una volta per dispositivo); null se niente
@@ -159,8 +169,8 @@ async function novitaDaMostrare(haDati) {
   const list = novitaFino(seen);
   await DB.set('novita_vista', cur);
   if (!list.length) return null;
-  notify('new', list.length === 1 ? `Novità della versione v${list[0].v}` : `Novità delle versioni v${list[list.length - 1].v}–v${list[0].v}`,
-    { detail: list.map(x => x.titolo).join(' · '), items: list.flatMap(x => x.voci.map(t => `v${x.v} · ${t}`)) });
+  notify('new', list.length === 1 ? `Novità della versione v${vEt(list[0])}` : `Novità delle versioni v${list[list.length - 1].v}–v${vEt(list[0])}`,
+    { detail: list.map(x => x.titolo).join(' · '), items: list.flatMap(x => x.voci.map(t => `v${vEt(x)} · ${t}`)) });
   return list;
 }
 
@@ -186,7 +196,7 @@ function NovitaSheet({ list, onClose, go }) {
               : S.vai ? html`<button class="btn sm" onClick=${() => { onClose(); setTimeout(() => go({ v: S.vai }), 60); }}>Prova</button>` : html`<span style="width:44px"></span>`}
           </div></div>`}
         ${list.map(x => html`<div key=${x.v}>
-          <div class="sec-h"><h3>v${x.v} · ${x.titolo}</h3><span class="hint">${fmtD(x.data)}</span></div>
+          <div class="sec-h"><h3>v${vEt(x)} · ${x.titolo}</h3><span class="hint">${fmtD(x.data)}</span></div>
           <div class="card tight"><ul class="nv-list">${x.voci.map((t, i) => html`<li key=${i}>${t}</li>`)}</ul></div></div>`)}
         <button class="btn pri block mt-4" onClick=${onClose}>Ho capito</button>
       </div>
@@ -200,7 +210,7 @@ function NovitaCard({ go }) {
   const tutte = novitaFino(0);
   return html`<div class="card tight">
     ${tutte.slice(0, 4).map(x => html`<button class="prow nv-row" key=${x.v} onClick=${() => setOpen([x])}>
-      <span class="t"><b>v${x.v} · ${x.titolo}</b><small>${fmtD(x.data)} · ${x.voci.length} ${x.voci.length === 1 ? 'novità' : 'novità'}</small></span><${Icon} n="right" s=${18} /></button>`)}
+      <span class="t"><b>v${vEt(x)} · ${x.titolo}</b><small>${fmtD(x.data)} · ${x.voci.length} ${x.voci.length === 1 ? 'novità' : 'novità'}</small></span><${Icon} n="right" s=${18} /></button>`)}
     <button class="btn block mt-2" onClick=${() => setOpen(tutte)}>Tutte le novità</button>
     ${open && html`<${NovitaSheet} list=${open} go=${go} onClose=${() => setOpen(null)} />`}
   </div>`;

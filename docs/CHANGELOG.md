@@ -4,6 +4,23 @@ Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Nem
 
 ## [Non rilasciato]
 
+## [nembo-v55b] — 2026-11-12
+
+### Corretto
+Ispezione (metodo Fagan) del sopralluogo HSE a note, v53–v55.
+- Selezione delle note (sopralluogo e Verbale): il primo tocco dopo il tocco prolungato non va più perso (`useNoteSel` ascolta la fine del tocco sulla finestra); su PC «Seleziona»; niente menu del browser né selezione del testo durante il tocco prolungato; con il filtro attivo la selezione e «Tag (N)» valgono solo per le note visibili.
+- «Non pertinente» non nasconde più le note del capitolo (Check-list e Word); l'interruttore compare solo nei capitoli senza note e la nota «Nel Word: …» solo nell'Esteso.
+- Periodico da un sopralluogo a note: rosso/nero di nuovo attivo (`hsNoteAOld(r, true)` non spegne `novitaRosso`); ora, durata, stato e drone non si ereditano dal report di partenza (`hsNextYear`); i dati di Nuova attività o del piano (commessa, cliente…) valgono anche per il periodico, solo se compilati; un doppio tocco non crea due sopralluoghi; da Nuova attività il sopralluogo si apre dopo la chiusura del foglio, come per le altre attività.
+- `HsDaAvviare` conserva la nota del piano (`appunti`) e i campi bloccati (`imp`).
+- `DocBtn`: dopo il foglio «capitoli senza note» il Word si genera con l'attività aggiornata (prima il tasto tornava subito ambra).
+- Committente proposto (`hsCommEsteso`/`hsCommSint`) non più cancellato da un campo vuoto in Nuova attività, nella Programmazione e nel piano JSON (dove non viene bloccato).
+- Filtro per tag bloccato quando il tag spariva da tutte le note (sopralluogo e Verbale); ‹ › con il filtro si scambiano con la nota visibile vicina; numero della nota = ordine a schermo.
+- Foto: stesso numero nel Word e nei file di OneDrive, ZIP e riepilogo (`hsFotoOrd` usa l'ordine dei capitoli); le foto delle note senza capitolo restano fuori dal Word; nota con sola foto: nessuna «Nessuna criticità rilevata» e foto collegata alla voce anche nel Sintetico; foto di una nota eliminabili (`FotoCollegate` con `togli`); dalla fotocamera della barra non resta una nota vuota se la foto non si salva.
+- Riepilogo del sopralluogo a note: una voce per nota con capitolo, testo e foto.
+- `pulisciRecord`: `noteSop` normalizzato (non manda più in errore l'elenco); foto come oggetti ammesse solo in `foto` dei sopralluoghi HSE.
+- Programmazione: i vecchi sopralluoghi a schede senza report di partenza non mostrano più «periodico».
+- Novità: le correzioni `nembo-vNNb` hanno la loro voce (`verNum` → NN.1, etichetta «vNNb»).
+
 ## [nembo-v55] — 2026-11-11
 
 ### Aggiunto

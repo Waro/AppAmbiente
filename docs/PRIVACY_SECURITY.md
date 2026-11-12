@@ -32,7 +32,7 @@ Dove viaggiano: IndexedDB del dispositivo; OneDrive aziendale dell'utente (carte
 |---|---|---|
 | Pagina | CSP restrittiva, nessuna CDN, `noindex`, niente apertura dentro un iframe | `index.html`, inizio di `core.js` |
 | Allegati | solo foto, PDF, Word .docx; tipo reale letto dai primi byte; PDF con JavaScript, azioni o file incorporati segnalati e aperti nel visore di Nembo senza script; Word con macro, ActiveX o contenuti esterni rifiutati; massimo 60 MB e 40 pagine | `controlli.js` (`tipoDaTesta`, `PdfViewer`) |
-| Record in ingresso | tipi ammessi, id validi, niente `__proto__`/`constructor`, foto solo data URI PNG/JPEG, massimo 20 MB | `pulisciRecord` |
+| Record in ingresso | tipi ammessi, id validi, niente `__proto__`/`constructor`, foto solo data URI PNG/JPEG, massimo 20 MB; elenchi di foto solo con id di testo (oggetti `{ id, … }` solo in `foto` dei sopralluoghi HSE); note HSE (`noteSop`) con campi di testo e tag di testo | `pulisciRecord` |
 | Impostazioni in ingresso | campi noti e tipi corretti, firma mai da file | `pulisciImpostazioni`, `applicaConfig` |
 | Modelli | PDF e Word verificati (campi e segnaposto attesi) | `checkTemplate` |
 | Backup | impronta SHA-256 di ogni file; `firma.json` con chiave ECDSA P-256 del dispositivo (privata non esportabile) e firma del codice utente | `buildZip`, `firmaBackup`, `importZip` |

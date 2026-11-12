@@ -20,11 +20,11 @@ const hsSubDi = (n, C) => {
 };
 const newNotaHs = (p = {}) => ({ id: uid('n'), titolo: '', testo: '', mig: '', tag: [], ...p });
 const hsNoteDi = (r, c) => (r.noteSop || []).filter(n => { const x = hsCapDi(n, hsCapi(r)); return x && x.k === c.k; });
-// stato del capitolo nella Check-list: verde con note, rosso senza note, grigio «Non pertinente» (scelto a mano)
+// stato del capitolo nella Check-list: verde con note, grigio «Non pertinente» (scelto a mano, vale solo senza note), rosso senza note
 function hsStatoCap(r, c) {
-  if ((r.np || {})[c.k]) return { st: 'st-off', w: 'Non pertinente' };
   const L = hsNoteDi(r, c);
-  return L.length ? { st: 'st-ok', w: L.length + (L.length === 1 ? ' nota' : ' note') } : { st: 'st-err', w: 'Senza note' };
+  if (L.length) return { st: 'st-ok', w: L.length + (L.length === 1 ? ' nota' : ' note') };
+  return (r.np || {})[c.k] ? { st: 'st-off', w: 'Non pertinente' } : { st: 'st-err', w: 'Senza note' };
 }
 const hsCapRossi = r => hsCapi(r).filter(c => hsStatoCap(r, c).st === 'st-err');
 // note in ordine di Word: capitoli nell'ordine del modello, poi quelle senza capitolo
@@ -35,6 +35,8 @@ function hsNoteGruppi(r) {
   if (senza.length) G.push({ c: null, note: senza });
   return G;
 }
+// numero della nota: l'ordine in cui le note compaiono (capitoli nell'ordine del modello), non quello di inserimento
+const hsNumNote = r => { const m = {}; hsNoteGruppi(r).flatMap(g => g.note).forEach((n, i) => { m[n.id] = i + 1; }); return m; };
 // tag proposti a una nota (o a più note): prima le sottosezioni (o voci) del capitolo scelto, poi i capitoli
 const hsTagFissi = (r, note) => {
   const C = hsCapi(r), caps = [...new Set(note.map(n => (hsCapDi(n, C) || {}).k))];
@@ -48,7 +50,9 @@ const hsTestoNota = n => [(n.testo || '').trim() || (n.titolo || '').trim(), (n.
    Esteso: le note del capitolo vanno nella sua scheda (prima quelle senza sottosezione), le attività di miglioramento in «Attività di
    miglioramento»; sezioni e sottosezioni senza note e capitoli non pertinenti: «Nessuna criticità rilevata». Tabella di rischio vuota.
    Sintetico: nota con capitolo e voce → annotazioni della voce; nota con il solo capitolo → «Condizioni generali» («Capitolo: testo»).
-   Risposte Sì/No/N.A. e azioni vuote. Le foto seguono l'ordine dei capitoli e passano alla sezione o alla voce della nota. */
+   Risposte Sì/No/N.A. e azioni vuote. Le foto seguono l'ordine dei capitoli e passano alla sezione o alla voce della nota;
+   quelle delle note senza capitolo restano fuori dal Word, come le note. Una nota senza testo (solo foto o solo attività di
+   miglioramento) non fa scrivere «Nessuna criticità rilevata». */
 // perScheda: per il report a schede del sopralluogo periodico le note senza sottosezione di un capitolo con sottosezioni
 // vanno nella prima sottosezione (come quando si rilegge il Word), perché nella scheda non c'è un campo per il capitolo
 function hsNoteAOld(r, perScheda) {
@@ -57,20 +61,21 @@ function hsNoteAOld(r, perScheda) {
   if (r.formato === 'sintetico') {
     const note = {}, descr = [];
     (r.noteSop || []).forEach(n => {
-      const c = hsCapDi(n, C), sb = hsSubDi(n, C), t = hsTestoNota(n); if (!c || !t.length) return;
-      if (sb) { note[sb.id] = (note[sb.id] ? note[sb.id] + '\n' : '') + t.join('\n'); ref[n.id] = sb.id; }
-      else { descr.push(c.tag + ': ' + t.join(' ')); ref[n.id] = ''; }
+      const c = hsCapDi(n, C), sb = hsSubDi(n, C), t = hsTestoNota(n); if (!c) return;
+      ref[n.id] = sb ? sb.id : ''; if (!t.length) return; // la foto di una nota senza testo resta collegata alla voce
+      if (sb) note[sb.id] = (note[sb.id] ? note[sb.id] + '\n' : '') + t.join('\n');
+      else descr.push(c.tag + ': ' + t.join(' '));
     });
     Object.assign(x, { note, descr: descr.join('\n'), risp: {}, azioni: [] });
   } else {
     x.schede = Object.fromEntries(HS_SCHEDE.map(s => [s.k, hsEmptyScheda(s)]));
     C.forEach(c => {
       const d = x.schede[c.k], L = hsNoteDi(r, c), testi = L2 => L2.map(n => hsTestoNota(n)[0] && ((n.testo || '').trim() || n.titolo)).filter(Boolean).join('\n');
-      if (np[c.k]) { if (c.subs.length) c.subs.forEach(sb => { d.subs[sb.id] = NESSUNA; }); else d.sit = NESSUNA; return; }
+      if (np[c.k] && !L.length) { if (c.subs.length) c.subs.forEach(sb => { d.subs[sb.id] = NESSUNA; }); else d.sit = NESSUNA; return; }
       const senza = L.filter(n => !hsSubDi(n, C));
-      d.sit = testi(senza) || (c.subs.length || perScheda ? '' : NESSUNA);
+      d.sit = testi(senza) || (c.subs.length || perScheda || senza.length ? '' : NESSUNA);
       senza.forEach(n => { ref[n.id] = 'sch.' + c.k + (perScheda && c.subs.length ? '.' + c.subs[0].id : ''); });
-      c.subs.forEach(sb => { const Ls = L.filter(n => hsSubDi(n, C) === sb); d.subs[sb.id] = testi(Ls) || (perScheda ? '' : NESSUNA); Ls.forEach(n => { ref[n.id] = 'sch.' + c.k + '.' + sb.id; }); });
+      c.subs.forEach(sb => { const Ls = L.filter(n => hsSubDi(n, C) === sb); d.subs[sb.id] = testi(Ls) || (perScheda || Ls.length ? '' : NESSUNA); Ls.forEach(n => { ref[n.id] = 'sch.' + c.k + '.' + sb.id; }); });
       if (perScheda && c.subs.length && d.sit) { const sb = c.subs[0].id; d.subs[sb] = d.subs[sb] ? d.sit + '\n' + d.subs[sb] : d.sit; d.sit = ''; }
       d.mig = L.map(n => (n.mig || '').trim()).filter(Boolean).join('\n');
     });
@@ -78,8 +83,10 @@ function hsNoteAOld(r, perScheda) {
   const tit = {}; (r.noteSop || []).forEach(n => { tit[n.id] = n.titolo || ''; });
   const nid = p => String(p.ref || '').startsWith('n.') ? p.ref.slice(2) : null;
   x.foto = (r.foto || []).map((p, i) => ({ p, i, o: nid(p) in ordine ? ordine[nid(p)] : 1e9 })).sort((a, b) => a.o - b.o || a.i - b.i)
-    .map(({ p }) => { const id = nid(p); return id ? { ...p, ref: ref[id] || '', cap: p.cap || tit[id] || '' } : p; });
-  x.base = {}; x.novitaRosso = false; delete x.aNote; delete x.noteSop; delete x.np;
+    .map(({ p }) => { const id = nid(p); return id ? { ...p, ref: ref[id] || '', cap: p.cap || tit[id] || '', inc: id in ref ? p.inc : false } : p; });
+  // nel Word del primo sopralluogo tutto è nero; nel periodico che parte da qui le righe nuove tornano rosse
+  x.base = {}; if (perScheda) delete x.novitaRosso; else x.novitaRosso = false;
+  delete x.aNote; delete x.noteSop; delete x.np;
   return x;
 }
 // nuovo sopralluogo a note
@@ -89,21 +96,27 @@ function newHsNote(records, settings, formato) { return { ...newHs(records, sett
 // tocco prolungato su una nota: si entra nella selezione; tocco = seleziona o togli
 function useNoteSel() {
   const [sel, setSel] = useState(null); // null = nessuna selezione, altrimenti Set di id
-  const t = useRef(null), p0 = useRef([0, 0]), skip = useRef(false);
+  const t = useRef(null), p0 = useRef([0, 0]), skip = useRef(0); // skip: istante fino a cui non conta il tocco che chiude il tocco prolungato
   const cancel = () => { clearTimeout(t.current); t.current = null; };
   const toggle = id => setSel(s => { const x = new Set(s || []); x.has(id) ? x.delete(id) : x.add(id); return x; });
   const press = (id, e) => {
     if (e.pointerType === 'mouse' || (e.target.closest && e.target.closest('input, textarea, select, button, label, a'))) return;
     cancel(); p0.current = [e.clientX, e.clientY];
-    t.current = setTimeout(() => { t.current = null; skip.current = true; setSel(s => { const x = new Set(s || []); x.add(id); return x; }); try { navigator.vibrate && navigator.vibrate(18); } catch (err) { /* senza vibrazione */ } }, 480);
+    t.current = setTimeout(() => {
+      t.current = null; skip.current = Date.now() + 4000;
+      // la scheda premuta sparisce (al suo posto le righe): la fine del tocco si ascolta sulla finestra
+      const fine = e => { skip.current = e.type === 'pointerdown' ? 0 : Date.now() + 80; EV.forEach(k => removeEventListener(k, fine, true)); };
+      const EV = ['pointerup', 'pointercancel', 'pointerdown']; EV.forEach(k => addEventListener(k, fine, true));
+      setSel(s => { const x = new Set(s || []); x.add(id); return x; }); try { navigator.vibrate && navigator.vibrate(18); } catch (err) { /* senza vibrazione */ }
+    }, 480);
   };
   const props = id => ({
     onPointerDown: e => press(id, e), onPointerUp: cancel, onPointerLeave: cancel, onPointerCancel: cancel,
     onPointerMove: e => { if (t.current && Math.hypot(e.clientX - p0.current[0], e.clientY - p0.current[1]) > 10) cancel(); },
-    onContextMenu: e => { if (sel || skip.current) e.preventDefault(); },
+    onContextMenu: e => { if (sel || t.current || Date.now() < skip.current) e.preventDefault(); },
   });
-  const click = id => { if (skip.current) { skip.current = false; return; } toggle(id); };
-  return { sel, setSel, props, click, toggle };
+  const click = id => { if (Date.now() < skip.current) { skip.current = 0; return; } toggle(id); };
+  return { sel, setSel, props, click, toggle, start: () => setSel(new Set()) };
 }
 // intestazione della selezione dentro la scheda: Annulla · N selezionate · Tutte
 function NoteSelHead({ n, onStop, onAll }) {
@@ -112,6 +125,8 @@ function NoteSelHead({ n, onStop, onAll }) {
     <button class="btn link" onClick=${onStop}>Annulla</button><b>${n} ${n === 1 ? 'selezionata' : 'selezionate'}</b>
     <button class="btn link" onClick=${onAll}>Tutte</button></div>`;
 }
+// «Seleziona» per il PC, dove il tocco prolungato non c'è (come negli elenchi)
+const NoteSelBtn = ({ ns }) => html`<div class="sel-riga"><button class="btn link" onClick=${ns.start}>Seleziona</button></div>`;
 // riga compatta di una nota durante la selezione
 function NotaSelRiga({ n, i, on, onClick }) {
   return html`<button class=${'rcard sel-mode' + (on ? ' sel' : '')} key=${n.id} onClick=${onClick} aria-pressed=${on}>
@@ -157,7 +172,7 @@ function HsNotaCard({ n, i, r, up, updN, delN, move, primo, ultimo, selProps }) 
       <button class="x" title="Elimina la nota" aria-label="Elimina la nota" onClick=${() => delN(n)}><${Icon} n="trash" s=${15} /></button></div>
     <${Inp} label="Titolo" value=${n.titolo} set=${v => updN(n.id, { titolo: v })} placeholder="es. Uscita di emergenza lato nord" />
     <${HsText} label="Situazione rilevata" rows=${4} gruppo="Situazione rilevata" value=${n.testo} set=${v => updN(n.id, { testo: v })}
-      onRiformula=${riform} foto=${{ r, up, rif: 'n.' + n.id, nome: n.titolo || 'Nota ' + (i + 1) }} />
+      onRiformula=${riform} foto=${{ r, up, rif: 'n.' + n.id, nome: n.titolo || 'Nota ' + (i + 1), togli: true }} />
     <${HsText} label="Attività di miglioramento" rows=${2} gruppo="Attività di miglioramento" value=${n.mig} set=${v => updN(n.id, { mig: v })} />
     <${TagPicker} tags=${n.tag || []} set=${t => updN(n.id, { tag: t })} fissi=${hsTagFissi(r, [n])} />
   </div>`;
@@ -165,7 +180,7 @@ function HsNotaCard({ n, i, r, up, updN, delN, move, primo, ultimo, selProps }) 
 
 /* ---------------- scheda Note ---------------- */
 function HsNoteTab({ r, up, ns, filtro, setFiltro, addN }) {
-  const note = r.noteSop || [], C = hsCapi(r);
+  const note = r.noteSop || [], C = hsCapi(r), num = hsNumNote(r);
   const tagsV = Object.keys(collectTags(note)).sort((a, b) => a.localeCompare(b, 'it'));
   const updN = (id, p) => up(q => ({ ...q, noteSop: (q.noteSop || []).map(n => n.id === id ? { ...n, ...p } : n) }));
   const delN = async n => {
@@ -177,7 +192,7 @@ function HsNoteTab({ r, up, ns, filtro, setFiltro, addN }) {
   // ‹ › spostano la nota dentro il suo capitolo
   const move = (n, d) => up(q => {
     const L = q.noteSop.slice(), k = (hsCapDi(n, C) || {}).k || null;
-    const stesso = L.filter(x => ((hsCapDi(x, C) || {}).k || null) === k);
+    const stesso = L.filter(x => ((hsCapDi(x, C) || {}).k || null) === k && (!filtro || (x.tag || []).includes(filtro))); // con il filtro: solo fra le note visibili
     const a = stesso.findIndex(x => x.id === n.id), b = a + d; if (b < 0 || b >= stesso.length) return q;
     const i = L.indexOf(stesso[a]), j = L.indexOf(stesso[b]); [L[i], L[j]] = [L[j], L[i]]; return { ...q, noteSop: L };
   });
@@ -186,7 +201,7 @@ function HsNoteTab({ r, up, ns, filtro, setFiltro, addN }) {
   const caps = C.filter(c => hsStatoCap(r, c).st !== 'st-err').length;
   const ord = G.flatMap(g => g.note);
   return html`<div>
-    ${ns.sel && html`<${NoteSelHead} n=${ns.sel.size} onStop=${() => ns.setSel(null)} onAll=${() => ns.setSel(s => s.size === ord.length ? new Set() : new Set(ord.map(n => n.id)))} />`}
+    ${ns.sel && html`<${NoteSelHead} n=${ord.filter(n => ns.sel.has(n.id)).length} onStop=${() => ns.setSel(null)} onAll=${() => ns.setSel(s => ord.every(n => s.has(n.id)) ? new Set() : new Set(ord.map(n => n.id)))} />`}
     <div class="card-navy"><div class="sum3">
       <div><b>${note.length}</b><span>${note.length === 1 ? 'nota' : 'note'}</span></div>
       <div><b>${caps}<small>/${C.length}</small></b><span>capitoli</span></div>
@@ -194,14 +209,15 @@ function HsNoteTab({ r, up, ns, filtro, setFiltro, addN }) {
     ${tagsV.length > 0 && html`<div class="vs-filter mt-3"><button class=${'tag' + (!filtro ? ' on' : ' sugg')} onClick=${() => setFiltro(null)}>Tutte</button>
       ${tagsV.map(t => html`<button key=${t} class=${'tag' + (filtro === t ? ' on' : '')} style=${tagStyle(t, filtro === t)} onClick=${() => setFiltro(filtro === t ? null : t)}>#${t}</button>`)}</div>`}
     ${!note.length && html`<div class="card mt-3"><div class="empty" style="padding:16px">Nessuna nota. Tocca «Nuova nota» per aggiungerne una.</div></div>`}
+    ${note.length > 0 && !ns.sel && html`<${NoteSelBtn} ns=${ns} />`}
     ${ns.sel ? G.map(g => html`<div key=${'g-' + (g.c ? g.c.k : '-')}>
       <div class="sec-h"><h3>${g.c ? g.c.n + '. ' + g.c.tag : 'Senza capitolo'}</h3><span class="hint">${g.note.length}</span></div>
-      <div class="list">${g.note.map(n => html`<${NotaSelRiga} key=${n.id} n=${n} i=${note.indexOf(n)} on=${ns.sel.has(n.id)} onClick=${() => ns.click(n.id)} />`)}</div></div>`)
+      <div class="list">${g.note.map(n => html`<${NotaSelRiga} key=${n.id} n=${n} i=${num[n.id] - 1} on=${ns.sel.has(n.id)} onClick=${() => ns.click(n.id)} />`)}</div></div>`)
     // elenco piatto con le intestazioni dei capitoli: la nota che cambia capitolo si sposta senza richiudere la scelta dei tag
     : G.flatMap(g => [
       html`<div class="sec-h" key=${'h-' + (g.c ? g.c.k : '-')}><h3>${g.c ? g.c.n + '. ' + g.c.tag : 'Senza capitolo'}</h3><span class="hint">${g.note.length}</span></div>`,
       !g.c && html`<div class="notice mb-2" key="h-senza">Queste note non vanno nel Word: aggiungi il tag di un capitolo.</div>`,
-      ...g.note.map((n, k) => html`<${HsNotaCard} key=${n.id} n=${n} i=${note.indexOf(n)} r=${r} up=${up} updN=${updN} delN=${delN} move=${move} primo=${k === 0} ultimo=${k === g.note.length - 1} selProps=${ns.props(n.id)} />`)]).filter(Boolean)}
+      ...g.note.map((n, k) => html`<${HsNotaCard} key=${n.id} n=${n} i=${num[n.id] - 1} r=${r} up=${up} updN=${updN} delN=${delN} move=${move} primo=${k === 0} ultimo=${k === g.note.length - 1} selProps=${ns.props(n.id)} />`)]).filter(Boolean)}
     ${!ns.sel && html`<button class="btn dashed block mt-1" onClick=${() => addN()}>+ Nuova nota</button>`}
   </div>`;
 }
@@ -210,7 +226,12 @@ function HsNotaCam({ r, up, onNota }) {
   const inp = useRef();
   return html`<button class="btn-icon lg" aria-label="Foto in una nuova nota" title="Foto in una nuova nota" onClick=${() => camOpen(inp.current)}><${Icon} n="camera" s=${22} />
     <input ref=${inp} type="file" accept="image/*" capture="environment" hidden onClick=${e => e.stopPropagation()}
-      onChange=${async e => { const fs = [...e.target.files]; e.target.value = ''; if (!fs.length) return; const n = onNota(); await hsAddPhotos(fs, 'new', 'n.' + n.id, up, (r.foto || []).length); toast('Foto aggiunta in una nuova nota'); }} /></button>`;
+      onChange=${async e => {
+        const fs = [...e.target.files]; e.target.value = ''; if (!fs.length) return;
+        if ((r.foto || []).length >= HS_MAX_FOTO) { toast('Limite di ' + HS_MAX_FOTO + ' foto per report'); return; }
+        const n = onNota(), k = await hsAddPhotos(fs, 'new', 'n.' + n.id, up, (r.foto || []).length);
+        if (k) toast('Foto aggiunta in una nuova nota'); else up(q => ({ ...q, noteSop: (q.noteSop || []).filter(x => x.id !== n.id) })); // foto non salvata: la nota vuota non resta
+      }} /></button>`;
 }
 
 /* ---------------- anagrafica (Esteso e Sintetico) ---------------- */
@@ -311,14 +332,14 @@ function HsChecklist({ r, up, aperto, setAperto, vaiNota, addN }) {
   const C = hsCapi(r);
   const c = aperto && C.find(x => x.k === aperto);
   if (c) {
-    const L = hsNoteDi(r, c), S = hsStatoCap(r, c), np = !!(r.np || {})[c.k];
+    const L = hsNoteDi(r, c), S = hsStatoCap(r, c), np = !!(r.np || {})[c.k], num = hsNumNote(r);
     return html`<button class="btn link" style="margin:-8px 0 8px -4px" onClick=${() => setAperto(null)}><${Icon} n="back" s=${18} /> Check-list</button>
       <div class="sec-h mt-0"><h3>${c.n}. ${c.tag}</h3><span class="hint">${S.w}</span></div>
-      <div class="card"><div class="optline" style="padding:0"><div class="t"><b>Non pertinente</b><small>Nel Word: «Nessuna criticità rilevata»</small></div>
-        <${Toggle} on=${np} set=${v => up(p => ({ ...p, np: { ...(p.np || {}), [c.k]: v } }))} label="Non pertinente" /></div></div>
+      ${!L.length && html`<div class="card"><div class="optline" style="padding:0"><div class="t"><b>Non pertinente</b>${r.formato !== 'sintetico' && html`<small>Nel Word: «Nessuna criticità rilevata»</small>`}</div>
+        <${Toggle} on=${np} set=${v => up(p => ({ ...p, np: { ...(p.np || {}), [c.k]: v } }))} label="Non pertinente" /></div></div>`}
       <div class="sec-h"><h3>Note · ${L.length}</h3></div>
       ${L.length > 0 && html`<div class="list">${L.map(n => { const sb = hsSubDi(n, C); return html`<button class="rcard" key=${n.id} onClick=${() => vaiNota(n.id)}>
-        <div class="r1"><span class="id">Nota ${(r.noteSop || []).indexOf(n) + 1}</span></div>
+        <div class="r1"><span class="id">Nota ${num[n.id]}</span></div>
         <div class="ttl">${n.titolo || (n.testo || '').split('\n')[0] || '—'}</div>${sb && html`<div class="sum">${sb.tag}</div>`}</button>`; })}</div>`}
       <button class="btn dashed block mt-2" onClick=${() => addN(c)}>+ Aggiungi una nota</button>`;
   }
@@ -344,7 +365,8 @@ function HsSenzaNoteSheet({ r, up, onDone }) {
 function HsNoteForm({ rec: initial, settings, onSave, onDelete, onSettings, embedded, onClose }) {
   const [r, up, saved] = useAutosave(initial, onSave);
   const [T, setT] = useSchede('hsN', ['anag', 'note', 'check', 'file'], initial._new, { 'n-': 'note' });
-  const [filtro, setFiltro] = useState(null);
+  const [filtro0, setFiltro] = useState(null);
+  const filtro = filtro0 && (r.noteSop || []).some(n => (n.tag || []).includes(filtro0)) ? filtro0 : null; // il tag filtrato non c'è più: nessun filtro
   const [aperto, setAperto] = useState(null);
   const [chiedi, setChiedi] = useState(null); // attesa del foglio «capitoli senza note»
   const [hasTpl, setHasTpl] = useState(null);
@@ -362,7 +384,7 @@ function HsNoteForm({ rec: initial, settings, onSave, onDelete, onSettings, embe
   const prima = () => hsCapRossi(r).length ? new Promise(res => setChiedi(() => res)) : true;
   const fineChiedi = (ok, c) => { const f = chiedi; setChiedi(null); f && f(ok); if (c) nuovaNota(c); };
   const upload = () => OD.account ? odSync([r], settings) : sendToOneDrive(r, settings);
-  const selNote = ns.sel ? (r.noteSop || []).filter(n => ns.sel.has(n.id)) : [];
+  const selNote = ns.sel ? (r.noteSop || []).filter(n => ns.sel.has(n.id) && (!filtro || (n.tag || []).includes(filtro))) : [];
   const nRossi = hsCapRossi(r).length;
   return html`<div class="content form">
     <${DetailHead} conclusa=${r.conclusa} eye=${'Sopralluogo HSE · ' + HS_FMT[r.formato]} title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r) || r.sito].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />

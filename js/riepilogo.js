@@ -35,6 +35,13 @@ function riepilogoDati(r, s) {
     voci = r.punti.map((p, i) => { const v = mediaPunto(r, p); return { t: 'R' + (i + 1) + ' – ' + [p.piano, p.ubicazione].filter(Boolean).join(' · '), stato: v != null ? fmtN(v) + ' Bq/m³' : (p.codiceF1 ? 'Dosimetro ' + p.codiceF1 : 'Da posare'),
       crit: v != null && v > s.livelloRif, righe: [], foto: p.foto || [] }; });
     sintesi = conta(r.punti.length, 'punto di misura', 'punti di misura');
+  } else if (r.type === 'hs' && r.aNote) {
+    // sopralluogo a note: una voce per nota, nell'ordine dei capitoli, con le sue foto
+    const C = hsCapi(r), num = hsNumNote(r);
+    voci = hsNoteGruppi(r).flatMap(g => g.note.map(n => { const sb = g.c && hsSubDi(n, C), F = (r.foto || []).filter(p => p.ref === 'n.' + n.id);
+      return { t: n.titolo || 'Nota ' + num[n.id], stato: g.c ? g.c.n + '. ' + g.c.tag + (sb ? ' · ' + sb.tag : '') : 'Senza capitolo',
+        righe: [n.testo, n.mig && 'Attività di miglioramento: ' + n.mig].filter(Boolean), foto: F.map(p => p.id), cap: Object.fromEntries(F.map(p => [p.id, p.cap || ''])) }; }));
+    sintesi = conta(voci.length, 'nota', 'note');
   } else if (r.type === 'hs') {
     voci = hsCriticita(r).map(c => ({ t: c.t, stato: 'Priorità ' + c.p, crit: c.p === 1, righe: [c.az && 'Azione: ' + c.az].filter(Boolean), foto: [] }));
     const F = hsFotoReport(r).filter(p => p.g !== 'prev');
