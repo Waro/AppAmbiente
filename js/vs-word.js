@@ -33,7 +33,7 @@ async function vsBuildDocx(r, settings, opt = {}) {
   const note = vsNoteWord(r); const tot = note.reduce((a, n) => a + (n.foto || []).length, 0); let fatte = 0;
   let out = '';
   for (const [k, n] of (note.length ? note : [{ titolo: '', testo: '', mig: '', foto: [] }]).entries()) {
-    let b = hsFill(proto, 'S_TITOLO', n.titolo || 'Nota ' + (k + 1));
+    let b = hsFill(proto, 'S_TITOLO', n.titolo || 'Osservazione ' + (k + 1));
     b = hsFillBlock(b, 'S_SIT', n.testo || '', null, { grigio: false });
     b = hsFillBlock(b, 'S_MIG', n.mig || '', null, { grigio: false });
     const fp = hsPara(b, 'S_FOTO'); let ps = '';

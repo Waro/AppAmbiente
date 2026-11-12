@@ -121,7 +121,7 @@ function useNoteSel() {
 // intestazione della selezione dentro la scheda: Annulla · N selezionate · Tutte
 function NoteSelHead({ n, onStop, onAll }) {
   useBackClose(onStop);
-  return html`<div class="selhead in" role="toolbar" aria-label="Selezione delle note">
+  return html`<div class="selhead in" role="toolbar" aria-label="Selezione delle osservazioni">
     <button class="btn link" onClick=${onStop}>Annulla</button><b>${n} ${n === 1 ? 'selezionata' : 'selezionate'}</b>
     <button class="btn link" onClick=${onAll}>Tutte</button></div>`;
 }

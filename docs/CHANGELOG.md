@@ -12,7 +12,8 @@ Redesign grafico (stile e impaginazione), Rilievo v56.
 - Un campo per riga: `.grid2` con campi diventa una colonna.
 - Icone nei campi di testo in colonna sul bordo destro, dall'alto fotocamera, galleria, microfono; solo l'icona in `blue`, senza fondo; microfono pieno durante la dettatura (`MicBtn`). Le foto collegate alle sezioni HSE (`FotoIn`) hanno anche la galleria.
 - Appunti ovunque con il nuovo componente `Appunti` (fotocamera, galleria e dettatura dentro il campo; miniature e tag sotto): DDA Fase 1 e 2, Mappatura, RA, Radon, Aria, Verbale HSE, Firme (solo dettatura), sopralluogo HSE.
-- Sopralluogo HSE a note: «Note» diventano «Osservazioni» nei testi; la card Appunti è in cima alla scheda Osservazioni; tolti i tasti Frasi e Riformula.
+- «Note» diventano «Osservazioni» ovunque nei testi (sopralluogo HSE a note, Verbale HSE, ricerca, riepilogo, Word del verbale, Nuova attività); nel sopralluogo HSE la card Appunti è in cima alla scheda Osservazioni e sono tolti i tasti Frasi e Riformula.
+- Foto degli appunti senza limite di numero (prima 10).
 - Schede di un'attività (`Schede`): si passa alla scheda accanto anche scorrendo a sinistra o a destra sul contenuto.
 - Campioni (DDA Fase 2 e Mappatura): campi del campione uno per riga con l'etichetta dentro (Sigla, Piano, Ubicazione, Descrizione con dettatura, Data prelievo, Quantità); titoli dei piani e dei manufatti non campionati dentro la card a tutta larghezza (`.list-h`); tolti gli esempi accanto ai titoli («Codici automatici A1, A2…», «NC1, NC2…»); nuovo tasto Planimetria sopra l'elenco dei campioni, che apre la pianta del piano dell'ultimo campione (`PlanList` con `apri`).
 

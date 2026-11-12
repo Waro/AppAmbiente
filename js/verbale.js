@@ -22,7 +22,7 @@ function VerbaleList({ records, open, activeId, acts }) {
     ${!all.length && html`<div class="empty"><b>Nessun verbale</b>Tocca + e scegli «Verbale HSE».</div>`}
     ${Object.entries(groups).map(([c, rs]) => html`<div key=${c}><div class="grp-client">${c}</div><div class="list">
       ${rs.map(r => { const N = (r.note || []).length, tg = Object.keys(collectTags(r.note || [])); return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r) + selCls(r)} key=${r.id} ...${selRow(r, () => open(r.id))}>${selCk(r)}
-        <div class="r1"><span class="id">${r.codice}</span><span class=${'badge ' + (N ? 'b-ok' : 'b-grey')}>${N ? N + (N === 1 ? ' nota' : ' note') : 'Da compilare'}</span><span class="dt">${fmtD(r.data)}</span></div>
+        <div class="r1"><span class="id">${r.codice}</span><span class=${'badge ' + (N ? 'b-ok' : 'b-grey')}>${N ? N + (N === 1 ? ' osservazione' : ' osservazioni') : 'Da compilare'}</span><span class="dt">${fmtD(r.data)}</span></div>
         ${(r.commessa || placeLabel(r)) && html`<div class="ttl">${[r.commessa, placeLabel(r)].filter(Boolean).join(' · ')}</div>`}
         ${tg.length > 0 && html`<div class="sum">${tg.slice(0, 6).map(t => html`<span key=${t} style=${'color:' + tagColor(t) + ';margin-right:6px'}>#${t}</span>`)}</div>`}
         <${OdBadge} map=${od} r=${r} /></button>`; })}</div></div>`)}
@@ -40,7 +40,7 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
   const filtro = filtro0 && note.some(n => (n.tag || []).includes(filtro0)) ? filtro0 : null; // il tag filtrato non c'è più: nessun filtro
   const updN = (id, p) => up(q => ({ ...q, note: (q.note || []).map(n => n.id === id ? { ...n, ...p } : n) }));
   const addN = () => { const n = newNotaVs(); setT('note'); up(q => ({ ...q, note: [...(q.note || []), n] })); setFiltro(null); setTimeout(() => scrollToId('n-' + n.id), 80); };
-  const delN = async n => { if (!confirm('Eliminare la nota' + (n.titolo ? ' «' + n.titolo + '»' : '') + '?')) return; for (const f of n.foto || []) await removeBlob(f); up(q => ({ ...q, note: q.note.filter(x => x.id !== n.id) })); };
+  const delN = async n => { if (!confirm('Eliminare l\'osservazione' + (n.titolo ? ' «' + n.titolo + '»' : '') + '?')) return; for (const f of n.foto || []) await removeBlob(f); up(q => ({ ...q, note: q.note.filter(x => x.id !== n.id) })); };
   // ‹ › con il filtro: la nota si scambia con la vicina visibile
   const move = (n, d) => up(q => { const L = q.note.slice(), V = L.filter(x => !filtro || (x.tag || []).includes(filtro)); const a = V.findIndex(x => x.id === n.id), b = a + d; if (a < 0 || b < 0 || b >= V.length) return q;
     const i = L.indexOf(V[a]), j = L.indexOf(V[b]); [L[i], L[j]] = [L[j], L[i]]; return { ...q, note: L }; });
@@ -60,7 +60,7 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
   useEffect(() => { DB.get(TEMPLATES['vs.docx'].key).then(b => setTplOk(!!b)); }, []);
   return html`<div class="content form">
     <${DetailHead} conclusa=${r.conclusa} eye="Verbale HSE" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
-    <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'note', l: 'Note', n: note.length }, { k: 'file', l: 'File' }]} />
+    <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'note', l: 'Osservazioni', n: note.length }, { k: 'file', l: 'File' }]} />
     ${T === 'anag' && html`    <div class="card"><div class="grid2">
       <${Inp} cls="full" label="Commessa" value=${r.commessa} set=${v => up({ commessa: v })} imp=${impOf(r, 'commessa')} />
       <${Inp} label="Cliente" list="dl-cli-vs" value=${r.cliente} set=${v => up({ cliente: v })} imp=${impOf(r, 'cliente')} />
@@ -97,20 +97,20 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
     ${T === 'note' && html`
     ${ns.sel && html`<${NoteSelHead} n=${selNote.length} onStop=${() => ns.setSel(null)} onAll=${() => ns.setSel(s => vis.every(n => s.has(n.id)) ? new Set() : new Set(vis.map(n => n.id)))} />`}
     <div class="card-navy"><div class="sum3">
-      <div><b>${note.length}</b><span>${note.length === 1 ? 'nota' : 'note'}</span></div>
+      <div><b>${note.length}</b><span>${note.length === 1 ? 'osservazione' : 'osservazioni'}</span></div>
       <div><b>${nFoto}</b><span>foto</span></div>
       <div><b>${tagsV.length}</b><span>tag</span></div></div></div>
-    <div class="sec-h"><h3>Note · ${note.length}</h3><span class="hint">Titolo, testo, foto e tag</span></div>
+    <div class="sec-h"><h3>Osservazioni · ${note.length}</h3><span class="hint">Titolo, testo, foto e tag</span></div>
     ${tagsV.length > 0 && html`<div class="vs-filter"><button class=${'tag' + (!filtro ? ' on' : ' sugg')} onClick=${() => setFiltro(null)}>Tutte</button>
       ${tagsV.map(t => html`<button key=${t} class=${'tag' + (filtro === t ? ' on' : '')} style=${tagStyle(t, filtro === t)} onClick=${() => setFiltro(filtro === t ? null : t)}>#${t}</button>`)}</div>`}
-    ${!note.length && html`<div class="card"><div class="empty" style="padding:16px">Nessuna nota. Tocca «Nuova nota» per aggiungerne una.</div></div>`}
+    ${!note.length && html`<div class="card"><div class="empty" style="padding:16px">Nessuna osservazione. Tocca «Nuova osservazione» per aggiungerne una.</div></div>`}
     ${note.length > 0 && !ns.sel && html`<${NoteSelBtn} ns=${ns} />`}
     ${ns.sel && html`<div class="list">${vis.map(n => html`<${NotaSelRiga} key=${n.id} n=${n} i=${note.indexOf(n)} on=${ns.sel.has(n.id)} onClick=${() => ns.click(n.id)} />`)}</div>`}
     ${!ns.sel && vis.map(n => { const i = note.indexOf(n); return html`<div class="card vs-nota" key=${n.id} id=${'n-' + n.id} ...${ns.props(n.id)}>
-      <div class="vs-h"><span class="vs-n">Nota ${i + 1}</span><span class="tb-grow"></span>
+      <div class="vs-h"><span class="vs-n">Osservazione ${i + 1}</span><span class="tb-grow"></span>
         <button class="x" title="Prima" aria-label="Sposta prima" disabled=${vis[0] === n} onClick=${() => move(n, -1)}>‹</button>
         <button class="x" title="Dopo" aria-label="Sposta dopo" disabled=${vis[vis.length - 1] === n} onClick=${() => move(n, 1)}>›</button>
-        <button class="x" title="Elimina la nota" aria-label="Elimina la nota" onClick=${() => delN(n)}><${Icon} n="trash" s=${15} /></button></div>
+        <button class="x" title="Elimina l'osservazione" aria-label="Elimina l'osservazione" onClick=${() => delN(n)}><${Icon} n="trash" s=${15} /></button></div>
       <${Inp} label="Titolo" value=${n.titolo} set=${v => updN(n.id, { titolo: v })} placeholder="es. Uscita di emergenza lato nord" />
       <${HsText} label="Situazione rilevata" rows=${4} value=${n.testo} set=${v => updN(n.id, { testo: v })} />
       <${HsText} label="Attività di miglioramento" rows=${2} value=${n.mig} set=${v => updN(n.id, { mig: v })} />
@@ -119,7 +119,7 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
         onRemove=${async id => { await removeBlob(id); up(q => ({ ...q, note: q.note.map(x => x.id === n.id ? { ...x, foto: x.foto.filter(f => f !== id) } : x) })); }} />
       <${TagPicker} tags=${n.tag || []} set=${t => updN(n.id, { tag: t })} />
     </div>`; })}
-    ${!ns.sel && html`<button class="btn dashed block mt-1" onClick=${addN}>+ Nuova nota</button>`}
+    ${!ns.sel && html`<button class="btn dashed block mt-1" onClick=${addN}>+ Nuova osservazione</button>`}
     ${!ns.sel && html`<div class="sec-h"><h3>Appunti</h3><span class="hint">Testo libero</span></div>
     <${Appunti} rec=${r} up=${up} rows=${3} />`}
     `}
@@ -127,7 +127,7 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
     ${ns.sel ? html`<${ActionBar}><button class="btn pri" disabled=${!selNote.length} onClick=${() => setTagSheet(true)}><${Icon} n="tag" s=${20} /> Tag (${selNote.length})</button><//>`
     : html`<${BarraAtt} r=${r} settings=${settings}
       left=${html`<${VsCam} onAdd=${ids => { const nn = { ...newNotaVs(), foto: ids }; setT('note'); up(q => ({ ...q, note: [...(q.note || []), nn] })); setFiltro(null); setTimeout(() => scrollToId('n-' + nn.id), 80); }} />`}
-      center=${T === 'note' ? html`<button class="btn pri" onClick=${addN}><${Icon} n="plus" s=${20} w=${2.4} /> Nuova nota</button>`
+      center=${T === 'note' ? html`<button class="btn pri" onClick=${addN}><${Icon} n="plus" s=${20} w=${2.4} /> Nuova osservazione</button>`
         : html`<${DocBtn} r=${r} up=${up} settings=${settings} k="vs_docx" />`}
       gruppi=${[['Documenti', [{ ic: 'share', l: OD.account ? 'Carica su OneDrive' : 'Invia a OneDrive', fn: upload }]], opzArchivio({ r, settings, onDelete, up, elimina: 'Elimina il verbale' })]} />`}
     ${tagSheet && ns.sel && html`<${TagMultiSheet} note=${selNote} fissi=${[]} altri=${tagsV} onSet=${setNote} onClose=${() => setTagSheet(false)} />`}
@@ -137,7 +137,7 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
 // fotocamera nella barra azioni: la foto apre una nota nuova
 function VsCam({ onAdd }) {
   const inp = useRef();
-  return html`<button class="btn-icon lg" aria-label="Foto in una nuova nota" title="Foto in una nuova nota" onClick=${() => camOpen(inp.current)}><${Icon} n="camera" s=${22} />
+  return html`<button class="btn-icon lg" aria-label="Foto in una nuova osservazione" title="Foto in una nuova osservazione" onClick=${() => camOpen(inp.current)}><${Icon} n="camera" s=${22} />
     <input ref=${inp} type="file" accept="image/*" capture="environment" hidden onClick=${e => e.stopPropagation()}
-      onChange=${async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { await onAdd([await saveImage(f)]); toast('Foto aggiunta in una nuova nota'); } catch (err) { fail('Foto non salvata', err); } }} /></button>`;
+      onChange=${async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { await onAdd([await saveImage(f)]); toast('Foto aggiunta in una nuova osservazione'); } catch (err) { fail('Foto non salvata', err); } }} /></button>`;
 }

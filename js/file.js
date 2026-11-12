@@ -29,7 +29,7 @@ function recDocs(r, s) {
   if (r.type === 'hs') D.push({ key: 'hs_docx', label: 'Report HSE', sub: 'Modello Word ' + (r.formato === 'sintetico' ? 'Sintetico' : 'Esteso'), type: DOCX_MIME, base: hsFileBase(r),
     tpl: TEMPLATES[r.formato === 'sintetico' ? 'hs_sintetico.docx' : 'hs_esteso.docx'].key,
     make: () => hsBuildDocx(r, s, { grigio: r.novitaRosso !== false, onStep: (n, t) => _progress({ title: 'Preparo il Word', text: `Foto ${n} di ${t}`, done: n, total: t }) }) });
-  if (r.type === 'vs') D.push({ key: 'vs_docx', label: 'Verbale HSE', sub: 'Ogni nota diventa una scheda del verbale', type: DOCX_MIME, base: vsFileBase(r), tpl: TEMPLATES['vs.docx'].key,
+  if (r.type === 'vs') D.push({ key: 'vs_docx', label: 'Verbale HSE', sub: 'Ogni osservazione diventa una scheda del verbale', type: DOCX_MIME, base: vsFileBase(r), tpl: TEMPLATES['vs.docx'].key,
     make: () => vsBuildDocx(r, s, { onStep: (n, t) => _progress({ title: 'Preparo il Word', text: `Foto ${n} di ${t}`, done: n, total: t }) }) });
   for (const o of ariaOutputs(r, s)) {
     const sch = o.name.startsWith('Scheda'), type = o.kind === 'office' ? o.type : PDF_MIME;

@@ -40,7 +40,7 @@ function recLine(r) {
   if (r.type === 'mappatura') { const n = allCampMap(r).length; return `Mappatura MCA e FAV · ${n} ${n === 1 ? 'campione' : 'campioni'}`; }
   if (r.type === 'ra') return `Verifica RA · ${r.manufatti.filter(m => m.stato).length}/${r.manufatti.length} manufatti`;
   if (r.type === 'hs') return r.daScegliere ? `HSE · ${hsProgress(r)}` : `HSE ${HS_FMT[r.formato]} · ${hsProgress(r)}`;
-  if (r.type === 'vs') { const n = (r.note || []).length; return `Verbale HSE · ${n} ${n === 1 ? 'nota' : 'note'}`; }
+  if (r.type === 'vs') { const n = (r.note || []).length; return `Verbale HSE · ${n} ${n === 1 ? 'osservazione' : 'osservazioni'}`; }
   if (r.type === 'aria') { const R = ariaRiepilogo(r); return `Monitoraggio aria · ${R.chiusi}/${R.tot} punti`; }
   if (r.type !== 'radon') return r.codice || '';
   const s = radonStato(r);
@@ -272,7 +272,7 @@ const NEW_OPTS = [
   { k: 'aria', t: 'aria', patch: {}, l: 'Monitoraggio aria', s: 'Fibre aerodisperse: prelievi, scheda ed esiti', ic: 'air', c: TIPO_COL.aria },
   { k: 'hsSop', t: 'hs', bu: 'hs', patch: {}, l: 'Sopralluogo HSE', s: 'Primo sopralluogo o periodico', ic: 'helmet', c: TIPO_COL.hs },
   { k: 'firme', t: 'firme', bu: 'altro', patch: {}, l: 'Foglio firme', s: 'Presenze, informative, consegne fuori da un’attività', ic: 'sign', c: TIPO_COL.firme },
-  { k: 'vs', t: 'vs', bu: 'hs', patch: {}, l: 'Verbale HSE', s: 'Note con titolo, testo, foto e tag', ic: 'note', c: TIPO_COL.vs },
+  { k: 'vs', t: 'vs', bu: 'hs', patch: {}, l: 'Verbale HSE', s: 'Osservazioni con titolo, testo, foto e tag', ic: 'note', c: TIPO_COL.vs },
 ];
 function NewActivity({ records, settings, onClose, onCreate, onOpenNew, bu, preset }) {
   useBackClose(onClose);

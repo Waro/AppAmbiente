@@ -39,17 +39,17 @@ function riepilogoDati(r, s) {
     // sopralluogo a note: una voce per nota, nell'ordine dei capitoli, con le sue foto
     const C = hsCapi(r), num = hsNumNote(r);
     voci = hsNoteGruppi(r).flatMap(g => g.note.map(n => { const sb = g.c && hsSubDi(n, C), F = (r.foto || []).filter(p => p.ref === 'n.' + n.id);
-      return { t: n.titolo || 'Nota ' + num[n.id], stato: g.c ? g.c.n + '. ' + g.c.tag + (sb ? ' · ' + sb.tag : '') : 'Senza capitolo',
+      return { t: n.titolo || 'Osservazione ' + num[n.id], stato: g.c ? g.c.n + '. ' + g.c.tag + (sb ? ' · ' + sb.tag : '') : 'Senza capitolo',
         righe: [n.testo, n.mig && 'Attività di miglioramento: ' + n.mig].filter(Boolean), foto: F.map(p => p.id), cap: Object.fromEntries(F.map(p => [p.id, p.cap || ''])) }; }));
-    sintesi = conta(voci.length, 'nota', 'note');
+    sintesi = conta(voci.length, 'osservazione', 'osservazioni');
   } else if (r.type === 'hs') {
     voci = hsCriticita(r).map(c => ({ t: c.t, stato: 'Priorità ' + c.p, crit: c.p === 1, righe: [c.az && 'Azione: ' + c.az].filter(Boolean), foto: [] }));
     const F = hsFotoReport(r).filter(p => p.g !== 'prev');
     if (F.length) voci.push({ t: 'Foto del sopralluogo', stato: '', righe: [], foto: F.map(p => p.id), cap: Object.fromEntries(F.map(p => [p.id, p.cap || ''])) });
     sintesi = voci.filter(v => v.stato).length ? conta(voci.filter(v => v.stato).length, 'criticità', 'criticità') : 'Nessuna criticità di priorità 1 o 2';
   } else if (r.type === 'vs') {
-    voci = (r.note || []).map((n, i) => ({ t: n.titolo || 'Nota ' + (i + 1), stato: (n.tag || []).map(t => '#' + t).join(' '), righe: [n.testo, n.mig && 'Attività di miglioramento: ' + n.mig].filter(Boolean), foto: n.foto || [] }));
-    sintesi = conta(voci.length, 'nota', 'note');
+    voci = (r.note || []).map((n, i) => ({ t: n.titolo || 'Osservazione ' + (i + 1), stato: (n.tag || []).map(t => '#' + t).join(' '), righe: [n.testo, n.mig && 'Attività di miglioramento: ' + n.mig].filter(Boolean), foto: n.foto || [] }));
+    sintesi = conta(voci.length, 'osservazione', 'osservazioni');
   }
   voci.sort((a, b) => (b.crit ? 1 : 0) - (a.crit ? 1 : 0));
   return { tit, testa, sintesi, voci, appunti: r.appunti || r.note && r.type === 'radon' && r.note || '' };

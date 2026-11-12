@@ -740,7 +740,7 @@ async function copyIssue() {
 function NotePhotos({ rec, field = 'fotoAppunti', up, noAdd }) {
   const ids = rec[field] || [];
   const tk = field === 'fotoAppunti' ? 'tagAppunti' : 'tag' + field.slice(4); // tag degli appunti
-  return html`<div class="mt-3"><${PhotoStrip} ids=${ids} max=${10} noAdd=${noAdd}
+  return html`<div class="mt-3"><${PhotoStrip} ids=${ids} max=${Infinity} noAdd=${noAdd}
     onAdd=${add => up(p => ({ ...p, [field]: [...(p[field] || []), ...add] }))}
     onRemove=${async id => { await removeBlob(id); up(p => ({ ...p, [field]: (p[field] || []).filter(f => f !== id) })); }} />
     <${TagPicker} tags=${rec[tk] || []} set=${t => up({ [tk]: t })} /></div>`;
@@ -758,9 +758,8 @@ function Appunti({ rec, up, k = 'appunti', foto = 'fotoAppunti', rows = 4, label
   const [on, toggle] = useDictation(() => rec[k] || '', v => up({ [k]: v }));
   const add = async e => {
     const fs = [...e.target.files]; e.target.value = ''; if (!fs.length) return;
-    const room = 10 - (rec[foto] || []).length, out = [];
-    for (const f of fs.slice(0, Math.max(0, room))) { try { out.push(await saveImage(f)); } catch (err) { fail('Foto non salvata', err); } }
-    if (fs.length > room) toast('Al massimo 10 foto negli appunti');
+    const out = []; // foto degli appunti senza limite di numero (v56)
+    for (const f of fs) { try { out.push(await saveImage(f)); } catch (err) { fail('Foto non salvata', err); } }
     if (out.length) up(p => ({ ...p, [foto]: [...(p[foto] || []), ...out] }));
   };
   return html`<div class="card"><div class="fld"><span>${label}</span>
