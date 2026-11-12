@@ -9,7 +9,19 @@ const HS_CAPI_E = HS_SCHEDE.map((s, i) => ({ k: s.k, n: i + 1, tag: s.s || s.l, 
 // Sintetico: capitoli 3-7, sottosezioni = voci della checklist con numero e testo breve (es. «3.2 Recinzione deteriorata»)
 const hsVoceTag = it => it.ref + ' ' + it.txt.replace(/\s*\(.*$/, '').split(/\s+/).slice(0, 5).join(' ').replace(/[,;:.…]+$/, '');
 const HS_CAPI_S = Object.keys(HS_SINT_TIT).map(Number).map(c => ({ k: 'c' + c, n: c, tag: HS_SINT_TIT[c], subs: HS_SINT_ALL.filter(it => it.ref.split('.')[0] === String(c)).map(it => ({ id: it.id, ref: it.ref, tag: hsVoceTag(it) })) }));
-const hsCapi = r => r.formato === 'sintetico' ? HS_CAPI_S : HS_CAPI_E;
+// formatoLibero (v56): l'osservazione si raccoglie sempre con i capitoli dell'Esteso; Esteso o Sintetico si scelgono quando generi il report
+const hsCapi = r => r.formato === 'sintetico' && !r.formatoLibero ? HS_CAPI_S : HS_CAPI_E;
+// capitolo dell'Esteso → capitolo del Sintetico (3 Aree esterne, 4 Fabbricati, 5 Locali tecnici ed impianti, 6 Condizioni ambientali, 7 Gestione emergenze)
+const HS_E2S = { agibilita: 4, prevenzione: 7, esterne: 3, involucro: 4, strutture: 4, interni: 4, elettrici: 5, meccanici: 5, antincendio: 7, sollevamento: 5, pericolosi: 6, ambientali: 6, emergenze: 7 };
+// sopralluogo a formato libero → sopralluogo a note del Sintetico: il tag del capitolo diventa il capitolo del Sintetico; la sottosezione resta nel testo
+function hsInSintetico(r) {
+  const x = JSON.parse(JSON.stringify(r)); x.formatoLibero = false; x.formato = 'sintetico';
+  x.noteSop = (r.noteSop || []).map(n => { const c = hsCapDi(n, HS_CAPI_E); if (!c) return n; const sb = hsSubDi(n, HS_CAPI_E);
+    return { ...n, tag: [HS_SINT_TIT[HS_E2S[c.k]]], testo: sb && n.testo ? sb.tag + ': ' + n.testo : n.testo }; });
+  // capitolo del Sintetico non pertinente solo se lo sono tutti i capitoli dell'Esteso che vi confluiscono
+  const np = {}; Object.keys(HS_SINT_TIT).forEach(k => { const E = HS_CAPI_E.filter(c => HS_E2S[c.k] === +k); np['c' + k] = E.length > 0 && E.every(c => (r.np || {})[c.k]); });
+  x.np = np; return x;
+}
 const ugT = (a, b) => String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
 // il primo tag di capitolo decide il capitolo; la sottosezione è il primo tag che corrisponde a una sua sottosezione (o voce)
 const hsCapDi = (n, C) => { for (const t of (n && n.tag) || []) { const c = C.find(x => ugT(x.tag, t)); if (c) return c; } return null; };
@@ -56,6 +68,7 @@ const hsTestoNota = n => [(n.testo || '').trim() || (n.titolo || '').trim(), (n.
 // perScheda: per il report a schede del sopralluogo periodico le note senza sottosezione di un capitolo con sottosezioni
 // vanno nella prima sottosezione (come quando si rilegge il Word), perché nella scheda non c'è un campo per il capitolo
 function hsNoteAOld(r, perScheda) {
+  if (r.formatoLibero && r.formato === 'sintetico') r = hsInSintetico(r);
   const x = JSON.parse(JSON.stringify(r)), C = hsCapi(r), np = r.np || {}, ref = {}, ordine = {};
   hsNoteGruppi(r).forEach((g, gi) => g.note.forEach((n, k) => { ordine[n.id] = gi * 1000 + k; }));
   if (r.formato === 'sintetico') {
@@ -208,7 +221,7 @@ function HsNoteTab({ r, up, ns, filtro, setFiltro, addN, onRiep }) {
       <div><b>${nFoto}</b><span>foto</span></div></div>${onRiep && html`<${RiepGo} onOpen=${onRiep} />`}</div>
     ${tagsV.length > 0 && html`<div class="vs-filter mt-3"><button class=${'tag' + (!filtro ? ' on' : ' sugg')} onClick=${() => setFiltro(null)}>Tutte</button>
       ${tagsV.map(t => html`<button key=${t} class=${'tag' + (filtro === t ? ' on' : '')} style=${tagStyle(t, filtro === t)} onClick=${() => setFiltro(filtro === t ? null : t)}>#${t}</button>`)}</div>`}
-    ${!note.length && html`<div class="card mt-3"><div class="empty" style="padding:16px">Nessuna osservazione. Tocca «Nuova osservazione» per aggiungerne una.</div></div>`}
+    ${!note.length && html`<div class="card mt-3"><div class="empty" style="padding:var(--sp-4)">Nessuna osservazione. Tocca «Nuova osservazione» per aggiungerne una.</div></div>`}
     ${note.length > 0 && !ns.sel && html`<${NoteSelBtn} ns=${ns} />`}
     ${ns.sel ? G.map(g => html`<div key=${'g-' + (g.c ? g.c.k : '-')}>
       <div class="sec-h"><h3>${g.c ? g.c.n + '. ' + g.c.tag : 'Senza capitolo'}</h3><span class="hint">${g.note.length}</span></div>
@@ -255,12 +268,11 @@ function HsDatiEst({ r, up }) {
       <${Inp} label="Superficie immobile" value=${r.meta.superficie} set=${v => setM({ superficie: v })} imp=${impOf(r, 'meta.superficie')} placeholder="es. circa 30.000 mq" />
     </div><div class="divider"></div>
     <${ImgSlot} label="Foto di copertina" id=${(r.img || {}).copertina} set=${id => setImg('copertina', id)} />
-    <div style="height:12px"></div><${ImgSlot} label="Firma / timbro (copertina)" id=${(r.img || {}).firma} set=${id => setImg('firma', id)} /></div>
-    <div class="sec-h"><h3>Sopralluoghi precedenti</h3><span class="hint">nel Word con quello di oggi</span></div>
-    <div class="card tight">${(r.visite || []).map((v, i) => html`<div class="row mb-2" key=${i}>
-        <input class="inp" style="max-width:150px" value=${v.data} placeholder="Data" onInput=${e => up(p => ({ ...p, visite: p.visite.map((x, j) => j === i ? { ...x, data: e.target.value } : x) }))} />
-        <input class="inp" value=${v.presenti} placeholder="Presenti" onInput=${e => up(p => ({ ...p, visite: p.visite.map((x, j) => j === i ? { ...x, presenti: e.target.value } : x) }))} />
-        <button class="x" aria-label="Elimina" onClick=${() => up(p => ({ ...p, visite: p.visite.filter((_, j) => j !== i) }))}>×</button></div>`)}
+    <div style="height:var(--sp-3)"></div><${ImgSlot} label="Firma / timbro (copertina)" id=${(r.img || {}).firma} set=${id => setImg('firma', id)} /></div>
+    <div class="sec-h"><h3>Sopralluoghi precedenti</h3></div>
+    <div class="card tight">${(r.visite || []).map((v, i) => html`<div class="stack mb-3" key=${i}><div class="row"><b class="tb-grow">Sopralluogo ${i + 1}</b><button class="x" aria-label="Elimina" onClick=${() => up(p => ({ ...p, visite: p.visite.filter((_, j) => j !== i) }))}>×</button></div>
+        <label class="fld"><span>Data</span><input placeholder=" " value=${v.data} onInput=${e => up(p => ({ ...p, visite: p.visite.map((x, j) => j === i ? { ...x, data: e.target.value } : x) }))} /></label>
+        <label class="fld"><span>Presenti</span><input placeholder=" " value=${v.presenti} onInput=${e => up(p => ({ ...p, visite: p.visite.map((x, j) => j === i ? { ...x, presenti: e.target.value } : x) }))} /></label></div>`)}
       <button class="btn dashed" onClick=${() => up(p => ({ ...p, visite: [...(p.visite || []), { data: '', presenti: '' }] }))}>+ Aggiungi sopralluogo precedente</button></div>`;
 }
 function HsAnagEst({ r, up }) {
@@ -276,22 +288,22 @@ function HsInqEst({ r, up }) {
   const setImg = (k, id) => up(p => ({ ...p, img: { ...(p.img || {}), [k]: id || undefined } }));
   return html`<div class="card"><${HsText} label="Inquadramento" value=${r.inquadramento} base=${B.inquadramento} set=${v => up({ inquadramento: v })} placeholder="Ubicazione, accessi, organizzazione del complesso…" />
       <div class="divider"></div><${ImgSlot} label="Ubicazione dell'immobile (estratto cartografico)" id=${(r.img || {}).mappa} set=${id => setImg('mappa', id)} />
-      <div style="height:12px"></div><${ImgSlot} label="Fotografia aerea di inquadramento" id=${(r.img || {}).aerea} set=${id => setImg('aerea', id)} /></div>
+      <div style="height:var(--sp-3)"></div><${ImgSlot} label="Fotografia aerea di inquadramento" id=${(r.img || {}).aerea} set=${id => setImg('aerea', id)} /></div>
     <div class="sec-h"><h3>Riferimenti catastali</h3></div>
     <div class="card"><${ImgSlot} label="Planimetria catastale 1" id=${(r.img || {}).catasto1} set=${id => setImg('catasto1', id)} />
-      <div style="height:12px"></div><${ImgSlot} label="Planimetria catastale 2" id=${(r.img || {}).catasto2} set=${id => setImg('catasto2', id)} />
-      <div class="divider"></div><div class="fld"><span>Catasto fabbricati</span></div>
-      ${(r.catFab || []).map((c, i) => html`<div class="row mt-2" key=${i}>${['foglio', 'particella', 'sub', 'categoria'].map(k => html`<input class="inp" placeholder=${k[0].toUpperCase() + k.slice(1)} value=${c[k]} onInput=${e => up(p => ({ ...p, catFab: p.catFab.map((x, j) => j === i ? { ...x, [k]: e.target.value } : x) }))} />`)}
-        <button class="x" aria-label="Elimina" onClick=${() => up(p => ({ ...p, catFab: p.catFab.filter((_, j) => j !== i) }))}>×</button></div>`)}
+      <div style="height:var(--sp-3)"></div><${ImgSlot} label="Planimetria catastale 2" id=${(r.img || {}).catasto2} set=${id => setImg('catasto2', id)} />
+      <div class="divider"></div><h4 class="sotto-t">Catasto fabbricati</h4>
+      ${(r.catFab || []).map((c, i) => html`<div class="stack mt-2" key=${i}><div class="row"><b class="tb-grow">Riga ${i + 1}</b><button class="x" aria-label="Elimina" onClick=${() => up(p => ({ ...p, catFab: p.catFab.filter((_, j) => j !== i) }))}>×</button></div>
+        ${['foglio', 'particella', 'sub', 'categoria'].map(k => html`<label class="fld" key=${k}><span>${k[0].toUpperCase() + k.slice(1)}</span><input placeholder=" " value=${c[k]} onInput=${e => up(p => ({ ...p, catFab: p.catFab.map((x, j) => j === i ? { ...x, [k]: e.target.value } : x) }))} /></label>`)}</div>`)}
       <button class="btn dashed mt-2" onClick=${() => up(p => ({ ...p, catFab: [...(p.catFab || []), { foglio: '', particella: '', sub: '', categoria: '' }] }))}>+ Riga catasto fabbricati</button>
-      <div class="fld mt-4"><span>Catasto terreni</span></div>
-      ${(r.catTer || []).map((c, i) => html`<div class="row mt-2" key=${i}><input class="inp" style="max-width:110px" placeholder="Foglio" value=${c.foglio} onInput=${e => up(p => ({ ...p, catTer: p.catTer.map((x, j) => j === i ? { ...x, foglio: e.target.value } : x) }))} />
-        <input class="inp" placeholder="Mappali (es. 953, 1181)" value=${c.mappale} onInput=${e => up(p => ({ ...p, catTer: p.catTer.map((x, j) => j === i ? { ...x, mappale: e.target.value } : x) }))} />
-        <button class="x" aria-label="Elimina" onClick=${() => up(p => ({ ...p, catTer: p.catTer.filter((_, j) => j !== i) }))}>×</button></div>`)}
+      <h4 class="sotto-t mt-4">Catasto terreni</h4>
+      ${(r.catTer || []).map((c, i) => html`<div class="stack mt-2" key=${i}><div class="row"><b class="tb-grow">Riga ${i + 1}</b><button class="x" aria-label="Elimina" onClick=${() => up(p => ({ ...p, catTer: p.catTer.filter((_, j) => j !== i) }))}>×</button></div>
+        <label class="fld"><span>Foglio</span><input placeholder=" " value=${c.foglio} onInput=${e => up(p => ({ ...p, catTer: p.catTer.map((x, j) => j === i ? { ...x, foglio: e.target.value } : x) }))} /></label>
+        <label class="fld"><span>Mappali</span><input placeholder="es. 953, 1181" value=${c.mappale} onInput=${e => up(p => ({ ...p, catTer: p.catTer.map((x, j) => j === i ? { ...x, mappale: e.target.value } : x) }))} /></label></div>`)}
       <button class="btn dashed mt-2" onClick=${() => up(p => ({ ...p, catTer: [...(p.catTer || []), { foglio: '', mappale: '' }] }))}>+ Riga catasto terreni</button></div>`;
 }
 function HsAppunti({ r, up }) {
-  return html`<div class="sec-h"><h3>Documenti allegati</h3><span class="hint">restano sul dispositivo e vanno su OneDrive</span></div>
+  return html`<div class="sec-h"><h3>Documenti allegati</h3></div>
     <div class="card"><${FileList} items=${r.documenti || []}
       onAdd=${d => up(p => ({ ...p, documenti: [...(p.documenti || []), d] }))}
       onRemove=${async d => { await removeBlob(d.blobId); up(p => ({ ...p, documenti: p.documenti.filter(x => x.id !== d.id) })); }} /></div>`;
@@ -322,7 +334,7 @@ function HsAnagSint({ r, up }) {
   const B = r.base || {};
   return html`<div class="card">${HS_SINT_AN.map((l, i) => i === 8 || i === 9
       ? html`<${HsText} key=${i} label=${l.replace(/:$/, '')} rows=${i === 8 ? 5 : 3} value=${r.anS[i]} base=${B['an.' + i]} set=${v => up(p => ({ ...p, anS: p.anS.map((x, j) => j === i ? v : x) }))} />`
-      : html`<div key=${i} style="margin-bottom:10px"><${Inp} label=${l.replace(/:$/, '')} value=${r.anS[i] || ''} placeholder=${i === 0 ? r.indirizzo : i === 7 ? fmtD(r.data) : ''} imp=${impOf(r, 'anS.' + i)} set=${v => up(p => ({ ...p, anS: p.anS.map((x, j) => j === i ? v : x) }))} /></div>`)}</div>`;
+      : html`<div key=${i} style="margin-bottom:var(--sp-3)"><${Inp} label=${l.replace(/:$/, '')} value=${r.anS[i] || ''} placeholder=${i === 0 ? r.indirizzo : i === 7 ? fmtD(r.data) : ''} imp=${impOf(r, 'anS.' + i)} set=${v => up(p => ({ ...p, anS: p.anS.map((x, j) => j === i ? v : x) }))} /></div>`)}</div>`;
 }
 
 /* ---------------- scheda Check-list: capitoli e stato ---------------- */
@@ -331,7 +343,7 @@ function HsChecklist({ r, up, aperto, setAperto, vaiNota, addN }) {
   const c = aperto && C.find(x => x.k === aperto);
   if (c) {
     const L = hsNoteDi(r, c), S = hsStatoCap(r, c), np = !!(r.np || {})[c.k], num = hsNumNote(r);
-    return html`<button class="btn link" style="margin:-8px 0 8px -4px" onClick=${() => setAperto(null)}><${Icon} n="back" s=${18} /> Check-list</button>
+    return html`<button class="btn link" style="margin:calc(-1 * var(--sp-2)) 0 var(--sp-2) calc(-1 * var(--sp-1))" onClick=${() => setAperto(null)}><${Icon} n="back" s=${18} /> Check-list</button>
       <div class="sec-h mt-0"><h3>${c.n}. ${c.tag}</h3><span class="hint">${S.w}</span></div>
       ${!L.length && html`<div class="card"><div class="optline" style="padding:0"><div class="t"><b>Non pertinente</b>${r.formato !== 'sintetico' && html`<small>Nel Word: «Nessuna criticità rilevata»</small>`}</div>
         <${Toggle} on=${np} set=${v => up(p => ({ ...p, np: { ...(p.np || {}), [c.k]: v } }))} label="Non pertinente" /></div></div>`}
@@ -357,6 +369,16 @@ function HsSenzaNoteSheet({ r, up, onDone }) {
         <button class="btn sm" onClick=${() => onDone(false, c)}>Aggiungi un'osservazione</button></div></div></div>`)}</div>
       <button class="btn pri block mt-4" onClick=${() => onDone(true)}>${L.length ? 'Genera lo stesso' : 'Genera Word'}</button>
     </div></div></div>`;
+}
+
+/* ---------------- modello del report (formato libero, v56) ----------------
+   Controllo a segmenti con sotto la descrizione; si parte dall'ultimo modello usato. L'Anagrafica mostra i campi del modello scelto. */
+function HsFormatoSel({ r, up }) {
+  if (!r.formatoLibero) return null;
+  const set = f => { lsSet('nembo_hs_formato', f); up({ formato: f }); };
+  const sint = r.formato === 'sintetico';
+  return html`<div class="card"><div class="seg"><button class=${!sint ? 'on' : ''} onClick=${() => set('esteso')}>Esteso</button><button class=${sint ? 'on' : ''} onClick=${() => set('sintetico')}>Sintetico</button></div>
+    <div class="mt-2"><b class="fw-6">${sint ? '5 capitoli' : '13 capitoli'}</b><div class="lead">${sint ? 'Un elenco di verifica compatto: ogni osservazione va nel capitolo che le corrisponde.' : 'Una relazione descrittiva, capitolo per capitolo, con le foto accanto al testo.'}</div></div></div>`;
 }
 
 /* ---------------- scheda del sopralluogo a note ---------------- */
@@ -388,7 +410,7 @@ function HsNoteForm({ rec: initial, settings, onSave, onDelete, onSettings, embe
   return html`<div class="content form">
     <${DetailHead} conclusa=${r.conclusa} eye=${'Sopralluogo HSE · ' + HS_FMT[r.formato]} title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r) || r.sito].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
     <${Schede} value=${T} set=${k => { setT(k); setAperto(null); }} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'note', l: 'Osservazioni', n: (r.noteSop || []).length }, { k: 'check', l: 'Check-list', n: nRossi || undefined }, { k: 'file', l: 'File' }]} />
-    ${T === 'anag' && html`${sint ? html`<${HsDatiSint} r=${r} up=${up} /><div class="sec-h"><h3>Anagrafica immobile</h3></div><${HsAnagSint} r=${r} up=${up} />`
+    ${T === 'anag' && html`${r.formatoLibero && html`<div class="sec-h mt-1"><h3>Modello del report</h3></div><${HsFormatoSel} r=${r} up=${up} />`}${sint ? html`<${HsDatiSint} r=${r} up=${up} /><div class="sec-h"><h3>Anagrafica immobile</h3></div><${HsAnagSint} r=${r} up=${up} />`
       : html`<${HsDatiEst} r=${r} up=${up} /><div class="sec-h"><h3>Anagrafica immobile</h3></div><${HsAnagEst} r=${r} up=${up} />
         <div class="sec-h"><h3>Inquadramento e catasto</h3></div><${HsInqEst} r=${r} up=${up} />`}
       ${hasTpl === false && html`<div class="notice err">Manca il modello Word ${HS_FMT[r.formato]}: caricalo in Impostazioni → Modelli. <button class="btn link" onClick=${onSettings}>Apri</button></div>`}`}
@@ -406,7 +428,7 @@ function HsNoteForm({ rec: initial, settings, onSave, onDelete, onSettings, embe
       gruppi=${[['Documenti', [{ ic: 'share', l: OD.account ? 'Carica su OneDrive' : 'Invia foto e Word a OneDrive', fn: upload }]],
         opzArchivio({ r, settings, onDelete, up, elimina: 'Elimina il sopralluogo' })]} />`}
     ${tagSheet && ns.sel && html`<${TagMultiSheet} note=${selNote} fissi=${hsTagFissi(r, selNote)} altri=${Object.keys(collectTags(r.noteSop || []))} onSet=${setNote} onClose=${() => setTagSheet(false)} />`}
-    ${riep && html`<${RiepilogoPanel} r=${r} onClose=${() => setRiep(false)} azione=${html`<${DocBtn} r=${r} up=${up} settings=${settings} k="hs_docx" label="report" prima=${prima} />`} />`}
+    ${riep && html`<${RiepilogoPanel} r=${r} onClose=${() => setRiep(false)} scelta=${r.formatoLibero && html`<${HsFormatoSel} r=${r} up=${up} />`} azione=${html`<${DocBtn} r=${r} up=${up} settings=${settings} k="hs_docx" label="report" prima=${prima} />`} />`}
     ${chiedi && html`<${HsSenzaNoteSheet} r=${r} up=${up} onDone=${fineChiedi} />`}
   </div>`;
 }

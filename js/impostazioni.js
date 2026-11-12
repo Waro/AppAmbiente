@@ -13,7 +13,7 @@ function TemplateRow({ name, t, onChange }) {
       await DB.set(t.key, bytes); setHas(true); toast('Modello salvato'); onChange && onChange(); cfgOdSchedule();
     } catch (err) { fail('Modello non valido', err); }
   };
-  return html`<div class="row" style="padding:10px 0;border-top:.5px solid var(--sep)">
+  return html`<div class="row" style="padding:var(--sp-3) 0;border-top:.5px solid var(--sep)">
     <div class="tb-grow"><div style="font-size:var(--fs-base);font-weight:600;white-space:normal">${t.label}</div>
       <div class=${'lock'} style=${has ? 'color:var(--ok)' : 'color:var(--danger)'}>${has === null ? '' : has ? 'Caricato su questo dispositivo' : 'Da caricare'}</div></div>
     <button class="btn sm" onClick=${() => inp.current.click()}>${has ? 'Sostituisci' : 'Carica'}</button>
@@ -92,23 +92,23 @@ function Settings({ settings, setSettings, onTemplates, go, page, wide, unreadEr
     </div>
     <div class="fld mt-3"><span>Firma salvata (per i moduli radon)</span></div>
     <button class=${'sigbox' + (s.firmaTecnico ? ' has' : '')} onClick=${() => setSig(true)}>${s.firmaTecnico ? html`<img src=${s.firmaTecnico} alt="Firma salvata" />` : 'Tocca per salvare la tua firma'}</button>
-    <div style="display:flex;margin-top:8px;gap:8px;flex-wrap:wrap"><${SigImageButton} onDone=${url => set({ firmaTecnico: url })} />
+    <div style="display:flex;margin-top:var(--sp-2);gap:var(--sp-2);flex-wrap:wrap"><${SigImageButton} onDone=${url => set({ firmaTecnico: url })} />
       ${s.firmaTecnico && html`<button class="btn sm" onClick=${() => set({ firmaTecnico: '' })}>Rimuovi firma salvata</button>`}</div>
-    <p class="lead" style="margin:6px 2px 0;font-size:var(--fs-sm)">Puoi disegnarla o caricare una foto della tua firma su un foglio bianco: lo sfondo viene tolto da solo.</p>
+    <p class="lead" style="margin:var(--sp-2) var(--sp-1) 0;font-size:var(--fs-sm)">Puoi disegnarla o caricare una foto della tua firma su un foglio bianco: lo sfondo viene tolto da solo.</p>
     </div>`;
       case 'aspetto': return html`<div class="card">
       <div class="fld"><span>Stile</span></div>
       ${segLook(STYLES, 'style', 'Stile')}
       <div class="fld mt-4"><span>Aspetto</span></div>
       ${segLook(MODES, 'mode', 'Aspetto')}
-      <p class="lead" style="margin:8px 2px 0;font-size:var(--fs-sm)">Automatico segue il tema chiaro o scuro del dispositivo. Stile e aspetto valgono solo su questo dispositivo.</p>
+      <p class="lead" style="margin:var(--sp-2) var(--sp-1) 0;font-size:var(--fs-sm)">Automatico segue il tema chiaro o scuro del dispositivo. Stile e aspetto valgono solo su questo dispositivo.</p>
       <div class="fld mt-4"><span>Business unit mostrata in Oggi</span></div>
       <div class="seg mt-2">${BUS.map(([k2, l]) => html`<button class=${(s.buDefault || 'ambiente') === k2 ? 'on' : ''} onClick=${() => set({ buDefault: k2 })}>${l}</button>`)}</div>
     </div>`;
       case 'foto': return html`<${CamSerieCard} />`;
       case 'novita': return html`<${NovitaCard} go=${go} />`;
       case 'config': return html`<div class="card tight">
-      <p class="lead" style="margin:6px 0 10px">Un unico file .json con impostazioni e modelli PDF, da tenere su OneDrive o inviare a un collega. Non pubblicarlo mai sul sito.</p>
+      <p class="lead" style="margin:var(--sp-2) 0 var(--sp-3)">Un unico file .json con impostazioni e modelli PDF, da tenere su OneDrive o inviare a un collega. Non pubblicarlo mai sul sito.</p>
       <div class="row">
         <button class="btn grow" onClick=${() => cfgInp.current.click()}>Carica .json</button>
         <button class="btn grow" onClick=${() => exportConfig(s)}>Esporta .json</button>
@@ -118,7 +118,7 @@ function Settings({ settings, setSettings, onTemplates, go, page, wide, unreadEr
     <${CfgOdCard} settings=${s} set=${set} onRestore=${cercaCfg} />`;
       case 'onedrive': return html`<${OneDriveSettings} settings=${s} set=${set} />
     <${SyncCard} settings=${s} set=${set} />`;
-      case 'modelli': return html`<div class="card tight"><p class="lead" style="margin:2px 0 6px">I moduli aziendali (PDF per l'Ambiente, Word per l'HSE) non sono nell'app pubblicata: caricali qui dal telefono o da OneDrive. Restano solo su questo dispositivo e finiscono nel file di configurazione e nel backup.</p>
+      case 'modelli': return html`<div class="card tight"><p class="lead" style="margin:var(--sp-1) 0 var(--sp-2)">I moduli aziendali (PDF per l'Ambiente, Word per l'HSE) non sono nell'app pubblicata: caricali qui dal telefono o da OneDrive. Restano solo su questo dispositivo e finiscono nel file di configurazione e nel backup.</p>
       ${Object.entries(TEMPLATES).map(([name, t]) => html`<${TemplateRow} key=${name} name=${name} t=${t} onChange=${onTemplates} />`)}</div>`;
       case 'dispositivo': return html`<${ArchiviaCard} />
         <${WipeCard} />`;
@@ -159,12 +159,12 @@ function Settings({ settings, setSettings, onTemplates, go, page, wide, unreadEr
       case 'assistenza': return html`<div class="card"><${Inp} label="Email per le segnalazioni" type="email" value=${s.supportEmail || ''} set=${v => set({ supportEmail: v.trim() })} /></div>
     <${IssueCard} settings=${s} />`;
       case 'info': return html`<div class="card tight" style="font-size:var(--fs-base);color:var(--text2)">
-      <div style="display:flex;justify-content:space-between;padding:9px 2px"><span>Versione app</span><b class="mono" style="color:var(--text)">${APP_VERSION}</b></div>
-      <div style="display:flex;justify-content:space-between;padding:9px 2px;border-top:.5px solid var(--sep)">
+      <div style="display:flex;justify-content:space-between;padding:9px var(--sp-1)"><span>Versione app</span><b class="mono" style="color:var(--text)">${APP_VERSION}</b></div>
+      <div style="display:flex;justify-content:space-between;padding:9px var(--sp-1);border-top:.5px solid var(--sep)">
         <span>Cache offline attiva</span>
         <b style="color:${cacheVer && cacheVer !== APP_VERSION ? 'var(--warn)' : 'var(--text)'}">${cacheVer || '…'}</b>
       </div>
-      ${cacheVer && cacheVer !== APP_VERSION && html`<p style="margin:8px 2px 2px;color:var(--warn)">Diverse dalla versione app: l'aggiornamento è a metà, chiudi e riapri l'app (o svuota la cache del sito) per completarlo.</p>`}
+      ${cacheVer && cacheVer !== APP_VERSION && html`<p style="margin:var(--sp-2) var(--sp-1) var(--sp-1);color:var(--warn)">Diverse dalla versione app: l'aggiornamento è a metà, chiudi e riapri l'app (o svuota la cache del sito) per completarlo.</p>`}
     </div>`;
     }
     return null;
@@ -184,7 +184,7 @@ function Settings({ settings, setSettings, onTemplates, go, page, wide, unreadEr
       <span class="set-ic"><${Icon} n="bell" s=${19} /></span><span class="set-t"><b>Notifiche</b><small>Esiti, promemoria ed errori</small></span>
       ${unreadErr > 0 && html`<span class="count crit">${unreadErr}</span>`}<${Icon} n="right" s=${18} /></button></div>
     ${SET_GROUPS.map(g => html`<div class="sec-h" key=${g.h}><h3>${g.h}</h3></div><div class="set-group">${g.items.map(row)}</div>`)}
-    <p class="lead" style="margin:14px 2px">Le impostazioni si salvano da sole e restano su questo telefono.</p>
+    <p class="lead" style="margin:var(--sp-4) var(--sp-1)">Le impostazioni si salvano da sole e restano su questo telefono.</p>
   </div>`;
 
   const pageView = id => { const x = SET_PAGES[id]; if (!x) return null;
@@ -202,7 +202,7 @@ function Settings({ settings, setSettings, onTemplates, go, page, wide, unreadEr
 
 /* ---------------- segnala un problema ---------------- */
 function IssueCard({ settings }) {
-  return html`<div class="card tight" style="margin:4px 0 14px">
+  return html`<div class="card tight" style="margin:var(--sp-1) 0 var(--sp-4)">
     <div style="font-weight:700">Qualcosa non funziona?</div>
     <p class="lead lead-gap">Prepara un'email con versione dell'app, dispositivo e ultimi errori: tu aggiungi cosa stavi facendo.</p>
     <div class="row"><button class="btn grow" onClick=${() => reportIssue(settings)}><${Icon} n="bell" s=${17} /> Segnala un problema</button>
@@ -291,7 +291,7 @@ function WipeCard() {
   const [w, setW] = useState(null);
   useEffect(() => { wipeStatus().then(setW); }, []);
   return html`<div class="card tight">
-    <p class="lead" style="margin:6px 0 10px">Per cambiare dispositivo, restituirlo o prima della migrazione dell'account Microsoft: toglie da qui attività, foto, configurazione, modelli, firma e accesso a Microsoft. Quello che è su OneDrive resta.</p>
+    <p class="lead" style="margin:var(--sp-2) 0 var(--sp-3)">Per cambiare dispositivo, restituirlo o prima della migrazione dell'account Microsoft: toglie da qui attività, foto, configurazione, modelli, firma e accesso a Microsoft. Quello che è su OneDrive resta.</p>
     ${w && html`<p style=${'margin:0 2px 10px;font-size:var(--fs-md);font-weight:600;color:' + (w.pending.length || w.del ? 'var(--danger)' : 'var(--ok)')}>
       ${!w.total ? 'Nessuna attività su questo dispositivo.' : w.pending.length || w.del ? (w.syncOn ? `${w.pending.length} attività su ${w.total} non ancora su OneDrive.` : `Sincronizzazione non attiva: le ${w.total} attività sono solo qui.`) : `Tutte le ${w.total} attività sono su OneDrive.`}</p>`}
     <button class="btn danger block" onClick=${wipeDevice}><${Icon} n="trash" s=${17} /> Rimuovi i dati da questo dispositivo</button>
@@ -316,7 +316,7 @@ function Notifiche({ settings, records = [], openRec }) {
     <${LargeTitle} top title="Notifiche" />
     <p class="lead">Esiti dei caricamenti su OneDrive, promemoria ed errori dell'app, con il relativo codice. Restano su questo dispositivo (ultime ${NOTIF_MAX}).</p>
     <${IssueCard} settings=${settings} />
-    ${list.length > 0 && html`<div class="row" style="margin:6px 0 12px">
+    ${list.length > 0 && html`<div class="row" style="margin:var(--sp-2) 0 var(--sp-3)">
       <div class="seg grow">
         <button class=${f === 'tutte' ? 'on' : ''} onClick=${() => setF('tutte')}>Tutte · ${list.length}</button>
         <button class=${f === 'err' ? 'on' : ''} onClick=${() => setF('err')}>Errori · ${nErr}</button>
@@ -324,19 +324,19 @@ function Notifiche({ settings, records = [], openRec }) {
       </div></div>`}
     ${!shown.length && html`<div class="empty"><b>Nessuna notifica</b>${list.length ? 'Niente in questa categoria.' : 'Qui compariranno gli esiti dei caricamenti e gli eventuali errori.'}</div>`}
     <div>${shown.map(n => html`<div class="card tight st-bar" key=${n.id} style=${'--st:' + COL[n.level] + ';padding:12px 14px 12px 18px'}>
-      <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline">
+      <div style="display:flex;justify-content:space-between;gap:var(--sp-3);align-items:baseline">
         <b style=${'font-size:var(--fs-sm);font-weight:600;color:' + COL[n.level]}>${LBL[n.level]}</b>
         <span style="font-size:var(--fs-xs);color:var(--muted)">${new Date(n.t).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}</span></div>
-      <div style="font-weight:700;margin-top:3px">${n.title}</div>
-      ${n.record && html`<div style="font-size:var(--fs-sm);color:var(--text2);margin-top:2px">${n.record}</div>`}
+      <div style="font-weight:700;margin-top:var(--sp-1)">${n.title}</div>
+      ${n.record && html`<div style="font-size:var(--fs-sm);color:var(--text2);margin-top:var(--sp-1)">${n.record}</div>`}
       ${(() => { const rs = (n.ids || []).map(id => records.find(r => r.id === id)).filter(Boolean); if (!rs.length || n.level === 'ok') return null;
         return html`<div class="ntf-act">
           ${html`<button class="btn sm pri" onClick=${() => odSync(rs, settings)}><${Icon} n="share" s=${15} /> Ricarica${rs.length > 1 ? ' tutte' : ''}</button>`}
           ${rs.map(r => html`<button class="btn sm" key=${r.id} onClick=${() => openRec(r)}>Apri ${rs.length > 1 ? r.codice || recordTitle(r) : 'attività'}</button>`)}</div>`; })()}
-      ${n.detail && html`<div style="font-size:var(--fs-sm);margin-top:6px;word-break:break-word">${n.detail}</div>`}
-      ${n.code && html`<div class="mt-2"><span class="mono" style="font-size:var(--fs-sm);background:var(--fill-soft);border-radius:var(--r-xs);padding:2px 8px">Codice: ${n.code}</span></div>`}
+      ${n.detail && html`<div style="font-size:var(--fs-sm);margin-top:var(--sp-2);word-break:break-word">${n.detail}</div>`}
+      ${n.code && html`<div class="mt-2"><span class="mono" style="font-size:var(--fs-sm);background:var(--fill-soft);border-radius:var(--r-xs);padding:var(--sp-1) var(--sp-2)">Codice: ${n.code}</span></div>`}
       ${(n.items || []).length > 0 && html`<button class="btn sm mt-2" onClick=${() => setOpen(o => ({ ...o, [n.id]: !o[n.id] }))}>${open[n.id] ? 'Nascondi' : 'Mostra'} dettaglio file (${n.items.length})</button>
-        ${open[n.id] && html`<div class="mono" style="margin-top:8px;font-size:var(--fs-sm);font-weight:500;background:var(--fill-soft);border-radius:var(--r-sm);padding:8px;max-height:260px;overflow:auto;word-break:break-word">${n.items.map(x => html`<div style="padding:3px 0;border-bottom:1px dashed var(--sep)">${x}</div>`)}</div>`}`}
+        ${open[n.id] && html`<div class="mono" style="margin-top:var(--sp-2);font-size:var(--fs-sm);font-weight:500;background:var(--fill-soft);border-radius:var(--r-sm);padding:var(--sp-2);max-height:260px;overflow:auto;word-break:break-word">${n.items.map(x => html`<div style="padding:var(--sp-1) 0;border-bottom:1px dashed var(--sep)">${x}</div>`)}</div>`}`}
       ${(n.level === 'err' || n.level === 'warn') && html`<div class="mt-2"><button class="btn sm" onClick=${() => copy(n)}>Copia dettagli</button></div>`}
     </div>`)}</div>
     ${list.length > 0 && html`<button class="btn danger block mt-4" onClick=${() => { if (confirm('Cancellare tutte le notifiche?')) notifClear(); }}><${Icon} n="trash" s=${17} /> Svuota notifiche</button>`}

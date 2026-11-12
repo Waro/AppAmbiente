@@ -123,7 +123,7 @@ Campionatori, addetto alla verifica della taratura e codici d'analisi si imposta
 
 ## Sopralluogo HSE
 
-Nuova attività → **Sopralluogo HSE** → *Avanti*: **Primo sopralluogo** (Esteso o Sintetico) oppure **Sopralluogo periodico**
+Nuova attività → **Sopralluogo HSE** → *Avanti*: **Primo sopralluogo** (dalla v56 Esteso o Sintetico si sceglie quando generi il report, in Anagrafica o nel Riepilogo) oppure **Sopralluogo periodico**
 (*Carica Word o JSON*, *Da un report in Nembo*; il formato è quello del report).
 
 **Primo sopralluogo a note** (`js/hs-note.js`, v53): stessa interfaccia del Verbale HSE, schede Anagrafica · Note · Check-list · File.

@@ -94,15 +94,14 @@ function AriaPuntoCard({ p, open, toggle, onUpd, onMet, onDel, onScan, settings 
         <${Inp} label="Ora inizio" type="time" value=${p.oraInizio} set=${v => set({ oraInizio: v })} />
         <${Inp} label="Ora fine" type="time" value=${p.oraFine} set=${v => set({ oraFine: v })} />
         <label class="fld full"><span>Campionatore e matricola</span>
-          <input class="inp" list=${'dl-camp-' + p.id} value=${p.campionatore} onInput=${ev => set({ campionatore: ev.target.value })} placeholder=${camp.length ? 'Scegli o scrivi' : 'es. Modello · S/N 0000'} />
+          <input list=${'dl-camp-' + p.id} value=${p.campionatore} onInput=${ev => set({ campionatore: ev.target.value })} placeholder=${camp.length ? 'Scegli o scrivi' : 'es. Modello · S/N 0000'} />
           <datalist id=${'dl-camp-' + p.id}>${camp.map(c => html`<option value=${c} />`)}</datalist></label>
-        <label class="fld full"><span>Membrana · ID supporto</span>
-          <div class="row" style="gap:8px"><input class="inp grow" value=${p.membrana} onInput=${ev => set({ membrana: ev.target.value })} placeholder="Codice sulla membrana" />
-            <button class="btn" onClick=${() => onScan(p)}><${Icon} n="scan" s=${17} /> Scansiona</button></div></label>
+        <label class="fld full"><span>Membrana · ID supporto</span><input value=${p.membrana} onInput=${ev => set({ membrana: ev.target.value })} placeholder="Codice sulla membrana" /></label>
+        <button class="btn full" onClick=${() => onScan(p)}><${Icon} n="scan" s=${17} /> Scansiona la membrana</button>
         <${Inp} label="Flusso (l/min)" inputmode="decimal" value=${p.flusso} set=${v => set({ flusso: v })} />
         <${Inp} label="Litri prelevati" inputmode="decimal" value=${p.volume} set=${v => set({ volume: v })} placeholder=${vAuto != null ? fmtNum(vAuto) + ' (calcolato)' : 'flusso × durata'} />
       </div>
-      ${min != null && html`<p class="lead" style="margin:-2px 2px 6px;font-size:var(--fs-sm)">Durata ${Math.floor(min / 60)} h ${min % 60} min${vAuto != null ? ` · ${fmtNum(numIt(p.flusso))} l/min × ${min} min = ${fmtNum(vAuto)} litri` : ''}</p>`}
+      ${min != null && html`<p class="lead" style="margin:calc(-1 * var(--sp-1)) var(--sp-1) var(--sp-2);font-size:var(--fs-sm)">Durata ${Math.floor(min / 60)} h ${min % 60} min${vAuto != null ? ` · ${fmtNum(numIt(p.flusso))} l/min × ${min} min = ${fmtNum(vAuto)} litri` : ''}</p>`}
       <div class="fld"><span>Esito di laboratorio</span></div>
       <div class="grid2">
         <${Inp} label="Rapporto di prova" value=${p.rdp} set=${v => set({ rdp: v })} placeholder="es. RdP 24/000123150" />
@@ -148,13 +147,13 @@ function AriaSection({ r, up, settings, inRa }) {
   AriaSection.next = nextP;
   return html`<div id=${'aria-' + r.id}>
     <div class="sec-h"><h3>${inRa ? 'Monitoraggio aria' : 'Punti di monitoraggio'} · ${R.tot}</h3><span class="hint">${R.chiusi} di ${R.tot} fatti${R.esiti ? ' · ' + R.esiti + ' esiti' : ''}</span></div>
-    ${R.tot > 0 && html`<div class="track" style="margin:0 2px 12px"><i style=${'background:var(--ok);width:' + Math.round(R.chiusi / R.tot * 100) + '%'}></i></div>`}
-    ${!R.tot && html`<div class="card"><div class="empty" style="padding:16px">Aggiungi un punto per ogni postazione di prelievo (S1, S2…).</div></div>`}
+    ${R.tot > 0 && html`<div class="track" style="margin:0 var(--sp-1) var(--sp-3)"><i style=${'background:var(--ok);width:' + Math.round(R.chiusi / R.tot * 100) + '%'}></i></div>`}
+    ${!R.tot && html`<div class="card"><div class="empty" style="padding:var(--sp-4)">Aggiungi un punto per ogni postazione di prelievo (S1, S2…).</div></div>`}
     ${P.map(p => html`<${AriaPuntoCard} key=${p.id} p=${p} settings=${settings} open=${!!openP[p.id]} toggle=${() => setOpenP({ ...openP, [p.id]: !openP[p.id] })} onUpd=${updP} onMet=${metP} onDel=${delP} onScan=${onScan} />`)}
     <button class="btn dashed" onClick=${addP}>+ Aggiungi punto</button>
     ${R.over > 0 && html`<div class="notice err">${R.over === 1 ? '1 punto oltre il limite' : R.over + ' punti oltre il limite'}</div>`}
 
-    <div class="sec-h"><h3>Rapporti di prova</h3><span class="hint">Referti del laboratorio</span></div>
+    <div class="sec-h"><h3>Rapporti di prova</h3></div>
     <div class="card"><${FileList} items=${A.rapporti || []} label="Allega rapporto di prova"
       onAdd=${d => upA(a => ({ rapporti: [...(a.rapporti || []), d] }))}
       onRemove=${async d => { await removeBlob(d.blobId); upA(a => ({ rapporti: (a.rapporti || []).filter(x => x.id !== d.id) })); }} /></div>
@@ -162,7 +161,7 @@ function AriaSection({ r, up, settings, inRa }) {
     <div class="sec-h"><h3>Schede aria</h3></div>
     <div class="card"><p class="lead lead-gap">Scheda di prelievo ed esiti, in Excel e PDF, si generano nella scheda File.</p>
       <button class="btn" onClick=${() => dispatchEvent(new CustomEvent('nembo-goto', { detail: 'tab:file' }))}><${Icon} n="file" s=${16} /> Vai a File</button>
-      ${!ariaCampionatori(settings).length && html`<p class="lead" style="margin:10px 2px 0;font-size:var(--fs-sm)">L'elenco dei campionatori e i codici d'analisi si impostano in Impostazioni → Monitoraggio aria.</p>`}
+      ${!ariaCampionatori(settings).length && html`<p class="lead" style="margin:var(--sp-3) var(--sp-1) 0;font-size:var(--fs-sm)">L'elenco dei campionatori e i codici d'analisi si impostano in Impostazioni → Monitoraggio aria.</p>`}
     </div>
     ${scan && html`<${Scanner} title=${scan.title} target=${scan.target} onCode=${scan.onCode} onClose=${() => setScan(null)} />`}
   </div>`;
@@ -170,7 +169,7 @@ function AriaSection({ r, up, settings, inRa }) {
 
 // nel sopralluogo RA: sezione facoltativa
 function AriaInRa({ r, up, settings }) {
-  if (!ariaOn(r)) return html`<div class="sec-h"><h3>Monitoraggio aria</h3><span class="hint">Facoltativo</span></div>
+  if (!ariaOn(r)) return html`<div class="sec-h"><h3>Monitoraggio aria</h3></div>
     <div class="card tight"><p class="lead lead-gap">Campionamento delle fibre aerodisperse (SEM, MOCF, FAV) con scheda di prelievo e riepilogo degli esiti.</p>
       <button class="btn block" onClick=${() => up(q => ({ ...q, aria: { ...ariaOf(q), attivo: true, punti: ariaOf(q).punti.length ? ariaOf(q).punti : [newAriaPunto({ codice: 'S1' })] } }))}><${Icon} n="plus" s=${17} /> Aggiungi monitoraggio aria</button></div>`;
   const vuoto = !ariaOf(r).punti.some(p => p.stato || p.conc || (p.foto || []).length);
@@ -187,7 +186,7 @@ function AriaList({ records, open, activeId, acts }) {
   all.forEach(r => { const c = r.cliente || 'Senza cliente'; (groups[c] = groups[c] || []).push(r); });
   return html`<div class="content">
     <${LargeTitle} top eye="Ambiente" title="Monitoraggio aria" sub="Fibre aerodisperse: prelievi, schede ed esiti" acts=${acts} />
-    ${inRa > 0 && html`<p class="lead" style="margin:0 2px 12px">${inRa === 1 ? 'Un sopralluogo RA ha' : inRa + ' sopralluoghi RA hanno'} il monitoraggio aria nella propria scheda.</p>`}
+    ${inRa > 0 && html`<p class="lead" style="margin:0 var(--sp-1) var(--sp-3)">${inRa === 1 ? 'Un sopralluogo RA ha' : inRa + ' sopralluoghi RA hanno'} il monitoraggio aria nella propria scheda.</p>`}
     ${!all.length && html`<div class="empty"><b>Nessun monitoraggio</b>Tocca + e scegli «Monitoraggio aria». Nei sopralluoghi RA c'è anche la sezione facoltativa.</div>`}
     ${Object.entries(groups).map(([c, rs]) => html`<div key=${c}><div class="grp-client">${c}</div><div class="list">
       ${rs.map(r => { const R = ariaRiepilogo(r); return html`<button class=${'rcard' + (activeId === r.id ? ' on' : '') + odCls(od, r) + selCls(r)} key=${r.id} ...${selRow(r, () => open(r.id))}>${selCk(r)}
@@ -226,12 +225,12 @@ function AriaForm({ rec: initial, records, settings, onSave, onDelete, embedded,
       <div><b>${R.esiti}<small>/${R.fatti}</small></b><span>esiti inseriti</span></div>
       <div><b class=${R.over ? 'crit' : ''}>${R.over}</b><span>oltre il limite</span></div></div></div>
     <${AriaSection} r=${r} up=${up} settings=${settings} />
-    <div class="sec-h" id=${'plan-' + r.id}><h3>Planimetrie</h3><span class="hint">Etichette dei punti di monitoraggio</span></div>
+    <div class="sec-h" id=${'plan-' + r.id}><h3>Planimetrie</h3></div>
     <div class="card"><${PlanList} items=${r.planimetrie || []} labels=${ariaLabels(r)}
       onAdd=${p => up(q => ({ ...q, planimetrie: [...(q.planimetrie || []), p] }))}
       onUpdate=${(id, patch) => up(q => ({ ...q, planimetrie: (q.planimetrie || []).map(x => x.id === id ? { ...x, ...patch } : x) }))}
       onRemove=${async p => { for (const b of blobIds(p)) await removeBlob(b); up(q => ({ ...q, planimetrie: (q.planimetrie || []).filter(x => x.id !== p.id) })); }} /></div>
-    <div class="sec-h"><h3>Appunti</h3><span class="hint">Testo libero</span></div>
+    <div class="sec-h"><h3>Appunti</h3></div>
     <${Appunti} rec=${r} up=${up} rows=${3} />
     `}
     ${T === 'firme' && html`<${FogliFirme} r=${r} up=${up} settings=${settings} />`}

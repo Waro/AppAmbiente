@@ -33,7 +33,7 @@ function ClientiList({ records, clienti, open, activeId, acts, onImport }) {
   return html`<div class="content">
     <${LargeTitle} top eye="Strumenti" title="Clienti" sub=${`${clienti.length} ${clienti.length === 1 ? 'cliente' : 'clienti'}`} acts=${acts} />
     ${clienti.length > 4 && html`<div class="cerca-box"><${Icon} n="search" s=${19} /><input class="inp" type="search" value=${q} placeholder="Cerca un cliente" onInput=${e => setQ(e.target.value)} aria-label="Cerca un cliente" /></div>`}
-    ${daAttivita.length > 0 && html`<button class="notice" style="width:100%;text-align:left;border:0;margin:0 0 12px" onClick=${() => onImport(daAttivita)}>
+    ${daAttivita.length > 0 && html`<button class="notice" style="width:100%;text-align:left;border:0;margin:0 0 var(--sp-3)" onClick=${() => onImport(daAttivita)}>
       ${daAttivita.length === 1 ? 'Un cliente delle attività non è' : daAttivita.length + ' clienti delle attività non sono'} in anagrafica: tocca per aggiungerli.</button>`}
     ${!clienti.length && html`<div class="empty"><b>Nessun cliente</b>Tocca + per aggiungerne uno. Qui salvi referenti e preferenze: foglio firme già pronto, email per l'invio dei documenti.</div>`}
     <div class="list">${list.map(c => { const k = att(c); return html`<button class=${'rcard' + (activeId === c.id ? ' on' : '')} key=${c.id} onClick=${() => open(c.id)}>
@@ -58,14 +58,14 @@ function ClienteForm({ rec: initial, records, settings, onSave, onDelete, embedd
       <${Inp} label="Telefono" type="tel" value=${c.telefono} set=${v => up({ telefono: v })} />
       <${Inp} cls="full" label="Email" type="email" value=${c.email} set=${v => up({ email: v })} />
       <${InpGrow} cls="full" label="Sede" value=${c.sede} set=${v => up({ sede: v })} placeholder="Indirizzo della sede" />
-    </div>${doppio && html`<div class="notice err" style="margin:10px 0 0">C'è già un cliente con questo nome.</div>`}</div>
+    </div>${doppio && html`<div class="notice err" style="margin:var(--sp-3) 0 0">C'è già un cliente con questo nome.</div>`}</div>
 
     <div class="sec-h"><h3>Foglio firme</h3></div>
     <div class="card tight">
       <label class="fg-sw"><span>Prepara il foglio firme nelle nuove attività</span><${Toggle} on=${!!c.firme} label="Foglio firme nelle nuove attività" set=${v => up({ firme: v })} /></label>
       ${c.firme && html`<label class="fld mt-3"><span>Modello</span><select value=${c.firmeModello || ''} onChange=${e => up({ firmeModello: e.target.value })}>
         <option value="">In base all'attività</option>${mods.map(m => html`<option value=${m.id}>${m.titolo}</option>`)}</select></label>`}
-      <p class="hint-p" style="margin:8px 0 0">Vale per DDA, Mappature, RA e Monitoraggi aria. Nel foglio ci sono i dati dell'attività e l'elenco dei campioni prelevati o dei manufatti valutati.</p>
+      <p class="hint-p" style="margin:var(--sp-2) 0 0">Vale per DDA, Mappature, RA e Monitoraggi aria. Nel foglio ci sono i dati dell'attività e l'elenco dei campioni prelevati o dei manufatti valutati.</p>
     </div>
 
     <div class="sec-h"><h3>Invio email</h3></div>
@@ -75,17 +75,17 @@ function ClienteForm({ rec: initial, records, settings, onSave, onDelete, embedd
         <${Inp} cls="full" label="Destinatari" value=${c.mailA} set=${v => up({ mailA: v })} placeholder=${c.email || 'indirizzi separati da virgola'} />
         <${Inp} cls="full" label="In copia" value=${c.mailCc} set=${v => up({ mailCc: v })} placeholder="Facoltativo" />
       </div>
-      <p class="hint-p" style="margin:8px 0 0">Nelle attività del cliente, in Anagrafica, compare il tasto per preparare l'email.</p>`}
+      <p class="hint-p" style="margin:var(--sp-2) 0 0">Nelle attività del cliente, in Anagrafica, compare il tasto per preparare l'email.</p>`}
     </div>
 
     <div class="sec-h"><h3>Note</h3></div>
-    <div class="card"><textarea class="inp" rows="3" value=${c.note} onInput=${e => up({ note: e.target.value })} aria-label="Note" placeholder="Accessi, orari, richieste particolari…"></textarea></div>
+    <${Appunti} rec=${c} up=${up} k="note" foto=${null} rows=${3} label="Note" placeholder="Accessi, orari, richieste particolari…" />
 
     <div class="sec-h"><h3>Attività · ${att.length}</h3></div>
     ${att.length ? html`<div class="list">${att.slice(0, 30).map(r => html`<button class="rcard" key=${r.id} onClick=${() => openRec(r)}>
       <div class="r1"><span class="id">${r.codice || TIPO_NOME(r)}</span><span class="t" style="flex:1;font-size:var(--fs-sm);color:var(--text2)">${TIPO_NOME(r)}</span><span class="dt">${fmtD(r.data)}</span></div>
       ${(r.commessa || placeLabel(r)) && html`<div class="sum">${[r.commessa, placeLabel(r)].filter(Boolean).join(' · ')}</div>`}</button>`)}</div>`
-      : html`<div class="card"><div class="empty" style="padding:14px">Nessuna attività con questo nome cliente.</div></div>`}
+      : html`<div class="card"><div class="empty" style="padding:var(--sp-4)">Nessuna attività con questo nome cliente.</div></div>`}
 
     <div class="stack mt-4">
       <button class="btn danger block" onClick=${() => onDelete(c)}><${Icon} n="trash" s=${18} /> Elimina cliente</button>

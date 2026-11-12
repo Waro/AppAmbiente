@@ -240,7 +240,7 @@ function galOpen(input) {
 function CamSerieCard() {
   const [on, set] = useState(camSerie);
   return html`<div class="card"><label class="fg-sw"><span>Scatti in serie con la fotocamera di Nembo</span><${Toggle} on=${on} label="Scatti in serie" set=${v => { setCamSerie(v); set(v); }} /></label>
-    <p class="hint-p" style="margin:8px 0 0">Più foto di seguito senza uscire da Nembo. La fotocamera del telefono dà foto più nitide.</p></div>`;
+    <p class="hint-p" style="margin:var(--sp-2) 0 0">Più foto di seguito senza uscire da Nembo. La fotocamera del telefono dà foto più nitide.</p></div>`;
 }
 function camDeliver(input, files) {
   if (!files.length) return;
@@ -306,7 +306,7 @@ function Camera({ input, onClose }) {
     <div class="cam-top">
       <button class="cam-b" aria-label="Chiudi" onClick=${() => finish()}><${Icon} n="x" s=${22} /></button>
       <span class="cam-n">${shots.length ? shots.length + (shots.length === 1 ? ' foto' : ' foto') : ''}</span>
-      ${torch !== null ? html`<button class=${'cam-b' + (torch ? ' on' : '')} aria-label="Torcia" onClick=${toggleTorch}><${Icon} n="torch" s=${21} /></button>` : html`<span style="width:44px"></span>`}
+      ${torch !== null ? html`<button class=${'cam-b' + (torch ? ' on' : '')} aria-label="Torcia" onClick=${toggleTorch}><${Icon} n="torch" s=${21} /></button>` : html`<span style="width:var(--tap)"></span>`}
     </div>
     ${err && html`<div class="cam-err">${err}<button class="btn mt-3" onClick=${() => { onClose(); input.click(); }}><${Icon} n="camera" s=${18} /> Fotocamera del telefono</button></div>`}
     <div class="cam-bot">

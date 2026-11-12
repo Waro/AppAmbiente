@@ -71,7 +71,7 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
       <${OraDurata} ora=${r.ora} durata=${r.durata} stato=${r.stato} tipo=${r.type} set=${p => up(p)} />
       <${Inp} label="Tecnico" value=${r.tecnico} set=${v => up({ tecnico: v })} />
     </div><datalist id="dl-cli-vs">${clienti.map(c => html`<option value=${c} />`)}</datalist></div>
-    <div class="sec-h"><h3>Dati del report</h3><span class="hint">Copertina del Word</span></div>
+    <div class="sec-h"><h3>Dati del report</h3></div>
     <div class="card"><div class="grid2">
       <${Inp} cls="full" label="Titolo del sopralluogo" value=${m.titolo} set=${v => setM({ titolo: v })} placeholder=${r.sito || 'es. Sopralluogo HSE'} />
       <${Inp} label="Fondo" value=${m.fondo} set=${v => setM({ fondo: v })} />
@@ -86,11 +86,10 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
     <div class="card"><${HsText} label="Descrizione area" rows=${3} value=${m.descrArea} set=${v => setM({ descrArea: v })} />
       <${Inp} label="Presenti al sopralluogo" value=${m.presenti} set=${v => setM({ presenti: v })} placeholder="Nomi e ruoli" />
       <div class="divider"></div><${ImgSlot} label="Inquadramento (ubicazione dell'asset)" id=${(r.img || {}).inquadramento} set=${id => setImg('inquadramento', id)} /></div>
-    <div class="sec-h"><h3>Sopralluoghi precedenti</h3><span class="hint">nel Word con quello di oggi</span></div>
-    <div class="card tight">${visite.map((v, i) => html`<div class="row mb-2" key=${i}>
-        <input class="inp" type="date" style="max-width:170px" value=${v.data} onInput=${e => setV(i, { data: e.target.value })} aria-label="Data" />
-        <input class="inp" value=${v.presenti} placeholder="Presenti" onInput=${e => setV(i, { presenti: e.target.value })} />
-        <button class="x" aria-label="Elimina" onClick=${() => up(q => ({ ...q, visite: q.visite.filter((_, j) => j !== i) }))}>×</button></div>`)}
+    <div class="sec-h"><h3>Sopralluoghi precedenti</h3></div>
+    <div class="card tight">${visite.map((v, i) => html`<div class="stack mb-3" key=${i}><div class="row"><b class="tb-grow">Sopralluogo ${i + 1}</b><button class="x" aria-label="Elimina" onClick=${() => up(q => ({ ...q, visite: q.visite.filter((_, j) => j !== i) }))}>×</button></div>
+        <label class="fld"><span>Data</span><input type="date" value=${v.data} onInput=${e => setV(i, { data: e.target.value })} /></label>
+        <label class="fld"><span>Presenti</span><input placeholder=" " value=${v.presenti} onInput=${e => setV(i, { presenti: e.target.value })} /></label></div>`)}
       <button class="btn dashed" onClick=${() => up(q => ({ ...q, visite: [...(q.visite || []), { data: '', presenti: '' }] }))}>+ Aggiungi sopralluogo precedente</button></div>
     ${tplOk === false && html`<div class="notice">Per il Word carica il «Modello Word Verbale HSE» in Impostazioni → Modelli.</div>`}
 `}
@@ -100,10 +99,10 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
       <div><b>${note.length}</b><span>${note.length === 1 ? 'osservazione' : 'osservazioni'}</span></div>
       <div><b>${nFoto}</b><span>foto</span></div>
       <div><b>${tagsV.length}</b><span>tag</span></div></div></div>
-    <div class="sec-h"><h3>Osservazioni · ${note.length}</h3><span class="hint">Titolo, testo, foto e tag</span></div>
+    <div class="sec-h"><h3>Osservazioni · ${note.length}</h3></div>
     ${tagsV.length > 0 && html`<div class="vs-filter"><button class=${'tag' + (!filtro ? ' on' : ' sugg')} onClick=${() => setFiltro(null)}>Tutte</button>
       ${tagsV.map(t => html`<button key=${t} class=${'tag' + (filtro === t ? ' on' : '')} style=${tagStyle(t, filtro === t)} onClick=${() => setFiltro(filtro === t ? null : t)}>#${t}</button>`)}</div>`}
-    ${!note.length && html`<div class="card"><div class="empty" style="padding:16px">Nessuna osservazione. Tocca «Nuova osservazione» per aggiungerne una.</div></div>`}
+    ${!note.length && html`<div class="card"><div class="empty" style="padding:var(--sp-4)">Nessuna osservazione. Tocca «Nuova osservazione» per aggiungerne una.</div></div>`}
     ${note.length > 0 && !ns.sel && html`<${NoteSelBtn} ns=${ns} />`}
     ${ns.sel && html`<div class="list">${vis.map(n => html`<${NotaSelRiga} key=${n.id} n=${n} i=${note.indexOf(n)} on=${ns.sel.has(n.id)} onClick=${() => ns.click(n.id)} />`)}</div>`}
     ${!ns.sel && vis.map(n => { const i = note.indexOf(n); return html`<div class="card vs-nota" key=${n.id} id=${'n-' + n.id} ...${ns.props(n.id)}>
@@ -120,7 +119,7 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
       <${TagPicker} tags=${n.tag || []} set=${t => updN(n.id, { tag: t })} />
     </div>`; })}
     ${!ns.sel && html`<button class="btn dashed block mt-1" onClick=${addN}>+ Nuova osservazione</button>`}
-    ${!ns.sel && html`<div class="sec-h"><h3>Appunti</h3><span class="hint">Testo libero</span></div>
+    ${!ns.sel && html`<div class="sec-h"><h3>Appunti</h3></div>
     <${Appunti} rec=${r} up=${up} rows=${3} />`}
     `}
     ${T === 'file' && html`<${FileTab} r=${r} up=${up} settings=${settings} />`}

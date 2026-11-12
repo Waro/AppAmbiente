@@ -75,7 +75,7 @@ function FrasiSheet({ gruppo, onPick, onClose }) {
     <div class="sheet-grab"></div>
     <div class="sheet-nav"><button class="btn link" onClick=${onClose}>Chiudi</button><b>Frasi ricorrenti</b><span></span></div>
     <div class="sheet-body">
-      <div class="sec-h mt-1"><h3>${gruppo}</h3><span class="hint">tocca per aggiungere</span></div>
+      <div class="sec-h mt-1"><h3>${gruppo}</h3></div>
       <div class="list">${[...(HS_FRASI[gruppo] || []), ...lista].map((f, i) => html`<div class="prow" key=${i}>
         <button class="t" style="background:none;border:0;text-align:left;padding:0;font-size:var(--fs-base)" onClick=${() => { onPick(f); onClose(); }}>${f}</button>
         ${i >= (HS_FRASI[gruppo] || []).length && html`<button class="x" aria-label="Elimina frase" onClick=${() => salva({ ...mie, [gruppo]: lista.filter(x => x !== f) })}>×</button>`}</div>`)}</div>
@@ -93,7 +93,7 @@ function RiformulaSheet({ prop, testo, onApply, onClose }) {
     <div class="sheet-nav"><button class="btn link" onClick=${onClose}>Annulla</button><b>Riformulazione</b><span></span></div>
     <div class="sheet-body">
       ${!prop.sicura && html`<div class="notice" style="margin-top:0">La nota è ambigua: controlla che descriva davvero una criticità prima di applicare.</div>`}
-      <div class="card tight mt-3"><div class="lt-eye" style="margin-bottom:4px">La tua nota</div><div style="font-size:var(--fs-base)">${testo}</div></div>
+      <div class="card tight mt-3"><div class="lt-eye" style="margin-bottom:var(--sp-1)">La tua nota</div><div style="font-size:var(--fs-base)">${testo}</div></div>
       <label class="fld"><span>Situazione rilevata</span><textarea rows="5" value=${sit} onInput=${e => setSit(e.target.value)}></textarea></label>
       ${prop.mig && html`<label class="fld mt-3"><span>Attività di miglioramento (in coda a quella presente)</span><textarea rows="5" value=${mig} onInput=${e => setMig(e.target.value)}></textarea></label>`}
       <button class="btn pri block mt-4" onClick=${() => { onApply(sit.trim(), (mig || '').trim()); onClose(); }}>Applica</button>
@@ -147,7 +147,7 @@ function ImgSlot({ label, id, set, crop }) {
     setBusy(true); try { if (id) await removeBlob(id); set(await saveImage(f, 2000)); } catch (err) { fail('Immagine non salvata', err); } setBusy(false);
   };
   return html`<div class="fld"><span>${label}</span>
-    <div class="row" style="gap:10px">
+    <div class="row" style="gap:var(--sp-3)">
       ${id ? html`<button class="img-slot" onClick=${() => setView(true)}><${Thumb44} id=${id} /></button>` : html`<button class="img-slot empty" aria-label="Scatta una foto" onClick=${() => camOpen(inp.current)}><${Icon} n="camera" s=${20} /></button>`}
       <button class="btn sm imgb" onClick=${() => camOpen(inp.current)} disabled=${busy}>${busy ? html`<div class="spin" />` : html`<${Icon} n="camera" s=${16} /> ${id ? 'Sostituisci' : 'Scatta'}`}</button>
       <button class="btn sm imgb" aria-label="Scegli dalla galleria" title="Scegli dalla galleria" onClick=${() => galOpen(inp.current)} disabled=${busy}><${Icon} n="image" s=${16} /> Galleria</button>
@@ -194,23 +194,23 @@ function HsGallery({ r, up, items, sezioni }) {
   const pick = e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) hsAddPhotos(fs, target.current, '', up, (r.foto || []).length); };
   const refLab = id => { const it = items && items.find(x => x.id === id); return it ? it.ref : ''; };
   return html`<div>
-    <div class="lead" style="margin:0 2px 12px">${Object.keys(num).length} foto nel report${ord.length - Object.keys(num).length ? ` · ${ord.length - Object.keys(num).length} escluse` : ''} · ${ord.length}/${HS_MAX_FOTO}. Nel Word prima quelle del sopralluogo precedente, poi le nuove, in quest'ordine.</div>
+    <div class="lead" style="margin:0 var(--sp-1) var(--sp-3)">${Object.keys(num).length} foto nel report${ord.length - Object.keys(num).length ? ` · ${ord.length - Object.keys(num).length} escluse` : ''} · ${ord.length}/${HS_MAX_FOTO}. Nel Word prima quelle del sopralluogo precedente, poi le nuove, in quest'ordine.</div>
     ${HS_GRUPPI.map(G => { const L = ord.filter(p => (p.g === 'prev') === (G.g === 'prev')); return html`<div class="hsg-grp" key=${G.g}>
       <div class="sec-h"><h3>${G.t} · ${L.length}</h3>
         <button class="btn link sm" onClick=${() => setAperti(a => ({ ...a, [G.g]: !a[G.g] }))}>${aperti[G.g] ? 'Chiudi' : 'Apri'}</button></div>
-      ${aperti[G.g] && html`<div class="row" style="margin-bottom:10px">
+      ${aperti[G.g] && html`<div class="row" style="margin-bottom:var(--sp-3)">
           ${G.g === 'new' && html`<button class="btn grow" onClick=${() => { target.current = 'new'; camOpen(cam.current); }}><${Icon} n="camera" s=${18} /> Scatta</button>`}
           <button class="btn grow" onClick=${() => { target.current = G.g; inp.current.click(); }}><${Icon} n="image" s=${18} /> Dalla galleria</button></div>
-        ${L.length > 0 && html`<div class="row" style="margin:-4px 0 8px;gap:4px"><span class="lock tb-grow">Nel report:</span>
+        ${L.length > 0 && html`<div class="row" style="margin:calc(-1 * var(--sp-1)) 0 var(--sp-2);gap:var(--sp-1)"><span class="lock tb-grow">Nel report:</span>
           <button class="btn link sm" onClick=${() => up(q => ({ ...q, foto: q.foto.map(x => (x.g === 'prev') === (G.g === 'prev') ? { ...x, inc: true } : x) }))}>includi tutte</button>
           <button class="btn link sm" onClick=${() => up(q => ({ ...q, foto: q.foto.map(x => (x.g === 'prev') === (G.g === 'prev') ? { ...x, inc: false } : x) }))}>escludi tutte</button>
           ${G.g === 'prev' && html`<button class="btn link sm" style="color:var(--danger)" onClick=${delPrev}>elimina tutte</button>`}</div>`}
-        ${!L.length ? html`<div class="card"><div class="empty" style="padding:16px">${G.g === 'prev' ? 'Le foto del report importato arrivano qui da sole.' : 'Nessuna foto scattata in questo sopralluogo.'}</div></div>`
+        ${!L.length ? html`<div class="card"><div class="empty" style="padding:var(--sp-4)">${G.g === 'prev' ? 'Le foto del report importato arrivano qui da sole.' : 'Nessuna foto scattata in questo sopralluogo.'}</div></div>`
         : html`<div class="hsg">${L.map((p, k) => html`<div class=${'hsg-card' + (num[p.id] ? '' : ' excl')} key=${p.id}>
           <button class="hsg-img" onClick=${() => setView(ord.indexOf(p))}><${HsThumb} id=${p.id} /><span class="hsg-n">${num[p.id] ? 'Foto ' + num[p.id] : 'Esclusa'}</span>${p.ref && html`<span class="hsg-ref mono">${refLab(p.ref)}</span>`}</button>
-          <textarea class="inp" rows="2" placeholder="Didascalia" value=${p.cap} onInput=${e => updF(p.id, { cap: e.target.value })}></textarea>
-          ${items && html`<select class="inp" value=${p.ref || ''} onChange=${e => updF(p.id, { ref: e.target.value })} aria-label=${sezioni ? 'Sezione collegata' : 'Voce collegata'}>
-            <option value="">${sezioni ? 'Nessuna sezione collegata' : 'Nessuna voce collegata'}</option>${items.map(it => html`<option value=${it.id}>${it.ref} · ${it.txt.slice(0, 60)}</option>`)}</select>`}
+          <label class="fld"><span>Didascalia</span><textarea rows="2" placeholder=" " value=${p.cap} onInput=${e => updF(p.id, { cap: e.target.value })}></textarea></label>
+          ${items && html`<label class="fld"><span>${sezioni ? 'Sezione' : 'Voce'}</span><select value=${p.ref || ''} onChange=${e => updF(p.id, { ref: e.target.value })}>
+            <option value="">${sezioni ? 'Nessuna sezione collegata' : 'Nessuna voce collegata'}</option>${items.map(it => html`<option value=${it.id}>${it.ref} · ${it.txt.slice(0, 60)}</option>`)}</select></label>`}
           <label class="hsg-inc"><input type="checkbox" checked=${p.inc !== false} onChange=${e => updF(p.id, { inc: e.target.checked })} /> Nel report</label>
           <div class="hsg-act">
             <button class="x" title="Prima" aria-label="Sposta prima" disabled=${k === 0} onClick=${() => move(p, -1)}>‹</button>
@@ -322,7 +322,7 @@ function HsDaAvviare({ rec: r, records, settings, onSave, onDelete, embedded, on
   const dati = { ...fissi, ...Object.fromEntries(['commessa', 'cliente', 'citta', 'indirizzo', 'sito'].filter(k => r[k]).map(k => [k, r[k]])) };
   // restano la nota del piano (appunti) e i campi bloccati perché arrivati dal piano (imp)
   const avvia = x => onSave({ ...x, appunti: x.appunti || r.appunti || '', imp: { ...(r.imp || {}), ...(x.imp || {}) }, daScegliere: undefined, updatedAt: Date.now() });
-  const primo = formato => avvia({ ...newHsNote(records, settings, formato), ...dati });
+  const primo = formato => avvia({ ...newHsNote(records, settings, formato || lsGet('nembo_hs_formato', 'esteso')), formatoLibero: true, ...dati });
   return html`<div class="content form">
     <${DetailHead} eye="Sopralluogo HSE" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r) || r.sito].filter(Boolean).join(' · ')} onClose=${embedded ? onClose : null} />
     <${HsScelta} records=${records} settings=${settings} tipo=${r.daScegliere} dati=${dati} fissi=${fissi} onPrimo=${primo} onPeriodico=${avvia} />
@@ -394,7 +394,7 @@ function HsSchedeForm({ rec: initial, records, settings, onSave, onDelete, onSet
 `;
   const archivio = html`    <div class="sec-h"><h3>Word</h3></div>
     <div class="card">
-      ${hasTpl === false && html`<div class="notice err" style="margin:0 0 10px">Manca il modello Word ${HS_FMT[r.formato]}: caricalo in Impostazioni → Modelli. <button class="btn link" onClick=${onSettings}>Apri</button></div>`}
+      ${hasTpl === false && html`<div class="notice err" style="margin:0 0 var(--sp-3)">Manca il modello Word ${HS_FMT[r.formato]}: caricalo in Impostazioni → Modelli. <button class="btn link" onClick=${onSettings}>Apri</button></div>`}
       <div class="optline" style="padding-top:0"><div class="t"><b>Novità in rosso</b><small>Righe nuove o modificate in rosso, testo dell'anno precedente in nero</small></div><${Toggle} on=${grigio} set=${setGrigio} label="Testo precedente in grigio" /></div>
     </div>`;
 
@@ -438,10 +438,10 @@ function HsSchedeForm({ rec: initial, records, settings, onSave, onDelete, onSet
     </div>`)}</div>`;
   }
   else if (S && S.k === 'descr') body = html`<div class="card"><${HsText} label="Condizioni generali dell'immobile" rows=${10} value=${r.descr} base=${B.descr} set=${v => up({ descr: v })} /></div>
-    <div class="sec-h"><h3>Foto di inquadramento</h3><span class="hint">Sotto il capitolo 8</span></div>
+    <div class="sec-h"><h3>Foto di inquadramento</h3></div>
     <div class="card"><${PhotoStrip} ids=${(r.cgFoto || []).map(o => o.id)} max=${8} onAdd=${ids => up(q => ({ ...q, cgFoto: [...(q.cgFoto || []), ...ids.map(id => ({ id, w: 16, h: 11 }))] }))}
       onRemove=${async id => { await removeBlob(id); up(q => ({ ...q, cgFoto: (q.cgFoto || []).filter(o => o.id !== id) })); }} />
-      <p class="lead" style="margin:8px 0 0;font-size:var(--fs-sm)">Restano nel report anche nei sopralluoghi successivi.</p></div>`;
+      <p class="lead" style="margin:var(--sp-2) 0 0;font-size:var(--fs-sm)">Restano nel report anche nei sopralluoghi successivi.</p></div>`;
   else if (S && S.k === 'azioni') body = html`<div>
     ${(r.azioni || []).map((a, i) => { const set = patch => up(p => ({ ...p, azioni: p.azioni.map((x, j) => j === i ? { ...x, ...patch } : x) })); return html`<div class="card" key=${i}>
       <div class="row"><label class="fld" style="max-width:120px"><span>Codice</span><input class="mono" list="hs-codes" value=${a.cod} onInput=${e => set({ cod: e.target.value })} placeholder="es. 3.2" /></label>
@@ -453,7 +453,7 @@ function HsSchedeForm({ rec: initial, records, settings, onSave, onDelete, onSet
       <label class="fld mt-3"><span>Azioni consigliate / misure di prevenzione</span><textarea rows="3" value=${a.az} onInput=${e => set({ az: e.target.value })}></textarea></label>
     </div>`; })}
     <datalist id="hs-codes">${HS_SINT_ALL.map(it => html`<option value=${it.ref} label=${it.grp + ' – ' + it.txt} />`)}</datalist>
-    ${!(r.azioni || []).length && html`<div class="card"><div class="empty" style="padding:16px">Nessuna azione: nel Word la tabella riporta «N.A.».</div></div>`}
+    ${!(r.azioni || []).length && html`<div class="card"><div class="empty" style="padding:var(--sp-4)">Nessuna azione: nel Word la tabella riporta «N.A.».</div></div>`}
     <button class="btn dashed" onClick=${() => up(p => ({ ...p, azioni: [...(p.azioni || []), { cod: '', sit: '', risk: '', grav: '', az: '', b: {} }] }))}>+ Aggiungi azione</button></div>`;
   else if (S && S.k === 'foto') body = html`<${HsGallery} r=${r} up=${up} items=${sint ? HS_SINT_ALL : HS_EST_REF} sezioni=${!sint} />`;
   else if (S && S.k === 'crit') { const docs = hsDocMancanti(r); body = html`<div>
@@ -463,7 +463,7 @@ function HsSchedeForm({ rec: initial, records, settings, onSave, onDelete, onSet
     <div class="sec-h"><h3>Documenti da chiedere o verificare</h3><span class="hint">${docs.length}</span></div>
     <div class="list">${docs.length ? docs.slice(0, 40).map((x, i) => html`<div class="prow" key=${i}><div class="t"><b>${x.n}. ${x.s}</b><small style="white-space:normal">${x.f}</small></div></div>`) : html`<div class="prow"><div class="t"><small>Nessun documento segnalato come mancante nelle schede.</small></div></div>`}</div></div>`; }
   else if (S && S.k === 'note') body = html`<${Appunti} rec=${r} up=${up} rows=${6} label="Appunti (non vanno nel Word)" />
-    <div class="sec-h"><h3>Documenti allegati</h3><span class="hint">restano sul dispositivo e vanno su OneDrive</span></div>
+    <div class="sec-h"><h3>Documenti allegati</h3></div>
     <div class="card"><${FileList} items=${r.documenti || []}
       onAdd=${d => up(p => ({ ...p, documenti: [...(p.documenti || []), d] }))}
       onRemove=${async d => { await removeBlob(d.blobId); up(p => ({ ...p, documenti: p.documenti.filter(x => x.id !== d.id) })); }} /></div>`;
@@ -473,7 +473,7 @@ function HsSchedeForm({ rec: initial, records, settings, onSave, onDelete, onSet
     <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'main', l: 'Sezioni' }, { k: 'file', l: 'File' }]} />
     ${T === 'anag' ? html`${body}${archivio}` : T === 'file' ? html`<${FileTab} r=${r} up=${up} settings=${settings} />` : html`
     ${SR_API && html`<${Suggerimento} id="dettatura" />`}
-    ${S && html`<button class="btn link" style="margin:-8px 0 8px -4px" onClick=${() => setSec(null)}><${Icon} n="back" s=${18} /> Indice delle sezioni</button>`}
+    ${S && html`<button class="btn link" style="margin:calc(-1 * var(--sp-2)) 0 var(--sp-2) calc(-1 * var(--sp-1))" onClick=${() => setSec(null)}><${Icon} n="back" s=${18} /> Indice delle sezioni</button>`}
     ${S ? body : indice}`}
     <input ref=${imp} type="file" accept=".docx,.json,application/json,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden onChange=${doImport} />
     <${BarraAtt} r=${r} settings=${settings}

@@ -25,7 +25,7 @@ const progPatch = (p, cur) => ('ora' in p && !('stato' in p) && cur !== 'conferm
 const DRONE_TIPI = ['dda', 'mappatura', 'ra'];
 const DroneIc = ({ s = 16 }) => html`<span class="drone-ic" title="Drone" aria-label="Con drone"><${Icon} n="drone" s=${s} w=${1.8} /></span>`;
 function DroneSw({ on, set, disabled }) {
-  return html`<label class="fld full drone-sw"><span class="row" style="gap:8px;align-items:center"><${Icon} n="drone" s=${18} /> Drone</span>
+  return html`<label class="fld full drone-sw"><span class="row" style="gap:var(--sp-2);align-items:center"><${Icon} n="drone" s=${18} /> Drone</span>
     <${Toggle} on=${!!on} label="Drone" set=${v => !disabled && set(v)} /></label>`;
 }
 // campi Ora + Durata, da mettere accanto alla Data nelle schede
@@ -320,7 +320,7 @@ function Agenda({ records, settings, saveRec, openRec, removeRec, bell }) {
     </div>
     <div class="ag-wrap"><div class="ag-main">
       <div class="ag-mon"><b>${meseL(view === 'week' || view === 'day' ? (week[0].slice(0, 7) === week[6].slice(0, 7) ? week[0] : day) : day)}</b>
-        ${view !== 'day' && html`<div class="row" style="gap:6px"><button class="btn-icon" aria-label=${view === 'month' ? 'Mese precedente' : 'Settimana precedente'} onClick=${() => step(-1)}><${Icon} n="back" s=${18} /></button>
+        ${view !== 'day' && html`<div class="row" style="gap:var(--sp-2)"><button class="btn-icon" aria-label=${view === 'month' ? 'Mese precedente' : 'Settimana precedente'} onClick=${() => step(-1)}><${Icon} n="back" s=${18} /></button>
           <button class="btn-icon" aria-label=${view === 'month' ? 'Mese successivo' : 'Settimana successiva'} onClick=${() => step(1)}><${Icon} n="right" s=${18} /></button></div>`}</div>
       ${view !== 'month' && html`<div class=${'ag-week' + (view === 'week' ? ' wk' : '')} ...${swWeek.on}>
         ${view === 'day' && html`<button class="btn-icon" aria-label="Settimana precedente" onClick=${() => setDay(dayShift(day, -7))}><${Icon} n="back" s=${18} /></button>`}
@@ -344,7 +344,7 @@ function Agenda({ records, settings, saveRec, openRec, removeRec, bell }) {
     <aside class="ag-side">
       <div class="sec-h"><h3>Senza ora · ${untimed.length}</h3><span class="hint">${view === 'month' ? 'questo mese' : view === 'week' ? 'questa settimana' : 'questo giorno'}</span></div>
       ${untimed.length ? html`<div class="ag-chips">${untimed.map(it => chip(it, view !== 'day'))}</div>` : html`<div class="ag-empty">Nessuna attività senza ora.</div>`}
-      <div class="sec-h"><h3>Prossime senza ora</h3><span class="hint">⏱ per dare un orario</span></div>
+      <div class="sec-h"><h3>Prossime senza ora</h3></div>
       ${daProgr.length ? html`<div class="ag-chips">${daProgr.map(it => chip(it, true))}</div>` : html`<div class="ag-empty">Niente da programmare più avanti.</div>`}
     </aside></div>
     ${sel && html`<${AgEvSheet} it=${items.find(x => x.key === sel.key) || sel} onClose=${() => setSel(null)} put=${put}
@@ -369,7 +369,7 @@ function AgEvSheet({ it, put, onOpen, onMove, onDelete, onClose }) {
     <div class="sheet-body">
       <div class="fg-hero"><div class="lt-eye">${fmtD(it.data)}${s != null ? ` · ${it.ora}–${m2hm(s + it.durata)}` : ' · senza ora'} · ${progL(it.stato)}</div><b>${it.titolo}</b>${it.sub && html`<small>${it.sub}</small>`}
         ${app && it.rec.note && html`<small style="white-space:pre-line">${it.rec.note}</small>`}</div>
-      <div class="seg tall ag-st" style="margin-bottom:12px">${PROG.map(([k, l, c]) => html`<button key=${k} class=${it.stato === k ? 'on' : ''} onClick=${() => put(it, { stato: k })}><b><i class="mdot" style=${'background:' + c}></i></b><small>${l}</small></button>`)}</div>
+      <div class="seg tall ag-st" style="margin-bottom:var(--sp-3)">${PROG.map(([k, l, c]) => html`<button key=${k} class=${it.stato === k ? 'on' : ''} onClick=${() => put(it, { stato: k })}><b><i class="mdot" style=${'background:' + c}></i></b><small>${l}</small></button>`)}</div>
       <div class="card tight"><div class="grid2">
         <label class="fld"><span>Ora</span><input type="time" step="1800" value=${it.ora || ''} onInput=${e => put(it, { ora: e.target.value })} /></label>
         <div class="fld"><span>Durata</span><${Stepper} n=${fmtDur(it.durata)} label="Durata" dec=${() => put(it, { durata: Math.max(SLOT, it.durata - SLOT) })} inc=${() => put(it, { durata: it.durata + SLOT })} /></div>
@@ -437,8 +437,8 @@ function AgAddSheet({ start, records, settings, onSave, onDelete, onJson, onClos
     <div class="sheet-grab"></div>
     <div class="sheet-nav"><button class="btn link" onClick=${onClose}>Annulla</button><b>${ed ? 'Appuntamento' : 'Nuovo'}</b><button class="btn link fw-6" onClick=${save}>Salva</button></div>
     <div class="sheet-body">
-      ${!ed && html`<div class="seg" style="margin-bottom:12px"><button class=${tab === 'app' ? 'on' : ''} onClick=${() => setTab('app')}>Appuntamento</button><button class=${tab === 'att' ? 'on' : ''} onClick=${() => setTab('att')}>Attività</button></div>`}
-      ${tab === 'att' && html`<p class="hint-p" style="margin:0 2px 10px">L'attività compare nella programmazione e nell'elenco della sua area: la apri quando inizi il sopralluogo.</p>`}
+      ${!ed && html`<div class="seg" style="margin-bottom:var(--sp-3)"><button class=${tab === 'app' ? 'on' : ''} onClick=${() => setTab('app')}>Appuntamento</button><button class=${tab === 'att' ? 'on' : ''} onClick=${() => setTab('att')}>Attività</button></div>`}
+      ${tab === 'att' && html`<p class="hint-p" style="margin:0 var(--sp-1) var(--sp-3)">L'attività compare nella programmazione e nell'elenco della sua area: la apri quando inizi il sopralluogo.</p>`}
       <div class="card"><div class="grid2">
         ${tab === 'app' ? html`<${Inp} cls="full" label="Titolo *" value=${f.titolo} set=${v => set({ titolo: v })} placeholder="es. Riunione di cantiere" />`
           : html`<label class="fld full"><span>Tipo di attività</span><select value=${f.tipo} onChange=${e => set({ tipo: e.target.value, durata: 0 })}>${AG_TIPI_NUOVI.map(([k, l]) => html`<option value=${k}>${l}</option>`)}</select></label>`}

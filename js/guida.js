@@ -69,7 +69,7 @@ function BenvenutoSheet({ settings, setSettings, onClose }) {
           <div class="nv-nav">
             <button class="btn-icon" aria-label="Precedente" disabled=${k === 0} onClick=${() => setK(k - 1)}><${Icon} n="back" s=${20} /></button>
             <div class="nv-dots">${txt.map((_, i) => html`<i key=${i} class=${i === k ? 'on' : ''} onClick=${() => setK(i)}></i>`)}</div>
-            ${last ? html`<span style="width:44px"></span>` : html`<button class="btn-icon" aria-label="Successiva" onClick=${() => setK(k + 1)}><${Icon} n="right" s=${20} /></button>`}
+            ${last ? html`<span style="width:var(--tap)"></span>` : html`<button class="btn-icon" aria-label="Successiva" onClick=${() => setK(k + 1)}><${Icon} n="right" s=${20} /></button>`}
           </div></div>
         <button class="btn pri block mt-4" onClick=${last ? fine : () => setK(k + 1)}>${last ? 'Inizia' : 'Avanti'}</button>
       </div></div></div>`;
@@ -120,7 +120,7 @@ function PrimiPassi({ settings, records = [], tplOk, hsTplOk, lastBackup, goSett
       <span class="onb-of">${n} di ${all.length}</span></div>
     ${ok1 && html`<div class="onb-it ok onb-fase"><span class="onb-ck"><${Icon} n="check" s=${14} w=${2.6} /></span><span class="t"><b>Dispositivo pronto</b></span></div>`}
     ${steps.map(item)}
-    <button class="btn link" style="margin-top:4px;font-size:var(--fs-sm)" onClick=${close}>Nascondi</button>
+    <button class="btn link" style="margin-top:var(--sp-1);font-size:var(--fs-sm)" onClick=${close}>Nascondi</button>
   </div>`;
 }
 
@@ -128,7 +128,7 @@ function PrimiPassi({ settings, records = [], tplOk, hsTplOk, lastBackup, goSett
 function GuidaCard({ settings, setSettings }) {
   const [wl, setWl] = useState(false);
   return html`<div class="card tight">
-    <p class="lead" style="margin:6px 0 10px">Il benvenuto, i primi passi e i suggerimenti che compaiono la prima volta che apri una funzione.</p>
+    <p class="lead" style="margin:var(--sp-2) 0 var(--sp-3)">Il benvenuto, i primi passi e i suggerimenti che compaiono la prima volta che apri una funzione.</p>
     <button class="btn block" onClick=${() => setWl(true)}><${Icon} n="spark" s=${17} /> Rivedi il benvenuto</button>
     <button class="btn block mt-2" onClick=${() => { tipsReset(); toast('I suggerimenti ricompaiono quando apri ogni funzione'); }}>Mostra di nuovo i suggerimenti</button>
     <button class="btn block mt-2" onClick=${() => { onbReset(); toast('I primi passi ricompaiono in Oggi'); }}>Mostra di nuovo i primi passi</button>

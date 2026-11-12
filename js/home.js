@@ -176,11 +176,11 @@ function Home({ records: allRecords, settings, open, newAct, syncBtn, avatar, tp
     <div class="seg" style="margin-bottom:var(--gap)">${BUS.map(([k, l]) => html`<button class=${bu === k ? 'on' : ''} onClick=${() => setBu(k)}>${l}</button>`)}</div>
     <${PrimiPassi} settings=${settings} records=${allRecords} tplOk=${tplOk} hsTplOk=${hsTplOk} lastBackup=${lastBackup} goSettings=${goSettings} goBackup=${goBackup} newAct=${newAct} installEvt=${installEvt} onInstall=${onInstall} />
 
-    ${bu === 'sicurezza' ? html`<div class="card"><div class="empty" style="padding:28px 10px"><b>Nessuna attività Sicurezza in Nembo</b>Per ora l'app gestisce le attività Ambiente e HSE. Puoi scegliere la business unit predefinita in Impostazioni.</div></div>` : html`
+    ${bu === 'sicurezza' ? html`<div class="card"><div class="empty" style="padding:var(--sp-6) var(--sp-3)"><b>Nessuna attività Sicurezza in Nembo</b>Per ora l'app gestisce le attività Ambiente e HSE. Puoi scegliere la business unit predefinita in Impostazioni.</div></div>` : html`
     <div class="home-grid">
     <div class="hg-n"><div class="card-navy">
       ${chiusa ? html`
-        <div class="row" style="justify-content:space-between;gap:12px">
+        <div class="row" style="justify-content:space-between;gap:var(--sp-3)">
           <span class="t"><span class="next-addr" style="margin:0">Giornata chiusa</span>
             <span class="next-line" style="display:block">${todays.length} ${todays.length === 1 ? 'sopralluogo' : 'sopralluoghi'} · tutto su OneDrive</span></span>
           <span class="day-ok" aria-label="Giornata conclusa"><${Icon} n="check" s=${22} w=${2.6} /></span></div>
@@ -211,8 +211,8 @@ function Home({ records: allRecords, settings, open, newAct, syncBtn, avatar, tp
         <div class="rings mt-4">
           <div class="ring-wrap" style="width:96px;height:96px">
             <${Ring} p=${rings[0].b ? rings[0].a / rings[0].b : 0} size=${96} w=${9} color=${rings[0].c} />
-            <div style="position:absolute;inset:12px"><${Ring} p=${rings[1].b ? rings[1].a / rings[1].b : 0} size=${72} w=${9} color=${rings[1].c} /></div>
-            <div style="position:absolute;inset:24px"><${Ring} p=${rings[2].b ? rings[2].a / rings[2].b : 0} size=${48} w=${9} color=${rings[2].c} /></div>
+            <div style="position:absolute;inset:var(--sp-3)"><${Ring} p=${rings[1].b ? rings[1].a / rings[1].b : 0} size=${72} w=${9} color=${rings[1].c} /></div>
+            <div style="position:absolute;inset:var(--sp-6)"><${Ring} p=${rings[2].b ? rings[2].a / rings[2].b : 0} size=${48} w=${9} color=${rings[2].c} /></div>
           </div>
           <div class="legend">${rings.map(x => html`<div><i class="mdot" style=${'background:' + x.c}></i><span>${x.l}</span><b>${x.a}/${x.b}</b></div>`)}</div>
         </div>` : html`
@@ -295,20 +295,20 @@ function NewActivity({ records, settings, onClose, onCreate, onOpenNew, bu, pres
   const raSoft = raNext && daysBetween(today(), raNext) > 30;
   const dati = () => ({ ...(preset || {}), commessa: commessa.trim(), cliente: cliente.trim(), citta: citta.trim(), indirizzo: indirizzo.trim() });
   if (passo2) return html`<${SopralluogoHse} records=${records} settings=${settings} dati=${dati()} onBack=${() => setPasso2(false)} onClose=${onClose}
-    onPrimo=${formato => onCreate('hs', { formato, aNote: true, noteSop: [], np: {}, ...dati() })} onOpenNew=${onOpenNew} />`;
+    onPrimo=${formato => onCreate('hs', { formato: formato || lsGet('nembo_hs_formato', 'esteso'), formatoLibero: true, aNote: true, noteSop: [], np: {}, ...dati() })} onOpenNew=${onOpenNew} />`;
   const start = () => k === 'hsSop' ? setPasso2(true) : onCreate(opt.t, { ...opt.patch, ...(preset || {}), commessa: commessa.trim(), cliente: cliente.trim(), citta: citta.trim(), indirizzo: indirizzo.trim(), ...(firmeOk ? { firme: firmeOn } : {}) });
   return html`<div class="sheet-ov" onClick=${e => e.target === e.currentTarget && onClose()}>
     <div class="sheet" role="dialog" aria-label="Nuova attività">
       <div class="sheet-grab"></div>
       <div class="sheet-nav"><button class="btn link" onClick=${onClose}>Annulla</button><b>Nuova attività</b><span></span></div>
-      ${preset && preset.data && html`<div class="notice" style="margin:0 var(--gutter) 4px">Programmata per ${new Date(preset.data + 'T12:00:00').toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}${preset.ora ? ' alle ' + preset.ora : ''}</div>`}
+      ${preset && preset.data && html`<div class="notice" style="margin:0 var(--gutter) var(--sp-1)">Programmata per ${new Date(preset.data + 'T12:00:00').toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}${preset.ora ? ' alle ' + preset.ora : ''}</div>`}
       <div class="sheet-body">
         ${gruppi.map(([gl, opts], gi) => html`<div class="sec-h" style=${gi ? '' : 'margin-top:6px'}><h3>${gl}</h3></div>
         ${opts.map(o => html`<button class=${'opt' + (k === o.k ? ' on' : '') + (o.k === 'ra' && raSoft && k !== 'ra' ? ' alert-soft' : '')} onClick=${() => setK(o.k)} aria-pressed=${k === o.k}>
           <span class="oi tint" style=${'--c:' + o.c}><${Icon} n=${o.ic} s=${21} /></span>
           <span class="ot"><b>${o.l}</b><small>${o.k === 'ra' && raNext ? html`${o.s} · <span style=${k === 'ra' ? '' : 'color:var(--blue)'}>prossima scadenza ${new Date(raNext + 'T12:00:00').toLocaleDateString('it-IT', { month: 'short', year: 'numeric' })}</span>` : o.s}</small></span>
           </button>`)}`)}
-        <div class="sec-h"><h3>Dati di partenza</h3><span class="hint">facoltativi</span></div>
+        <div class="sec-h"><h3>Dati di partenza</h3></div>
         <div class="card tight">
           <div class="grid2">
             <label class="fld"><span>Commessa</span><input class="mono" value=${commessa} onInput=${e => setCommessa(e.target.value)} placeholder="es. 000/26" /></label>
@@ -351,9 +351,8 @@ function HsScelta({ records, settings, tipo, dati = {}, fissi = {}, onPrimo, onP
   const riga = (ic, c, l, sub, fn, on) => html`<button class=${'opt' + (on ? ' on' : '')} onClick=${fn}><span class="oi tint" style=${'--c:' + c}><${Icon} n=${ic} s=${21} /></span>
     <span class="ot"><b>${l}</b><small>${sub}</small></span></button>`;
   return html`${tipo !== 'periodico' && html`<div class="sec-h mt-1"><h3>Primo sopralluogo</h3></div>
-      ${riga('helmet', TIPO_COL.hs, 'Esteso', '13 capitoli; le sottosezioni sono tag', () => onPrimo('esteso'))}
-      ${riga('helmet', 'var(--navy-ink)', 'Sintetico', 'Capitoli 3–7; le voci della checklist sono tag', () => onPrimo('sintetico'))}`}
-    ${tipo !== 'primo' && html`<div class=${'sec-h' + (tipo ? ' mt-1' : '')}><h3>Sopralluogo periodico</h3><span class="hint">il formato è quello del report</span></div>
+      ${riga('helmet', TIPO_COL.hs, 'Primo sopralluogo', 'Esteso o Sintetico li scegli quando generi il report', () => onPrimo(null))}`}
+    ${tipo !== 'primo' && html`<div class=${'sec-h' + (tipo ? ' mt-1' : '')}><h3>Sopralluogo periodico</h3></div>
       ${riga('paper', 'var(--blue)', 'Carica Word o JSON', 'Il report dell’anno precedente', () => inp.current.click())}
       ${riga('list', 'var(--blue)', 'Da un sopralluogo in Nembo', prec.length ? prec.length + (prec.length === 1 ? ' sopralluogo' : ' sopralluoghi') : 'Nessun sopralluogo in Nembo', () => prec.length && setDaNembo(!daNembo), daNembo)}
       ${daNembo && html`<div class="list mb-2">${prec.slice(0, 30).map(p => html`<button class="rcard" key=${p.id} onClick=${() => daRec(p)}>

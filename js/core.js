@@ -228,7 +228,7 @@ function ConcludiAsk() {
   return html`<div class="ov" onClick=${e => e.target === e.currentTarget && done(null)}><div class="modal" role="dialog" aria-label="Concludi l'attività">
     <h4>Concludere l'attività?</h4>
     <p>${q.mancanze.length ? 'Restano ' + q.mancanze.join(', ') + '. ' : ''}Nembo non la segnalerà più come incompleta. Potrai riaprirla dalle Opzioni.</p>
-    <textarea class="inp" rows="2" placeholder="Motivo (facoltativo), es. copertura non accessibile" value=${motivo} onInput=${e => setMotivo(e.target.value)} aria-label="Motivo" style="margin-bottom:var(--sp-4)"></textarea>
+    <label class="fld mb-2"><span>Motivo (facoltativo)</span><textarea rows="2" placeholder="es. copertura non accessibile" value=${motivo} onInput=${e => setMotivo(e.target.value)}></textarea></label>
     <div class="row"><button class="btn" style="flex:1" onClick=${() => done(null)}>Annulla</button>
       <button class="btn pri" style="flex:2" onClick=${() => done({ motivo: motivo.trim() })}><${Icon} n="check" s=${17} /> Concludi</button></div>
   </div></div>`;
@@ -403,7 +403,7 @@ function PhotoStrip({ ids = [], max = 10, onAdd, onRemove, readonly, gallery, la
   return html`<div class="photos">
     ${ids.map(id => html`<${Thumb} key=${id} id=${id} onOpen=${() => setView(Math.max(0, gal.indexOf(id)))} onRemove=${readonly ? null : () => { if (confirm('Eliminare la foto?')) onRemove(id); }} />`)}
     ${!readonly && !noAdd && ids.length < max && html`<button class="addph" aria-label="Aggiungi foto" onClick=${() => camOpen(inp.current)}>
-      ${busy ? html`<div style="display:grid;place-items:center;gap:3px"><div class="spin" />${typeof busy === 'string' && html`<small style="font-size:var(--fs-2xs);font-weight:700">${busy}</small>`}</div>` : html`<${Icon} n="camera" s=${22} />`}</button>
+      ${busy ? html`<div style="display:grid;place-items:center;gap:var(--sp-1)"><div class="spin" />${typeof busy === 'string' && html`<small style="font-size:var(--fs-2xs);font-weight:700">${busy}</small>`}</div>` : html`<${Icon} n="camera" s=${22} />`}</button>
       ${!busy && html`<button class="addph gal" aria-label="Scegli dalla galleria" title="Scegli dalla galleria" onClick=${() => galOpen(inp.current)}><${Icon} n="image" s=${20} /></button>`}`}
     <input ref=${inp} type="file" accept="image/*" capture="environment" multiple hidden onChange=${pick} />
     ${view !== null && html`<${Viewer} ids=${gal} index=${view} labelOf=${labelOf} onClose=${() => setView(null)} />`}
@@ -527,7 +527,7 @@ function FileList({ items = [], onAdd, onRemove, label = 'Allega documento' }) {
         ${it.script && html`<small class="lock">Contiene script: in Nembo si apre senza eseguirli</small>`}</button>
       <button class="x" aria-label="Rimuovi" onClick=${() => { if (confirm('Rimuovere ' + it.nome + '?')) onRemove(it); }}>×</button></div>`)}
     <button class="btn dashed" disabled=${busy} onClick=${() => inp.current.click()}>${busy ? html`<div class="spin" />` : html`<${Icon} n="paper" s=${17} />`} ${label}</button>
-    <div class="lock" style="margin:-4px 2px 0">Foto, PDF e Word (.docx)</div>
+    <div class="lock" style="margin:calc(-1 * var(--sp-1)) var(--sp-1) 0">Foto, PDF e Word (.docx)</div>
     <input ref=${inp} type="file" accept=${ALLEGATI_ACCEPT} multiple hidden onChange=${pick} />
     ${pdf && html`<${PdfViewer} blob=${pdf.blob} nome=${pdf.nome} onClose=${() => setPdf(null)} />`}
     ${img && html`<${Viewer} ids=${[img]} onClose=${() => setImg(null)} />`}
@@ -753,7 +753,7 @@ function IcoFoto({ inp }) {
   return html`<button type="button" class="cam-in" aria-label="Scatta una foto" title="Scatta una foto" onClick=${() => camOpen(inp.current)}><${Icon} n="camera" s=${22} /></button>
     <button type="button" class="gal-in" aria-label="Scegli dalla galleria" title="Scegli dalla galleria" onClick=${() => galOpen(inp.current)}><${Icon} n="image" s=${22} /></button>`;
 }
-function Appunti({ rec, up, k = 'appunti', foto = 'fotoAppunti', rows = 4, label = 'Appunti', placeholder }) {
+function Appunti({ rec, up, k = 'appunti', foto = 'fotoAppunti', rows = 4, label = 'Appunti', placeholder, nudo, disabled }) {
   const inp = useRef();
   const [on, toggle] = useDictation(() => rec[k] || '', v => up({ [k]: v }));
   const add = async e => {
@@ -762,11 +762,12 @@ function Appunti({ rec, up, k = 'appunti', foto = 'fotoAppunti', rows = 4, label
     for (const f of fs) { try { out.push(await saveImage(f)); } catch (err) { fail('Foto non salvata', err); } }
     if (out.length) up(p => ({ ...p, [foto]: [...(p[foto] || []), ...out] }));
   };
-  return html`<div class="card"><div class="fld"><span>${label}</span>
-    <div class="mic-wrap"><textarea rows=${rows} placeholder=${placeholder || ' '} value=${rec[k] || ''} onInput=${e => up({ [k]: e.target.value })}></textarea>
-      <div class="ico-col">${foto && html`<${IcoFoto} inp=${inp} />`}<${MicBtn} rec=${on} toggle=${toggle} /></div></div></div>
+  const campo = html`<div class="fld"><span>${label}</span>
+    <div class="mic-wrap"><textarea rows=${rows} disabled=${disabled} placeholder=${placeholder || ' '} value=${rec[k] || ''} onInput=${e => up({ [k]: e.target.value })}></textarea>
+      ${!disabled && html`<div class="ico-col">${foto && html`<${IcoFoto} inp=${inp} />`}<${MicBtn} rec=${on} toggle=${toggle} /></div>`}</div></div>
     ${foto && html`<input ref=${inp} type="file" accept="image/*" capture="environment" multiple hidden onChange=${add} />
-      <${NotePhotos} rec=${rec} field=${foto} up=${up} noAdd />`}</div>`;
+      <${NotePhotos} rec=${rec} field=${foto} up=${up} noAdd />`}`;
+  return nudo ? campo : html`<div class="card">${campo}</div>`;
 }
 // campi senza segnaposto: uno spazio come segnaposto, così l'etichetta resta dentro il campo vuoto (Rilievo: Campo)
 function fldSegnaposto() {

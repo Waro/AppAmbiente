@@ -149,6 +149,8 @@ flowchart TD
 - Sintetico: nota con capitolo e voce → annotazioni della voce; nota con il solo capitolo → «Condizioni generali» come «Capitolo: testo»; risposte Sì/No/N.A. e azioni vuote.
 - Le foto seguono l'ordine dei capitoli; «ID Foto» (Esteso) e la voce collegata (Sintetico) vengono dalla nota.
 
+Dalla v56 il primo sopralluogo nasce a formato libero (`formatoLibero`): Nuova attività → Sopralluogo HSE → *Primo sopralluogo*; le osservazioni usano i capitoli dell'Esteso e il modello (Esteso o Sintetico) si sceglie in Anagrafica o nel Riepilogo. Generando il Sintetico, `hsNoteAOld` chiama `hsInSintetico`: capitolo dell'Esteso → capitolo 3–7 (`HS_E2S`), sottosezione nel testo («Sottosezione: testo»), poi il motore di sempre (osservazione con il solo capitolo → «Condizioni generali»).
+
 ## 6c. Campioni e Riepilogo (v56)
 
 ```mermaid

@@ -413,10 +413,10 @@ function OneDriveSettings({ settings, set }) {
           <button class="btn sm" onClick=${() => confirm('Scollegare OneDrive?') && OD.logout()}>Esci</button></div>`
         : html`<button class="btn pri block" onClick=${() => OD.login().catch(e => toast(e.message))}>Accedi con Microsoft 365</button>`}
       ${OD.error && html`<div class="notice err">${OD.error}</div>`}
-      <p class="lead" style="margin:10px 0 0">I file vanno nella cartella dedicata all'app dentro OneDrive › App, una cartella per indagine o campagna. L'app non vede né modifica il resto del tuo OneDrive.</p>
+      <p class="lead" style="margin:var(--sp-3) 0 0">I file vanno nella cartella dedicata all'app dentro OneDrive › App, una cartella per indagine o campagna. L'app non vede né modifica il resto del tuo OneDrive.</p>
     </div>`}
     ${log.length > 0 && html`<div class="divider"></div><div class="fld"><span>Ultimi caricamenti</span></div>
-      ${log.map(l => html`<div class="lock" style="display:block;margin-top:3px">${new Date(l.t).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })} · ${l.path}</div>`)}`}
+      ${log.map(l => html`<div class="lock" style="display:block;margin-top:var(--sp-1)">${new Date(l.t).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })} · ${l.path}</div>`)}`}
   </div>`;
 }
 

@@ -217,7 +217,7 @@ function ManufattoCard({ m, open, toggle, onUpd, onDel, conclusa }) {
         <${InpGrow} cls="full" label="Ubicazione" value=${m.ubicazione} set=${v => set({ ubicazione: v })} imp=${impOf(m, 'ubicazione')} />
         <${Area} cls="full" label="Descrizione" rows=${2} value=${m.descrizione} set=${v => set({ descrizione: v })} imp=${impOf(m, 'descrizione')} />
         ${m.quantita && html`<${Inp} label="Quantità" value=${m.quantita} set=${v => set({ quantita: v })} imp=${impOf(m, 'quantita')} />`}
-        ${m.fonte && html`<div class="lock full" style="margin-top:-4px"><${Icon} n="lock" s=${12} /> Dati da ${m.fonte}</div>`}
+        ${m.fonte && html`<div class="lock full" style="margin-top:calc(-1 * var(--sp-1))"><${Icon} n="lock" s=${12} /> Dati da ${m.fonte}</div>`}
       </div>
       ${(m.statoPrec || m.notePrec || m.fotoPrec?.length > 0) && html`<div class="prev-box">
         ${(m.statoPrec || m.notePrec) && html`<div><b>Sopralluogo precedente:</b> ${[m.statoPrec, m.notePrec].filter(Boolean).join(' · ')}</div>`}
@@ -313,7 +313,7 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
         <div><b>${fatti}<small>/${tot}</small></b><span>verificati</span></div>
         <div><b class=${dann ? 'crit' : ''}>${dann}</b><span>danneggiati</span></div>
         <div><b class=${noFoto ? 'crit' : ''}>${noFoto}</b><span>senza foto</span></div></div>
-      ${scad && html`<div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.14);font-size:var(--fs-md)" class="nv2">
+      ${scad && html`<div style="margin-top:var(--sp-3);padding-top:var(--sp-3);border-top:1px solid rgba(255,255,255,.14);font-size:var(--fs-md)" class="nv2">
         Verifica entro <b style="color:var(--on-dark)">${fmtD(scad)}</b> · <span class=${gScad <= 30 && fatti < tot ? 'crit' : ''}>${gScad < 0 ? 'scaduta da ' + -gScad + ' gg' : gScad === 0 ? 'oggi' : 'tra ' + gScad + ' gg'}</span> (fine anno di incarico)</div>`}
     </div>
 
@@ -325,25 +325,25 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
       <b class="fw-6">Stesso immobile di ${fonteNome(fonti[0])} (${fmtD(fonti[0].data)})</b>
       <p class="lead lead-gap">Crea i manufatti dai ${fonti[0].campioni.mca.length === 1 ? 'campione' : fonti[0].campioni.mca.length + ' campioni'} MCA, con descrizione, ubicazione, quantità e foto come riferimento.</p>
       <button class="btn pri block" disabled=${riprendo} onClick=${() => daCampioni(fonti[0])}>${riprendo ? html`<div class="spin" />` : ''} Crea i manufatti</button></div>`}
-    ${!tot && html`<div class="card tight"><p class="lead" style="margin:2px 0">Per creare i manufatti da un PMC o da una mappatura in JSON, o dai campioni MCA di un'altra attività, tocca <b>⋯ Opzioni</b> in basso.</p></div>`}
+    ${!tot && html`<div class="card tight"><p class="lead" style="margin:var(--sp-1) 0">Per creare i manufatti da un PMC o da una mappatura in JSON, o dai campioni MCA di un'altra attività, tocca <b>⋯ Opzioni</b> in basso.</p></div>`}
 
     <div class="sec-h"><h3>Manufatti · ${tot}</h3><span class="hint">${fatti} di ${tot} verificati</span></div>
-    ${tot > 0 && html`<div class="track" style="margin:0 2px 12px"><i style=${'background:var(--ok);width:' + Math.round(fatti / tot * 100) + '%'}></i></div>
+    ${tot > 0 && html`<div class="track" style="margin:0 var(--sp-1) var(--sp-3)"><i style=${'background:var(--ok);width:' + Math.round(fatti / tot * 100) + '%'}></i></div>
       <div class="pills">${[['tutti', 'Tutti', tot], ['da', r.conclusa ? 'Non visionati' : 'Da verificare', tot - fatti], ['fatti', 'Verificati', fatti]].map(([k, l, n]) => html`<button class=${'pill' + (f === k ? ' on' : '')} onClick=${() => setF(k)}>${l}<span class="n">${n}</span></button>`)}
         ${fatti < tot && !r.conclusa && html`<button class="pill nx" onClick=${nextM}>Prossimo da verificare ›</button>`}</div>`}
     ${list.map(m => html`<${ManufattoCard} key=${m.id} m=${m} open=${!!openM[m.id]} toggle=${() => setOpenM({ ...openM, [m.id]: !openM[m.id] })} onUpd=${updM} onDel=${delM} conclusa=${!!r.conclusa} />`)}
-    ${f === 'da' && tot > 0 && !list.length && html`<div class="empty" style="padding:20px"><b>Tutti verificati</b>Controlla le note e carica tutto su OneDrive.</div>`}
+    ${f === 'da' && tot > 0 && !list.length && html`<div class="empty" style="padding:var(--sp-5)"><b>Tutti verificati</b>Controlla le note e carica tutto su OneDrive.</div>`}
     <button class="btn dashed" onClick=${addM}>+ Aggiungi manufatto</button>
 
     <${AriaInRa} r=${r} up=${up} settings=${settings} />
 
-    <div class="sec-h" id=${'plan-' + r.id}><h3>Planimetrie</h3><span class="hint">Etichette colorate per stato</span></div>
+    <div class="sec-h" id=${'plan-' + r.id}><h3>Planimetrie</h3></div>
     <div class="card"><${PlanList} items=${r.planimetrie || []} labels=${labels}
       onAdd=${p => up(q => ({ ...q, planimetrie: [...(q.planimetrie || []), p] }))}
       onUpdate=${(id, patch) => up(q => ({ ...q, planimetrie: (q.planimetrie || []).map(x => x.id === id ? { ...x, ...patch } : x) }))}
       onRemove=${async p => { for (const b of blobIds(p)) await removeBlob(b); up(q => ({ ...q, planimetrie: (q.planimetrie || []).filter(x => x.id !== p.id) })); }} /></div>
 
-    <div class="sec-h"><h3>Appunti</h3><span class="hint">Testo libero</span></div>
+    <div class="sec-h"><h3>Appunti</h3></div>
     <${Appunti} rec=${r} up=${up} placeholder="Note generali del sopralluogo" />
 
     `}

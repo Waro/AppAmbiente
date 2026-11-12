@@ -229,7 +229,7 @@ function SyncCard({ settings, set }) {
     ${OD.account ? html`<div class="sync-st ${s.phase}">${syncLabel(s)}${s.text && s.phase !== 'run' ? ' · ' + s.text : ''}</div>
         ${s.error && html`<div class="notice err">${s.error}</div>`}
         <button class="btn block mt-3" disabled=${s.phase === 'run'} onClick=${() => Sync.run({ manual: true })}>${s.phase === 'run' ? html`<div class="spin" />` : html`<${Icon} n="share" s=${18} />`} Sincronizza ora</button>`
-      : html`<p class="lead" style="margin:8px 0 0">Accedi con Microsoft 365 qui sopra per attivarla.</p>`}
-    <p class="lead" style="margin:10px 0 0">Su un dispositivo nuovo basta accedere: le attività arrivano da sole. Vince la modifica più recente; se un’attività è cambiata su due dispositivi, l'altra versione resta come copia. Le attività eliminate spariscono ovunque, i file restano nella cartella dell'app su OneDrive.</p>
+      : html`<p class="lead" style="margin:var(--sp-2) 0 0">Accedi con Microsoft 365 qui sopra per attivarla.</p>`}
+    <p class="lead" style="margin:var(--sp-3) 0 0">Su un dispositivo nuovo basta accedere: le attività arrivano da sole. Vince la modifica più recente; se un’attività è cambiata su due dispositivi, l'altra versione resta come copia. Le attività eliminate spariscono ovunque, i file restano nella cartella dell'app su OneDrive.</p>
   </div>`;
 }

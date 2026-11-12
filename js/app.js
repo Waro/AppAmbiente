@@ -51,10 +51,10 @@ function SyncErrSheet({ msg, title = 'Sincronizzazione non riuscita', onClose, o
 function Boundary({ children }) {
   const [err, reset] = useErrorBoundary(e => reportAppError(e, 'schermata'));
   if (!err) return children;
-  return html`<div class="content" style="padding:28px 20px;max-width:560px;margin:0 auto">
+  return html`<div class="content" style="padding:var(--sp-6) var(--sp-5);max-width:560px;margin:0 auto">
     <div class="lt-title" style="font-size:var(--fs-4xl)">Qualcosa non ha funzionato</div>
     <p class="lead">I tuoi dati sono salvati. L'errore è stato registrato nelle Notifiche con il codice APP-JS.</p>
-    <div class="mono" style="font-size:var(--fs-sm);background:var(--fill-soft);border-radius:var(--r-sm);padding:8px;word-break:break-word;margin:10px 0 16px">${String(err && err.message || err)}</div>
+    <div class="mono" style="font-size:var(--fs-sm);background:var(--fill-soft);border-radius:var(--r-sm);padding:var(--sp-2);word-break:break-word;margin:var(--sp-3) 0 var(--sp-4)">${String(err && err.message || err)}</div>
     <button class="btn pri block" onClick=${() => { location.hash = ''; reset(); }}>Torna a Oggi</button>
     <button class="btn block mt-2" onClick=${() => location.reload()}>Ricarica l'app</button>
     <button class="btn block mt-2" onClick=${() => DB.get('settings').then(s => reportIssue(s))}>Segnala un problema</button>

@@ -129,7 +129,7 @@ function RiepilogoSheet({ r, settings, onClose }) {
       <div class="sheet-nav"><button class="btn link" onClick=${onClose}>Chiudi</button><b>Riepilogo via email</b><span></span></div>
       <div class="sheet-body">
         <div class="card tight"><div class="rp-ogg">${oggetto}</div><pre class="rp-txt">${testo}</pre></div>
-        ${tutte.length > 0 && html`<div class="sec-h"><h3>Foto · ${scelte.length} di ${tutte.length}</h3><span class="hint">tocca per togliere o aggiungere</span></div>
+        ${tutte.length > 0 && html`<div class="sec-h"><h3>Foto · ${scelte.length} di ${tutte.length}</h3></div>
           <div class="rp-foto">${tutte.map(id => html`<button key=${id} class=${'rp-ph' + (sel.has(id) ? ' on' : '')} onClick=${() => toggle(id)}><${RpThumb} id=${id} /><span>${nomi[id]}</span></button>`)}</div>`}
         <div class="stack mt-4">
           <button class="btn pri block" disabled=${!!busy} onClick=${condividi}>${busy === 'share' ? html`<div class="spin" />` : html`<${Icon} n="share" s=${19} />`} Condividi${scelte.length ? ' con ' + scelte.length + ' foto' : ''}</button>
@@ -146,7 +146,7 @@ function RpThumb({ id }) { const u = useBlobUrl(id); return u ? html`<img src=${
    Pannello che sale dal basso, solo consultazione: per modificare si torna alla scheda.
    HSE a note: check-list dei capitoli, osservazioni per capitolo con le foto, appunti; in fondo «Genera report».
    Campioni (DDA Fase 2, Mappatura): campioni per matrice, avvisi (senza foto, non in pianta), campioni per piano, appunti; in fondo «Genera file». */
-function RiepilogoPanel({ r, mats, onClose, onFile, azione }) {
+function RiepilogoPanel({ r, mats, onClose, onFile, azione, scelta }) {
   useBackClose(onClose);
   const hs = r.type === 'hs';
   const fotoN = hs ? (r.foto || []).length : 0;
@@ -182,6 +182,7 @@ function RiepilogoPanel({ r, mats, onClose, onFile, azione }) {
       ${(ap || apF.length > 0) && html`<div class="sec-h"><h3>Appunti</h3></div><div class="card">${ap && html`<div class="riep-ap">${ap}</div>`}
         ${apF.length > 0 && html`<div class="hs-fotos">${apF.map(id => html`<${Thumb44} key=${id} id=${id} />`)}</div>`}
         ${hs && html`<div class="mt-2"><span class="badge b-grey">Non va nel Word</span></div>`}</div>`}
+      ${scelta && html`<div class="sec-h"><h3>Modello del report</h3></div>${scelta}`}
       <div class="riep-dock">${azione || html`<button class="btn pri block" onClick=${() => { onClose(); onFile(); }}>Genera file</button>`}</div>
     </div></div></div>`;
 }

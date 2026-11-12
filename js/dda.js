@@ -169,7 +169,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
     ...campPlanLabels(r, MATS),
   ];
   const plans = r.planimetrie || [];
-  const planSection = html`<div class="sec-h" id=${'plan-' + r.id}><h3>Planimetrie</h3><span class="hint">Disegno ed etichette dei campioni</span></div>
+  const planSection = html`<div class="sec-h" id=${'plan-' + r.id}><h3>Planimetrie</h3></div>
     <div class="card"><${PlanList} items=${plans} labels=${planLabels} apri=${planReq}
       onAdd=${p => up(q => ({ ...q, planimetrie: [...(q.planimetrie || []), p] }))}
       onUpdate=${(id, patch) => up(q => ({ ...q, planimetrie: (q.planimetrie || []).map(x => x.id === id ? { ...x, ...patch } : x) }))}
@@ -244,7 +244,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
     <datalist id="dl-siti">${siti.map(c => html`<option value=${c} />`)}</datalist></div>
 
     <div class="sec-h"><h3>Fase dell'indagine</h3></div>
-    <div class="seg" style="margin:0 0 6px">
+    <div class="seg" style="margin:0 0 var(--sp-2)">
       <button class=${r.fase === 1 ? 'on' : ''} onClick=${() => up({ fase: 1 })}>Fase 1 · Sopralluogo</button>
       <button class=${r.fase === 2 ? 'on' : ''} onClick=${() => up({ fase: 2 })}>Fase 2 · Campionamento</button>
     </div>
@@ -266,20 +266,20 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
           <button class="chk-h" aria-expanded=${!!o} onClick=${() => setOpenC({ ...openC, [k]: !o })}>
             <div class="tb-grow"><b>${l}</b>${!o && r.checkNote[k] && html`<small>${r.checkNote[k]}</small>`}</div>
             <span class=${'badge ' + sc}>${sl}</span><span class=${'chev' + (o ? ' open' : '')}><${Icon} n="chev" s=${18} /></span></button>
-          ${o && html`<div style="padding-bottom:12px"><div class="tri">
+          ${o && html`<div style="padding-bottom:var(--sp-3)"><div class="tri">
               <button class=${st === 'presente' ? 'on-p' : ''} onClick=${() => setCheck(k, 'presente')}>Presente</button>
               <button class=${st === 'assente' ? 'on-a' : ''} onClick=${() => setCheck(k, 'assente')}>Assente</button>
               <button class=${st === 'nv' ? 'on-n' : ''} onClick=${() => setCheck(k, 'nv')}>N.V.</button></div>
-            <textarea class="inp" rows="3" placeholder="Note, ubicazione, evidenze…" value=${r.checkNote[k] || ''} onInput=${e => setNote(k, e.target.value)}></textarea></div>`}
+            <label class="fld mt-2"><span>Note, ubicazione, evidenze</span><textarea rows="3" placeholder=" " value=${r.checkNote[k] || ''} onInput=${e => setNote(k, e.target.value)}></textarea></label></div>`}
         </div>`;
       })}</div>
 
       <div class="sec-h"><h3>Aree di potenziale contaminazione · ${r.recs.length}</h3></div>
       ${r.recs.map(x => html`<div class="card" key=${x.id} id=${'rec-' + x.id}>
-        <div class="row mb-2"><span class="mdot" style="background:var(--rec)"></span>
-          <input class="inp" style="font-weight:700" value=${x.nome} onInput=${e => updRec(x.id, { nome: e.target.value })} aria-label="Nome area" />
+        <div class="row mb-2"><span class="mdot" style="background:var(--rec)"></span><span class="tb-grow"></span>
           <button class="x" aria-label="Elimina area" onClick=${() => delRec(x)}>×</button></div>
-        <textarea class="inp" rows="2" placeholder="Descrizione" value=${x.descrizione} onInput=${e => updRec(x.id, { descrizione: e.target.value })}></textarea>
+        <div class="stack"><label class="fld"><span>Nome</span><input placeholder=" " value=${x.nome} onInput=${e => updRec(x.id, { nome: e.target.value })} /></label>
+        <${Appunti} rec=${x} up=${p => updRec(x.id, p)} k="descrizione" foto=${null} rows=${2} label="Descrizione" nudo /></div>
         <div class="mt-3"><${PhotoStrip} ids=${x.foto} max=${6}
           onAdd=${async ids => { updRec(x.id, { foto: [...x.foto, ...ids] }); if (x.lat == null) { const g = await getPosition(); if (g) updRec(x.id, g); } }}
           onRemove=${async id => { await removeBlob(id); updRec(x.id, { foto: x.foto.filter(f => f !== id) }); }} /></div>
@@ -288,9 +288,9 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
       <button class="btn dashed" onClick=${addRec}>+ Aggiungi area</button>
 
       <div class="sec-h"><h3>Interviste e note</h3></div>
-      <div class="card"><textarea class="inp" rows="4" value=${r.interviste} onInput=${e => up({ interviste: e.target.value })} aria-label="Interviste e note"></textarea></div>
+      <${Appunti} rec=${r} up=${up} k="interviste" foto=${null} label="Interviste e note" />
 
-      <div class="sec-h"><h3>Appunti Fase 1</h3><span class="hint">Testo libero</span></div>
+      <div class="sec-h"><h3>Appunti Fase 1</h3></div>
       <${Appunti} rec=${r} up=${up} label="Appunti Fase 1" placeholder="Note sparse, promemoria…" />
 
 
@@ -300,20 +300,18 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
       <${PrecSection} r=${r} onRicampiona=${c => { addCk({ matrice: c.k, descrizione: [c.codice, c.descrizione].filter(Boolean).join(' · '), ubicazione: [c.piano, c.ubicazione].filter(Boolean).join(' - ') }); toast(c.codice + ' aggiunto ai punti da campionare'); }} />
       <div class="sec-h mt-4"><h3>Punti da campionare</h3><span class="hint">${(r.checklist || []).filter(c => !c.fatto).length} da fare</span></div>
       <div class="card tight">
-        ${!(r.checklist || []).length && html`<p class="lead" style="margin:2px 0 4px">Segna qui cosa prevedi di campionare prima di uscire: manufatti, tipologia, dove si trovano. Man mano che preleva, spuntali.</p>`}
+        ${!(r.checklist || []).length && html`<p class="lead" style="margin:var(--sp-1) 0 var(--sp-1)">Segna qui cosa prevedi di campionare prima di uscire: manufatti, tipologia, dove si trovano. Man mano che preleva, spuntali.</p>`}
         ${(r.checklist || []).map((it, ci) => html`<div key=${it.id} style=${'padding:10px 0;display:grid;gap:6px' + (ci ? ';border-top:.5px solid var(--sep)' : '') + (it.fatto ? ';opacity:.55' : '')}>
           <div class="row">
             <input type="checkbox" checked=${it.fatto} aria-label="Fatto" onChange=${e => updCk(it.id, { fatto: e.target.checked })} style="width:20px;height:20px;flex-shrink:0" />
-            <select class="inp" style=${'width:96px;flex-shrink:0;padding:8px 6px;font-weight:700;color:' + MATS.find(m => m.k === it.matrice).c} value=${it.matrice} onChange=${e => updCk(it.id, { matrice: e.target.value })}>
-              ${MATS.map(m => html`<option value=${m.k}>${m.l}</option>`)}</select>
             <span class="tb-grow"></span>
             ${!it.fatto ? html`<button class="btn sm" style="flex-shrink:0" onClick=${() => preleva(it)}>Preleva</button>` : html`<span class="badge b-ok" style="flex-shrink:0">Fatto</span>`}
             <button class="x" aria-label="Elimina voce" onClick=${() => delCk(it.id)}>×</button>
           </div>
-          <div class="row" style="padding-left:28px">
-            <input class="inp" placeholder="Cosa" value=${it.descrizione} onInput=${e => updCk(it.id, { descrizione: e.target.value })} />
-            <div style="flex:0 0 42%"><${InpGrow} placeholder="Dove" value=${it.ubicazione} set=${v => updCk(it.id, { ubicazione: v })} /></div>
-          </div></div>`)}
+          <label class="fld"><span>Matrice</span><select value=${it.matrice} onChange=${e => updCk(it.id, { matrice: e.target.value })}>
+              ${MATS.map(m => html`<option value=${m.k}>${m.l}</option>`)}</select></label>
+          <label class="fld"><span>Cosa</span><input placeholder=" " value=${it.descrizione} onInput=${e => updCk(it.id, { descrizione: e.target.value })} /></label>
+          <${InpGrow} label="Dove" value=${it.ubicazione} set=${v => updCk(it.id, { ubicazione: v })} /></div>`)}
         <div class="row mt-2">
           <button class="btn dashed grow" onClick=${() => addCk()}>+ Aggiungi voce</button>
           ${r.recs.length > 0 && html`<button class="btn sm" onClick=${ckFromRecs}>Da aree REC</button>`}
@@ -326,7 +324,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
       ${r.fase === 2 && html`<${NumSection} r=${r} up=${up} mats=${MATS} />`}
       <${CampSummary} r=${r} mats=${MATS} onRiep=${() => setRiep(true)} todo=${(r.checklist || []).filter(c => !c.fatto).length} />
       <div class="mtabs" role="tablist">${MATS.map(m => html`<button role="tab" aria-selected=${tab === m.k} class=${tab === m.k ? 'on' : ''} onClick=${() => setTab(m.k)}>${m.l}<small><i class="mdot" style=${'background:' + m.c}></i>${r.campioni[m.k].length}</small></button>`)}</div>
-      ${!camp.length && html`<div class="card"><div class="empty" style="padding:18px">Nessun campione ${mat.l}.</div></div>`}
+      ${!camp.length && html`<div class="card"><div class="empty" style="padding:var(--sp-5)">Nessun campione ${mat.l}.</div></div>`}
       <button class="btn block mt-3" onClick=${() => apriPlan(camp)}><${Icon} n="map" s=${20} /> Planimetria</button>
       ${byPiano(camp).map(([piano, list]) => html`<div key=${piano}>
         <div class="list mt-3"><div class="list-h"><b>${piano}</b><span>${list.length}</span></div>${list.map(c => html`<${SampleRow} key=${c.id} c=${c} mat=${mat} open=${!!openS[c.id]} toggle=${() => setOpenS(o => ({ ...o, [c.id]: !o[c.id] }))}
@@ -345,7 +343,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
       ${(tab === 'mca' || tab === 'fav') && html`<${NcSection} r=${r} up=${up} mat=${mat} list="dl-piani-c" />`}
       <div style="height:10px"></div>
 
-      <div class="sec-h"><h3>Appunti Fase 2</h3><span class="hint">Testo libero</span></div>
+      <div class="sec-h"><h3>Appunti Fase 2</h3></div>
       <${Appunti} rec=${r} up=${up} k="appunti2" foto="fotoAppunti2" rows=${3} label="Appunti Fase 2" placeholder="Note sparse, promemoria…" />
 
       ${planSection}
@@ -356,15 +354,15 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
 
       ${risCamp.length > 0 && html`
         <div class="sec-h"><h3>Risultati vs CSC</h3>
-          <div class="seg" style="width:150px">${['A', 'B'].map(c => html`<button class=${r.colonna === c ? 'on' : ''} style="padding:6px" onClick=${() => up({ colonna: c })}>Col. ${c}</button>`)}</div></div>
+          <div class="seg" style="width:150px">${['A', 'B'].map(c => html`<button class=${r.colonna === c ? 'on' : ''} style="padding:var(--sp-2)" onClick=${() => up({ colonna: c })}>Col. ${c}</button>`)}</div></div>
         <div class="card tight">
           ${r.risultati.length ? html`<div class=${'notice' + (sup.length ? ' err' : '')} style="margin:0 0 10px;${sup.length ? '' : 'background:var(--ok-soft);border-color:var(--ok);color:var(--ok)'}">
             ${sup.length ? `${sup.length} superamenti rispetto alla colonna ${r.colonna}` : `Nessun superamento rispetto alla colonna ${r.colonna}`}</div>` : html`<p class="lead lead-gap">Inserisci i valori dai rapporti di prova del laboratorio.</p>`}
           ${r.risultati.map(x => {
             const p = CSC.find(c => c.p === x.parametro) || CSC[0]; const v = num(x.valore); const over = v != null && v > p[r.colonna];
-            return html`<div key=${x.id} style="display:grid;grid-template-columns:80px 1fr 80px 28px;gap:6px;align-items:center;margin-bottom:6px">
-              <select class="inp" style="padding:8px 4px" value=${x.campione} onChange=${e => updRis(x.id, { campione: e.target.value })}>${risCamp.map(c => html`<option value=${c.codice}>${c.codice}</option>`)}</select>
-              <select class="inp" style="padding:8px 4px" value=${x.parametro} onChange=${e => updRis(x.id, { parametro: e.target.value })}>${CSC.map(c => html`<option value=${c.p}>${c.p} (${c.u}) · CSC ${c[r.colonna]}</option>`)}</select>
+            return html`<div key=${x.id} style="display:grid;grid-template-columns:80px 1fr 80px 28px;gap:var(--sp-2);align-items:center;margin-bottom:var(--sp-2)">
+              <select class="inp" style="padding:var(--sp-2) var(--sp-1)" value=${x.campione} onChange=${e => updRis(x.id, { campione: e.target.value })}>${risCamp.map(c => html`<option value=${c.codice}>${c.codice}</option>`)}</select>
+              <select class="inp" style="padding:var(--sp-2) var(--sp-1)" value=${x.parametro} onChange=${e => updRis(x.id, { parametro: e.target.value })}>${CSC.map(c => html`<option value=${c.p}>${c.p} (${c.u}) · CSC ${c[r.colonna]}</option>`)}</select>
               <input class="inp" inputmode="decimal" style=${'text-align:right;padding:8px' + (over ? ';color:var(--danger);font-weight:700;background:rgba(190,34,42,.07)' : '')} value=${x.valore} placeholder="Valore" onInput=${e => updRis(x.id, { valore: e.target.value })} />
               <button class="x" aria-label="Elimina risultato" onClick=${() => up(pp => ({ ...pp, risultati: pp.risultati.filter(y => y.id !== x.id) }))}>×</button></div>`;
           })}

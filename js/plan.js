@@ -482,14 +482,14 @@ function PlanViewer({ plan, labels, altrove, pre, onChange, onClose }) {
     <div class="plan-top">
       <button class="btn sm" onClick=${() => history.back()} disabled=${saving}>${saving ? html`<div class="spin" />` : 'Fine'}</button>
       <b class="tb-grow"><div>${plan.nome}</div></b>
-      ${nPages > 1 && html`<div class="row" style="gap:4px"><button class="sq plain" aria-label="Pagina precedente" disabled=${pageN === 0} onClick=${() => setPageN(pageN - 1)}>‹</button>
+      ${nPages > 1 && html`<div class="row" style="gap:var(--sp-1)"><button class="sq plain" aria-label="Pagina precedente" disabled=${pageN === 0} onClick=${() => setPageN(pageN - 1)}>‹</button>
         <span style="font-size:var(--fs-sm);font-weight:700;min-width:44px;text-align:center">${pageN + 1}/${nPages}</span>
         <button class="sq plain" aria-label="Pagina successiva" disabled=${pageN >= nPages - 1} onClick=${() => setPageN(pageN + 1)}>›</button></div>`}
       <button class="sq plain" aria-label="Riduci" onClick=${() => zoomBtn(1 / 1.5)}>−</button>
       <button class="sq plain" aria-label="Ingrandisci" onClick=${() => zoomBtn(1.5)}>+</button>
     </div>
     <div class="plan-view" ref=${wrap} onPointerDown=${down} onPointerMove=${move} onPointerUp=${up} onPointerCancel=${up} onContextMenu=${e => e.preventDefault()}>
-      ${err && html`<div class="notice err" style="margin:16px">${err}</div>`}
+      ${err && html`<div class="notice err" style="margin:var(--sp-4)">${err}</div>`}
       ${!doc && !err && html`<div class="empty">Apro la planimetria…</div>`}
       <div class="plan-page" ref=${pageEl} style=${d ? `width:${d.w}px;height:${d.h}px` : 'visibility:hidden'}>
         <canvas ref=${cv}></canvas>
@@ -510,14 +510,14 @@ function PlanViewer({ plan, labels, altrove, pre, onChange, onClose }) {
       ${tool === 'label' && html`<div class="plan-tray">
         ${!labels.length ? html`<div class="lock">Nessun campione da etichettare: aggiungine uno nella scheda.</div>`
           : !tray.length && !altri.length ? html`<div class="lock">Tutte le etichette sono posizionate. Trascinale per spostarle, × per toglierle.</div>`
-          : html`<div class="lock" style="margin-bottom:6px">${sel ? 'Tocca la planimetria dove posizionare ' + sel.text : 'Scegli un\'etichetta, poi tocca la planimetria'}</div>
-            <div class="row wrap" style="gap:6px">${tray.map(l => html`<button class=${'chip' + (sel && sel.ref === l.ref ? ' on' : '')} style=${'background:' + l.color} onClick=${() => setSel(sel && sel.ref === l.ref ? null : l)}>${l.text}</button>`)}</div>
-            ${altri.length > 0 && html`<div class="lock" style="margin:8px 0 6px">Altri campioni</div>
-            <div class="row wrap" style="gap:6px">${altri.map(l => html`<button class=${'chip altro' + (sel && sel.ref === l.ref ? ' on' : '')} style=${'background:' + l.color} onClick=${() => setSel(sel && sel.ref === l.ref ? null : l)}>${l.text}${l.piano ? ' · ' + l.piano : ''}</button>`)}</div>`}`}
+          : html`<div class="lock" style="margin-bottom:var(--sp-2)">${sel ? 'Tocca la planimetria dove posizionare ' + sel.text : 'Scegli un\'etichetta, poi tocca la planimetria'}</div>
+            <div class="row wrap" style="gap:var(--sp-2)">${tray.map(l => html`<button class=${'chip' + (sel && sel.ref === l.ref ? ' on' : '')} style=${'background:' + l.color} onClick=${() => setSel(sel && sel.ref === l.ref ? null : l)}>${l.text}</button>`)}</div>
+            ${altri.length > 0 && html`<div class="lock" style="margin:var(--sp-2) 0 var(--sp-2)">Altri campioni</div>
+            <div class="row wrap" style="gap:var(--sp-2)">${altri.map(l => html`<button class=${'chip altro' + (sel && sel.ref === l.ref ? ' on' : '')} style=${'background:' + l.color} onClick=${() => setSel(sel && sel.ref === l.ref ? null : l)}>${l.text}${l.piano ? ' · ' + l.piano : ''}</button>`)}</div>`}`}
       </div>`}
       ${pop && html`<div class="plan-pop">
-        <div class="row wrap" style="gap:8px">${PLAN_COLORS.map(c => html`<button key=${c} class=${'pen' + (color === c ? ' on' : '')} aria-label=${'Colore ' + c} style=${'--pc:' + c} onPointerDown=${e => e.preventDefault()} onClick=${() => { setColor(c); if (editRef.current) { const v = { ...editRef.current, c }; editRef.current = v; setEdit(v); } }}></button>`)}</div>
-        <div class="row" style="gap:8px;margin-top:10px">${PLAN_SIZES.map((w, i) => html`<button key=${i} class=${'plan-size' + (size === i ? ' on' : '')} aria-label=${'Spessore ' + (i + 1)} onPointerDown=${e => e.preventDefault()} onClick=${() => { setSize(i); if (editRef.current) { const v = { ...editRef.current, fs: Math.round(PLAN_FONTS[i] * unit() * 10) / 10 }; editRef.current = v; setEdit(v); } }}>
+        <div class="row wrap" style="gap:var(--sp-2)">${PLAN_COLORS.map(c => html`<button key=${c} class=${'pen' + (color === c ? ' on' : '')} aria-label=${'Colore ' + c} style=${'--pc:' + c} onPointerDown=${e => e.preventDefault()} onClick=${() => { setColor(c); if (editRef.current) { const v = { ...editRef.current, c }; editRef.current = v; setEdit(v); } }}></button>`)}</div>
+        <div class="row" style="gap:var(--sp-2);margin-top:var(--sp-3)">${PLAN_SIZES.map((w, i) => html`<button key=${i} class=${'plan-size' + (size === i ? ' on' : '')} aria-label=${'Spessore ' + (i + 1)} onPointerDown=${e => e.preventDefault()} onClick=${() => { setSize(i); if (editRef.current) { const v = { ...editRef.current, fs: Math.round(PLAN_FONTS[i] * unit() * 10) / 10 }; editRef.current = v; setEdit(v); } }}>
           ${isText ? html`<span style=${'font-weight:700;font-size:' + (11 + i * 4) + 'px;color:' + color}>A</span>` : html`<i style=${`width:${Math.min(26, 3 + w * 2.6)}px;height:${Math.min(26, 3 + w * 2.6)}px;background:${color}`}></i>`}</button>`)}
           <span class="tb-grow"></span>
           <button class="btn sm danger" disabled=${!pa.strokes.length} onClick=${() => { if (confirm('Cancellare tutti i tratti di questa pagina?')) { commit(c => ({ ...c, strokes: [] })); setPop(false); } }}>Pulisci</button></div>
@@ -602,19 +602,19 @@ function PlanList({ items = [], labels, onUpdate, onAdd, onRemove, apri }) {
       const nl = Object.values(p.annot || {}).reduce((a, x) => a + (x.labels || []).length, 0);
       const ns = Object.values(p.annot || {}).reduce((a, x) => a + (x.strokes || []).length, 0);
       return html`<div class="row" key=${p.id} style="align-items:flex-start">
-        <span class="sq plain" style="margin-top:2px"><${Icon} n="file" s=${18} /></span>
+        <span class="sq plain" style="margin-top:var(--sp-1)"><${Icon} n="file" s=${18} /></span>
         <div class="tb-grow" style="min-width:0">
           <button style="background:none;border:0;text-align:left;padding:0;width:100%" onClick=${() => setOpen(p.id)}>
             <div style="font-size:var(--fs-md);font-weight:600">${p.nome}${p.origine === 'storica' && html` <span class="badge st-nv" title="Segni e ubicazioni dal documento precedente: sono di riferimento">Storica</span>`}</div>
             ${p.didascalia && html`<div class="lock" style="white-space:pre-line">${p.didascalia}</div>`}
             <div class="lock">${ns || nl ? `${ns} tratti · ${nl} etichette${p.mergedBlobId ? ' · PDF annotato pronto' : ''}` : 'Tocca per aprire e annotare'}</div></button>
-          <input class="inp sm" style="margin-top:6px;max-width:220px" list="dl-piani-pl" placeholder="Piano" aria-label=${'Piano di ' + p.nome} defaultValue=${p.piano || ''}
-            onChange=${e => onUpdate(p.id, { piano: e.target.value.trim() })} onKeyDown=${e => { if (e.key === 'Enter') e.target.blur(); }} /></div>
+          <label class="fld mt-2"><span>Piano</span><input list="dl-piani-pl" placeholder=" " aria-label=${'Piano di ' + p.nome} defaultValue=${p.piano || ''}
+            onChange=${e => onUpdate(p.id, { piano: e.target.value.trim() })} onKeyDown=${e => { if (e.key === 'Enter') e.target.blur(); }} /></label></div>
         <button class="x" aria-label=${'Rimuovi ' + p.nome} onClick=${() => { if (confirm('Rimuovere ' + p.nome + ' e le sue annotazioni?')) onRemove(p); }}>×</button></div>`;
     })}
     <datalist id="dl-piani-pl">${noti.map(x => html`<option value=${x} />`)}</datalist>
     <button class="btn dashed" onClick=${() => inp.current.click()}><${Icon} n="paper" s=${17} /> Aggiungi planimetrie (PDF)</button>
-    <div class="lock" style="margin:-4px 2px 0">Per sceglierne più di una, tieni premuto il primo file e poi tocca gli altri.</div>
+    <div class="lock" style="margin:calc(-1 * var(--sp-1)) var(--sp-1) 0">Per sceglierne più di una, tieni premuto il primo file e poi tocca gli altri.</div>
     <input ref=${inp} type="file" accept="application/pdf,.pdf" multiple hidden onChange=${pick} />
     ${cur && html`<${PlanViewer} key=${cur.id} plan=${cur} labels=${labels} altrove=${altrove} pre=${pre} onChange=${patch => onUpdate(cur.id, patch)} onClose=${() => { setOpen(null); setPre(null); }} />`}
   </div>`;

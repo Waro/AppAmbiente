@@ -116,9 +116,9 @@ function FileTab({ r, up, settings }) {
   };
   const quando = t => new Date(t).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' });
   return html`<div>
-    <div class="sec-h mt-1"><h3>File</h3><span class="hint">Si salvano anche su OneDrive</span></div>
+    <div class="sec-h mt-1"><h3>File</h3></div>
     <${Suggerimento} id="file" />
-    ${!docs.length ? html`<div class="card"><div class="empty" style="padding:18px">Ancora nessun file da generare: compaiono qui quando l'attività ha i dati che servono.</div></div>`
+    ${!docs.length ? html`<div class="card"><div class="empty" style="padding:var(--sp-5)">Ancora nessun file da generare: compaiono qui quando l'attività ha i dati che servono.</div></div>`
     : html`<div class="card files">${docs.map(d => {
       const st = fileState(r, d), L = fileRevs(r, d), last = L[L.length - 1], [fmt] = FILE_FMT[d.type];
       const su = last && od.sent[last.blobId];
@@ -130,7 +130,7 @@ function FileTab({ r, up, settings }) {
           <span class="t"><b>${d.label}</b><small>${info}</small>${d.sub && st === 'grey' && html`<small>${d.sub}</small>`}</span></button>
         ${L.length > 0 && html`<button class=${'btn sm' + (st === 'amber' ? ' pri' : '')} disabled=${!!busy} onClick=${() => run(d, true)}>Rigenera</button>`}
       </div>`; })}</div>
-    <p class="hint-p" style="margin:10px 4px">Grigio: da generare · verde: generato, tocca per aprirlo · ambra: dati cambiati, rigenera. Rigenera crea un nuovo file (_rev1, _rev2…) senza cancellare il precedente.</p>`}
+    <p class="hint-p" style="margin:var(--sp-3) var(--sp-1)">Grigio: da generare · verde: generato, tocca per aprirlo · ambra: dati cambiati, rigenera. Rigenera crea un nuovo file (_rev1, _rev2…) senza cancellare il precedente.</p>`}
   </div>`;
 }
 // tasto principale nella barra (HSE, Verbale): genera / apri / aggiorna il Word

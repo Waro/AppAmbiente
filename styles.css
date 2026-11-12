@@ -1187,3 +1187,4 @@ img.logo { background: none; object-fit: cover; }
 .riep-dock .btn { width: 100%; }
 .riep-sheet .rcard::after { display: none; }
 .riep-sheet .rcard { padding-right: var(--sp-4); }
+.sotto-t { font-size: var(--fs-xl); font-weight: 600; margin: var(--sp-2) 0 0; }

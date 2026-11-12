@@ -102,7 +102,7 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
     const u = (list || [])[(list || []).length - 1]; setPlanReq({ n: Date.now(), piano: u ? u.piano : '', ref: ref || null }); };
   const planLabels = campPlanLabels(r, MAP_MATS);
   const plans = r.planimetrie || [];
-  const planSection = html`<div class="sec-h" id=${'plan-' + r.id}><h3>Planimetrie</h3><span class="hint">Disegno ed etichette dei campioni</span></div>
+  const planSection = html`<div class="sec-h" id=${'plan-' + r.id}><h3>Planimetrie</h3></div>
     <div class="card"><${PlanList} items=${plans} labels=${planLabels} apri=${planReq}
       onAdd=${p => up(q => ({ ...q, planimetrie: [...(q.planimetrie || []), p] }))}
       onUpdate=${(id, patch) => up(q => ({ ...q, planimetrie: (q.planimetrie || []).map(x => x.id === id ? { ...x, ...patch } : x) }))}
@@ -133,9 +133,9 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
     <${Suggerimento} id="campioni" />
     <${NumSection} r=${r} up=${up} mats=${MAP_MATS} />
     <${CampSummary} r=${r} mats=${MAP_MATS} onRiep=${() => setRiep(true)} />
-    <div class="seg" style="margin-bottom:6px">${MAP_MATS.map(m => html`
+    <div class="seg" style="margin-bottom:var(--sp-2)">${MAP_MATS.map(m => html`
       <button class=${tab === m.k ? 'on' : ''} onClick=${() => setTab(m.k)}><i class="mdot" style=${'background:' + m.c}></i>${m.l}<span class="n">${(r.campioni[m.k] || []).length}</span></button>`)}</div>
-    ${!camp.length && html`<div class="card mt-3"><div class="empty" style="padding:18px">Nessun campione ${mat.l}.</div></div>`}
+    ${!camp.length && html`<div class="card mt-3"><div class="empty" style="padding:var(--sp-5)">Nessun campione ${mat.l}.</div></div>`}
     <button class="btn block mt-3" onClick=${() => apriPlan(camp)}><${Icon} n="map" s=${20} /> Planimetria</button>
     ${byPiano(camp).map(([piano, list]) => html`<div key=${piano}>
       <div class="list mt-3"><div class="list-h"><b>${piano}</b><span>${list.length}</span></div>${list.map(c => html`<${SampleRow} key=${c.id} c=${c} mat=${mat} open=${!!openS[c.id]} toggle=${() => setOpenS(o => ({ ...o, [c.id]: !o[c.id] }))}
@@ -148,9 +148,9 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
         <button class="btn sm danger self-start" onClick=${() => delCamp(c)}>Elimina campione</button>
       <//>`)}</div></div>`)}
     <datalist id="dl-piani-m">${[...new Set([...allCampMap(r).map(c => c.piano).filter(Boolean), ...PIANI_COMUNI])].map(x => html`<option value=${x} />`)}</datalist>
-    <button class="btn dashed" style="margin:10px 0 12px" onClick=${addCamp}>+ Aggiungi campione ${nextCode(tab)}</button>
+    <button class="btn dashed" style="margin:var(--sp-3) 0 var(--sp-3)" onClick=${addCamp}>+ Aggiungi campione ${nextCode(tab)}</button>
     <${NcSection} r=${r} up=${up} mat=${mat} list="dl-piani-m" />
-    <div style="height:12px"></div>
+    <div style="height:var(--sp-3)"></div>
 
     ${planSection}
 

@@ -200,7 +200,7 @@ function NovitaSheet({ list, onClose, go }) {
             <button class="btn-icon" aria-label="Precedente" disabled=${k === 0} onClick=${() => setK(k - 1)}><${Icon} n="back" s=${20} /></button>
             <div class="nv-dots">${slides.map((_, i) => html`<i key=${i} class=${i === k ? 'on' : ''} onClick=${() => setK(i)}></i>`)}</div>
             ${k < slides.length - 1 ? html`<button class="btn-icon" aria-label="Successiva" onClick=${() => setK(k + 1)}><${Icon} n="right" s=${20} /></button>`
-              : S.vai ? html`<button class="btn sm" onClick=${() => { onClose(); setTimeout(() => go({ v: S.vai }), 60); }}>Prova</button>` : html`<span style="width:44px"></span>`}
+              : S.vai ? html`<button class="btn sm" onClick=${() => { onClose(); setTimeout(() => go({ v: S.vai }), 60); }}>Prova</button>` : html`<span style="width:var(--tap)"></span>`}
           </div></div>`}
         ${list.map(x => html`<div key=${x.v}>
           <div class="sec-h"><h3>v${vEt(x)} · ${x.titolo}</h3><span class="hint">${fmtD(x.data)}</span></div>

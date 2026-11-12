@@ -331,7 +331,7 @@ function Backup({ records, all, settings, reload, lastBackup }) {
     </div>
     <div class="card">
       <h2 style="font-size:var(--fs-xl);font-weight:600">Ripristina da backup</h2>
-      <p class="lead" style="margin:6px 0 12px">Scegli lo ZIP da OneDrive o dal telefono. I record già presenti vengono sostituiti solo se quelli del backup sono più recenti.</p>
+      <p class="lead" style="margin:var(--sp-2) 0 var(--sp-3)">Scegli lo ZIP da OneDrive o dal telefono. I record già presenti vengono sostituiti solo se quelli del backup sono più recenti.</p>
       ${OD.account && odL && odL.length > 0 && html`<div class="fld"><span>Backup su OneDrive</span></div>
         <div class="list mb-2">${odL.map(f => html`<button key=${f.name} class="prow" style="width:100%;border:0;text-align:left" disabled=${busy} onClick=${() => daOneDrive(f)}>
           <span class="sq plain"><${Icon} n="archive" s=${18} /></span><span class="t"><b>${quandoIt(f.lastModifiedDateTime)}</b><small>${(f.size / 1048576).toFixed(1)} MB</small></span><${Icon} n="right" s=${18} /></button>`)}</div>`}

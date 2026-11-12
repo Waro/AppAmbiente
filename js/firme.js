@@ -86,7 +86,7 @@ function FogliFirme({ r, up, settings }) {
   const del = id => { if (!confirm('Eliminare il foglio firme e le firme raccolte?')) return; setOpen(null); up(p => ({ ...p, fogli: (p.fogli || []).filter(x => x.id !== id) })); };
   const cur = fogli.find(x => x.id === open);
   useEffect(() => { if (cur && cur.auto && !cur.chiuso) setF(cur.id, x => ({ ...foglioAuto(r, x, settings), auto: false, tpl: undefined })); }, [open]);
-  return html`<div class="sec-h" id=${'firme-' + r.id}><h3>Firme</h3><span class="hint">Presenze, informative, consegne</span></div>
+  return html`<div class="sec-h" id=${'firme-' + r.id}><h3>Firme</h3></div>
     ${fogli.length > 0 && html`<div class="list mb-2">${fogli.map(f => { const n = foglioFirme(f); return html`<button class=${'rcard fg-card' + (f.chiuso ? ' st-bar st-ok' : '')} key=${f.id} onClick=${() => setOpen(f.id)}>
       <div class="r1"><span class="ttl" style="margin:0">${f.titolo || 'Foglio firme'}</span>
         <span class=${'badge ' + (f.chiuso ? 'b-ok' : n ? 'b-f2' : 'b-grey')}>${f.chiuso ? 'Chiuso' : n ? 'In corso' : 'Da firmare'}</span><span class="dt">${fmtD(f.data)}</span></div>
@@ -103,7 +103,7 @@ function FoglioModelli({ r, settings, onPick, onClose }) {
     <div class="sheet-grab"></div>
     <div class="sheet-nav"><button class="btn link" onClick=${onClose}>Annulla</button><b>Nuovo foglio firme</b><span></span></div>
     <div class="sheet-body">
-      <div class="sec-h mt-2"><h3>Scegli il modello</h3><span class="hint">i testi restano modificabili</span></div>
+      <div class="sec-h mt-2"><h3>Scegli il modello</h3></div>
       ${mods.map(m => html`<button class="opt" key=${m.id} onClick=${() => onPick(m)}>
         <span class="oi" style="background:var(--blue-soft);color:var(--blue)"><${Icon} n="sign" s=${21} /></span>
         <span class="ot"><b>${m.titolo}</b><small>${m.sottotitolo || (m.testo ? fillTpl(m.testo, firmeCtx(r)).slice(0, 90) + (m.testo.length > 90 ? '…' : '') : 'Solo nomi e firme')}</small></span></button>`)}
@@ -163,14 +163,13 @@ function FoglioSheet({ r, f, settings, set, onDelete, onClose }) {
         <${Inp} label="Relatore" value=${f.relatore} disabled=${ro} set=${v => set({ relatore: v })} />
         <${Inp} label="Responsabile di commessa" value=${f.responsabile} disabled=${ro} set=${v => set({ responsabile: v })} placeholder="Facoltativo" />
       </div></div>
-      <div class="sec-h"><h3>Oggetto</h3></div>
-      <div class="card tight"><textarea class="inp" rows="5" disabled=${ro} value=${f.testo} onInput=${e => set({ testo: e.target.value })} aria-label="Oggetto" placeholder="Testo letto o spiegato ai presenti (facoltativo)"></textarea></div>
+      <${Appunti} rec=${f} up=${set} k="testo" foto=${null} rows=${5} label="Oggetto" placeholder="Testo letto o spiegato ai presenti (facoltativo)" disabled=${ro} />
 
-      <div class="sec-h"><h3>Documenti consegnati</h3><span class="hint">vanno nel PDF quelli spuntati</span></div>
+      <div class="sec-h"><h3>Documenti consegnati</h3></div>
       <div class="card tight">
         ${f.documenti.map((d, i) => html`<div class="fg-doc" key=${i}>
           <input type="checkbox" checked=${d.ok} disabled=${ro} onChange=${e => setDoc(i, { ok: e.target.checked })} aria-label="Consegnato" />
-          <input class="inp" value=${d.t} disabled=${ro} onInput=${e => setDoc(i, { t: e.target.value })} aria-label="Documento" />
+          <label class="fld grow"><span>Documento</span><input placeholder=" " value=${d.t} disabled=${ro} onInput=${e => setDoc(i, { t: e.target.value })} /></label>
           ${!ro && html`<button class="x" aria-label="Togli documento" onClick=${() => set(x => ({ ...x, documenti: x.documenti.filter((_, j) => j !== i) }))}>×</button>`}</div>`)}
         ${!ro && html`<button class="btn link sm" onClick=${() => set(x => ({ ...x, documenti: [...x.documenti, { t: '', ok: true }] }))}>+ Aggiungi documento</button>`}
         ${!f.documenti.length && ro && html`<div class="hint-p" style="margin:0">Nessun documento</div>`}
@@ -185,7 +184,7 @@ function FoglioSheet({ r, f, settings, set, onDelete, onClose }) {
         </div>`}
 
       <div class="sec-h"><h3>Persone · ${f.partecipanti.length}</h3><span class="hint">${n} ${n === 1 ? 'firma' : 'firme'}</span></div>
-      ${!ro && html`<button class="btn pri block" style="margin-bottom:10px" onClick=${() => setPassa(true)}><${Icon} n="sign" s=${19} /> Passa il telefono</button>`}
+      ${!ro && html`<button class="btn pri block" style="margin-bottom:var(--sp-3)" onClick=${() => setPassa(true)}><${Icon} n="sign" s=${19} /> Passa il telefono</button>`}
       <div class="list">${f.partecipanti.map((p, i) => html`<div class="card tight fg-p" key=${p.id}>
         <div class="fg-ph"><span class="fg-n">${i + 1}</span><b>${p.nome || 'Senza nome'}</b>${!ro && html`<button class="x" aria-label="Togli persona" onClick=${() => delP(p)}>×</button>`}</div>
         ${!ro ? html`<div class="grid2">
@@ -193,21 +192,20 @@ function FoglioSheet({ r, f, settings, set, onDelete, onClose }) {
           <${Inp} label="Società / ditta" list=${dl} value=${p.societa} set=${v => setP(p.id, { societa: v })} />
           <${Inp} label="Ruolo" value=${p.ruolo} set=${v => setP(p.id, { ruolo: v })} /></div>`
         : html`<div class="sum">${[p.societa, p.ruolo].filter(Boolean).join(' · ')}</div>`}
-        <button class=${'sigbox' + (p.firma ? ' has' : '')} style="margin-top:8px" disabled=${ro} onClick=${() => setSig({ who: p.id, title: 'Firma · ' + (p.nome || 'partecipante') })}>
+        <button class=${'sigbox' + (p.firma ? ' has' : '')} style="margin-top:var(--sp-2)" disabled=${ro} onClick=${() => setSig({ who: p.id, title: 'Firma · ' + (p.nome || 'partecipante') })}>
           ${p.firma ? html`<img src=${p.firma} alt=${'Firma di ' + p.nome} />` : html`<span><${Icon} n="sign" s=${18} /> Tocca per firmare</span>`}</button>
       </div>`)}</div>
       ${!ro && html`<button class="btn dashed" onClick=${addP}>+ Aggiungi persona</button>`}
       <datalist id=${dl}>${societa.map(c => html`<option value=${c} />`)}</datalist>
 
-      <div class="sec-h"><h3>Note</h3></div>
-      <div class="card tight"><textarea class="inp" rows="3" disabled=${ro} value=${f.note} onInput=${e => set({ note: e.target.value })} aria-label="Note" placeholder="Es. monitoraggi dell'aria, osservazioni (facoltativo)"></textarea></div>
+      <${Appunti} rec=${f} up=${set} k="note" foto=${null} rows=${3} label="Note" placeholder="Es. monitoraggi dell'aria, osservazioni (facoltativo)" disabled=${ro} />
 
       <div class="sec-h"><h3>Firma del relatore</h3><span class="hint">${f.relatore || ''}</span></div>
       <button class=${'sigbox' + (f.firmaRelatore ? ' has' : '')} disabled=${ro} onClick=${() => setSig({ who: 'rel', title: 'Firma relatore · ' + (f.relatore || '') })}>
         ${f.firmaRelatore ? html`<img src=${f.firmaRelatore} alt="Firma del relatore" />` : html`<span><${Icon} n="sign" s=${18} /> Tocca per firmare</span>`}</button>
       ${!ro && !f.firmaRelatore && settings.firmaTecnico && html`<button class="btn sm mt-2" onClick=${() => set({ firmaRelatore: settings.firmaTecnico })}>Usa la firma salvata</button>`}
 
-      <div class="stack" style="margin-top:20px">
+      <div class="stack" style="margin-top:var(--sp-5)">
         ${ro ? html`<button class="btn pri block" onClick=${scarica}><${Icon} n="file" s=${18} /> Scarica il PDF</button>
             <button class="btn block" onClick=${riapri}>Riapri (cancella le firme)</button>`
           : html`<button class="btn pri block" onClick=${chiudi}><${Icon} n="lock" s=${18} /> Chiudi il foglio</button>
@@ -253,7 +251,7 @@ function PassaTelefono({ f, r, societa, onAdd, onClose }) {
           <${Inp} label="Ruolo" value=${p.ruolo} set=${v => setP({ ...p, ruolo: v })} />
         </div>
         <datalist id="dl-passa">${societa.map(c => html`<option value=${c} />`)}</datalist>
-        <button class=${'sigbox' + (p.firma ? ' has' : '')} style="margin-top:12px;min-height:90px" onClick=${() => setSig(true)}>
+        <button class=${'sigbox' + (p.firma ? ' has' : '')} style="margin-top:var(--sp-3);min-height:90px" onClick=${() => setSig(true)}>
           ${p.firma ? html`<img src=${p.firma} alt="Firma" />` : html`<span><${Icon} n="sign" s=${20} /> Tocca per firmare</span>`}</button>
       </div>
       <button class="btn pri block mt-4" disabled=${!ok} onClick=${salva}>Conferma e passa al prossimo</button>
@@ -304,7 +302,7 @@ function FirmeForm({ rec: initial, records, settings, onSave, onDelete, embedded
       <${OraDurata} ora=${r.ora} durata=${r.durata} stato=${r.stato} tipo=${r.type} set=${p => up(p)} />
     </div><datalist id="dl-cli-fir">${clienti.map(c => html`<option value=${c} />`)}</datalist></div>
     <${FogliFirme} r=${r} up=${up} settings=${settings} />
-    <div class="sec-h"><h3>Appunti</h3><span class="hint">Testo libero</span></div>
+    <div class="sec-h"><h3>Appunti</h3></div>
     <${Appunti} rec=${r} up=${up} foto=${null} rows=${3} />
     <${BarraAtt} r=${r} settings=${settings} center=${html`<${OdBtn} r=${r} settings=${settings} />`} gruppi=${[opzArchivio({ r, settings, onDelete, elimina: 'Elimina' })]} />
   </div>`;
@@ -319,10 +317,10 @@ function FirmeSettings({ s, set }) {
   return html`<div class="card">
     <label class="fld"><span>Intestazione del PDF (chi conduce)</span>
       <textarea rows="3" value=${s.firmeEnte || ''} onInput=${e => set({ firmeEnte: e.target.value })} placeholder="Ragione sociale nella prima riga, indirizzo nella seconda"></textarea></label>
-    <div class="sec-h" style="margin:16px 0 6px"><h3>Modelli</h3><span class="hint">${s.firmeModelli && s.firmeModelli.length ? 'personalizzati' : 'di partenza'}</span></div>
+    <div class="sec-h" style="margin:var(--sp-4) 0 var(--sp-2)"><h3>Modelli</h3><span class="hint">${s.firmeModelli && s.firmeModelli.length ? 'personalizzati' : 'di partenza'}</span></div>
     <div class="list">${mods.map((m, i) => html`<div class="prow" key=${m.id}><button class="t" style="background:none;border:0;text-align:left;padding:0" onClick=${() => setEd(i)}><b>${m.titolo}</b><small>${(m.testo || 'Solo nomi e firme').length > 70 ? m.testo.slice(0, 70) + '…' : (m.testo || 'Solo nomi e firme')}</small></button>
       <button class="x" aria-label="Elimina modello" onClick=${() => del(i)}>×</button></div>`)}</div>
-    <div class="row" style="margin-top:10px;gap:8px">
+    <div class="row" style="margin-top:var(--sp-3);gap:var(--sp-2)">
       <button class="btn sm" onClick=${() => setEd(-1)}>+ Nuovo modello</button>
       ${s.firmeModelli && s.firmeModelli.length > 0 && html`<button class="btn sm" onClick=${() => confirm('Tornare ai modelli di partenza?') && set({ firmeModelli: [] })}>Modelli di partenza</button>`}
     </div>

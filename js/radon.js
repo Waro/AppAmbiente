@@ -241,7 +241,7 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
   return html`<div class="content form">
     <${DetailHead} conclusa=${r.conclusa} eye=${'Campagna radon · ' + STATI[stato][0]} title=${r.commessa || 'Nuova campagna'} sub=${[[r.cliente, r.insegna].filter(Boolean).join(' · '), placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
     <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'punti', l: 'Punti', n: r.punti.length }, { k: 'firme', l: 'Firme', n: m.filter(x => x.confermato).length }, { k: 'file', l: 'File' }]} />
-    ${T === 'anag' && html`    <div class="card-navy"><div class="row" style="gap:18px;align-items:center">
+    ${T === 'anag' && html`    <div class="card-navy"><div class="row" style="gap:var(--sp-5);align-items:center">
       <div class="ring-wrap" style="width:112px;height:112px">
         <${Ring} p=${gTot ? gNow / gTot : stato === 'esiti' || stato === 'terminata' ? 1 : 0} size=${112} w=${10} color="var(--blue-sky)" track="rgba(255,255,255,.14)" />
         <div class="ring-c">${gTot ? html`<b>${gNow}</b><span>di ${gTot} gg</span>` : html`<b style="font-size:var(--fs-lg)">${stato === 'da_iniziare' ? 'Da posare' : stato === 'esiti' ? 'Esiti' : 'Fine'}</b>`}</div>
@@ -250,7 +250,7 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
         <div><span class="nv-eye">${scad ? 'Ritiro previsto' : stato === 'da_iniziare' ? 'Posa' : 'Stato'}</span><b class=${scad && daysBetween(today(), scad) < 0 ? 'crit' : ''}>${scad ? fmtD(scad) : stato === 'da_iniziare' ? (m[0].data ? fmtD(m[0].data) : 'da programmare') : STATI[stato][0]}</b></div>
         <div><span class="nv-eye">Dosimetri</span><b>${posati}${r.punti.length ? ' / ' + r.punti.length : ''} ${stato === 'da_iniziare' ? 'pronti' : 'posati'}</b></div>
       </div></div></div>
-    ${scad && html`<div class="card tight alert-soft"><div class="row" style="gap:12px">
+    ${scad && html`<div class="card tight alert-soft"><div class="row" style="gap:var(--sp-3)">
       <span class="sq" style="width:36px;height:36px"><${Icon} n="bell" s=${18} /></span>
       <div class="tb-grow"><div style="font-size:var(--fs-lg);font-weight:600;white-space:normal">Avviso al conduttore il ${fmtD(avviso)}</div>
         <div style="font-size:var(--fs-md);color:var(--muted);white-space:normal">Una settimana prima del ritiro, nelle notifiche</div></div>
@@ -279,17 +279,17 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
         <div class="prow"><input class="inp" list="dl-piani" placeholder="Aggiungi un piano (es. Primo piano)" value=${nuovoPiano} onInput=${e => setNuovoPiano(e.target.value)} />
           <button class="btn sm" disabled=${!nuovoPiano.trim()} onClick=${() => { incP(nuovoPiano.trim()); setNuovoPiano(''); }}>Aggiungi</button></div>
       </div>
-      ${lastCode && html`<div class="lock" style="margin:8px 16px 0">Ultimo codice letto <span class="mono" style="color:var(--text)">${lastCode}</span></div>`}`}
+      ${lastCode && html`<div class="lock" style="margin:var(--sp-2) var(--sp-4) 0">Ultimo codice letto <span class="mono" style="color:var(--text)">${lastCode}</span></div>`}`}
 
-    <div class="sec-h"><h3>Punti di misura · ${r.punti.length}</h3>${r.punti.length > 20 && html`<span class="hint">Oltre R20 il PDF aggiunge pagine</span>`}</div>
+    <div class="sec-h"><h3>Punti di misura · ${r.punti.length}</h3></div>
     ${r.punti.map((p, i) => html`<${PuntoCard} key=${p.id} p=${p} n=${i + 1} open=${!!openP[p.id]} toggle=${() => setOpenP({ ...openP, [p.id]: !openP[p.id] })}
       lockPos=${lockPos} lockF2=${lockF2} onUpd=${updP} onDel=${delP} onScan=${scanOne} />`)}
     ${!lockPos && html`<button class="btn dashed" onClick=${addP}>+ Aggiungi punto R${r.punti.length + 1}</button>`}
     <datalist id="dl-piani">${['Piano terra', 'Piano interrato', 'Piano seminterrato', 'Primo piano'].map(x => html`<option value=${x} />`)}</datalist>
         ${lockPos && html`
-      <div class="sec-h"><h3>Esiti di laboratorio</h3><span class="hint">Bq/m³ · media pesata sui giorni</span></div>
+      <div class="sec-h"><h3>Esiti di laboratorio · Bq/m³</h3></div>
       <div class="card tight">
-        ${best && html`<div class="bigstat" style="margin-bottom:6px"><b style=${best.v > settings.livelloRif ? 'color:var(--danger)' : ''}>${fmtN(best.v)}</b><span class="lock">Bq/m³ media più alta (R${best.n}) · ${over ? over + ' punti oltre ' + settings.livelloRif : 'nessun punto oltre ' + settings.livelloRif}</span></div>`}
+        ${best && html`<div class="bigstat" style="margin-bottom:var(--sp-2)"><b style=${best.v > settings.livelloRif ? 'color:var(--danger)' : ''}>${fmtN(best.v)}</b><span class="lock">Bq/m³ media più alta (R${best.n}) · ${over ? over + ' punti oltre ' + settings.livelloRif : 'nessun punto oltre ' + settings.livelloRif}</span></div>`}
         <div class="res-row h"><span></span><span>Fase 1</span><span>Fase 2</span><span style="text-align:right">Media</span></div>
         ${r.punti.map((p, i) => { const v = mediaPunto(r, p); return html`<div class="res-row" key=${p.id}><b>R${i + 1}</b>
           <input class="inp" inputmode="decimal" value=${p.valoreF1} onInput=${e => updP(p.id, { valoreF1: e.target.value })} aria-label=${'R' + (i + 1) + ' Fase 1'} />
@@ -301,7 +301,7 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
           onRemove=${async d => { await removeBlob(d.blobId); up(p => ({ ...p, rapporti: p.rapporti.filter(x => x.id !== d.id) })); }} />
       </div>`}
 
-    <div class="sec-h" id=${'plan-' + r.id}><h3>Planimetrie</h3><span class="hint">Disegno ed etichette dei punti</span></div>
+    <div class="sec-h" id=${'plan-' + r.id}><h3>Planimetrie</h3></div>
     <div class="card"><${PlanList} items=${r.planimetrie || []} labels=${r.punti.map((p, i) => ({ ref: p.id, text: 'R' + (i + 1), color: PRINT.radon, piano: p.piano || '' }))}
       onAdd=${p => up(q => ({ ...q, planimetrie: [...(q.planimetrie || []), p] }))}
       onUpdate=${(id, patch) => up(q => ({ ...q, planimetrie: (q.planimetrie || []).map(x => x.id === id ? { ...x, ...patch } : x) }))}
@@ -325,7 +325,7 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
           <div class="grid2">
             <${Inp} label="Data" type="date" value=${mm.data} disabled=${ro} set=${v => setM(i, { data: v })} />
             <${OraDurata} ora=${mm.ora} durata=${mm.durata} stato=${mm.stato} tipo="radon" disabled=${ro} set=${p => setM(i, p)} />
-            <div class="fld"><span>${prevista ? 'Previsto' : ''}</span>${prevista && html`<div style="padding:10px 0;font-size:var(--fs-md)">${fmtD(prevista)}</div>`}</div>
+            <div class="fld"><span>${prevista ? 'Previsto' : ''}</span>${prevista && html`<div style="padding:var(--sp-3) 0;font-size:var(--fs-md)">${fmtD(prevista)}</div>`}</div>
           </div>
           <div class="who">TECNICO</div>
           <div class="grid2">
@@ -346,9 +346,8 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
             <button class=${'sigbox' + (mm.firmaReferente ? ' has' : '')} disabled=${ro} onClick=${() => setSig({ i, who: 'firmaReferente', title: 'Firma referente · ' + [mm.referenteNome, mm.referenteCognome].join(' ') })}>
               ${mm.firmaReferente ? html`<img src=${mm.firmaReferente} alt="Firma referente" />` : html`<span><${Icon} n="sign" s=${18} /> Fai firmare il referente</span>`}</button>
           </div>
-          <div class="who">APPUNTI</div>
-          <textarea class="inp" rows="2" placeholder="Note di questo sopralluogo" value=${mm.appunti || ''} onInput=${e => setM(i, { appunti: e.target.value })} aria-label=${'Appunti ' + MOMENTI[i]}></textarea>
-          <div class="row" style="margin-top:12px;justify-content:flex-end">
+          <div class="mt-3"><${Appunti} rec=${mm} up=${p => setM(i, p)} foto=${null} rows=${2} placeholder="Note di questo sopralluogo" nudo /></div>
+          <div class="row" style="margin-top:var(--sp-3);justify-content:flex-end">
             ${mm.confermato ? (i === 2 || !m[i + 1].confermato) && html`<button class="btn sm" onClick=${() => sblocca(i)}><${Icon} n="lock" s=${14} /> Sblocca</button>`
               : html`<button class="btn outline" onClick=${() => conferma(i)}><${Icon} n="lock" s=${17} /> Conferma e blocca</button>`}
           </div>`}
