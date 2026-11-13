@@ -35,6 +35,7 @@ Stile (`nembo_style`) e aspetto (`nembo_mode`: automatico, chiaro, scuro) si sce
 | Tipi di attività | `--t-dda`, `--t-map`, `--t-ra`, `--t-radon`, `--t-aria`, `--t-hse`, `--t-vs`, `--t-firme`, `--t-app` | uguali in menu, «Nuova attività», programmazione e Oggi (`TIPO_COL`) |
 | Tag | `--tag-1` … `--tag-8` | otto toni smorzati, lontani da stati e tipi |
 | Superfici media | `--media`, `--plan-canvas`, `--paper` | fotocamera, planimetria, firma: uguali in tutti i temi |
+| Velature sulle superfici media (v58) | `--velo-1` (tasti), `--velo-2` (sfumatura in alto della fotocamera), `--velo-3` (sfumature forti, scritte su foto), `--velo-chiaro` (tasti del visore), `--velo-pannello` (avvisi sopra la fotocamera) | uguali in tutti i temi; mai `rgba` scritti a mano su fotocamera, visore e scanner |
 | Stampa | `PRINT` in `core.js` | colori fissi di PDF, Word, Excel, planimetrie ed email |
 
 Penne della planimetria (`PLAN_COLORS` in `plan.js`), fisse perché finiscono nel PDF: `#d62828`, `#ea580c`, `#facc15`, `#15803d`, `#0891b2`, `#1d4ed8`, `#7c3aed`, `#111111`.
@@ -82,7 +83,8 @@ Penne della planimetria (`PLAN_COLORS` in `plan.js`), fisse perché finiscono ne
 | Selezione multipla | `.selhead`, `.selbar` | una sola azione in basso, nella barra flottante; dentro una scheda (note HSE e Verbale, v53) `.selhead.in` resta ferma in alto e l'azione «Tag (N)» è nella barra dell'attività |
 | Tag a più elementi (v53) | `TagMultiSheet` | tag acceso = tutti, con «k/N» = alcuni, contorno = nessuno; `role="checkbox"` con `aria-checked` `mixed` |
 | Microfono e fotocamera nel campo | `.mic-in`, `.cam-in` | tondi 36 px in `--fill-soft` in alto a destra del campo; la fotocamera sotto il microfono (in cima se la dettatura non c'è), contatore `.ck-badge`; miniature delle foto collegate sotto il campo (`.hs-fotos`) |
-| Fotocamera di Nembo: Foto · Video (v57) | `.cam-modo`, `.cam-shut.vid` | selettore a pillola sopra il pulsante di scatto, solo negli appunti; in video il pulsante ha il centro `--danger` che diventa un quadrato durante la registrazione; in alto il tempo «0:45 / 2:00» con il punto `--danger` |
+| Fotocamera di Nembo: Foto · Video (v57, v58) | `.seg.cam-modo`, `.cam-shut.vid` | il controllo a segmenti di Nembo sopra il pulsante di scatto, solo negli appunti; in video il pulsante ha il centro `--danger` che diventa un quadrato durante la registrazione; in alto il tempo «0:45 / 2:00» con il punto `--danger`. Eccezione alla regola dei colori: il rosso della registrazione è la convenzione di tutte le fotocamere |
+| Impostazioni → Foto (v58) | `.sec-h` + `.card` | titoli di gruppo come negli elenchi delle impostazioni («Fotocamera predefinita», «Foto e video»); controllo a segmenti e interruttori `.fg-sw` |
 | Riga video (v57) | `VideoList`, `.row-apri` | come una riga allegato: icona video, nome · durata, stato (Su OneDrive / Sul telefono) in `.lock`, × per togliere; si apre a tutto schermo su `--media` (`.vid-ov`) |
 | Suggerimento, primi passi | `.tip`, `PrimiPassi` | uno solo per schermata |
 

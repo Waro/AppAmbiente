@@ -59,6 +59,8 @@
   /* Superfici "media" (fotocamera, visore, planimetrie, firma): uguali in tutti i temi */
   --media: #050608; --plan-canvas: #3a3f47; --paper: #ffffff; --paper-line: #c5ced8; --paper-hint: #a3adb8;
   --cam-on: #ffd54a; --scan-ok: #3fe08a;
+  /* velature sopra foto e video (v58): leggera per i tasti, media per le sfumature in alto, forte in basso e sotto le scritte; chiara per i tasti del visore */
+  --velo-1: rgba(0,0,0,.35); --velo-2: rgba(0,0,0,.45); --velo-3: rgba(0,0,0,.55); --velo-chiaro: rgba(255,255,255,.18); --velo-pannello: rgba(20,20,20,.85);
   --nv-grad: linear-gradient(160deg, #04173a, #0a3a7a); --nv-tx: #d6e6ff;
 
   font-family: var(--font); color: var(--text); -webkit-tap-highlight-color: transparent;
@@ -476,7 +478,7 @@ input[type=checkbox] { accent-color: var(--blue); }
 .scan-video video { width: 100%; height: 100%; object-fit: cover; }
 .scan-frame { position: absolute; left: 8%; right: 8%; top: 38%; height: 24%; border: 2px solid rgba(255,255,255,.85); border-radius: var(--r-card); box-shadow: 0 0 0 9999px rgba(0,0,0,.35); }
 .scan-frame.hit { border-color: var(--scan-ok); }
-.scan-top { position: absolute; top: 0; left: 0; right: 0; padding: 16px; color: var(--on-dark); background: linear-gradient(rgba(0,0,0,.6), transparent); }
+.scan-top { position: absolute; top: 0; left: 0; right: 0; padding: 16px; color: var(--on-dark); background: linear-gradient(var(--velo-3), transparent); }
 .scan-top b { font-size: var(--fs-xl); display: block; }
 .scan-top small { font-size: var(--fs-md); opacity: .9; }
 .scan-last { position: absolute; left: 16px; right: 16px; bottom: 16px; background: rgba(0,0,0,.6); color: var(--on-dark); border-radius: var(--r-md); padding: 10px 12px; font-size: var(--fs-md); font-family: var(--mono); }
@@ -494,11 +496,11 @@ input[type=checkbox] { accent-color: var(--blue); }
 .sig-hint { position: absolute; left: 8%; bottom: calc(26% + 6px); color: var(--paper-hint); font-size: var(--fs-md); pointer-events: none; }
 .viewer { position: fixed; inset: 0; z-index: 70; background: var(--media); display: flex; align-items: center; justify-content: center; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
 .viewer img { max-width: 100%; max-height: 100%; object-fit: contain; will-change: transform; -webkit-user-drag: none; }
-.vw-top { position: absolute; top: 0; left: 0; right: 0; z-index: 2; display: flex; align-items: center; gap: 8px; padding: max(12px, env(safe-area-inset-top)) 14px 22px; background: linear-gradient(rgba(0,0,0,.6), transparent); }
-.vw-pill { background: rgba(255,255,255,.18); color: var(--on-dark); font-size: var(--fs-md); font-weight: 600; border-radius: var(--r-pill); padding: 5px 11px; }
+.vw-top { position: absolute; top: 0; left: 0; right: 0; z-index: 2; display: flex; align-items: center; gap: 8px; padding: max(12px, env(safe-area-inset-top)) 14px 22px; background: linear-gradient(var(--velo-3), transparent); }
+.vw-pill { background: var(--velo-chiaro); color: var(--on-dark); font-size: var(--fs-md); font-weight: 600; border-radius: var(--r-pill); padding: 5px 11px; }
 .vw-lbl { background: rgba(60,160,235,.45); }
-.vw-x { margin-left: auto; width: 44px; height: 44px; border-radius: var(--r-sq); border: 0; background: rgba(255,255,255,.18); color: var(--on-dark); font-size: var(--fs-4xl); line-height: 1; }
-.vw-nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 2; width: 44px; height: 44px; border-radius: var(--r-sq); border: 0; background: rgba(255,255,255,.2); color: var(--on-dark); display: grid; place-items: center; }
+.vw-x { margin-left: auto; width: 44px; height: 44px; border-radius: var(--r-sq); border: 0; background: var(--velo-chiaro); color: var(--on-dark); font-size: var(--fs-4xl); line-height: 1; }
+.vw-nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 2; width: 44px; height: 44px; border-radius: var(--r-sq); border: 0; background: var(--velo-chiaro); color: var(--on-dark); display: grid; place-items: center; }
 .vw-nav.l { left: 10px; } .vw-nav.r { right: 10px; }
 .vw-nav:disabled { opacity: .25; }
 
@@ -806,14 +808,14 @@ input[type=checkbox] { accent-color: var(--blue); }
 .cam video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .cam-flash { position: absolute; inset: 0; background: var(--paper); opacity: .7; pointer-events: none; }
 .cam-top, .cam-bot { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; }
-.cam-top { padding: calc(env(safe-area-inset-top, 0px) + 10px) 14px 10px; background: linear-gradient(rgba(0,0,0,.45), transparent); }
-.cam-bot { margin-top: auto; padding: 18px 26px calc(env(safe-area-inset-bottom, 0px) + 26px); background: linear-gradient(transparent, rgba(0,0,0,.55)); }
-.cam-b { width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(0,0,0,.35); color: var(--on-dark); display: grid; place-items: center; }
+.cam-top { padding: calc(env(safe-area-inset-top, 0px) + 10px) 14px 10px; background: linear-gradient(var(--velo-2), transparent); }
+.cam-bot { margin-top: auto; padding: 18px 26px calc(env(safe-area-inset-bottom, 0px) + 26px); background: linear-gradient(transparent, var(--velo-3)); }
+.cam-b { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--velo-1); color: var(--on-dark); display: grid; place-items: center; }
 .cam-b.on { background: var(--cam-on); color: var(--media); }
 .cam-n { font-size: var(--fs-base); font-weight: 600; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
-.cam-gal { width: 64px; height: 64px; border-radius: var(--r-btn); border: 2px solid rgba(255,255,255,.85); background: rgba(0,0,0,.35); color: var(--on-dark); display: grid; place-items: center; overflow: hidden; position: relative; padding: 0; }
+.cam-gal { width: 64px; height: 64px; border-radius: var(--r-btn); border: 2px solid var(--paper); background: var(--velo-1); color: var(--on-dark); display: grid; place-items: center; overflow: hidden; position: relative; padding: 0; }
 .cam-gal img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.cam-gal small { position: absolute; bottom: -1px; left: 0; right: 0; font-size: var(--fs-2xs); font-weight: 600; background: rgba(0,0,0,.5); padding: 1px 0; }
+.cam-gal small { position: absolute; bottom: -1px; left: 0; right: 0; font-size: var(--fs-2xs); font-weight: 600; background: var(--velo-3); padding: 1px 0; }
 .cam-gal svg { margin-top: -10px; }
 .cam-shut { width: 78px; height: 78px; border-radius: 50%; border: 4px solid var(--paper); background: transparent; padding: 4px; }
 .cam-shut i { display: block; width: 100%; height: 100%; border-radius: 50%; background: var(--paper); transition: transform .1s; }
@@ -822,14 +824,12 @@ input[type=checkbox] { accent-color: var(--blue); }
 .cam-done { min-width: 64px; height: 44px; border-radius: var(--r-pill); border: 0; background: var(--blue); color: var(--on-accent); font-weight: 700; font-size: var(--fs-base); padding: 0 16px; }
 .cam-sp { width: 64px; }
 /* v57: modalità Foto/Video della fotocamera di Nembo (solo negli appunti) */
-.cam-modo { position: relative; z-index: 2; align-self: center; margin-top: auto; display: flex; gap: var(--sp-1); padding: var(--sp-1); border-radius: var(--r-pill); background: rgba(0,0,0,.45); }
-.cam-modo button { min-width: 72px; height: 36px; border: 0; border-radius: var(--r-pill); background: none; color: var(--on-dark); font-weight: 600; font-size: var(--fs-base); }
-.cam-modo button.on { background: var(--paper); color: var(--media); }
+.cam-modo { position: relative; z-index: 2; margin: auto var(--sp-6) var(--sp-2); }
 .cam-modo + .cam-bot { margin-top: 0; }
 .cam-shut.vid i { background: var(--danger); }
 .cam-shut.vid.rec i { transform: scale(.5); border-radius: var(--r-xs); }
 .cam-n.rec::before { content: ''; display: inline-block; width: 10px; height: 10px; margin-right: var(--sp-2); border-radius: 50%; background: var(--danger); vertical-align: 1px; }
-.cam-err { position: relative; z-index: 2; margin: auto 24px; background: rgba(20,20,20,.85); border-radius: var(--r-card); padding: 18px; font-size: var(--fs-base); line-height: 1.4; display: grid; text-align: center; }
+.cam-err { position: relative; z-index: 2; margin: auto 24px; background: var(--velo-pannello); border-radius: var(--r-card); padding: 18px; font-size: var(--fs-base); line-height: 1.4; display: grid; text-align: center; }
 .ntf-act { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .ntf-act .btn.pri { min-height: 0; font-size: var(--fs-md); }
 textarea.grow { resize: none; overflow: hidden; min-height: 44px; }

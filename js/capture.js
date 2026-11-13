@@ -270,12 +270,13 @@ function CamSerieCard() {
   const [cam, setCam] = useState(camScelta); const [on, set] = useState(() => _ls('nembo_cam_serie') === '1');
   const [auto, setAuto] = useState(odAutoOn); const [copia, setCopia] = useState(camCopia);
   const scegli = v => { setCamScelta(v); setCam(v); };
-  return html`<div class="card"><div class="fg-sw"><span>Fotocamera predefinita</span></div>
-    <div class="seg mt-2">${[['tel', 'Telefono'], ['nembo', 'Nembo']].map(([k, l]) => html`<button class=${cam === k ? 'on' : ''} aria-pressed=${cam === k} onClick=${() => scegli(k)}>${l}</button>`)}</div>
+  return html`<div class="sec-h mt-1"><h3>Fotocamera predefinita</h3></div><div class="card">
+    <div class="seg">${[['tel', 'Telefono'], ['nembo', 'Nembo']].map(([k, l]) => html`<button class=${cam === k ? 'on' : ''} aria-pressed=${cam === k} onClick=${() => scegli(k)}>${l}</button>`)}</div>
     <p class="hint-p" style="margin:var(--sp-2) 0 0">${cam === 'tel' ? 'Telefono: foto più nitide, con tutte le lenti. Negli appunti puoi scegliere foto o video.' : 'Nembo: resti nell\'app; negli appunti puoi registrare anche video.'}</p>
     ${cam === 'nembo' && html`<label class="fg-sw mt-3"><span>Scatti in serie</span><${Toggle} on=${on} label="Scatti in serie" set=${v => { setCamSerie(v); set(v); }} /></label>
       <p class="hint-p" style="margin:var(--sp-2) 0 0">Più foto di seguito senza chiudere la fotocamera.</p>`}
-    <label class="fg-sw mt-4"><span>Carica subito su OneDrive</span><${Toggle} on=${auto} label="Carica subito su OneDrive" set=${v => { _ls('nembo_od_auto', v ? '1' : '0'); setAuto(v); if (v) OdAuto.vai(); }} /></label>
+    </div><div class="sec-h"><h3>Foto e video</h3></div><div class="card">
+    <label class="fg-sw"><span>Carica subito su OneDrive</span><${Toggle} on=${auto} label="Carica subito su OneDrive" set=${v => { _ls('nembo_od_auto', v ? '1' : '0'); setAuto(v); if (v) OdAuto.vai(); }} /></label>
     <p class="hint-p" style="margin:var(--sp-2) 0 0">Foto e video partono appena li aggiungi, se OneDrive è collegato e c'è rete; senza rete partono quando torna. I video caricati non occupano più spazio sul telefono.</p>
     <label class="fg-sw mt-4"><span>Copia nel telefono</span><${Toggle} on=${copia} label="Copia nel telefono" set=${v => { _ls('nembo_cam_copia', v ? '1' : '0'); setCopia(v); }} /></label>
     <p class="hint-p" style="margin:var(--sp-2) 0 0">Ogni foto o video che scatti resta anche nel telefono, a qualità piena, nella cartella Download: lo trovi nella galleria.</p></div>`;
@@ -387,7 +388,7 @@ function Camera({ input, onClose }) {
       ${torch !== null ? html`<button class=${'cam-b' + (torch ? ' on' : '')} aria-label="Torcia" onClick=${toggleTorch}><${Icon} n="torch" s=${21} /></button>` : html`<span style="width:var(--tap)"></span>`}
     </div>
     ${err && html`<div class="cam-err">${err}<button class="btn mt-3" onClick=${() => { onClose(); input.click(); }}><${Icon} n="camera" s=${18} /> Fotocamera del telefono</button></div>`}
-    ${conVideo && !rec && html`<div class="cam-modo" role="group" aria-label="Modalità">${[['foto', 'Foto'], ['video', 'Video']].map(([k, l]) => html`<button class=${modo === k ? 'on' : ''} aria-pressed=${modo === k} disabled=${busy} onClick=${() => setModo(k)}>${l}</button>`)}</div>`}
+    ${conVideo && !rec && html`<div class="seg cam-modo" role="group" aria-label="Modalità">${[['foto', 'Foto'], ['video', 'Video']].map(([k, l]) => html`<button class=${modo === k ? 'on' : ''} aria-pressed=${modo === k} disabled=${busy} onClick=${() => setModo(k)}>${l}</button>`)}</div>`}
     <div class="cam-bot">
       ${rec ? html`<span class="cam-sp"></span>` : html`<button class="cam-gal" aria-label="Scegli dalla galleria" onClick=${() => gal.current.click()}>
         ${last ? html`<img src=${last.url} alt="" />` : html`<${Icon} n="image" s=${24} />`}<small>Galleria</small></button>`}
