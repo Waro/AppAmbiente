@@ -4,14 +4,17 @@ Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Nem
 
 ## [Non rilasciato]
 
-## [nembo-v56] — 2026-11-12
+## [nembo-v56b] — 2026-11-13
 
-### Corretto (dopo il rilascio, stessa versione)
+### Corretto
+Correzioni urgenti dopo la v56, senza voce nelle Novità.
 - Primo sopralluogo HSE: nessun committente proposto dalle Impostazioni.
 - Oggi: il tasto + c'è sempre, anche nella vista HSE e senza sopralluoghi in programma.
 - Scheda File uguale in tutte le attività: in HSE e Verbale la barra ha «Invia a OneDrive» come nelle attività Ambiente; il Word si genera dalla scheda File (con il controllo dei capitoli senza osservazioni) o dal Riepilogo.
 - Cambio scheda con animazione: il contenuto entra dal lato verso cui si va (anche con lo scorrimento), spenta con la riduzione del movimento.
 - Etichette e segnaposto uguali per gli stessi campi in tutte le anagrafiche: Commessa (es. 000/26), Cliente, Città, Indirizzo (Via e numero civico), Sito / codice immobile (Facoltativo), Data, Tecnico.
+
+## [nembo-v56] — 2026-11-12
 
 ### Cambiato
 Redesign grafico (stile e impaginazione), Rilievo v56.
