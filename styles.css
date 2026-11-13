@@ -1188,3 +1188,9 @@ img.logo { background: none; object-fit: cover; }
 .riep-sheet .rcard::after { display: none; }
 .riep-sheet .rcard { padding-right: var(--sp-4); }
 .sotto-t { font-size: var(--fs-xl); font-weight: 600; margin: var(--sp-2) 0 0; }
+
+/* cambio scheda (v56): il contenuto entra dal lato verso cui si va */
+.content.sl-l > :not(.dh):not(.schede):not(.abar):not(.sheet-ov):not(.ov), .content.sl-r > :not(.dh):not(.schede):not(.abar):not(.sheet-ov):not(.ov) { animation: slEntra .24s ease-out both; }
+.content.sl-l { --sl-da: 28px; } .content.sl-r { --sl-da: -28px; }
+@keyframes slEntra { from { transform: translateX(var(--sl-da)); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .content.sl-l > *, .content.sl-r > * { animation: none !important; } }

@@ -100,8 +100,9 @@ async function fileOpen(e) {
   await shareFiles([{ blob: b.blob, name: e.name }], e.name);
 }
 
-function FileTab({ r, up, settings }) {
+function FileTab({ r, up, settings, prima }) {
   const docs = recDocs(r, settings);
+  const ora = useRef(r); ora.current = r; // «prima» può cambiare l'attività: si genera con quella aggiornata
   const od = useOdFiles();
   const [busy, setBusy] = useState(null);
   const run = async (d, nuovo) => {
@@ -109,8 +110,10 @@ function FileTab({ r, up, settings }) {
     const L = fileRevs(r, d);
     if (L.length && !nuovo) { fileOpen(L[L.length - 1]); return; }
     if (d.tpl && !(await DB.get(d.tpl))) { toast('Carica prima il modello in Impostazioni → Modelli'); return; }
+    if (prima && d.key === 'hs_docx' && !(await prima())) return;
+    const r2 = ora.current, d2 = recDocs(r2, settings).find(x => x.key === d.key) || d;
     setBusy(d.key);
-    try { const e = await fileGenerate(r, up, settings, d); toast((e.rev ? 'Nuova revisione: ' : 'Generato: ') + e.name); }
+    try { const e = await fileGenerate(r2, up, settings, d2); toast((e.rev ? 'Nuova revisione: ' : 'Generato: ') + e.name); }
     catch (err) { _progress(null); fail('File non creato', err, recordTitle(r)); }
     setBusy(null);
   };

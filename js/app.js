@@ -272,7 +272,7 @@ function App() {
   const create = (type, patch = {}) => {
     const base = type === 'cli' ? newCliente() : type === 'aria' ? newAria(records, settings) : type === 'dda' ? newDda(records, settings) : type === 'mappatura' ? newMappatura(records, settings) : type === 'ra' ? newRa(records, settings) : type === 'hs' ? newHs(records, settings, patch.formato) : type === 'vs' ? newVerbale(records, settings) : type === 'firme' ? newFirmeRec(records, settings) : newRadon(settings);
     let r = { ...base, ...patch, _new: true };
-    if (type === 'hs' && !patch.cliente) r.cliente = base.cliente; // committente proposto nelle Impostazioni
+    if (type === 'hs' && !patch.cliente) r.cliente = patch.formatoLibero ? '' : base.cliente; // primo sopralluogo: nessun committente proposto // committente proposto nelle Impostazioni
     prepFirme(r, settings, patch.firme);
     // dalla Programmazione: per il radon data e ora vanno sul primo momento (posa)
     if (type === 'radon' && (patch.data || patch.ora)) { const { data, ora, ...rest } = patch; r = { ...base, ...rest, _new: true, momenti: base.momenti.map((m, i) => i ? m : { ...m, data: data || m.data, ora: ora || '' }) }; }

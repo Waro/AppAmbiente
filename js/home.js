@@ -200,7 +200,7 @@ function Home({ records: allRecords, settings, open, newAct, syncBtn, avatar, tp
         <span class="nv-eye">Prossimo sopralluogo</span>
         <div class="next-addr">Nessun sopralluogo in programma</div>
         <div class="next-line">Le attività con data da oggi in poi e i ritiri radon compaiono qui.</div>
-        <div class="next-acts"><button class="btn pri" onClick=${newAct}>Nuova attività</button></div>`}
+`}
     </div></div>
 
     <div class="hg-r"><div class="card hcard">
@@ -257,7 +257,7 @@ function Home({ records: allRecords, settings, open, newAct, syncBtn, avatar, tp
     ${bu === 'ambiente' && onbHidden() && (!tplOk || !settings.tecnicoCognome) && html`<button class="notice" style="width:100%;text-align:left;border:0" onClick=${goSettings}>Prima di iniziare: in Impostazioni inserisci i tuoi dati e carica i modelli.</button>`}
     ${installEvt && html`<button class="btn block mt-3" onClick=${onInstall}><${Icon} n="plus" s=${18} /> Installa l'app</button>`}
     ${/* senza sopralluoghi in programma il blocco navy ha già «Nuova attività»: niente + doppione */ ''}
-    ${(bu === 'sicurezza' || chiusa || nx) && html`<button class="fab" aria-label="Nuovo sopralluogo" onClick=${newAct}><${Icon} n="plus" s=${26} w=${2.4} /></button>`}
+    ${html`<button class="fab" aria-label="Nuovo sopralluogo" onClick=${newAct}><${Icon} n="plus" s=${26} w=${2.4} /></button>`}
   </div>`;
 }
 

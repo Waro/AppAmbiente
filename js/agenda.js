@@ -448,8 +448,8 @@ function AgAddSheet({ start, records, settings, onSave, onDelete, onJson, onClos
         <label class="fld"><span>Stato</span><select value=${st} onChange=${e => set({ stato: e.target.value })}>${PROG.map(([k, l]) => html`<option value=${k}>${l}</option>`)}</select></label>
         ${tab === 'app' ? html`<${Inp} cls="full" label="Luogo" value=${f.luogo} set=${v => set({ luogo: v })} placeholder="Facoltativo" />
           <${Area} cls="full" label="Note" rows=${3} value=${f.note} set=${v => set({ note: v })} />`
-          : html`<${Inp} label="Commessa" value=${f.commessa} set=${v => set({ commessa: v })} /><${Inp} label="Cliente" value=${f.cliente} set=${v => set({ cliente: v })} />
-          <${Inp} label="Città" value=${f.citta} set=${v => set({ citta: v })} /><${Inp} label="Indirizzo" value=${f.indirizzo} set=${v => set({ indirizzo: v })} />
+          : html`<${Inp} label="Commessa" placeholder="es. 000/26" value=${f.commessa} set=${v => set({ commessa: v })} /><${Inp} label="Cliente" value=${f.cliente} set=${v => set({ cliente: v })} />
+          <${Inp} label="Città" value=${f.citta} set=${v => set({ citta: v })} /><${Inp} label="Indirizzo" placeholder="Via e numero civico" value=${f.indirizzo} set=${v => set({ indirizzo: v })} />
           ${DRONE_TIPI.includes(tipoT) && html`<${DroneSw} on=${f.drone} set=${v => set({ drone: v })} />`}`}
       </div></div>
       <div class="stack mt-4">

@@ -322,7 +322,7 @@ function HsDaAvviare({ rec: r, records, settings, onSave, onDelete, embedded, on
   const dati = { ...fissi, ...Object.fromEntries(['commessa', 'cliente', 'citta', 'indirizzo', 'sito'].filter(k => r[k]).map(k => [k, r[k]])) };
   // restano la nota del piano (appunti) e i campi bloccati perché arrivati dal piano (imp)
   const avvia = x => onSave({ ...x, appunti: x.appunti || r.appunti || '', imp: { ...(r.imp || {}), ...(x.imp || {}) }, daScegliere: undefined, updatedAt: Date.now() });
-  const primo = formato => avvia({ ...newHsNote(records, settings, formato || lsGet('nembo_hs_formato', 'esteso')), formatoLibero: true, ...dati });
+  const primo = formato => avvia({ ...newHsNote(records, settings, formato || lsGet('nembo_hs_formato', 'esteso')), formatoLibero: true, cliente: '', ...dati });
   return html`<div class="content form">
     <${DetailHead} eye="Sopralluogo HSE" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r) || r.sito].filter(Boolean).join(' · ')} onClose=${embedded ? onClose : null} />
     <${HsScelta} records=${records} settings=${settings} tipo=${r.daScegliere} dati=${dati} fissi=${fissi} onPrimo=${primo} onPeriodico=${avvia} />
@@ -479,7 +479,7 @@ function HsSchedeForm({ rec: initial, records, settings, onSave, onDelete, onSet
     <${BarraAtt} r=${r} settings=${settings}
       left=${html`<${HsCam} up=${up} r=${r} big />`}
       center=${S && T === 'main' ? html`<button class="btn pri" onClick=${() => go(1)}>${cur === secs.length - 1 ? 'Torna all\'indice' : 'Successiva'} <${Icon} n="right" s=${20} /></button>`
-        : html`<${DocBtn} r=${r} up=${up} settings=${settings} k="hs_docx" />`}
+        : html`<${OdBtn} r=${r} settings=${settings} />`}
       gruppi=${[S && T === 'main' && ['Sezioni', [{ ic: 'back', l: 'Sezione precedente', fn: () => go(-1) }, { ic: 'list', l: 'Indice delle sezioni', fn: () => setSec(null) }]],
         ['Documenti', [
           { ic: 'share', l: OD.account ? 'Carica su OneDrive' : 'Invia foto e Word a OneDrive', fn: upload },

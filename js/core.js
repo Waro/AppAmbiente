@@ -875,7 +875,13 @@ function useSchede(type, keys, isNew, map = {}) {
 }
 function Schede({ tabs, value, set }) {
   const ref = useRef();
-  const pick = k => { if (k === value) return; set(k); const c = ref.current && ref.current.closest('.content'); if (c) c.scrollTop = 0; };
+  // cambio scheda: il contenuto nuovo entra dal lato verso cui si va (anche con lo scorrimento)
+  const pick = k => {
+    if (k === value) return;
+    const c = ref.current && ref.current.closest('.content'), i = tabs.findIndex(x => x.k === value), j = tabs.findIndex(x => x.k === k);
+    if (c) { c.classList.remove('sl-l', 'sl-r'); void c.offsetWidth; c.classList.add(j > i ? 'sl-l' : 'sl-r'); clearTimeout(c._sl); c._sl = setTimeout(() => c.classList.remove('sl-l', 'sl-r'), 400); }
+    set(k); if (c) c.scrollTop = 0;
+  };
   // scorrimento laterale sul contenuto: passa alla scheda accanto (non su campi, planimetrie, fogli o elenchi che scorrono di lato)
   const st = useRef(); st.current = { tabs, value, pick };
   useEffect(() => {

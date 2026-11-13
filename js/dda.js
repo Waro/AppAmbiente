@@ -231,11 +231,11 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
     <${DetailHead} conclusa=${r.conclusa} eye=${'DDA · Fase ' + r.fase} title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
     <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'sop', l: 'Sopralluogo', n: r.recs.length }, { k: 'camp', l: 'Campioni', n: allCamp(r).length }, firmeOn && { k: 'firme', l: 'Firme', n: (r.fogli || []).length }, { k: 'file', l: 'File' }].filter(Boolean)} />
     ${T === 'anag' && html`<div class="card"><div class="grid2">
-      <${Inp} cls="full" label="Commessa - progetto" value=${r.commessa} set=${v => up({ commessa: v })} imp=${impOf(r, 'commessa')} placeholder="es. 000/26" />
+      <${Inp} cls="full" label="Commessa" placeholder="es. 000/26" value=${r.commessa} set=${v => up({ commessa: v })} imp=${impOf(r, 'commessa')} />
       <${Inp} label="Cliente" req list="dl-cli" value=${r.cliente} set=${v => up({ cliente: v })} imp=${impOf(r, 'cliente')} />
       <${Inp} label="Città" value=${r.citta} set=${v => up({ citta: v })} imp=${impOf(r, 'citta')} />
-      <${Inp} cls="full" label="Indirizzo" value=${r.indirizzo} set=${v => up({ indirizzo: v })} imp=${impOf(r, 'indirizzo')} placeholder="Via e numero civico" />
-      <${Inp} label="Sito / codice immobile" list="dl-siti" value=${r.sito} set=${v => up({ sito: v })} imp=${impOf(r, 'sito')} placeholder="Facoltativo" />
+      <${Inp} cls="full" label="Indirizzo" placeholder="Via e numero civico" value=${r.indirizzo} set=${v => up({ indirizzo: v })} imp=${impOf(r, 'indirizzo')} />
+      <${Inp} label="Sito / codice immobile" placeholder="Facoltativo" list="dl-siti" value=${r.sito} set=${v => up({ sito: v })} imp=${impOf(r, 'sito')} />
       <${Inp} label="Data" type="date" value=${r.data} set=${v => up({ data: v })} />
       <${OraDurata} ora=${r.ora} durata=${r.durata} stato=${r.stato} tipo=${r.type} drone=${r.drone} set=${p => up(p)} />
       <${Inp} label="Tecnico" value=${r.tecnico} set=${v => up({ tecnico: v })} />

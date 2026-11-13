@@ -257,13 +257,13 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
       <${Toggle} on=${!!r.promemoria} set=${v => up({ promemoria: v })} label="Promemoria per il conduttore" /></div></div>`}
 
     <div class="card"><div class="grid2">
-      <${Inp} label="Commessa" req value=${r.commessa} set=${v => up({ commessa: v })} imp=${impOf(r, 'commessa')} />
+      <${Inp} label="Commessa" placeholder="es. 000/26" req value=${r.commessa} set=${v => up({ commessa: v })} imp=${impOf(r, 'commessa')} />
       <${Inp} label="Codice" value=${r.codice} set=${v => up({ codice: v })} placeholder="es. codice punto vendita" />
       <${Inp} cls="full" label="Cliente" req value=${r.cliente} set=${v => up({ cliente: v })} imp=${impOf(r, 'cliente')} />
       <${Inp} cls="full" label="Insegna" value=${r.insegna} set=${v => up({ insegna: v })} imp=${impOf(r, 'insegna')} />
       <${Inp} label="Città" req value=${r.citta} set=${v => up({ citta: v })} imp=${impOf(r, 'citta')} />
       <${Inp} label="Provincia" value=${r.provincia} set=${v => up({ provincia: v.toUpperCase() })} />
-      <${Inp} cls="full" label="Indirizzo" value=${r.indirizzo} set=${v => up({ indirizzo: v })} imp=${impOf(r, 'indirizzo')} />
+      <${Inp} cls="full" label="Indirizzo" placeholder="Via e numero civico" value=${r.indirizzo} set=${v => up({ indirizzo: v })} imp=${impOf(r, 'indirizzo')} />
       <${Inp} label="Telefono" type="tel" value=${r.telefono} set=${v => up({ telefono: v })} />
       <${Inp} label="Altro" value=${r.altro} set=${v => up({ altro: v })} />
     </div></div>

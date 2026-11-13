@@ -252,15 +252,15 @@ function HsDatiEst({ r, up }) {
   const setM = patch => up(p => ({ ...p, meta: { ...p.meta, ...patch } }));
   const setImg = (k, id) => up(p => ({ ...p, img: { ...(p.img || {}), [k]: id || undefined } }));
   return html`<div class="card"><div class="grid2">
-      <${Inp} cls="full" label="Nome del sito" value=${r.sito} set=${v => up({ sito: v })} imp=${impOf(r, 'sito')} />
-      <${Inp} cls="full" label="Indirizzo immobile" value=${r.indirizzo} set=${v => up({ indirizzo: v })} imp=${impOf(r, 'indirizzo')} />
-      <${Inp} label="Comune (piè di pagina)" value=${r.citta} set=${v => up({ citta: v })} imp=${impOf(r, 'citta')} />
-      <${Inp} label="Data sopralluogo" type="date" value=${r.data} set=${v => up({ data: v })} />
+      <${Inp} cls="full" label="Sito / codice immobile" placeholder="Facoltativo" value=${r.sito} set=${v => up({ sito: v })} imp=${impOf(r, 'sito')} />
+      <${Inp} cls="full" label="Indirizzo" placeholder="Via e numero civico" value=${r.indirizzo} set=${v => up({ indirizzo: v })} imp=${impOf(r, 'indirizzo')} />
+      <${Inp} label="Città" value=${r.citta} set=${v => up({ citta: v })} imp=${impOf(r, 'citta')} />
+      <${Inp} label="Data" type="date" value=${r.data} set=${v => up({ data: v })} />
       <${OraDurata} ora=${r.ora} durata=${r.durata} stato=${r.stato} tipo=${r.type} set=${p => up(p)} />
       <${Inp} cls="full" label="Presenti al sopralluogo" value=${r.meta.presenti} set=${v => setM({ presenti: v })} imp=${impOf(r, 'meta.presenti')} />
       <${Inp} label="Proprietà" value=${r.meta.proprieta} set=${v => setM({ proprieta: v })} imp=${impOf(r, 'meta.proprieta')} />
-      <${Inp} label="Committente" value=${r.cliente} set=${v => up({ cliente: v })} imp=${impOf(r, 'cliente')} />
-      <${Inp} label="Commessa" value=${r.commessa} set=${v => up({ commessa: v })} imp=${impOf(r, 'commessa')} />
+      <${Inp} label="Cliente" value=${r.cliente} set=${v => up({ cliente: v })} imp=${impOf(r, 'cliente')} />
+      <${Inp} label="Commessa" placeholder="es. 000/26" value=${r.commessa} set=${v => up({ commessa: v })} imp=${impOf(r, 'commessa')} />
       <${Inp} label="Protocollo" value=${r.meta.protocollo} set=${v => setM({ protocollo: v })} imp=${impOf(r, 'meta.protocollo')} />
       <${Inp} label="Redatto da" value=${r.meta.redatto} set=${v => setM({ redatto: v })} imp=${impOf(r, 'meta.redatto')} />
       <${Inp} label="Verificato da" value=${r.meta.verificato} set=${v => setM({ verificato: v })} imp=${impOf(r, 'meta.verificato')} />
@@ -314,13 +314,13 @@ function HsDatiSint({ r, up }) {
   const setImg = (k, id) => up(p => ({ ...p, img: { ...(p.img || {}), [k]: id || undefined } }));
   return html`<div class="card"><div class="grid2">
       <${Inp} label="Fondo" value=${r.meta.fondo} set=${v => setM({ fondo: v })} imp=${impOf(r, 'meta.fondo')} />
-      <${Inp} label="Nome immobile" value=${r.sito} set=${v => up({ sito: v })} imp=${impOf(r, 'sito')} placeholder="es. codice immobile" />
-      <${Inp} cls="full" label="Indirizzo" value=${r.indirizzo} set=${v => up({ indirizzo: v })} imp=${impOf(r, 'indirizzo')} placeholder="Via, CAP Comune (Prov.)" />
+      <${Inp} label="Sito / codice immobile" placeholder="Facoltativo" value=${r.sito} set=${v => up({ sito: v })} imp=${impOf(r, 'sito')} />
+      <${Inp} cls="full" label="Indirizzo" placeholder="Via e numero civico" value=${r.indirizzo} set=${v => up({ indirizzo: v })} imp=${impOf(r, 'indirizzo')} />
       <${Inp} label="Città" value=${r.citta} set=${v => up({ citta: v })} imp=${impOf(r, 'citta')} />
-      <${Inp} label="Data sopralluogo" type="date" value=${r.data} set=${v => up({ data: v })} />
+      <${Inp} label="Data" type="date" value=${r.data} set=${v => up({ data: v })} />
       <${OraDurata} ora=${r.ora} durata=${r.durata} stato=${r.stato} tipo=${r.type} set=${p => up(p)} />
-      <${Inp} label="Commessa" value=${r.commessa} set=${v => up({ commessa: v })} imp=${impOf(r, 'commessa')} />
-      <${Inp} label="Committente" value=${r.cliente} set=${v => up({ cliente: v })} imp=${impOf(r, 'cliente')} />
+      <${Inp} label="Commessa" placeholder="es. 000/26" value=${r.commessa} set=${v => up({ commessa: v })} imp=${impOf(r, 'commessa')} />
+      <${Inp} label="Cliente" value=${r.cliente} set=${v => up({ cliente: v })} imp=${impOf(r, 'cliente')} />
       <${Inp} label="Emissione" value=${r.meta.emissione} set=${v => setM({ emissione: v })} imp=${impOf(r, 'meta.emissione')} placeholder=${'automatica: ' + meseAnno(r.data)} />
       <${Inp} label="Revisione" value=${r.meta.revisione} set=${v => setM({ revisione: v })} imp=${impOf(r, 'meta.revisione')} />
       <${Inp} label="Protocollo" value=${r.meta.protocollo} set=${v => setM({ protocollo: v })} imp=${impOf(r, 'meta.protocollo')} />
@@ -419,12 +419,12 @@ function HsNoteForm({ rec: initial, settings, onSave, onDelete, onSettings, embe
       <${HsNoteTab} r=${r} up=${up} ns=${ns} filtro=${filtro} setFiltro=${setFiltro} addN=${() => nuovaNota(null)} onRiep=${() => setRiep(true)} />
       ${!ns.sel && html`<${HsAppunti} r=${r} up=${up} />`}`}
     ${T === 'check' && html`<${HsChecklist} r=${r} up=${up} aperto=${aperto} setAperto=${setAperto} vaiNota=${vaiNota} addN=${c => nuovaNota(c)} />`}
-    ${T === 'file' && html`<${FileTab} r=${r} up=${up} settings=${settings} />`}
+    ${T === 'file' && html`<${FileTab} r=${r} up=${up} settings=${settings} prima=${prima} />`}
     ${ns.sel ? html`<${ActionBar}><button class="btn pri" disabled=${!selNote.length} onClick=${() => setTagSheet(true)}><${Icon} n="tag" s=${20} /> Tag (${selNote.length})</button><//>`
     : html`<${BarraAtt} r=${r} settings=${settings}
       left=${html`<${HsNotaCam} r=${r} up=${up} onNota=${() => nuovaNota(null)} />`}
       center=${T === 'note' ? html`<button class="btn pri" onClick=${() => nuovaNota(null)}><${Icon} n="plus" s=${20} w=${2.4} /> Nuova osservazione</button>`
-        : html`<${DocBtn} r=${r} up=${up} settings=${settings} k="hs_docx" prima=${prima} />`}
+        : html`<${OdBtn} r=${r} settings=${settings} />`}
       gruppi=${[['Documenti', [{ ic: 'share', l: OD.account ? 'Carica su OneDrive' : 'Invia foto e Word a OneDrive', fn: upload }]],
         opzArchivio({ r, settings, onDelete, up, elimina: 'Elimina il sopralluogo' })]} />`}
     ${tagSheet && ns.sel && html`<${TagMultiSheet} note=${selNote} fissi=${hsTagFissi(r, selNote)} altri=${Object.keys(collectTags(r.noteSop || []))} onSet=${setNote} onClose=${() => setTagSheet(false)} />`}
