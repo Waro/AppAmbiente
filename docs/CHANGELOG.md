@@ -4,6 +4,12 @@ Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Nem
 
 ## [Non rilasciato]
 
+## [nembo-v58b] — 2026-11-13
+
+### Cambiato
+- «Invia a OneDrive» e «Carica su OneDrive» non generano più i documenti: `odRecordItems` carica solo le revisioni già generate dalla scheda File (`fileblob`), e la condivisione senza OneDrive (`recordFiles`) allega l'ultima revisione generata invece di creare Word, PDF ed Excel al momento (report HSE, verbale HSE, scheda radon, schede campioni, fogli firme, schede aria). Lo ZIP di backup resta com'è.
+- Sopralluogo HSE senza OneDrive collegato: l'opzione si chiama «Invia a OneDrive» (prima «Invia foto e Word a OneDrive»).
+
 ## [nembo-v58] — 2026-11-13
 
 ### Aggiunto

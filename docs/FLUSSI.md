@@ -59,7 +59,7 @@ Icona in Oggi (v51): verde se l'ultimo giro riuscito ha meno di 24 ore, arancion
 flowchart LR
   A["Invia a OneDrive<br/>(barra, Opzioni, selezione di più attività)"] --> B{account e rete?}
   B -- no --> Z["condivisione di Android a gruppi di 10<br/>o file ZIP"]
-  B -- sì --> C["odRecordItems: foto, allegati, video,<br/>file generati, planimetrie, dati.json"]
+  B -- sì --> C["odRecordItems: foto, allegati, video,<br/>file già generati, planimetrie, dati.json<br/>(l'invio non genera nulla, v58b)"]
   C --> D{file già inviato?<br/>od_sent}
   D -- foto/allegato/video già inviato --> E[salta]
   D -- no, o documento --> F["controllo del tipo reale (sniff)<br/>≤ 4 MB: PUT · oltre: sessione a blocchi"]

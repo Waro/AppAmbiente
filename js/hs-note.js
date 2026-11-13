@@ -417,7 +417,7 @@ function HsNoteForm({ rec: initial, settings, onSave, onDelete, onSettings, embe
       left=${html`<${HsNotaCam} r=${r} up=${up} onNota=${() => nuovaNota(null)} />`}
       center=${T === 'note' ? html`<button class="btn pri" onClick=${() => nuovaNota(null)}><${Icon} n="plus" s=${20} w=${2.4} /> Nuova osservazione</button>`
         : html`<${OdBtn} r=${r} settings=${settings} />`}
-      gruppi=${[['Documenti', [{ ic: 'share', l: OD.account ? 'Carica su OneDrive' : 'Invia foto e Word a OneDrive', fn: upload }]],
+      gruppi=${[['Documenti', [{ ic: 'share', l: OD.account ? 'Carica su OneDrive' : 'Invia a OneDrive', fn: upload }]],
         opzArchivio({ r, settings, onDelete, up, elimina: 'Elimina il sopralluogo' })]} />`}
     ${tagSheet && ns.sel && html`<${TagMultiSheet} note=${selNote} fissi=${hsTagFissi(r, selNote)} altri=${Object.keys(collectTags(r.noteSop || []))} onSet=${setNote} onClose=${() => setTagSheet(false)} />`}
     ${riep && html`<${RiepilogoPanel} r=${r} onClose=${() => setRiep(false)} scelta=${r.formatoLibero && html`<${HsFormatoSel} r=${r} up=${up} />`} azione=${html`<${DocBtn} r=${r} up=${up} settings=${settings} k="hs_docx" label="report" prima=${prima} />`} />`}

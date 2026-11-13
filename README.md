@@ -319,7 +319,7 @@ Ricerca in tutte le attività salvate sul dispositivo, anche offline. Si apre da
 
 **Con l'account Microsoft 365 collegato** (Impostazioni → OneDrive → Accedi): "Carica su OneDrive" invia foto, allegati,
 PDF e `dati.json` nella cartella dell'app dentro OneDrive › App, una cartella per indagine o campagna. Il nome di quella cartella dipende dal **nome registrato per l'app in Entra ID**, non dal codice: se rinomini l'app qui, per cambiare anche il nome della cartella su OneDrive va rinominata separatamente la app registration in Entra ID (basta il nome visualizzato, non serve ricreare le credenziali).
-Foto e allegati si caricano una volta sola; PDF e dati.json vengono sostituiti a ogni invio.
+Foto, allegati, video e file generati si caricano una volta sola; `dati.json` e le planimetrie annotate vengono sostituiti a ogni invio. Dalla v58b l'invio carica solo ciò che c'è: Word, PDF ed Excel si generano dalla scheda File (o dal Riepilogo), mai durante l'invio. Vale anche per la condivisione senza OneDrive.
 **Più attività insieme** (dalla v49, `js/selezione.js`): tocco prolungato su un'attività negli elenchi o in «Da completare» (su PC il tasto «Seleziona»),
 poi un solo invio su OneDrive, ognuna nella sua cartella; senza OneDrive un solo file ZIP.
 **Togli dal dispositivo** (dalla v49, Impostazioni → Dati su questo dispositivo, `ArchiviaCard`): con la sincronizzazione attiva, le attività concluse,
