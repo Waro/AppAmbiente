@@ -1138,13 +1138,13 @@ img.logo { background: none; object-fit: cover; }
 /* ---------------- v56: campi con l'etichetta dentro (Rilievo: Campo) ----------------
    L'etichetta fa da segnaposto nel campo vuoto e sale in alto, sempre dentro il campo, quando scrivi o c'è un valore.
    Serve un segnaposto (anche uno spazio, vedi fldSegnaposto) perché il CSS sappia se il campo è vuoto. */
-.fld:is(:has(> input:not([type=checkbox]):not([type=radio])), :has(> textarea), :has(> select), :has(> .mic-wrap), .sigla) { position: relative; gap: 0; }
-.fld:is(:has(> input:not([type=checkbox]):not([type=radio])), :has(> textarea), :has(> select), :has(> .mic-wrap), .sigla) > span:first-child {
+.fld:is(:has(> input:not([type=checkbox]):not([type=radio]):not([type=file])), :has(> textarea), :has(> select), :has(> .mic-wrap), .sigla) { position: relative; gap: 0; }
+.fld:is(:has(> input:not([type=checkbox]):not([type=radio]):not([type=file])), :has(> textarea), :has(> select), :has(> .mic-wrap), .sigla) > span:first-child {
   position: absolute; left: 13.5px; top: var(--sp-2); z-index: 1; max-width: calc(100% - 64px); pointer-events: none;
   font-size: var(--fs-xs); font-weight: 600; line-height: 1.3; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   transition: top .18s ease-out, font-size .18s ease-out, color .18s ease-out; }
-.fld > input:not([type=checkbox]):not([type=radio]), .fld > textarea, .fld > select, .fld > .mic-wrap textarea { padding-top: var(--sp-6); padding-bottom: var(--sp-2); min-height: 56px; }
-.fld:has(> :is(input:not([type=checkbox]):not([type=radio]):not([type=date]):not([type=time]):not([type=datetime-local]):not([type=month]), textarea):placeholder-shown:not(:focus)) > span:first-child,
+.fld > input:not([type=checkbox]):not([type=radio]):not([type=file]), .fld > textarea, .fld > select, .fld > .mic-wrap textarea { padding-top: var(--sp-6); padding-bottom: var(--sp-2); min-height: 56px; }
+.fld:has(> :is(input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=date]):not([type=time]):not([type=datetime-local]):not([type=month]), textarea):placeholder-shown:not(:focus)) > span:first-child,
 .fld:has(> .mic-wrap textarea:placeholder-shown:not(:focus)) > span:first-child { top: var(--sp-4); font-size: var(--fs-lg); font-weight: 400; }
 .fld:focus-within > span:first-child { color: var(--blue); }
 .fld > :is(input, textarea):not(:focus)::placeholder, .fld > .mic-wrap textarea:not(:focus)::placeholder { color: transparent; }

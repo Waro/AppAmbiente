@@ -12,6 +12,9 @@ Guida dentro l'app allineata alle v56–v58, senza voce nelle Novità.
 - Suggerimenti: «Scheda File» spiega i documenti da consultare in cima; «Campioni» spiega la pianta che si apre dopo la prima foto e il tasto Planimetria.
 - DECISIONS D-13 aggiornata: i testi si applicano e si mostrano.
 
+### Corretto
+- Campi foto (`ImgSlot`: foto di copertina e immagini dei report HSE e del Verbale): l'etichetta non si sovrappone più alla fotocamera. Il campo nascosto per il file faceva scattare l'etichetta interna dei campi (v56); i selettori di `.fld` escludono `input[type=file]`.
+
 ## [nembo-v58b] — 2026-11-13
 
 ### Cambiato
