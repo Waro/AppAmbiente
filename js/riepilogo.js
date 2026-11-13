@@ -182,9 +182,34 @@ function RiepilogoPanel({ r, mats, onClose, onFile, azione, scelta }) {
       ${(ap || apF.length > 0) && html`<div class="sec-h"><h3>Appunti</h3></div><div class="card">${ap && html`<div class="riep-ap">${ap}</div>`}
         ${apF.length > 0 && html`<div class="hs-fotos">${apF.map(id => html`<${Thumb44} key=${id} id=${id} />`)}</div>`}
         ${hs && html`<div class="mt-2"><span class="badge b-grey">Non va nel Word</span></div>`}</div>`}
+      <${RiepCarico} r=${r} />
       ${scelta && html`<div class="sec-h"><h3>Modello del report</h3></div>${scelta}`}
       <div class="riep-dock">${azione || html`<button class="btn pri block" onClick=${() => { onClose(); onFile(); }}>Genera file</button>`}</div>
     </div></div></div>`;
+}
+/* stato del caricamento su OneDrive nel Riepilogo (v58): foto, video, documenti e file generati.
+   Stesso elenco di «Invia a OneDrive» (odRecordItems) e stesso registro (od_sent). */
+const RIEP_GRUPPI = { foto: 'Foto', immagini: 'Foto', note: 'Foto', video: 'Video', documenti: 'Documenti', rapporti: 'Documenti', aria: 'Monitoraggio aria' };
+function RiepCarico({ r }) {
+  const od = useOdFiles(); const [S, setS] = useState(null);
+  useEffect(() => { let ok = true; (async () => {
+    const sent = (await DB.get('od_sent')) || {}, items = await odRecordItems(r, _settings), G = {}, visti = new Set();
+    for (const it of items) {
+      if ((it.kind !== 'blob' && it.kind !== 'video') || visti.has(it.blobId)) continue; visti.add(it.blobId);
+      const k = RIEP_GRUPPI[it.segs[0]] || 'Altri file'; G[k] = G[k] || { n: 0, su: 0 }; G[k].n++; if (sent[it.blobId]) G[k].su++;
+    }
+    const file = recDocs(r, _settings).map(d => { const L = fileRevs(r, d), e = L[L.length - 1];
+      return { l: d.label + ' (' + FILE_FMT[d.type][0] + ')', st: !e ? 'Da generare' : sent[e.blobId] ? 'Su OneDrive' + (e.rev ? ' · rev' + e.rev : '') : 'Generato, da caricare', ok: !!(e && sent[e.blobId]), gen: !!e }; });
+    if (ok) setS({ G, file });
+  })(); return () => { ok = false; }; }, [r, od]);
+  if (!S) return null;
+  const righe = Object.entries(S.G);
+  if (!righe.length && !S.file.length) return null;
+  return html`<div class="sec-h"><h3>Caricamento su OneDrive</h3></div>
+    ${!OD.account && html`<div class="notice mt-0">OneDrive non è collegato: foto, video e file sono solo su questo dispositivo.</div>`}
+    <div class="list">${righe.map(([k, g]) => html`<div class=${'prow st-bar ' + (g.su === g.n ? 'st-ok' : 'st-warn')} key=${k}><div class="t"><b>${k}</b>
+        <small>${g.su === g.n ? (g.n === 1 ? 'Su OneDrive' : 'Tutti su OneDrive') + ' (' + g.n + ')' : g.su + ' di ' + g.n + ' su OneDrive, ' + (g.n - g.su) + ' da caricare'}</small></div></div>`)}
+      ${S.file.map(f => html`<div class=${'prow st-bar ' + (f.ok ? 'st-ok' : f.gen ? 'st-warn' : 'st-off')} key=${f.l}><div class="t"><b>${f.l}</b><small>${f.st}</small></div></div>`)}</div>`;
 }
 // tasto «Riepilogo» nel blocco navy dei contatori
 const RiepGo = ({ onOpen }) => html`<button type="button" class="riep-go" onClick=${onOpen}>Riepilogo <${Icon} n="chev" s=${16} /></button>`;

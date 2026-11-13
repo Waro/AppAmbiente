@@ -386,7 +386,7 @@ async function odSyncVai(records, settings) {
     }
     done++;
   }
-  _progress(null);
+  _progress(null); fileSubs.forEach(f => f());
   try { if (wake) wake.release(); } catch (e) {}
   // esito per attività: caricata solo se tutti i suoi file sono andati a buon fine
   const synced = (await DB.get('od_synced')) || {};
@@ -445,7 +445,7 @@ const OdAuto = (() => {
       if (!type || (it.kind === 'video') !== /^video\//.test(type)) continue;
       const res = await OD.upload([folders[r.id], ...it.segs], b.blob, { type, replace: false });
       const s2 = (await DB.get('od_sent')) || {}; s2[it.blobId] = res.path; await DB.set('od_sent', s2);
-      await odLog({ path: res.path, size: b.blob.size });
+      await odLog({ path: res.path, size: b.blob.size }); fileSubs.forEach(f => f());
       if (it.kind === 'video') { await fileMarkSent(it.blobId, res); await removeBlob(it.blobId); nv++; }
     }
     if (nv) toast(nv === 1 ? 'Video caricato su OneDrive: sul telefono non occupa più spazio' : nv + ' video caricati su OneDrive: sul telefono non occupano più spazio');

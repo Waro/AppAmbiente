@@ -9,6 +9,8 @@ Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Nem
 ### Aggiunto
 - Caricamento subito (`OdAuto` in `js/onedrive.js`): a ogni salvataggio di un'attività (`saveRec`), al ritorno della rete e all'avvio (attività delle ultime due settimane) foto, allegati e video non ancora inviati partono in sottofondo, senza finestra, con gli stessi nomi e lo stesso registro `od_sent` di «Invia a OneDrive». I video caricati si tolgono dal telefono. «Invia a OneDrive» aspetta la fine di un caricamento in corso (`_odManuale`). Opzione «Carica subito su OneDrive» in Impostazioni → Foto (`nembo_od_auto`, attiva di serie). Sostituisce `videoCarica`/`odVideoUpload` della v57.
 - «Copia nel telefono» in Impostazioni → Foto (`nembo_cam_copia`, spenta di serie): foto e video appena scattati (fotocamera del telefono o di Nembo, non quelli scelti dalla galleria) si salvano anche nella cartella Download a qualità piena (`copiaNelTelefono`), quindi compaiono nella galleria. In Nembo le foto restano ridotte a 1600 px.
+- Riepilogo (`RiepCarico` in `js/riepilogo.js`): sezione «Caricamento su OneDrive» con foto, video, documenti (e aria) «k di n su OneDrive» e lo stato di ogni file generato (da generare, generato da caricare, su OneDrive); si aggiorna a ogni caricamento (`fileSubs`).
+- Programmazione, tab Attività (`AgAddSheet`): «Documenti da consultare» con `FileList`; i file vanno in `documenti` dell'attività creata, e si tolgono dal dispositivo se l'attività non viene programmata.
 
 ## [nembo-v57] — 2026-11-13
 
