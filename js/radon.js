@@ -13,10 +13,10 @@ function newRadon(settings) {
   return {
     id: uid('rad'), type: 'radon', createdAt: Date.now(), updatedAt: Date.now(),
     commessa: '', cliente: '', insegna: '', codice: '', citta: '', provincia: '', indirizzo: '', altro: '', telefono: '', note: '',
-    momenti: [emptyMomento(settings), emptyMomento(settings), emptyMomento(settings)], punti: [], rapporti: [], planimetrie: [],
+    momenti: [emptyMomento(settings), emptyMomento(settings), emptyMomento(settings)], punti: [], rapporti: [], planimetrie: [], documenti: [],
   };
 }
-const radonIsEmpty = r => !r.commessa && !r.cliente && !r.citta && !(r.fotoAppunti || []).length && !r.punti.length && !(r.planimetrie || []).length && !r.note && !(r.momenti || []).some(m => m.appunti);
+const radonIsEmpty = r => senzaAllegati(r) && !r.commessa && !r.cliente && !r.citta && !(r.fotoAppunti || []).length && !r.punti.length && !(r.planimetrie || []).length && !r.note && !(r.momenti || []).some(m => m.appunti);
 
 function radonStato(c) {
   const m = c.momenti;

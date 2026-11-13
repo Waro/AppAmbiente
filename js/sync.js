@@ -111,7 +111,7 @@ const Sync = (() => {
           const base = s0 ? s0.v : null, L = byId[id];
           if (remote.deleted) {
             if (L && (L.updatedAt || 0) <= remote.deletedAt) {
-              for (const bid of blobIds(L)) await removeBlob(bid);
+              for (const bid of fileIds(L)) await removeBlob(bid);
               await DB.del(id); delete byId[id]; esito.tolte++; changed = true;
             }
             st[id] = { v: remote.deletedAt, deleted: true, m: f.lastModifiedDateTime };

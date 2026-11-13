@@ -259,13 +259,13 @@ function ArchiviaCard() {
   const on = Sync.enabled();
   useEffect(() => { DB.get('archiviate').then(a => setArch(a || {})); }, []);
   useEffect(() => { let ok = true; archiviabili(records, mesi, od).then(async l => {
-    let tot = 0; for (const r of l) for (const id of new Set(blobIds(r))) { const b = await DB.getBlob(id); if (b && b.blob) tot += b.blob.size; }
+    let tot = 0; for (const r of l) for (const id of new Set(fileIds(r))) { const b = await DB.getBlob(id); if (b && b.blob) tot += b.blob.size; }
     if (ok) { setL(l); setMb(tot / 1048576); } }); return () => { ok = false; }; }, [records, mesi, od]);
   const togli = async () => {
     if (!L || !L.length || !confirm(`Togliere ${L.length} ${L.length === 1 ? 'attività' : 'attività'} da questo dispositivo? Restano su OneDrive e tornano con «Riporta sul dispositivo».`)) return;
     setBusy(true);
     const a = { ...((await DB.get('archiviate')) || {}) };
-    for (const r of L) { for (const id of new Set(blobIds(r))) await removeBlob(id); await DB.del(r.id); a[r.id] = { il: Date.now(), codice: r.codice || '' }; }
+    for (const r of L) { for (const id of new Set(fileIds(r))) await removeBlob(id); await DB.del(r.id); a[r.id] = { il: Date.now(), codice: r.codice || '' }; }
     await DB.set('archiviate', a); setArch(a); setBusy(false);
     toast(`${L.length} ${L.length === 1 ? 'attività tolta' : 'attività tolte'} da questo dispositivo`);
     location.reload();

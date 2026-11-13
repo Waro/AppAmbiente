@@ -10,10 +10,10 @@ function newMappatura(records, settings) {
     id: uid('map'), type: 'mappatura', codice: `MAP-${y}-${String(n).padStart(3, '0')}`, createdAt: Date.now(), updatedAt: Date.now(),
     commessa: '', cliente: '', citta: '', indirizzo: '', sito: '', data: today(), tecnico: `${settings.tecnicoNome} ${settings.tecnicoCognome}`.trim(), tab: 'mca',
     campioni: emptyCampioni(), congelati: {}, schede: {}, planimetrie: [], appunti: '',
-    recs: [], documenti: [], // vuoti: servono solo perché ZIP/OneDrive riusano lo stesso codice della DDA
+    recs: [], documenti: [], // recs vuoto: serve solo perché ZIP/OneDrive riusano lo stesso codice della DDA; documenti: scheda File
   };
 }
-const mappaturaIsEmpty = r => !r.commessa && !r.cliente && !r.sito && !r.citta && !r.indirizzo && !(r.fotoAppunti || []).length && !MAP_MATS.some(m => (r.campioni[m.k] || []).length) && !(r.planimetrie || []).length && !r.appunti && !(r.fogli || []).length && !ncOf(r).length;
+const mappaturaIsEmpty = r => senzaAllegati(r) && !r.commessa && !r.cliente && !r.sito && !r.citta && !r.indirizzo && !(r.fotoAppunti || []).length && !MAP_MATS.some(m => (r.campioni[m.k] || []).length) && !(r.planimetrie || []).length && !r.appunti && !(r.fogli || []).length && !ncOf(r).length;
 // import di un'indagine precedente (JSON "dda-fase2", anche da una relazione di mappatura): solo MCA e FAV
 async function importMappatura(json, rec) {
   let data;

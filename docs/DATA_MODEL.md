@@ -9,6 +9,7 @@ Tutti gli esempi usano dati inventati.
 |---|---|---|---|
 | Attività (tutti i tipi), clienti, appuntamenti | IndexedDB `nembo`, store `records` | `id` (keyPath) | solo il dispositivo |
 | Foto, allegati, planimetrie, file generati | IndexedDB `nembo`, store `blobs` | `id` (`b_…`) | solo il dispositivo |
+| Video degli appunti (v57) | IndexedDB `nembo`, store `blobs`, fino al caricamento su OneDrive | `id` (`v_…`) | il dispositivo, poi solo OneDrive |
 | Impostazioni, modelli, stati interni | IndexedDB `nembo`, store `kv` | chiave testuale | solo il dispositivo |
 | Preferenze del dispositivo | `localStorage` (`nembo_*`) e cache di MSAL | chiave | solo il dispositivo |
 | Copie e consegne | OneDrive › App › cartella dell'app (§ 9) | percorso | l'account Microsoft dell'utente |
@@ -21,7 +22,7 @@ Versioni: database IndexedDB **1** (`indexedDB.open('nembo', 1)`), formato dei r
 
 ```mermaid
 erDiagram
-  RECORDS ||--o{ BLOBS : "foto, allegati, planimetrie (id b_…)"
+  RECORDS ||--o{ BLOBS : "foto, allegati, planimetrie (id b_…); video degli appunti (id v_…)"
   RECORDS {
     string id PK "prefisso per tipo + tempo + casuale"
     string type "dda | mappatura | ra | radon | aria | hs | vs | firme | cli | app"
@@ -180,8 +181,9 @@ Tipi: `string`, `number` (ms dall'epoca per gli istanti), `bool`, `data` = strin
 | `tecnico` | string | — | nome e cognome dalle impostazioni | sì | Tecnico che compila |
 | `planimetrie` | array | — | `[]` | no | § 4.6 |
 | `appunti`, `fotoAppunti` | string, blobId[] | — | `''`, `[]` | foto: possibile | Appunti liberi e foto |
+| `videoAppunti` (DDA Fase 2: `videoAppunti2`) | array, facoltativo | `{ id: 'v_…', nome, durata (s), t (ms) }`; durata ≤ 120 s, file ≤ 400 MB | assente = `[]` | possibile (persone riprese) | Video degli appunti (v57): solo OneDrive (cartella `video`), mai nel Word, nel backup ZIP o nella sincronizzazione; dopo il caricamento il file locale si cancella |
 | `tagAppunti` (DDA anche `tagAppunti2`) | string[] | — | — | no | Tag degli appunti; ogni campo che inizia con `tag` è raccolto da `collectTags` |
-| `documenti` | array | file ammessi da `controlli.js` | `[]` | possibile | Allegati (DDA, HSE) |
+| `documenti` | array | `{ id, nome, blobId, script? }`, file ammessi da `controlli.js` | `[]` | possibile | Documenti da consultare (scheda File, tutte le attività con la scheda File dalla v57; prima solo DDA e HSE) |
 | `fogli` | array | — | `[]` | sì | Fogli firme § 4.7 |
 | `firme` | bool | — | — | no | Foglio firme preparato alla creazione |
 | `files` | object | chiave → `FILE_GENERATO[]` | `{}` | no | Documenti generati § 4.8 |
@@ -226,7 +228,7 @@ Tipi: `string`, `number` (ms dall'epoca per gli istanti), `bool`, `data` = strin
 
 ### 4.4 Mappatura (`type: 'mappatura'`)
 
-Come la DDA per `campioni` (solo `mca`, `fav`), `nc`, `congelati`, `schede`, `precedente`, `numerazione`; in più `tab` (matrice aperta). `recs` e `documenti` sono sempre vuoti.
+Come la DDA per `campioni` (solo `mca`, `fav`), `nc`, `congelati`, `schede`, `precedente`, `numerazione`; in più `tab` (matrice aperta). `recs` è sempre vuoto; `documenti` sono i documenti da consultare della scheda File (v57).
 
 ### 4.5 Sopralluogo RA, monitoraggio aria, radon
 
@@ -381,7 +383,7 @@ Stati calcolati, non salvati: `radonStato`, `attAperta`, `photoItems`, `odStatus
 ```text
 OneDrive › App › <nome dell'app in Entra ID>/
 ├── <codice attività o luogo>/        ← «Invia a OneDrive»: cartelle leggibili
-│   ├── foto/  documenti/  firme/  aria/  planimetrie
+│   ├── foto/  documenti/  firme/  aria/  planimetrie  video/   ← video: solo degli appunti (v57)
 │   ├── Scheda_campioni_MCA.pdf  Riepilogo_campioni.docx …
 │   └── dati.json                     ← l'intero record
 └── _nembo/                           ← uso interno

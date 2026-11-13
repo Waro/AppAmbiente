@@ -3,6 +3,13 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
+  { v: 57, data: '2026-11-13', tipo: 'minore', titolo: 'Documenti da consultare e video negli appunti',
+    voci: [
+      'Nella scheda File di ogni attività, in cima, trovi «Documenti da consultare»: allega i PDF che ti servono durante il sopralluogo, si aprono anche senza rete.',
+      'In Impostazioni → Foto scegli la fotocamera predefinita: quella del telefono o quella di Nembo; con Nembo puoi attivare gli scatti in serie.',
+      'Negli appunti di tutte le sezioni puoi aggiungere anche video, al massimo di 2 minuti.',
+      'I video vanno solo su OneDrive, nella cartella video dell’attività, e non entrano nel Word; dopo il caricamento non occupano spazio sul telefono.',
+      'Senza OneDrive collegato il video resta sul telefono e si carica al primo invio.' ] },
   { v: 56, data: '2026-11-12', tipo: 'minore', titolo: 'Nuova grafica dei campi',
     voci: [
       'Campi più chiari: l’etichetta è dentro il campo e sale quando scrivi.',

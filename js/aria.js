@@ -61,9 +61,9 @@ function newAria(records, s) {
   const n = records.filter(r => r.type === 'aria' && (r.codice || '').startsWith('ARIA-' + y)).map(r => +r.codice.slice(-3)).reduce((a, b) => Math.max(a, b), 0) + 1;
   return { id: uid('ar'), type: 'aria', codice: `ARIA-${y}-${String(n).padStart(3, '0')}`, createdAt: Date.now(), updatedAt: Date.now(),
     commessa: '', cliente: '', citta: '', sito: '', indirizzo: '', data: today(), tecnico: `${s.tecnicoNome} ${s.tecnicoCognome}`.trim(),
-    aria: emptyAria(true), planimetrie: [], fogli: [], appunti: '', fotoAppunti: [] };
+    aria: emptyAria(true), planimetrie: [], fogli: [], appunti: '', fotoAppunti: [], documenti: [] };
 }
-const ariaIsEmpty = r => !r.commessa && !r.cliente && !r.sito && !r.citta && !r.indirizzo && !ariaOf(r).punti.length && !r.appunti && !(r.fotoAppunti || []).length && !(r.fogli || []).length;
+const ariaIsEmpty = r => senzaAllegati(r) && !r.commessa && !r.cliente && !r.sito && !r.citta && !r.indirizzo && !ariaOf(r).punti.length && !r.appunti && !(r.fotoAppunti || []).length && !(r.fogli || []).length;
 
 /* ---------------- scheda del punto ---------------- */
 function AriaPuntoCard({ p, open, toggle, onUpd, onMet, onDel, onScan, settings }) {

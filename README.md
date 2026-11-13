@@ -218,7 +218,7 @@ Ogni attività è divisa in schede, con un selettore come quello Ambiente / HSE 
 | Sopralluogo HSE | a note: Anagrafica · Osservazioni · Check-list · File; a schede o checklist: Anagrafica · Sezioni · File |
 | Verbale HSE | Anagrafica · Osservazioni |
 
-- **Anagrafica**: dati della commessa, data, ora e stato, e in fondo l'archivio (ZIP, Elimina; documenti allegati nel DDA, scheda PDF nel radon). La barra in basso ha *Carica su OneDrive*.
+- **Anagrafica**: dati della commessa, data, ora e stato, e in fondo l'archivio (ZIP, Elimina; scheda PDF nel radon). I documenti da consultare durante il sopralluogo (PDF, foto, Word) sono in cima alla scheda **File** (v57). La barra in basso ha *Carica su OneDrive*.
 - La scheda del contenuto ha gli appunti e le planimetrie; la barra in basso cambia con la scheda (*Nuova area REC*, *Nuovo campione*, *Prossimo da verificare*, *Salva e firma*…).
 - **Firme**: solo nella campagna radon. Nelle altre attività la scheda compare solo se l'attività ha già fogli firme salvati; per i nuovi fogli c'è *Fogli firme* negli Strumenti.
 - Nel DDA la fase (1 o 2) si sceglie in Anagrafica.
@@ -267,7 +267,8 @@ e va nello ZIP, su OneDrive e nella condivisione, nella cartella `firme/`.
 
 ## Fotocamera, notifiche e ubicazioni
 
-- **Fotocamera di Nembo**: sul telefono il tasto foto apre la fotocamera dentro l'app (`Camera` e `camOpen` in capture.js): scatto al centro, **Galleria** in basso a sinistra per scegliere foto già scattate, torcia se disponibile. Dove si possono aggiungere più foto si scatta in serie e si chiude con *Fine*; chiudendo con la X le foto scattate restano. Se la fotocamera non si apre c'è il tasto *Fotocamera del telefono*; sul PC resta la scelta dei file.
+- **Fotocamera predefinita** (v57, Impostazioni → Foto, per dispositivo): *Telefono* (la fotocamera del telefono, foto più nitide) o *Nembo* (`Camera` e `camOpen` in capture.js): scatto al centro, **Galleria** in basso a sinistra per scegliere foto già scattate, torcia se disponibile. Con Nembo si possono attivare gli *Scatti in serie*: dove si possono aggiungere più foto si scatta in serie e si chiude con *Fine*; chiudendo con la X le foto scattate restano. Se la fotocamera non si apre c'è il tasto *Fotocamera del telefono*; sul PC resta la scelta dei file.
+- **Video negli appunti** (v57): in tutte le attività gli appunti accettano anche video, al massimo 2 minuti e 400 MB. Con Nembo c'è il selettore *Foto · Video* e la registrazione si ferma da sola; con il telefono si sceglie foto o video dalla sua fotocamera. I video vanno solo su OneDrive, nella cartella `video/` dell'attività (subito se collegato, altrimenti al primo invio), poi si cancellano dal telefono e si aprono da OneDrive; non entrano nel Word, nel backup ZIP né nella sincronizzazione.
 - **Notifiche di OneDrive**: un caricamento non riuscito o interrotto ricorda le attività coinvolte (`ids`): sotto la notifica ci sono *Ricarica* e *Apri attività*.
 - **Ubicazioni**: ubicazione dei manufatti RA e dei punti radon, postazione dei punti aria e «Dove» nei punti da campionare del DDA vanno a capo e crescono col testo (`InpGrow`); anche il titolo delle schede chiuse mostra fino a tre righe.
 

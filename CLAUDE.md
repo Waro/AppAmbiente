@@ -33,7 +33,7 @@ Nembo è una PWA offline-first per il lavoro sul campo (DDA, mappature MCA/FAV, 
 
 - **Nessun dato reale nel codice**, nei commenti, negli esempi, nei dati di prova e nei commit: niente indirizzi, URL aziendali, ID, tenant, email, nomi di persone, clienti o laboratori. Tutto passa dal file di configurazione per utente.
 - **Mai nel repository**: file di configurazione, modelli Word/PDF/Excel aziendali, backup ZIP, JSON di import, report di audit, backlog.
-- **Testi**: ogni testo nuovo o modificato (interfaccia, Novità, guida, presentazione) si propone e si applica solo dopo l'approvazione; segnalare sempre i testi nuovi. Italiano semplice, seconda persona; «attività», mai «pratica»; mai «roba»; «essere», non «stare». Nelle slide niente prima persona.
+- **Testi**: ogni testo nuovo o modificato (interfaccia, Novità, guida, presentazione) si applica direttamente e si mostra sempre nel messaggio finale, così l'utente può dire cosa cambiare (dalla v57; prima serviva l'approvazione). Italiano semplice, seconda persona; «attività», mai «pratica»; mai «roba»; «essere», non «stare». Nelle slide niente prima persona.
 - **Rilievo**: se un elemento va fatto diversamente, segnalarlo; dopo l'approvazione aggiornare Rilievo e `docs/DESIGN_SYSTEM.md`.
 - **Versione e rilascio**: tutto in [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) (versione, Novità, CHANGELOG, prove, pubblicazione).
 

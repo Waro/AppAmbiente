@@ -236,7 +236,7 @@ function App() {
   }, []);
   const delRec = async rec => {
     if (!confirm('Eliminare definitivamente? Foto e allegati vengono cancellati da questo telefono.')) return;
-    for (const b of blobIds(rec)) await removeBlob(b);
+    for (const b of fileIds(rec)) await removeBlob(b);
     await DB.del(rec.id);
     Sync.markDeleted(rec.id);
     setRecords(rs => rs.filter(x => x.id !== rec.id));
@@ -245,7 +245,7 @@ function App() {
   };
   // eliminazione senza cambiare schermata (appuntamenti della Programmazione)
   const removeRec = async rec => {
-    for (const b of blobIds(rec)) await removeBlob(b);
+    for (const b of fileIds(rec)) await removeBlob(b);
     await DB.del(rec.id); Sync.markDeleted(rec.id);
     setRecords(rs => rs.filter(x => x.id !== rec.id));
   };

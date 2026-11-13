@@ -19,10 +19,10 @@ function newRa(records, settings) {
   return {
     id: uid('ra'), type: 'ra', codice: `RA-${y}-${String(n).padStart(3, '0')}`, createdAt: Date.now(), updatedAt: Date.now(),
     commessa: '', cliente: '', citta: '', sito: '', indirizzo: '', data: today(), tecnico: `${settings.tecnicoNome} ${settings.tecnicoCognome}`.trim(),
-    fonte: '', manufatti: [], appunti: '', planimetrie: [], incaricoDal: '', incaricoAl: '',
+    fonte: '', manufatti: [], appunti: '', planimetrie: [], documenti: [], incaricoDal: '', incaricoAl: '',
   };
 }
-const raIsEmpty = r => !r.commessa && !r.cliente && !r.sito && !r.citta && !r.indirizzo && !(r.fotoAppunti || []).length && !r.manufatti.length && !r.appunti && !(r.planimetrie || []).length && !(r.fogli || []).length;
+const raIsEmpty = r => senzaAllegati(r) && !r.commessa && !r.cliente && !r.sito && !r.citta && !r.indirizzo && !(r.fotoAppunti || []).length && !r.manufatti.length && !r.appunti && !(r.planimetrie || []).length && !(r.fogli || []).length;
 // foto da scorrere nel visualizzatore: prima quelle del sopralluogo precedente, poi le nuove
 const gal = m => [...(m.fotoPrec || []), ...(m.foto || [])];
 const lab = m => id => (m.fotoPrec || []).includes(id) ? 'Sopralluogo precedente' : 'Nuova foto';
