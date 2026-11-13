@@ -8,7 +8,7 @@ if (window.top !== window.self) {
   try { window.top.location.replace(window.self.location.href); } catch (e) { /* riquadro isolato: la pagina resta vuota */ }
   throw new Error('Nembo aperto dentro un riquadro');
 }
-const APP_VERSION = 'nembo-v57';
+const APP_VERSION = 'nembo-v58';
 
 /* ---------------- aspetto: stile ("essenziale" o "originale") × modo ("auto", "chiaro" o "scuro") ----------------
    Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno.
@@ -782,7 +782,7 @@ function Appunti({ rec, up, k = 'appunti', foto = 'fotoAppunti', rows = 4, label
       try { out.push(await saveImage(f)); } catch (err) { fail('Foto non salvata', err); }
     }
     if (out.length) up(p => ({ ...p, [foto]: [...(p[foto] || []), ...out] }));
-    if (vid.length) { up(p => ({ ...p, [vf]: [...(p[vf] || []), ...vid] })); for (const v of vid) videoCarica(rec, v); }
+    if (vid.length) up(p => ({ ...p, [vf]: [...(p[vf] || []), ...vid] })); // su OneDrive: OdAuto al salvataggio
   };
   const campo = html`<div class="fld"><span>${label}</span>
     <div class="mic-wrap"><textarea rows=${rows} disabled=${disabled} placeholder=${placeholder || ' '} value=${rec[k] || ''} onInput=${e => up({ [k]: e.target.value })}></textarea>
@@ -818,12 +818,6 @@ async function salvaVideo(f) {
   const id = uid('v');
   await DB.putBlob({ id, blob: f, type: f.type || 'video/mp4', name: nome });
   return { id, nome, durata: isFinite(d) ? Math.round(d) : 0, t };
-}
-// caricamento subito, se OneDrive è collegato e c'è rete; altrimenti il video resta sul telefono fino al prossimo invio
-async function videoCarica(r, v) {
-  if (!OD.account || !navigator.onLine) return;
-  try { await odVideoUpload(r, v); toast('Video caricato su OneDrive: sul telefono non occupa più spazio'); }
-  catch (err) { notify('warn', 'Video non caricato su OneDrive: lo carico al prossimo invio', { record: recordTitle(r), detail: err.message, ids: [r.id] }); }
 }
 function VideoList({ rec, field, up }) {
   const L = rec[field] || []; const od = useOdFiles(); const [play, setPlay] = useState(null);

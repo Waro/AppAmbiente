@@ -17,12 +17,12 @@ Su un secondo dispositivo collega prima OneDrive: se c'è già la tua configuraz
 | Per… | Fai così |
 |---|---|
 | Nuova attività | + in Oggi o nell'elenco → tipo → cliente e luogo |
-| Programmare | Programmazione → tocca una fascia → attività o appuntamento; oppure **Carica JSON** con il piano preparato da Claude |
+| Programmare | Programmazione → tocca una fascia → attività (con i documenti da consultare) o appuntamento; oppure **Carica JSON** con il piano preparato da Claude |
 | Compilare | schede in alto (Anagrafica, contenuto, File, Firme), anche scorrendo a destra o a sinistra; si salva da sola. L'etichetta è dentro il campo e sale quando scrivi |
-| Foto | tasto fotocamera; Galleria accanto per quelle già scattate. In Impostazioni → Foto scegli la fotocamera: Telefono o Nembo (con gli scatti in serie) |
+| Foto | tasto fotocamera; Galleria accanto per quelle già scattate. In Impostazioni → Foto scegli la fotocamera: Telefono o Nembo (con gli scatti in serie); foto e video vanno subito su OneDrive; con «Copia nel telefono» restano anche nella galleria |
 | Planimetrie | cartina a sinistra nella barra → aggiungi PDF → disegna ed etichetta → Fine. Nei campioni: tasto **Planimetria** sopra l'elenco; dopo la prima foto di un campione la pianta del suo piano si apre da sola con l'etichetta pronta |
 | Appunti | fotocamera, galleria e microfono dentro la casella, in colonna a destra; foto senza limite; video fino a 2 minuti, che vanno solo su OneDrive |
-| Riepilogo | tocca **Riepilogo** nel blocco blu dei contatori (Campioni, Osservazioni HSE): pannello di sola consultazione con avvisi, poi Genera file o Genera report |
+| Riepilogo | tocca **Riepilogo** nel blocco blu dei contatori (Campioni, Osservazioni HSE): pannello di sola consultazione con avvisi e stato del caricamento su OneDrive, poi Genera file o Genera report |
 | Fogli firme | scheda Firme o ⋯ Opzioni → Prepara il foglio firme → passa il telefono → Chiudi |
 | Documenti | scheda **File**: in cima i documenti da consultare (Allega PDF, si aprono anche senza rete); sotto i file da generare: grigio da generare, verde generato, ambra da rigenerare |
 | Consegnare | **Invia a OneDrive** al centro della barra; ⋯ Opzioni → Riepilogo via email |

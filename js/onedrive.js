@@ -319,6 +319,12 @@ async function odSync(records, settings) {
   if (!OD.account) { toast('Collega prima OneDrive in Impostazioni'); return; }
   if (!navigator.onLine) { toast('Sei offline: riprova quando c\'è rete'); return; }
   let stop = false, wake = null;
+  // un caricamento in sottofondo in corso finisce prima, così lo stesso file non parte due volte
+  _odManuale = true; if (OdAuto.corsa) await OdAuto.corsa;
+  try { return await odSyncVai(records, settings); } finally { _odManuale = false; OdAuto.vai(); }
+}
+async function odSyncVai(records, settings) {
+  let stop = false, wake = null;
   const t0 = Date.now();
   try { if (navigator.wakeLock) wake = await navigator.wakeLock.request('screen'); } catch (e) {}
   const sent = (await DB.get('od_sent')) || {};
@@ -380,7 +386,7 @@ async function odSync(records, settings) {
     }
     done++;
   }
-  _progress(null);
+  _progress(null); fileSubs.forEach(f => f());
   try { if (wake) wake.release(); } catch (e) {}
   // esito per attività: caricata solo se tutti i suoi file sono andati a buon fine
   const synced = (await DB.get('od_synced')) || {};
@@ -404,15 +410,48 @@ async function odSync(records, settings) {
   return { done, errors };
 }
 
-// un video appena aggiunto agli appunti: su OneDrive subito, poi via dal telefono
-async function odVideoUpload(r, v) {
-  const b = await DB.getBlob(v.id); if (!b) return;
-  const type = await OD.sniff(b.blob); if (!type || !/^video\//.test(type)) throw new Error('formato video non riconosciuto');
-  const folders = (await DB.get('od_folders')) || {};
-  if (!folders[r.id]) { folders[r.id] = recordLabel(r) || r.id; await DB.set('od_folders', folders); }
-  const res = await OD.upload([folders[r.id], 'video', v.nome || v.id], b.blob, { type, replace: false });
-  await fileMarkSent(v.id, res); await removeBlob(v.id);
-}
+/* ---------------- caricamento subito di foto e video (v58) ----------------
+   A ogni salvataggio di un'attività (e al ritorno della rete) le foto, gli allegati e i video non ancora inviati
+   partono in sottofondo, senza finestra, se OneDrive è collegato, c'è rete e l'opzione è attiva (Impostazioni → Foto,
+   per dispositivo, attiva di serie). Stessi nomi e stesso registro (od_sent) di «Invia a OneDrive», quindi l'invio
+   completo non li ricarica. I video caricati si tolgono dal telefono. Errori: nessun avviso, si riprova alla volta dopo. */
+const odAutoOn = () => _ls('nembo_od_auto') !== '0';
+let _odManuale = false;
+const OdAuto = (() => {
+  const coda = new Map(); let timer = null, corsa = null;
+  const metti = r => { if (!r || !r.id || !odAutoOn() || !OD.account) return; coda.set(r.id, r); clearTimeout(timer); timer = setTimeout(vai, 3000); };
+  async function vai() {
+    if (corsa || _odManuale || !navigator.onLine || !OD.account) return;
+    corsa = (async () => {
+      while (coda.size && navigator.onLine && !_odManuale) {
+        const [id, r] = coda.entries().next().value; coda.delete(id);
+        try { await carica(r); } catch (e) { console.warn('Caricamento subito non riuscito', e); }
+      }
+    })();
+    try { await corsa; } finally { corsa = null; }
+  }
+  async function carica(r) {
+    const sent = (await DB.get('od_sent')) || {};
+    const items = (await odRecordItems(r)).filter(it => (it.kind === 'blob' || it.kind === 'video') && !sent[it.blobId]);
+    if (!items.length) return;
+    const folders = (await DB.get('od_folders')) || {};
+    if (!folders[r.id]) { folders[r.id] = recordLabel(r) || r.id; await DB.set('od_folders', folders); }
+    let nv = 0;
+    for (const it of items) {
+      if (!navigator.onLine || _odManuale) break;
+      const b = await DB.getBlob(it.blobId); if (!b) continue;
+      let type = await OD.sniff(b.blob);
+      if (!type && it.kind === 'blob') type = await tipoFileArrivo(b.blob, b).then(t => t === MIME_DOCX ? t : null);
+      if (!type || (it.kind === 'video') !== /^video\//.test(type)) continue;
+      const res = await OD.upload([folders[r.id], ...it.segs], b.blob, { type, replace: false });
+      const s2 = (await DB.get('od_sent')) || {}; s2[it.blobId] = res.path; await DB.set('od_sent', s2);
+      await odLog({ path: res.path, size: b.blob.size }); fileSubs.forEach(f => f());
+      if (it.kind === 'video') { await fileMarkSent(it.blobId, res); await removeBlob(it.blobId); nv++; }
+    }
+    if (nv) toast(nv === 1 ? 'Video caricato su OneDrive: sul telefono non occupa più spazio' : nv + ' video caricati su OneDrive: sul telefono non occupano più spazio');
+  }
+  return { metti, vai, get corsa() { return corsa; } };
+})();
 
 /* ---------------- sezione impostazioni ---------------- */
 function OneDriveSettings({ settings, set }) {

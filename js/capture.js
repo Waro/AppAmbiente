@@ -234,22 +234,52 @@ const setCamScelta = v => _ls('nembo_cam', v);
 const camSerie = () => camScelta() === 'nembo' && _ls('nembo_cam_serie') === '1';
 const setCamSerie = on => _ls('nembo_cam_serie', on ? '1' : '0');
 const camUsable = () => !!(_camSet && navigator.mediaDevices && navigator.mediaDevices.getUserMedia && matchMedia('(pointer: coarse)').matches);
-function camOpen(input) { if (!input) return; if (camScelta() !== 'nembo' || !camUsable()) { input.click(); return; } _camSet({ input }); }
+/* copia nel telefono (v58, Impostazioni → Foto, per dispositivo): le foto e i video appena scattati (non quelli scelti dalla
+   galleria, che ci sono già) si salvano anche come file nella cartella Download, alla qualità piena, e compaiono nella
+   galleria. In Nembo le foto restano ridotte (lato lungo 1600 px) per il Word e lo spazio. */
+const camCopia = () => _ls('nembo_cam_copia') === '1';
+function copiaNelTelefono(files) {
+  if (!camCopia() || !files.length) return;
+  const d = new Date(), p2 = n => String(n).padStart(2, '0');
+  const base = `Nembo_${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}_${p2(d.getHours())}${p2(d.getMinutes())}${p2(d.getSeconds())}`;
+  files.forEach((f, i) => {
+    const ext = (/\.([a-z0-9]{2,4})$/i.exec(f.name || '') || [, /^video\//.test(f.type) ? 'mp4' : 'jpg'])[1];
+    setTimeout(() => downloadBlob(f, `${base}${files.length > 1 ? '_' + (i + 1) : ''}.${ext}`), i * 400);
+  });
+}
+function camOpen(input) {
+  if (!input) return;
+  if (camScelta() !== 'nembo' || !camUsable()) {
+    // fotocamera del telefono: la copia parte quando il file arriva al campo (non dalla galleria di Nembo)
+    // in cattura: parte prima del gestore del campo, che poi svuota input.files
+    if (input._copiaL) input.removeEventListener('change', input._copiaL, true);
+    input._copiaL = () => { input.removeEventListener('change', input._copiaL, true); input._copiaL = null; if (!input._gal && input.files) copiaNelTelefono([...input.files]); };
+    input.addEventListener('change', input._copiaL, true);
+    input.click(); return;
+  }
+  _camSet({ input });
+}
 // galleria: le foto (e, negli appunti, i video) scelte arrivano allo stesso campo della fotocamera
 function galOpen(input) {
   if (!input) return;
   const g = document.createElement('input'); g.type = 'file'; g.accept = /video/.test(input.accept) ? 'image/*,video/*' : 'image/*'; g.multiple = !!input.multiple;
-  g.onchange = () => { const files = [...g.files]; if (files.length) camDeliver(input, files); };
+  g.onchange = () => { const files = [...g.files]; if (files.length) { input._gal = true; try { camDeliver(input, files); } finally { input._gal = false; } } };
   g.click();
 }
 function CamSerieCard() {
   const [cam, setCam] = useState(camScelta); const [on, set] = useState(() => _ls('nembo_cam_serie') === '1');
+  const [auto, setAuto] = useState(odAutoOn); const [copia, setCopia] = useState(camCopia);
   const scegli = v => { setCamScelta(v); setCam(v); };
-  return html`<div class="card"><div class="fg-sw"><span>Fotocamera predefinita</span></div>
-    <div class="seg mt-2">${[['tel', 'Telefono'], ['nembo', 'Nembo']].map(([k, l]) => html`<button class=${cam === k ? 'on' : ''} aria-pressed=${cam === k} onClick=${() => scegli(k)}>${l}</button>`)}</div>
+  return html`<div class="sec-h mt-1"><h3>Fotocamera predefinita</h3></div><div class="card">
+    <div class="seg">${[['tel', 'Telefono'], ['nembo', 'Nembo']].map(([k, l]) => html`<button class=${cam === k ? 'on' : ''} aria-pressed=${cam === k} onClick=${() => scegli(k)}>${l}</button>`)}</div>
     <p class="hint-p" style="margin:var(--sp-2) 0 0">${cam === 'tel' ? 'Telefono: foto più nitide, con tutte le lenti. Negli appunti puoi scegliere foto o video.' : 'Nembo: resti nell\'app; negli appunti puoi registrare anche video.'}</p>
     ${cam === 'nembo' && html`<label class="fg-sw mt-3"><span>Scatti in serie</span><${Toggle} on=${on} label="Scatti in serie" set=${v => { setCamSerie(v); set(v); }} /></label>
-      <p class="hint-p" style="margin:var(--sp-2) 0 0">Più foto di seguito senza chiudere la fotocamera.</p>`}</div>`;
+      <p class="hint-p" style="margin:var(--sp-2) 0 0">Più foto di seguito senza chiudere la fotocamera.</p>`}
+    </div><div class="sec-h"><h3>Foto e video</h3></div><div class="card">
+    <label class="fg-sw"><span>Carica subito su OneDrive</span><${Toggle} on=${auto} label="Carica subito su OneDrive" set=${v => { _ls('nembo_od_auto', v ? '1' : '0'); setAuto(v); if (v) OdAuto.vai(); }} /></label>
+    <p class="hint-p" style="margin:var(--sp-2) 0 0">Foto e video partono appena li aggiungi, se OneDrive è collegato e c'è rete; senza rete partono quando torna. I video caricati non occupano più spazio sul telefono.</p>
+    <label class="fg-sw mt-4"><span>Copia nel telefono</span><${Toggle} on=${copia} label="Copia nel telefono" set=${v => { _ls('nembo_cam_copia', v ? '1' : '0'); setCopia(v); }} /></label>
+    <p class="hint-p" style="margin:var(--sp-2) 0 0">Ogni foto o video che scatti resta anche nel telefono, a qualità piena, nella cartella Download: lo trovi nella galleria.</p></div>`;
 }
 function camDeliver(input, files) {
   if (!files.length) return;
@@ -274,10 +304,13 @@ function Camera({ input, onClose }) {
   const [modo, setModo] = useState('foto');
   const [rec, setRec] = useState(false); const [secs, setSecs] = useState(0);
   // chiudendo, le foto già scattate non si perdono; una registrazione in corso si ferma e il video viene tenuto
-  const finish = (extra = []) => {
+  // extra: file dalla galleria; nuovi: video appena registrato. Copia nel telefono solo di scatti e video nuovi.
+  const finish = (extra = [], nuovi = []) => {
     const mr = st.current.mr;
     if (mr && mr.state === 'recording') { st.current.chiudi = true; mr.stop(); return; }
-    const files = [...shotsRef.current.map(s => s.file), ...extra]; shotsRef.current.forEach(s => URL.revokeObjectURL(s.url)); onClose(); setTimeout(() => camDeliver(input, files), 0);
+    const scatti = [...shotsRef.current.map(s => s.file), ...nuovi];
+    const files = [...scatti, ...extra]; shotsRef.current.forEach(s => URL.revokeObjectURL(s.url)); onClose();
+    setTimeout(() => { input._gal = true; try { camDeliver(input, files); } finally { input._gal = false; } copiaNelTelefono(scatti); }, 0);
   };
   useBackClose(() => finish());
   useEffect(() => {
@@ -339,7 +372,7 @@ function Camera({ input, onClose }) {
       const type = ((mr.mimeType || tipo || 'video/webm').split(';')[0]) || 'video/webm';
       const file = new File(parts, `video_${Date.now()}_${Math.min(dur, VIDEO_MAX)}s.${type === 'video/mp4' ? 'mp4' : 'webm'}`, { type });
       if (navigator.vibrate) navigator.vibrate(30);
-      st.current.mr = null; finish([file]);
+      st.current.mr = null; finish([], [file]);
     };
     mr.start(1000); st.current.mr = mr; st.current.t0 = Date.now(); setSecs(0); setRec(true);
     st.current.tick = setInterval(() => { const n = Math.floor((Date.now() - st.current.t0) / 1000); setSecs(n); if (n >= VIDEO_MAX && mr.state === 'recording') mr.stop(); }, 250);
@@ -355,7 +388,7 @@ function Camera({ input, onClose }) {
       ${torch !== null ? html`<button class=${'cam-b' + (torch ? ' on' : '')} aria-label="Torcia" onClick=${toggleTorch}><${Icon} n="torch" s=${21} /></button>` : html`<span style="width:var(--tap)"></span>`}
     </div>
     ${err && html`<div class="cam-err">${err}<button class="btn mt-3" onClick=${() => { onClose(); input.click(); }}><${Icon} n="camera" s=${18} /> Fotocamera del telefono</button></div>`}
-    ${conVideo && !rec && html`<div class="cam-modo" role="group" aria-label="Modalità">${[['foto', 'Foto'], ['video', 'Video']].map(([k, l]) => html`<button class=${modo === k ? 'on' : ''} aria-pressed=${modo === k} disabled=${busy} onClick=${() => setModo(k)}>${l}</button>`)}</div>`}
+    ${conVideo && !rec && html`<div class="seg cam-modo" role="group" aria-label="Modalità">${[['foto', 'Foto'], ['video', 'Video']].map(([k, l]) => html`<button class=${modo === k ? 'on' : ''} aria-pressed=${modo === k} disabled=${busy} onClick=${() => setModo(k)}>${l}</button>`)}</div>`}
     <div class="cam-bot">
       ${rec ? html`<span class="cam-sp"></span>` : html`<button class="cam-gal" aria-label="Scegli dalla galleria" onClick=${() => gal.current.click()}>
         ${last ? html`<img src=${last.url} alt="" />` : html`<${Icon} n="image" s=${24} />`}<small>Galleria</small></button>`}

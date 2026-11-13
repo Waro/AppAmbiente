@@ -407,7 +407,11 @@ function AgSlotSheet({ slot, senza, onPut, onAdd, onJson, onModello, onClose }) 
 // "Nuovo" della Programmazione: un appuntamento oppure un'attività programmata (creata ma non aperta)
 const AG_TIPI_NUOVI = [['ra', 'Sopralluogo RA'], ['dda1', 'DDA Fase 1'], ['dda2', 'DDA Fase 2'], ['mappatura', 'Mappatura MCA e FAV'], ['radon', 'Campagna radon (posa)'],
   ['aria', 'Monitoraggio aria'], ['hsPrimo', 'HSE · primo sopralluogo'], ['hsPeriodico', 'HSE · periodico'], ['vs', 'Verbale HSE'], ['firme', 'Foglio firme']];
-function AgAddSheet({ start, records, settings, onSave, onDelete, onJson, onClose }) {
+function AgAddSheet({ start, records, settings, onSave, onDelete, onJson, onClose: chiudi }) {
+  // documenti da consultare (v58): salvati subito sul dispositivo, tolti se l'attività non viene programmata
+  const [docs, setDocs] = useState([]); const docsRef = useRef(docs); docsRef.current = docs; const salvato = useRef(false);
+  useEffect(() => () => { if (!salvato.current) docsRef.current.forEach(d => removeBlob(d.blobId)); }, []);
+  const onClose = chiudi;
   useBackClose(onClose);
   const ed = start.rec || null;
   const [tab, setTab] = useState(ed ? 'app' : start.tab || 'app');
@@ -429,6 +433,8 @@ function AgAddSheet({ start, records, settings, onSave, onDelete, onJson, onClos
     let r = newOfType(f.tipo, records, settings, { data: f.data, ora: f.ora, durata: dur, stato: st, commessa: f.commessa.trim(), cliente: f.cliente.trim(), citta: f.citta.trim(), indirizzo: f.indirizzo.trim() });
     if (DRONE_TIPI.includes(r.type)) r.drone = !!f.drone;
     if (r.type === 'ra') { const prev = raPrecedente(records, r); if (prev) r = { ...r, ...(await raRiprendi(prev, r)) }; }
+    if (docs.length) r = { ...r, documenti: [...(r.documenti || []), ...docs] };
+    salvato.current = true;
     onSave([r], `${(AG_TIPI_NUOVI.find(x => x[0] === f.tipo) || [, 'Attività'])[1]} programmato per il ${fmtD(f.data)}${f.ora ? ' alle ' + f.ora : ''}`);
   };
   const durSel = html`<label class="fld"><span>Durata</span><select value=${String(dur)} onChange=${e => set({ durata: +e.target.value })}>
@@ -452,6 +458,9 @@ function AgAddSheet({ start, records, settings, onSave, onDelete, onJson, onClos
           <${Inp} label="Città" value=${f.citta} set=${v => set({ citta: v })} /><${Inp} label="Indirizzo" placeholder="Via e numero civico" value=${f.indirizzo} set=${v => set({ indirizzo: v })} />
           ${DRONE_TIPI.includes(tipoT) && html`<${DroneSw} on=${f.drone} set=${v => set({ drone: v })} />`}`}
       </div></div>
+      ${tab === 'att' && html`<div class="sec-h"><h3>Documenti da consultare</h3></div>
+        <div class="card"><${FileList} items=${docs} label="Allega PDF" nota="Li ritrovi nella scheda File dell'attività"
+          onAdd=${d => setDocs(L => [...L, d])} onRemove=${async d => { await removeBlob(d.blobId); setDocs(L => L.filter(x => x.id !== d.id)); }} /></div>`}
       <div class="stack mt-4">
         <button class="btn pri block" onClick=${save}>${tab === 'app' ? (ed ? 'Salva l\'appuntamento' : 'Aggiungi l\'appuntamento') : 'Programma l\'attività'}</button>
         ${onDelete && html`<button class="btn block danger" onClick=${onDelete}>Elimina l'appuntamento</button>`}

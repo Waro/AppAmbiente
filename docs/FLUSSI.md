@@ -67,7 +67,7 @@ flowchart LR
   F -- errore --> H["Notifiche con codice HTTP · Graph,<br/>Ricarica e Apri attività"]
 ```
 
-Video degli appunti (v57): caricati subito se OneDrive è collegato e c'è rete (`odVideoUpload`), altrimenti con il prossimo invio; dopo il caricamento il file sul telefono si cancella (`removeBlob`) e il video si apre dal link di OneDrive.
+Caricamento subito (v58, `OdAuto`): a ogni salvataggio dell'attività, al ritorno della rete e all'avvio, foto, allegati e video non ancora inviati partono in sottofondo (stesso registro `od_sent`, quindi l'invio completo li salta); «Invia a OneDrive» aspetta che finisca. Video degli appunti (v57): dopo il caricamento il file sul telefono si cancella (`removeBlob`) e il video si apre dal link di OneDrive.
 
 Con la selezione (v49) le attività scelte partono in un solo invio, ognuna nella sua cartella; senza OneDrive diventano un unico ZIP (`exportRecords`).
 
