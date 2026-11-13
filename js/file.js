@@ -1,4 +1,4 @@
-/* Scheda «File» delle attività: i documenti da generare (schede di prelievo, riepiloghi Word, scheda radon, schede aria,
+/* Scheda «File» delle attività: in cima i documenti da consultare durante il sopralluogo (r.documenti, v57), poi i documenti da generare (schede di prelievo, riepiloghi Word, scheda radon, schede aria,
    report e verbale HSE, fogli firme). Stato del tasto: grigio = da generare, verde = generato (tocco = apre il file),
    ambra = dati cambiati dopo la generazione. «Rigenera» crea un file nuovo con suffisso _rev1, _rev2… senza sovrascrivere.
    I file generati restano sul dispositivo e vanno su OneDrive subito (se collegato e in rete) o al primo caricamento.
@@ -119,7 +119,11 @@ function FileTab({ r, up, settings, prima }) {
   };
   const quando = t => new Date(t).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' });
   return html`<div>
-    <div class="sec-h mt-1"><h3>File</h3></div>
+    <div class="sec-h mt-1"><h3>Documenti da consultare</h3></div>
+    <div class="card"><${FileList} items=${r.documenti || []} label="Allega PDF" nota="PDF, foto e Word (.docx): si aprono anche senza rete"
+      onAdd=${d => up(p => ({ ...p, documenti: [...(p.documenti || []), d] }))}
+      onRemove=${async d => { await removeBlob(d.blobId); up(p => ({ ...p, documenti: (p.documenti || []).filter(x => x.id !== d.id) })); }} /></div>
+    <div class="sec-h"><h3>File</h3></div>
     <${Suggerimento} id="file" />
     ${!docs.length ? html`<div class="card"><div class="empty" style="padding:var(--sp-5)">Ancora nessun file da generare: compaiono qui quando l'attività ha i dati che servono.</div></div>`
     : html`<div class="card files">${docs.map(d => {

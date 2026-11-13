@@ -270,11 +270,11 @@ function hsSections(r) {
     { k: 'dati', l: 'Dati del report', ic: 'file' }, { k: 'anag', l: '2. Anagrafica immobile', ic: 'building' },
     ...HS_SINT_SEZ.map((s, i) => ({ k: 'c' + i, l: s.cap + '. ' + HS_SINT_TIT[s.cap], cap: s, ic: 'check' })),
     { k: 'descr', l: '8. Condizioni generali', ic: 'file' }, { k: 'azioni', l: '9. Azioni consigliate', ic: 'shield' },
-    { k: 'foto', l: '10. Rilievo fotografico', ic: 'camera' }, { k: 'note', l: 'Appunti e allegati', ic: 'paper' }];
+    { k: 'foto', l: '10. Rilievo fotografico', ic: 'camera' }, { k: 'note', l: 'Appunti', ic: 'paper' }];
   return [
     { k: 'dati', l: 'Dati del report', ic: 'file' }, { k: 'anag', l: 'Anagrafica immobile', ic: 'building' }, { k: 'inq', l: 'Inquadramento e catasto', ic: 'map' },
     ...HS_SCHEDE.map((s, i) => ({ k: 's' + i, l: (i + 1) + '. ' + (s.s || s.l), sch: s, ic: 'check' })),
-    { k: 'foto', l: 'Documentazione fotografica', ic: 'camera' }, { k: 'crit', l: 'Criticità e documenti mancanti', ic: 'shield' }, { k: 'note', l: 'Appunti e allegati', ic: 'paper' }];
+    { k: 'foto', l: 'Documentazione fotografica', ic: 'camera' }, { k: 'crit', l: 'Criticità e documenti mancanti', ic: 'shield' }, { k: 'note', l: 'Appunti', ic: 'paper' }];
 }
 // stato di una sezione: { st, w } = barra a sinistra (Rilievo) e parola, come nella Check-list del sopralluogo a note
 function hsSecStato(r, s) {
@@ -462,11 +462,7 @@ function HsSchedeForm({ rec: initial, records, settings, onSave, onDelete, onSet
       <div class="t"><b>${c.t}</b><small>${[c.costo, c.termine].filter(Boolean).join(' · ') || (c.az || '').slice(0, 120)}</small></div></div>`) : html`<div class="prow"><div class="t"><small>Nessuna scheda con priorità 1 o 2.</small></div></div>`}</div>
     <div class="sec-h"><h3>Documenti da chiedere o verificare</h3><span class="hint">${docs.length}</span></div>
     <div class="list">${docs.length ? docs.slice(0, 40).map((x, i) => html`<div class="prow" key=${i}><div class="t"><b>${x.n}. ${x.s}</b><small style="white-space:normal">${x.f}</small></div></div>`) : html`<div class="prow"><div class="t"><small>Nessun documento segnalato come mancante nelle schede.</small></div></div>`}</div></div>`; }
-  else if (S && S.k === 'note') body = html`<${Appunti} rec=${r} up=${up} rows=${6} label="Appunti (non vanno nel Word)" />
-    <div class="sec-h"><h3>Documenti allegati</h3></div>
-    <div class="card"><${FileList} items=${r.documenti || []}
-      onAdd=${d => up(p => ({ ...p, documenti: [...(p.documenti || []), d] }))}
-      onRemove=${async d => { await removeBlob(d.blobId); up(p => ({ ...p, documenti: p.documenti.filter(x => x.id !== d.id) })); }} /></div>`;
+  else if (S && S.k === 'note') body = html`<${Appunti} rec=${r} up=${up} rows=${6} label="Appunti (non vanno nel Word)" />`;
 
   return html`<div class="content form" ref=${root}>
     <${DetailHead} conclusa=${r.conclusa} eye=${'Sopralluogo HSE · ' + HS_FMT[r.formato]} title=${S0 && T === 'main' ? S0.l : r.codice} sub=${S0 && T === 'main' ? [r.codice, r.sito].filter(Boolean).join(' · ') : [r.commessa, r.cliente, placeAddr(r) || r.sito].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />

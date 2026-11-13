@@ -8,7 +8,7 @@ if (window.top !== window.self) {
   try { window.top.location.replace(window.self.location.href); } catch (e) { /* riquadro isolato: la pagina resta vuota */ }
   throw new Error('Nembo aperto dentro un riquadro');
 }
-const APP_VERSION = 'nembo-v56b';
+const APP_VERSION = 'nembo-v57';
 
 /* ---------------- aspetto: stile ("essenziale" o "originale") × modo ("auto", "chiaro" o "scuro") ----------------
    Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno.
@@ -137,6 +137,8 @@ async function removeBlob(id) {
   if (urlCache.has(id)) { URL.revokeObjectURL(urlCache.get(id)); urlCache.delete(id); }
   await DB.delBlob(id);
 }
+// attività senza documenti da consultare né video (v57): serve ai controlli «attività vuota»
+const senzaAllegati = r => !(r.documenti || []).length && !(r.videoAppunti || []).length && !(r.videoAppunti2 || []).length;
 // tutti gli id di file contenuti in un record
 function blobIds(obj, out = []) {
   if (typeof obj === 'string') { if (obj.startsWith('b_')) out.push(obj); }
@@ -144,6 +146,15 @@ function blobIds(obj, out = []) {
   else if (obj && typeof obj === 'object') Object.values(obj).forEach(x => blobIds(x, out));
   return out;
 }
+// video degli appunti (v57): id v_…, fuori da blobIds (quindi fuori da backup ZIP e sincronizzazione tra dispositivi)
+function videoIds(obj, out = []) {
+  if (typeof obj === 'string') { if (obj.startsWith('v_')) out.push(obj); }
+  else if (Array.isArray(obj)) obj.forEach(x => videoIds(x, out));
+  else if (obj && typeof obj === 'object') Object.values(obj).forEach(x => videoIds(x, out));
+  return out;
+}
+// tutto ciò che occupa spazio sul dispositivo: da usare quando si elimina un'attività
+const fileIds = obj => [...blobIds(obj), ...videoIds(obj)];
 
 // foto ridimensionata (lato lungo 1600 px, JPEG)
 // Riduce la foto a maxSide px sul lato lungo e libera subito la memoria dell'originale
@@ -294,6 +305,7 @@ const P = {
   search: 'M11 4a7 7 0 1 0 0 14a7 7 0 0 0 0-14ZM21 21l-4.35-4.35',
   radon: 'M12 12.65m-1.3 0a1.3 1.3 0 1 0 2.6 0a1.3 1.3 0 1 0-2.6 0M7.2 4.34A9.6 9.6 0 0 1 16.8 4.34L14.15 8.93A4.3 4.3 0 0 0 9.85 8.93ZM21.6 12.65A9.6 9.6 0 0 1 16.8 20.96L14.15 16.37A4.3 4.3 0 0 0 16.3 12.65ZM7.2 20.96A9.6 9.6 0 0 1 2.4 12.65L7.7 12.65A4.3 4.3 0 0 0 9.85 16.37Z',
   plus: 'M12 5v14M5 12h14', back: 'M15 18l-6-6 6-6', chev: 'M6 9l6 6 6-6', right: 'M9 18l6-6-6-6',
+  video: 'M16 13l5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 10.5M4 6h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z',
   camera: 'M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3zM12 13m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0',
   air: 'M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h8',
   scan: 'M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8v8M10.5 8v8M14 8v8M17 8v8',
@@ -500,7 +512,7 @@ function Viewer({ ids, index = 0, onClose, labelOf }) {
 
 /* ---------------- allegati (documenti) ---------------- */
 // Solo foto, PDF e Word (.docx), controllati in js/controlli.js. Foto e PDF si aprono nel visore di Nembo, Word con l'app Word.
-function FileList({ items = [], onAdd, onRemove, label = 'Allega documento' }) {
+function FileList({ items = [], onAdd, onRemove, label = 'Allega documento', nota = 'Foto, PDF e Word (.docx)' }) {
   const inp = useRef(); const [busy, setBusy] = useState(false);
   const [pdf, setPdf] = useState(null); const [img, setImg] = useState(null);
   const open = it => apriAllegato(it, { pdf: setPdf, img: setImg }).catch(e => fail('Allegato non aperto', e));
@@ -527,7 +539,7 @@ function FileList({ items = [], onAdd, onRemove, label = 'Allega documento' }) {
         ${it.script && html`<small class="lock">Contiene script: in Nembo si apre senza eseguirli</small>`}</button>
       <button class="x" aria-label="Rimuovi" onClick=${() => { if (confirm('Rimuovere ' + it.nome + '?')) onRemove(it); }}>×</button></div>`)}
     <button class="btn dashed" disabled=${busy} onClick=${() => inp.current.click()}>${busy ? html`<div class="spin" />` : html`<${Icon} n="paper" s=${17} />`} ${label}</button>
-    <div class="lock" style="margin:calc(-1 * var(--sp-1)) var(--sp-1) 0">Foto, PDF e Word (.docx)</div>
+    <div class="lock" style="margin:calc(-1 * var(--sp-1)) var(--sp-1) 0">${nota}</div>
     <input ref=${inp} type="file" accept=${ALLEGATI_ACCEPT} multiple hidden onChange=${pick} />
     ${pdf && html`<${PdfViewer} blob=${pdf.blob} nome=${pdf.nome} onClose=${() => setPdf(null)} />`}
     ${img && html`<${Viewer} ids=${[img]} onClose=${() => setImg(null)} />`}
@@ -756,18 +768,91 @@ function IcoFoto({ inp }) {
 function Appunti({ rec, up, k = 'appunti', foto = 'fotoAppunti', rows = 4, label = 'Appunti', placeholder, nudo, disabled }) {
   const inp = useRef();
   const [on, toggle] = useDictation(() => rec[k] || '', v => up({ [k]: v }));
+  // video solo negli appunti delle attività (v57)
+  const vf = rec && rec.type && rec.id ? { fotoAppunti: 'videoAppunti', fotoAppunti2: 'videoAppunti2' }[foto] : null;
   const add = async e => {
     const fs = [...e.target.files]; e.target.value = ''; if (!fs.length) return;
-    const out = []; // foto degli appunti senza limite di numero (v56)
-    for (const f of fs) { try { out.push(await saveImage(f)); } catch (err) { fail('Foto non salvata', err); } }
+    const out = [], vid = []; // foto degli appunti senza limite di numero (v56)
+    for (const f of fs) {
+      if (isVideo(f)) {
+        if (!vf) { toast('Qui puoi aggiungere solo foto'); continue; }
+        try { vid.push(await salvaVideo(f)); } catch (err) { if (err.code === 'VIDEO') toast(err.message); else fail('Video non salvato', err); }
+        continue;
+      }
+      try { out.push(await saveImage(f)); } catch (err) { fail('Foto non salvata', err); }
+    }
     if (out.length) up(p => ({ ...p, [foto]: [...(p[foto] || []), ...out] }));
+    if (vid.length) { up(p => ({ ...p, [vf]: [...(p[vf] || []), ...vid] })); for (const v of vid) videoCarica(rec, v); }
   };
   const campo = html`<div class="fld"><span>${label}</span>
     <div class="mic-wrap"><textarea rows=${rows} disabled=${disabled} placeholder=${placeholder || ' '} value=${rec[k] || ''} onInput=${e => up({ [k]: e.target.value })}></textarea>
       ${!disabled && html`<div class="ico-col">${foto && html`<${IcoFoto} inp=${inp} />`}<${MicBtn} rec=${on} toggle=${toggle} /></div>`}</div></div>
-    ${foto && html`<input ref=${inp} type="file" accept="image/*" capture="environment" multiple hidden onChange=${add} />
-      <${NotePhotos} rec=${rec} field=${foto} up=${up} noAdd />`}`;
+    ${foto && html`<input ref=${inp} type="file" accept=${vf ? 'image/*,video/*' : 'image/*'} capture="environment" multiple hidden onChange=${add} />
+      <${NotePhotos} rec=${rec} field=${foto} up=${up} noAdd />`}
+    ${vf && html`<${VideoList} rec=${rec} field=${vf} up=${up} />`}`;
   return nudo ? campo : html`<div class="card">${campo}</div>`;
+}
+/* ---------------- video degli appunti (v57) ----------------
+   r.videoAppunti (DDA Fase 2: r.videoAppunti2) = [{ id: 'v_…', nome, durata, t }]. Massimo VIDEO_MAX secondi e VIDEO_MAX_MB.
+   Non vanno nel Word, nel backup ZIP né nella sincronizzazione tra dispositivi: solo su OneDrive (cartella «video»
+   dell'attività). Dopo il caricamento il file sul telefono si cancella e il video si apre da OneDrive. */
+const isVideo = f => /^video\//.test(f.type || '') || /\.(mp4|m4v|mov|webm|3gp)$/i.test(f.name || '');
+function videoDurata(f) {
+  return new Promise(res => {
+    const u = URL.createObjectURL(f), v = document.createElement('video');
+    const fine = d => { URL.revokeObjectURL(u); v.removeAttribute('src'); res(d); };
+    v.preload = 'metadata'; v.muted = true;
+    v.onloadedmetadata = () => fine(v.duration); v.onerror = () => fine(NaN); setTimeout(() => fine(NaN), 8000);
+    v.src = u;
+  });
+}
+const videoErr = m => Object.assign(new Error(m), { code: 'VIDEO' });
+async function salvaVideo(f) {
+  if (f.size > VIDEO_MAX_MB * 1048576) throw videoErr('Video troppo grande: massimo ' + VIDEO_MAX_MB + ' MB');
+  // i video registrati da Nembo hanno la durata nel nome (i WebM non la riportano); per gli altri la legge il telefono
+  const m = /^video_\d+_(\d+)s\.(mp4|webm)$/.exec(f.name || '');
+  const d = m ? +m[1] : await videoDurata(f);
+  if (isFinite(d) && d > VIDEO_MAX + 1) throw videoErr('Video troppo lungo: massimo ' + VIDEO_MAX + ' secondi');
+  const t = Date.now(), dt = new Date(t), p2 = n => String(n).padStart(2, '0');
+  const nome = `Video_${dt.getFullYear()}-${p2(dt.getMonth() + 1)}-${p2(dt.getDate())}_${p2(dt.getHours())}${p2(dt.getMinutes())}${p2(dt.getSeconds())}`;
+  const id = uid('v');
+  await DB.putBlob({ id, blob: f, type: f.type || 'video/mp4', name: nome });
+  return { id, nome, durata: isFinite(d) ? Math.round(d) : 0, t };
+}
+// caricamento subito, se OneDrive è collegato e c'è rete; altrimenti il video resta sul telefono fino al prossimo invio
+async function videoCarica(r, v) {
+  if (!OD.account || !navigator.onLine) return;
+  try { await odVideoUpload(r, v); toast('Video caricato su OneDrive: sul telefono non occupa più spazio'); }
+  catch (err) { notify('warn', 'Video non caricato su OneDrive: lo carico al prossimo invio', { record: recordTitle(r), detail: err.message, ids: [r.id] }); }
+}
+function VideoList({ rec, field, up }) {
+  const L = rec[field] || []; const od = useOdFiles(); const [play, setPlay] = useState(null);
+  if (!L.length) return null;
+  const apri = async v => {
+    const b = await DB.getBlob(v.id);
+    if (b && b.blob) { setPlay({ url: URL.createObjectURL(b.blob), nome: v.nome }); return; }
+    const u = od.urls[v.id];
+    if (!navigator.onLine) { toast('Il video è su OneDrive: per vederlo serve la rete'); return; }
+    if (u && /^https:\/\//.test(u)) { window.open(u, '_blank', 'noopener'); return; }
+    toast('Il video è su OneDrive, nella cartella video dell\'attività');
+  };
+  const chiudi = () => { URL.revokeObjectURL(play.url); setPlay(null); };
+  const togli = async v => {
+    if (!confirm('Togliere ' + v.nome + ' dagli appunti?' + (od.sent[v.id] ? ' Su OneDrive resta.' : ''))) return;
+    await removeBlob(v.id); up(p => ({ ...p, [field]: (p[field] || []).filter(x => x.id !== v.id) }));
+  };
+  return html`<div class="stack mt-3">${L.map(v => html`<div class="row" key=${v.id}>
+      <span class="sq plain"><${Icon} n="video" s=${18} /></span>
+      <button class="row-apri" onClick=${() => apri(v)}><div>${v.nome}${v.durata ? ' · ' + fmtDurata(v.durata) : ''}</div>
+        <small class="lock">${od.sent[v.id] ? 'Su OneDrive' : OD.account ? 'Sul telefono: da caricare su OneDrive' : 'Sul telefono: collega OneDrive per caricarlo'}</small></button>
+      <button class="x" aria-label=${'Togli ' + v.nome} onClick=${() => togli(v)}>×</button></div>`)}
+    ${play && html`<${VideoPlayer} url=${play.url} nome=${play.nome} onClose=${chiudi} />`}</div>`;
+}
+function VideoPlayer({ url, nome, onClose }) {
+  useBackClose(onClose);
+  return html`<div class="ov vid-ov" role="dialog" aria-label=${nome} onClick=${onClose}>
+    <video src=${url} controls autoplay playsinline onClick=${e => e.stopPropagation()}></video>
+    <button class="vw-x" aria-label="Chiudi" onClick=${onClose}>×</button></div>`;
 }
 // campi senza segnaposto: uno spazio come segnaposto, così l'etichetta resta dentro il campo vuoto (Rilievo: Campo)
 function fldSegnaposto() {

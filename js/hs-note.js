@@ -302,13 +302,6 @@ function HsInqEst({ r, up }) {
         <label class="fld"><span>Mappali</span><input placeholder="es. 953, 1181" value=${c.mappale} onInput=${e => up(p => ({ ...p, catTer: p.catTer.map((x, j) => j === i ? { ...x, mappale: e.target.value } : x) }))} /></label></div>`)}
       <button class="btn dashed mt-2" onClick=${() => up(p => ({ ...p, catTer: [...(p.catTer || []), { foglio: '', mappale: '' }] }))}>+ Riga catasto terreni</button></div>`;
 }
-function HsAppunti({ r, up }) {
-  return html`<div class="sec-h"><h3>Documenti allegati</h3></div>
-    <div class="card"><${FileList} items=${r.documenti || []}
-      onAdd=${d => up(p => ({ ...p, documenti: [...(p.documenti || []), d] }))}
-      onRemove=${async d => { await removeBlob(d.blobId); up(p => ({ ...p, documenti: p.documenti.filter(x => x.id !== d.id) })); }} /></div>`;
-}
-
 function HsDatiSint({ r, up }) {
   const setM = patch => up(p => ({ ...p, meta: { ...p.meta, ...patch } }));
   const setImg = (k, id) => up(p => ({ ...p, img: { ...(p.img || {}), [k]: id || undefined } }));
@@ -416,8 +409,7 @@ function HsNoteForm({ rec: initial, settings, onSave, onDelete, onSettings, embe
       ${hasTpl === false && html`<div class="notice err">Manca il modello Word ${HS_FMT[r.formato]}: caricalo in Impostazioni → Modelli. <button class="btn link" onClick=${onSettings}>Apri</button></div>`}`}
     ${T === 'note' && html`${SR_API && !ns.sel && html`<${Suggerimento} id="dettatura" />`}
       ${!ns.sel && html`<${Appunti} rec=${r} up=${up} rows=${3} label="Appunti (non vanno nel Word)" />`}
-      <${HsNoteTab} r=${r} up=${up} ns=${ns} filtro=${filtro} setFiltro=${setFiltro} addN=${() => nuovaNota(null)} onRiep=${() => setRiep(true)} />
-      ${!ns.sel && html`<${HsAppunti} r=${r} up=${up} />`}`}
+      <${HsNoteTab} r=${r} up=${up} ns=${ns} filtro=${filtro} setFiltro=${setFiltro} addN=${() => nuovaNota(null)} onRiep=${() => setRiep(true)} />`}
     ${T === 'check' && html`<${HsChecklist} r=${r} up=${up} aperto=${aperto} setAperto=${setAperto} vaiNota=${vaiNota} addN=${c => nuovaNota(c)} />`}
     ${T === 'file' && html`<${FileTab} r=${r} up=${up} settings=${settings} prima=${prima} />`}
     ${ns.sel ? html`<${ActionBar}><button class="btn pri" disabled=${!selNote.length} onClick=${() => setTagSheet(true)}><${Icon} n="tag" s=${20} /> Tag (${selNote.length})</button><//>`

@@ -4,6 +4,18 @@ Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Nem
 
 ## [Non rilasciato]
 
+## [nembo-v57] — 2026-11-13
+
+### Aggiunto
+- Scheda File: in cima «Documenti da consultare» (`FileList` su `r.documenti`) per tutte le attività con la scheda File (DDA, Mappatura, RA, Radon, Aria, HSE, Verbale); PDF, foto e Word si aprono nel visore di Nembo anche senza rete. Tolti i «Documenti allegati» da Anagrafica (DDA) e Appunti (HSE): i documenti già allegati compaiono nella nuova sezione. `documenti` nei modelli di RA, Radon, Aria e Verbale; su OneDrive vanno nella cartella `documenti` per tutti i tipi.
+- Video negli appunti di tutte le attività (`videoAppunti`, DDA Fase 2 `videoAppunti2`): massimo `VIDEO_MAX` = 120 s e `VIDEO_MAX_MB` = 400 MB. Fotocamera di Nembo con selettore Foto/Video negli appunti (`MediaRecorder`, 720p, ~2,5 Mbit/s, ferma da sola a 120 s, durata nel nome del file); con la fotocamera del telefono il campo accetta `image/*,video/*` e la durata si legge dai metadati. Id `v_…`: fuori da `blobIds`, quindi esclusi da backup ZIP, sincronizzazione tra dispositivi e Word. Su OneDrive nella cartella `video` dell'attività (subito se collegato e in rete, altrimenti al primo invio); dopo il caricamento il file locale si cancella e il video si apre da OneDrive (`VideoList`, `VideoPlayer`). `fileIds` = `blobIds` + `videoIds` per le eliminazioni.
+
+### Cambiato
+- Impostazioni → Foto: «Fotocamera predefinita» Telefono / Nembo (`nembo_cam` per dispositivo); «Scatti in serie» solo con Nembo. Chi aveva gli scatti in serie attivi passa a Nembo.
+- Controlli «attività vuota» (`senzaAllegati`): un'attività con soli documenti o video non viene più considerata vuota.
+- CSP: `media-src 'self' blob:` per riprodurre i video sul telefono.
+- Sopralluogo HSE: la sezione «Appunti e allegati» diventa «Appunti».
+
 ## [nembo-v56b] — 2026-11-13
 
 ### Corretto

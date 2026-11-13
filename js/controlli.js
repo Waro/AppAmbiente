@@ -161,7 +161,7 @@ const TIPI_REC = ['dda', 'mappatura', 'radon', 'ra', 'hs', 'vs', 'firme', 'aria'
 const ID_OK = /^[A-Za-z0-9_-]{1,80}$/;
 const CHIAVI_VIETATE = new Set(['__proto__', 'constructor', 'prototype']);
 const ARR_FOTO = new Set(['foto', 'fotoPrec', 'fotoAppunti', 'fotoAppunti2']);
-const ARR_OGG = new Set(['manufatti', 'punti', 'momenti', 'recs', 'checklist', 'documenti', 'rapporti', 'planimetrie', 'fogli', 'partecipanti', 'noteSop']);
+const ARR_OGG = new Set(['manufatti', 'punti', 'momenti', 'recs', 'checklist', 'documenti', 'rapporti', 'planimetrie', 'fogli', 'partecipanti', 'noteSop', 'videoAppunti', 'videoAppunti2']);
 const DATA_OK = /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=\s]*$/;
 const REC_MAX = 20 * 1048576;
 function chiaviVietate(o) {

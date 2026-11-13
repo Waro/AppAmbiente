@@ -74,14 +74,18 @@ const OD = (() => {
 
   // ---- controlli sui file ----
   async function sniff(blob) {
-    const b = new Uint8Array(await blob.slice(0, 8).arrayBuffer());
+    const b = new Uint8Array(await blob.slice(0, 12).arrayBuffer());
     if (b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46) return 'application/pdf';
     if (b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF) return 'image/jpeg';
     if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47) return 'image/png';
+    // video degli appunti (v57): MP4/MOV (box «ftyp») e WebM
+    if (b[4] === 0x66 && b[5] === 0x74 && b[6] === 0x79 && b[7] === 0x70) return String.fromCharCode(...b.slice(8, 10)) === 'qt' ? 'video/quicktime' : 'video/mp4';
+    if (b[0] === 0x1A && b[1] === 0x45 && b[2] === 0xDF && b[3] === 0xA3) return 'video/webm';
     return null;
   }
   const EXT = { 'application/pdf': '.pdf', 'image/jpeg': '.jpg', 'image/png': '.png', 'application/json': '.json',
-    [XLSX_MIME]: '.xlsx', [DOCX_MIME]: '.docx' };
+    [XLSX_MIME]: '.xlsx', [DOCX_MIME]: '.docx',
+    'video/mp4': '.mp4', 'video/quicktime': '.mov', 'video/webm': '.webm' };
   const OFFICE = new Set([XLSX_MIME, DOCX_MIME]);
   // ogni segmento del percorso: niente separatori, niente "..", niente caratteri vietati da OneDrive
   function cleanSegment(s) {
@@ -117,7 +121,7 @@ const OD = (() => {
       const real = await sniff(blob);
       if (real !== type) throw new Error('il contenuto non corrisponde a un file ' + EXT[type]);
     }
-    if (blob.size > MAX_SIZE) throw new Error('file oltre 60 MB');
+    if (/^video\//.test(type) ? blob.size > VIDEO_MAX_MB * 1048576 : blob.size > MAX_SIZE) throw new Error(/^video\//.test(type) ? 'video oltre ' + VIDEO_MAX_MB + ' MB' : 'file oltre 60 MB');
     const path = buildPath(segments, type);
     const conflict = replace ? 'replace' : 'rename';
     const t = await token();
@@ -232,7 +236,6 @@ async function odRecordItems(r, settings) {
     hsFotoOrd(r).filter(p => p.g !== 'prev').forEach((p, k) => photo(p.id, 'foto', `${String(k + 1).padStart(3, '0')}${p.cap ? '_' + p.cap.slice(0, 40) : ''}`));
     (r.cgFoto || []).forEach((o, k) => photo(o.id, 'immagini', `inquadramento_${k + 1}`));
     Object.entries(r.img || {}).forEach(([k, v]) => photo(v, 'immagini', k));
-    (r.documenti || []).forEach(d => photo(d.blobId, 'documenti', d.nome));
   } else if (r.type === 'radon') {
     r.punti.forEach((p, i) => p.foto.forEach((f, k) => photo(f, 'foto', `R${i + 1}_${k + 1}`)));
     r.rapporti.forEach(d => photo(d.blobId, 'rapporti', d.nome));
@@ -245,10 +248,12 @@ async function odRecordItems(r, settings) {
     r.recs.forEach(x => x.foto.forEach((f, k) => photo(f, 'foto', `${x.nome}_${k + 1}`)));
     MATS.forEach(m => r.campioni[m.k].forEach(c => (c.foto || []).forEach((f, k) => photo(f, 'foto', `${m.l}_${c.codice || 'campione'}_${k + 1}`))));
     ncOf(r).forEach(x => (x.foto || []).forEach((f, k) => photo(f, 'foto', `${x.codice}_${k + 1}`)));
-    r.documenti.forEach(d => photo(d.blobId, 'documenti', d.nome));
   }
+  (r.documenti || []).forEach(d => photo(d.blobId, 'documenti', d.nome));
   (r.fotoAppunti || []).forEach((f, k) => photo(f, 'foto', `Appunti_${k + 1}`));
   (r.fotoAppunti2 || []).forEach((f, k) => photo(f, 'foto', `Appunti_Fase2_${k + 1}`));
+  // video degli appunti: caricati una volta sola, poi tolti dal telefono
+  [...(r.videoAppunti || []), ...(r.videoAppunti2 || [])].forEach(v => v && v.id && items.push({ kind: 'video', blobId: v.id, segs: ['video', v.nome || v.id] }));
   // planimetrie: la versione annotata viene rigenerata a ogni modifica, quindi va sostituita (non è nel registro "una volta sola")
   for (const p of (r.planimetrie || [])) {
     const id = p.mergedBlobId || p.blobId;
@@ -322,7 +327,7 @@ async function odSync(records, settings) {
   for (const r of records) {
     if (!folders[r.id]) folders[r.id] = recordLabel(r) || r.id;
     for (const it of await odRecordItems(r, settings)) {
-      if ((it.kind === 'blob' || it.kind === 'fileblob') && sent[it.blobId]) continue;
+      if ((it.kind === 'blob' || it.kind === 'fileblob' || it.kind === 'video') && sent[it.blobId]) continue;
       plan.push({ ...it, folder: folders[r.id], recId: r.id });
     }
   }
@@ -348,6 +353,11 @@ async function odSync(records, settings) {
         type = await OD.sniff(b.blob) || await tipoFileArrivo(b.blob, b).then(t => t === MIME_DOCX ? t : null);
         if (!type) { errors.push({ path: it.folder + '/' + it.segs.join('/'), msg: 'tipo di file non ammesso, saltato', code: 'TIPO' }); done++; continue; }
         blob = b.blob; replace = false;
+      } else if (it.kind === 'video') {
+        const b = await DB.getBlob(it.blobId); if (!b) { it._ok = true; done++; continue; }
+        type = await OD.sniff(b.blob);
+        if (!type || !/^video\//.test(type)) { errors.push({ path: it.folder + '/' + it.segs.join('/'), msg: 'formato video non riconosciuto, saltato', code: 'TIPO' }); done++; continue; }
+        blob = b.blob; replace = false;
       } else if (it.kind === 'fileblob') {
         const b = await DB.getBlob(it.blobId); if (!b) { it._ok = true; done++; continue; }
         blob = b.blob; type = it.type; replace = true;
@@ -361,6 +371,7 @@ async function odSync(records, settings) {
       const res = await OD.upload([it.folder, ...it.segs], blob, { type, replace });
       if (it.kind === 'blob') { sent[it.blobId] = res.path; await DB.set('od_sent', sent); }
       if (it.kind === 'fileblob') { await fileMarkSent(it.blobId, res); sent[it.blobId] = res.path; }
+      if (it.kind === 'video') { await fileMarkSent(it.blobId, res); sent[it.blobId] = res.path; await removeBlob(it.blobId); }
       await odLog({ path: res.path, size: blob.size });
       it._ok = true;
     } catch (e) {
@@ -391,6 +402,16 @@ async function odSync(records, settings) {
     notify(stop ? 'warn' : 'ok', msg, { record: rec, ids: stop ? records.filter(r => !synced[r.id].ok).map(r => r.id) : [] });
   }
   return { done, errors };
+}
+
+// un video appena aggiunto agli appunti: su OneDrive subito, poi via dal telefono
+async function odVideoUpload(r, v) {
+  const b = await DB.getBlob(v.id); if (!b) return;
+  const type = await OD.sniff(b.blob); if (!type || !/^video\//.test(type)) throw new Error('formato video non riconosciuto');
+  const folders = (await DB.get('od_folders')) || {};
+  if (!folders[r.id]) { folders[r.id] = recordLabel(r) || r.id; await DB.set('od_folders', folders); }
+  const res = await OD.upload([folders[r.id], 'video', v.nome || v.id], b.blob, { type, replace: false });
+  await fileMarkSent(v.id, res); await removeBlob(v.id);
 }
 
 /* ---------------- sezione impostazioni ---------------- */

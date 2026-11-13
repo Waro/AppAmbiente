@@ -223,24 +223,33 @@ function SignaturePadOverlay({ title, onDone, onClose, allowImage }) {
    camOpen(input) sostituisce input.click() sui campi foto con capture: le foto scattate o scelte dalla galleria
    arrivano all'input come se le avesse scelte il telefono (evento change), quindi i gestori esistenti non cambiano.
    Senza fotocamera utilizzabile (PC, permesso negato) resta la fotocamera del telefono / la scelta file.
-   Dalla v45 il tasto foto apre la fotocamera del telefono (qualità piena, tutte le lenti); la fotocamera di Nembo
-   si usa solo con «Scatti in serie» attivo (Impostazioni → Foto, scelta di questo dispositivo). */
+   v57: in Impostazioni → Foto si sceglie, per questo dispositivo, la fotocamera predefinita (telefono o Nembo);
+   con Nembo si possono attivare gli scatti in serie. Negli appunti (input che accetta anche video) la fotocamera
+   di Nembo ha anche la modalità Video, con registrazione fermata a VIDEO_MAX secondi. */
 let _camSet = null;
-const camSerie = () => { try { return localStorage.getItem('nembo_cam_serie') === '1'; } catch (e) { return false; } };
-const setCamSerie = on => { try { localStorage.setItem('nembo_cam_serie', on ? '1' : '0'); } catch (e) { /* senza memoria */ } };
+const _ls = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
+// prima della v57 esisteva solo «Scatti in serie»: chi l'aveva attivo usava già la fotocamera di Nembo
+const camScelta = () => _ls('nembo_cam') || (_ls('nembo_cam_serie') === '1' ? 'nembo' : 'tel');
+const setCamScelta = v => _ls('nembo_cam', v);
+const camSerie = () => camScelta() === 'nembo' && _ls('nembo_cam_serie') === '1';
+const setCamSerie = on => _ls('nembo_cam_serie', on ? '1' : '0');
 const camUsable = () => !!(_camSet && navigator.mediaDevices && navigator.mediaDevices.getUserMedia && matchMedia('(pointer: coarse)').matches);
-function camOpen(input) { if (!input) return; if (!camSerie() || !camUsable()) { input.click(); return; } _camSet({ input }); }
-// galleria: le foto scelte arrivano allo stesso campo della fotocamera
+function camOpen(input) { if (!input) return; if (camScelta() !== 'nembo' || !camUsable()) { input.click(); return; } _camSet({ input }); }
+// galleria: le foto (e, negli appunti, i video) scelte arrivano allo stesso campo della fotocamera
 function galOpen(input) {
   if (!input) return;
-  const g = document.createElement('input'); g.type = 'file'; g.accept = 'image/*'; g.multiple = !!input.multiple;
+  const g = document.createElement('input'); g.type = 'file'; g.accept = /video/.test(input.accept) ? 'image/*,video/*' : 'image/*'; g.multiple = !!input.multiple;
   g.onchange = () => { const files = [...g.files]; if (files.length) camDeliver(input, files); };
   g.click();
 }
 function CamSerieCard() {
-  const [on, set] = useState(camSerie);
-  return html`<div class="card"><label class="fg-sw"><span>Scatti in serie con la fotocamera di Nembo</span><${Toggle} on=${on} label="Scatti in serie" set=${v => { setCamSerie(v); set(v); }} /></label>
-    <p class="hint-p" style="margin:var(--sp-2) 0 0">Più foto di seguito senza uscire da Nembo. La fotocamera del telefono dà foto più nitide.</p></div>`;
+  const [cam, setCam] = useState(camScelta); const [on, set] = useState(() => _ls('nembo_cam_serie') === '1');
+  const scegli = v => { setCamScelta(v); setCam(v); };
+  return html`<div class="card"><div class="fg-sw"><span>Fotocamera predefinita</span></div>
+    <div class="seg mt-2">${[['tel', 'Telefono'], ['nembo', 'Nembo']].map(([k, l]) => html`<button class=${cam === k ? 'on' : ''} aria-pressed=${cam === k} onClick=${() => scegli(k)}>${l}</button>`)}</div>
+    <p class="hint-p" style="margin:var(--sp-2) 0 0">${cam === 'tel' ? 'Telefono: foto più nitide, con tutte le lenti. Negli appunti puoi scegliere foto o video.' : 'Nembo: resti nell\'app; negli appunti puoi registrare anche video.'}</p>
+    ${cam === 'nembo' && html`<label class="fg-sw mt-3"><span>Scatti in serie</span><${Toggle} on=${on} label="Scatti in serie" set=${v => { setCamSerie(v); set(v); }} /></label>
+      <p class="hint-p" style="margin:var(--sp-2) 0 0">Più foto di seguito senza chiudere la fotocamera.</p>`}</div>`;
 }
 function camDeliver(input, files) {
   if (!files.length) return;
@@ -249,33 +258,49 @@ function camDeliver(input, files) {
 }
 function CameraHost() { const [s, set] = useState(null); _camSet = set; return s ? html`<${Camera} key=${Date.now()} input=${s.input} onClose=${() => set(null)} />` : null; }
 
+// video degli appunti (v57): durata massima in secondi e peso massimo in MB (anche per i video del telefono)
+const VIDEO_MAX = 120;
+const VIDEO_MAX_MB = 400;
+const fmtDurata = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
 function Camera({ input, onClose }) {
-  const multi = !!input.multiple;
+  const multi = !!input.multiple && camSerie();
+  const conVideo = /video/.test(input.accept || '');
   const video = useRef(); const gal = useRef(); const st = useRef({});
   const [shots, setShots] = useState([]); const shotsRef = useRef(shots); shotsRef.current = shots;
   const [err, setErr] = useState(null);
   const [torch, setTorch] = useState(null);
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState(false);
-  // chiudendo, le foto già scattate non si perdono
-  const finish = (extra = []) => { const files = [...shotsRef.current.map(s => s.file), ...extra]; shotsRef.current.forEach(s => URL.revokeObjectURL(s.url)); onClose(); setTimeout(() => camDeliver(input, files), 0); };
+  const [modo, setModo] = useState('foto');
+  const [rec, setRec] = useState(false); const [secs, setSecs] = useState(0);
+  // chiudendo, le foto già scattate non si perdono; una registrazione in corso si ferma e il video viene tenuto
+  const finish = (extra = []) => {
+    const mr = st.current.mr;
+    if (mr && mr.state === 'recording') { st.current.chiudi = true; mr.stop(); return; }
+    const files = [...shotsRef.current.map(s => s.file), ...extra]; shotsRef.current.forEach(s => URL.revokeObjectURL(s.url)); onClose(); setTimeout(() => camDeliver(input, files), 0);
+  };
   useBackClose(() => finish());
   useEffect(() => {
-    let alive = true, stream;
+    let alive = true, stream; setErr(null); setTorch(null);
+    const vid = modo === 'video';
+    const chiedi = audio => navigator.mediaDevices.getUserMedia({ audio, video: { facingMode: { ideal: 'environment' }, width: { ideal: vid ? 1280 : 3840 }, height: { ideal: vid ? 720 : 2160 } } });
     (async () => {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 3840 }, height: { ideal: 2160 } } });
+        // video: con il microfono se il permesso c'è, altrimenti senza audio
+        try { stream = await chiedi(vid); } catch (e) { if (!vid) throw e; stream = await chiedi(false); }
         if (!alive) return stream.getTracks().forEach(t => t.stop());
+        st.current.stream = stream;
         const v = video.current; v.srcObject = stream; await v.play();
-        const track = stream.getVideoTracks()[0]; st.current.track = track;
-        if ('ImageCapture' in window) try { st.current.ic = new ImageCapture(track); } catch (e) { /* scatto dal video */ }
+        const track = stream.getVideoTracks()[0]; st.current.track = track; st.current.ic = null;
+        if (!vid && 'ImageCapture' in window) try { st.current.ic = new ImageCapture(track); } catch (e) { /* scatto dal video */ }
         const caps = track.getCapabilities ? track.getCapabilities() : {};
         if (caps.torch) setTorch(false);
         if (caps.focusMode && caps.focusMode.includes('continuous')) track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {});
       } catch (e) { setErr('Non riesco ad aprire la fotocamera dentro Nembo. Usa la fotocamera del telefono o la galleria.'); }
     })();
     return () => { alive = false; if (stream) stream.getTracks().forEach(t => t.stop()); };
-  }, []);
+  }, [modo]);
+  useEffect(() => () => clearInterval(st.current.tick), []);
   const toggleTorch = () => { const t = st.current.track; if (!t) return; const on = !torch; t.applyConstraints({ advanced: [{ torch: on }] }).then(() => setTorch(on)).catch(() => {}); };
   const grab = async () => {
     const ic = st.current.ic;
@@ -299,22 +324,46 @@ function Camera({ input, onClose }) {
     } catch (e) { toast('Foto non scattata: riprova'); }
     setBusy(false);
   };
+  // registrazione: 720p, ferma da sola a VIDEO_MAX secondi; la durata va nel nome del file (i WebM registrati non la riportano)
+  const recStart = () => {
+    const s = st.current.stream;
+    if (!s || !window.MediaRecorder) { toast('Su questo telefono Nembo non può registrare: usa la fotocamera del telefono'); return; }
+    const tipo = ['video/mp4;codecs=avc1,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'].find(t => MediaRecorder.isTypeSupported(t)) || '';
+    let mr; try { mr = new MediaRecorder(s, { ...(tipo ? { mimeType: tipo } : {}), videoBitsPerSecond: 2500000, audioBitsPerSecond: 96000 }); }
+    catch (e) { toast('Registrazione non avviata: riprova'); return; }
+    const parts = [];
+    mr.ondataavailable = e => { if (e.data && e.data.size) parts.push(e.data); };
+    mr.onstop = () => {
+      clearInterval(st.current.tick); setRec(false);
+      const dur = Math.max(1, Math.round((Date.now() - st.current.t0) / 1000));
+      const type = ((mr.mimeType || tipo || 'video/webm').split(';')[0]) || 'video/webm';
+      const file = new File(parts, `video_${Date.now()}_${Math.min(dur, VIDEO_MAX)}s.${type === 'video/mp4' ? 'mp4' : 'webm'}`, { type });
+      if (navigator.vibrate) navigator.vibrate(30);
+      st.current.mr = null; finish([file]);
+    };
+    mr.start(1000); st.current.mr = mr; st.current.t0 = Date.now(); setSecs(0); setRec(true);
+    st.current.tick = setInterval(() => { const n = Math.floor((Date.now() - st.current.t0) / 1000); setSecs(n); if (n >= VIDEO_MAX && mr.state === 'recording') mr.stop(); }, 250);
+  };
+  const recStop = () => { const mr = st.current.mr; if (mr && mr.state === 'recording') mr.stop(); };
   const last = shots[shots.length - 1];
   return html`<div class="cam" role="dialog" aria-label="Fotocamera">
     <video ref=${video} playsinline muted></video>
     ${flash && html`<div class="cam-flash"></div>`}
     <div class="cam-top">
       <button class="cam-b" aria-label="Chiudi" onClick=${() => finish()}><${Icon} n="x" s=${22} /></button>
-      <span class="cam-n">${shots.length ? shots.length + (shots.length === 1 ? ' foto' : ' foto') : ''}</span>
+      <span class=${'cam-n' + (rec ? ' rec' : '')}>${modo === 'video' ? (rec ? fmtDurata(secs) + ' / ' + fmtDurata(VIDEO_MAX) : 'Registrazione ferma a ' + VIDEO_MAX + ' secondi') : shots.length ? shots.length + ' foto' : ''}</span>
       ${torch !== null ? html`<button class=${'cam-b' + (torch ? ' on' : '')} aria-label="Torcia" onClick=${toggleTorch}><${Icon} n="torch" s=${21} /></button>` : html`<span style="width:var(--tap)"></span>`}
     </div>
     ${err && html`<div class="cam-err">${err}<button class="btn mt-3" onClick=${() => { onClose(); input.click(); }}><${Icon} n="camera" s=${18} /> Fotocamera del telefono</button></div>`}
+    ${conVideo && !rec && html`<div class="cam-modo" role="group" aria-label="Modalità">${[['foto', 'Foto'], ['video', 'Video']].map(([k, l]) => html`<button class=${modo === k ? 'on' : ''} aria-pressed=${modo === k} disabled=${busy} onClick=${() => setModo(k)}>${l}</button>`)}</div>`}
     <div class="cam-bot">
-      <button class="cam-gal" aria-label="Scegli dalla galleria" onClick=${() => gal.current.click()}>
-        ${last ? html`<img src=${last.url} alt="" />` : html`<${Icon} n="image" s=${24} />`}<small>Galleria</small></button>
-      <button class="cam-shut" aria-label="Scatta" disabled=${busy || !!err} onClick=${shoot}><i></i></button>
-      ${multi && shots.length ? html`<button class="cam-done" onClick=${() => finish()}>Fine</button>` : html`<span class="cam-sp"></span>`}
+      ${rec ? html`<span class="cam-sp"></span>` : html`<button class="cam-gal" aria-label="Scegli dalla galleria" onClick=${() => gal.current.click()}>
+        ${last ? html`<img src=${last.url} alt="" />` : html`<${Icon} n="image" s=${24} />`}<small>Galleria</small></button>`}
+      ${modo === 'video'
+        ? html`<button class=${'cam-shut vid' + (rec ? ' rec' : '')} aria-label=${rec ? 'Ferma la registrazione' : 'Registra'} disabled=${!!err} onClick=${rec ? recStop : recStart}><i></i></button>`
+        : html`<button class="cam-shut" aria-label="Scatta" disabled=${busy || !!err} onClick=${shoot}><i></i></button>`}
+      ${multi && shots.length && !rec ? html`<button class="cam-done" onClick=${() => finish()}>Fine</button>` : html`<span class="cam-sp"></span>`}
     </div>
-    <input ref=${gal} type="file" accept="image/*" multiple=${multi} hidden onChange=${e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) finish(fs); }} />
+    <input ref=${gal} type="file" accept=${conVideo ? 'image/*,video/*' : 'image/*'} multiple=${multi} hidden onChange=${e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) finish(fs); }} />
   </div>`;
 }

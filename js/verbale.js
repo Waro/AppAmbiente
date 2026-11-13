@@ -5,11 +5,11 @@ function newVerbale(records, s) {
   const n = records.filter(r => r.type === 'vs' && (r.codice || '').startsWith('VS-' + y)).map(r => +r.codice.slice(-3)).reduce((a, b) => Math.max(a, b), 0) + 1;
   return { id: uid('vs'), type: 'vs', codice: `VS-${y}-${String(n).padStart(3, '0')}`, createdAt: Date.now(), updatedAt: Date.now(),
     commessa: '', cliente: '', citta: '', sito: '', indirizzo: '', data: today(), tecnico: `${s.tecnicoNome} ${s.tecnicoCognome}`.trim(),
-    note: [], appunti: '', fotoAppunti: [], visite: [], img: {},
+    note: [], appunti: '', fotoAppunti: [], documenti: [], visite: [], img: {},
     meta: { titolo: '', fondo: '', dataReport: '', redatto: `${s.tecnicoNome} ${s.tecnicoCognome}`.trim(), verificato: '', protocollo: '', procura: '', revisione: '00', presenti: '', descrArea: '' } };
 }
 const newNotaVs = () => ({ id: uid('n'), titolo: '', testo: '', mig: '', foto: [], tag: [] });
-const verbaleIsEmpty = r => !r.commessa && !r.cliente && !r.sito && !r.citta && !r.indirizzo && !(r.note || []).some(n => n.titolo || n.testo || n.foto.length) && !r.appunti && !(r.fotoAppunti || []).length;
+const verbaleIsEmpty = r => senzaAllegati(r) && !r.commessa && !r.cliente && !r.sito && !r.citta && !r.indirizzo && !(r.note || []).some(n => n.titolo || n.testo || n.foto.length) && !r.appunti && !(r.fotoAppunti || []).length;
 const vsPhotos = r => r.type === 'vs' ? (r.note || []).flatMap((n, i) => (n.foto || []).map((f, k) => ({ id: f, name: `Nota_${i + 1}_${(n.titolo || 'senza_titolo').slice(0, 40)}_${k + 1}` }))) : [];
 
 function VerbaleList({ records, open, activeId, acts }) {

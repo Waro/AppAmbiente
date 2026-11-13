@@ -82,6 +82,8 @@ Penne della planimetria (`PLAN_COLORS` in `plan.js`), fisse perché finiscono ne
 | Selezione multipla | `.selhead`, `.selbar` | una sola azione in basso, nella barra flottante; dentro una scheda (note HSE e Verbale, v53) `.selhead.in` resta ferma in alto e l'azione «Tag (N)» è nella barra dell'attività |
 | Tag a più elementi (v53) | `TagMultiSheet` | tag acceso = tutti, con «k/N» = alcuni, contorno = nessuno; `role="checkbox"` con `aria-checked` `mixed` |
 | Microfono e fotocamera nel campo | `.mic-in`, `.cam-in` | tondi 36 px in `--fill-soft` in alto a destra del campo; la fotocamera sotto il microfono (in cima se la dettatura non c'è), contatore `.ck-badge`; miniature delle foto collegate sotto il campo (`.hs-fotos`) |
+| Fotocamera di Nembo: Foto · Video (v57) | `.cam-modo`, `.cam-shut.vid` | selettore a pillola sopra il pulsante di scatto, solo negli appunti; in video il pulsante ha il centro `--danger` che diventa un quadrato durante la registrazione; in alto il tempo «0:45 / 2:00» con il punto `--danger` |
+| Riga video (v57) | `VideoList`, `.row-apri` | come una riga allegato: icona video, nome · durata, stato (Su OneDrive / Sul telefono) in `.lock`, × per togliere; si apre a tutto schermo su `--media` (`.vid-ov`) |
 | Suggerimento, primi passi | `.tip`, `PrimiPassi` | uno solo per schermata |
 
 ## 6. Stati di schermata

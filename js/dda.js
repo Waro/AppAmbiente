@@ -95,7 +95,7 @@ function newDda(records, settings) {
     campioni: emptyCampioni(), congelati: {}, schede: {}, risultati: [], colonna: 'B', checklist: [],
   };
 }
-const ddaIsEmpty = r => !r.commessa && !r.cliente && !r.sito && !r.citta && !r.indirizzo && !(r.fotoAppunti || []).length && !(r.fotoAppunti2 || []).length && !r.recs.length && !Object.keys(r.check).length && !MATS.some(m => r.campioni[m.k].length) && !r.usoAttuale && !r.interviste && !r.appunti && !r.appunti2 && !(r.checklist && r.checklist.length) && !(r.planimetrie && r.planimetrie.length) && !(r.fogli || []).length && !ncOf(r).length;
+const ddaIsEmpty = r => senzaAllegati(r) && !r.commessa && !r.cliente && !r.sito && !r.citta && !r.indirizzo && !(r.fotoAppunti || []).length && !(r.fotoAppunti2 || []).length && !r.recs.length && !Object.keys(r.check).length && !MATS.some(m => r.campioni[m.k].length) && !r.usoAttuale && !r.interviste && !r.appunti && !r.appunti2 && !(r.checklist && r.checklist.length) && !(r.planimetrie && r.planimetrie.length) && !(r.fogli || []).length && !ncOf(r).length;
 const allCamp = r => MATS.flatMap(m => (r.campioni[m.k] || []).map(c => ({ ...c, k: m.k })));
 
 function superamenti(r) {
@@ -248,10 +248,6 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
       <button class=${r.fase === 1 ? 'on' : ''} onClick=${() => up({ fase: 1 })}>Fase 1 · Sopralluogo</button>
       <button class=${r.fase === 2 ? 'on' : ''} onClick=${() => up({ fase: 2 })}>Fase 2 · Campionamento</button>
     </div>
-    <div class="sec-h"><h3>Documenti allegati</h3></div>
-    <div class="card"><${FileList} items=${r.documenti}
-      onAdd=${d => up(p => ({ ...p, documenti: [...p.documenti, d] }))}
-      onRemove=${async d => { await removeBlob(d.blobId); up(p => ({ ...p, documenti: p.documenti.filter(x => x.id !== d.id) })); }} /></div>
 `}
 
     ${T === 'sop' && html`

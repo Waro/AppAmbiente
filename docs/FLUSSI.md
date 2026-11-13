@@ -59,13 +59,15 @@ Icona in Oggi (v51): verde se l'ultimo giro riuscito ha meno di 24 ore, arancion
 flowchart LR
   A["Invia a OneDrive<br/>(barra, Opzioni, selezione di più attività)"] --> B{account e rete?}
   B -- no --> Z["condivisione di Android a gruppi di 10<br/>o file ZIP"]
-  B -- sì --> C["odRecordItems: foto, allegati,<br/>file generati, planimetrie, dati.json"]
+  B -- sì --> C["odRecordItems: foto, allegati, video,<br/>file generati, planimetrie, dati.json"]
   C --> D{file già inviato?<br/>od_sent}
-  D -- foto/allegato già inviato --> E[salta]
+  D -- foto/allegato/video già inviato --> E[salta]
   D -- no, o documento --> F["controllo del tipo reale (sniff)<br/>≤ 4 MB: PUT · oltre: sessione a blocchi"]
   F --> G["od_synced[id] = { t, ok }<br/>barra verde · ambra se modificata dopo · rossa se incompleta"]
   F -- errore --> H["Notifiche con codice HTTP · Graph,<br/>Ricarica e Apri attività"]
 ```
+
+Video degli appunti (v57): caricati subito se OneDrive è collegato e c'è rete (`odVideoUpload`), altrimenti con il prossimo invio; dopo il caricamento il file sul telefono si cancella (`removeBlob`) e il video si apre dal link di OneDrive.
 
 Con la selezione (v49) le attività scelte partono in un solo invio, ognuna nella sua cartella; senza OneDrive diventano un unico ZIP (`exportRecords`).
 
