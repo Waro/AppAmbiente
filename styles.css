@@ -822,13 +822,13 @@ input[type=checkbox] { accent-color: var(--blue); }
 .cam-done { min-width: 64px; height: 44px; border-radius: var(--r-pill); border: 0; background: var(--blue); color: var(--on-accent); font-weight: 700; font-size: var(--fs-base); padding: 0 16px; }
 .cam-sp { width: 64px; }
 /* v57: modalità Foto/Video della fotocamera di Nembo (solo negli appunti) */
-.cam-modo { position: relative; z-index: 2; align-self: center; margin-top: auto; display: flex; gap: 4px; padding: 4px; border-radius: var(--r-pill); background: rgba(0,0,0,.45); }
+.cam-modo { position: relative; z-index: 2; align-self: center; margin-top: auto; display: flex; gap: var(--sp-1); padding: var(--sp-1); border-radius: var(--r-pill); background: rgba(0,0,0,.45); }
 .cam-modo button { min-width: 72px; height: 36px; border: 0; border-radius: var(--r-pill); background: none; color: var(--on-dark); font-weight: 600; font-size: var(--fs-base); }
 .cam-modo button.on { background: var(--paper); color: var(--media); }
 .cam-modo + .cam-bot { margin-top: 0; }
 .cam-shut.vid i { background: var(--danger); }
 .cam-shut.vid.rec i { transform: scale(.5); border-radius: var(--r-xs); }
-.cam-n.rec::before { content: ''; display: inline-block; width: 10px; height: 10px; margin-right: 8px; border-radius: 50%; background: var(--danger); vertical-align: 1px; }
+.cam-n.rec::before { content: ''; display: inline-block; width: 10px; height: 10px; margin-right: var(--sp-2); border-radius: 50%; background: var(--danger); vertical-align: 1px; }
 .cam-err { position: relative; z-index: 2; margin: auto 24px; background: rgba(20,20,20,.85); border-radius: var(--r-card); padding: 18px; font-size: var(--fs-base); line-height: 1.4; display: grid; text-align: center; }
 .ntf-act { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .ntf-act .btn.pri { min-height: 0; font-size: var(--fs-md); }
@@ -1208,4 +1208,4 @@ img.logo { background: none; object-fit: cover; }
 .row-apri small { display: block; }
 .vid-ov { background: var(--media); padding: 0; }
 .vid-ov video { max-width: 100%; max-height: 100%; }
-.vid-ov .vw-x { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 10px); right: 14px; }
+.vid-ov .vw-x { position: absolute; top: calc(env(safe-area-inset-top, 0px) + var(--sp-3)); right: var(--sp-4); }
