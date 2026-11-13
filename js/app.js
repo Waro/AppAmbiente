@@ -229,10 +229,17 @@ function App() {
     });
   }, [wide]);
 
+  // caricamento subito (v58): al ritorno della rete e all'avvio, le attività delle ultime due settimane
+  const recsRef = useRef(allRecs); recsRef.current = allRecs;
+  useEffect(() => {
+    const tutte = () => recsRef.current.filter(r => (r.updatedAt || 0) > Date.now() - 14 * 864e5).forEach(r => OdAuto.metti(r));
+    const t = setTimeout(tutte, 10000); addEventListener('online', tutte);
+    return () => { clearTimeout(t); removeEventListener('online', tutte); };
+  }, []);
   const saveRec = useCallback(async rec => {
     await DB.put(rec);
     setRecords(rs => { const i = rs.findIndex(x => x.id === rec.id); if (i < 0) return [...rs, rec]; const c = rs.slice(); c[i] = rec; return c; });
-    Sync.schedule();
+    Sync.schedule(); OdAuto.metti(rec);
   }, []);
   const delRec = async rec => {
     if (!confirm('Eliminare definitivamente? Foto e allegati vengono cancellati da questo telefono.')) return;

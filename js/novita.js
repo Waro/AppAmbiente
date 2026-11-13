@@ -3,6 +3,10 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
+  { v: 58, data: '2026-11-13', tipo: 'minore', titolo: 'Foto e video subito al sicuro',
+    voci: [
+      'Foto e video partono per OneDrive appena li aggiungi, se OneDrive è collegato e c’è rete; senza rete partono quando torna.',
+      'In Impostazioni → Foto puoi attivare «Copia nel telefono»: ogni foto o video che scatti resta anche nella galleria del telefono, a qualità piena.' ] },
   { v: 57, data: '2026-11-13', tipo: 'minore', titolo: 'Documenti da consultare e video negli appunti',
     voci: [
       'Nella scheda File di ogni attività, in cima, trovi «Documenti da consultare»: allega i PDF che ti servono durante il sopralluogo, si aprono anche senza rete.',
