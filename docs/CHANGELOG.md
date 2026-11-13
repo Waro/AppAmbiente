@@ -4,6 +4,14 @@ Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Nem
 
 ## [Non rilasciato]
 
+## [nembo-v59] — 2026-11-13
+
+### Cambiato
+Guida dentro l'app allineata alle v56–v58, senza voce nelle Novità.
+- Benvenuto: la prima slide cita anche i video e il caricamento subito su OneDrive.
+- Suggerimenti: «Scheda File» spiega i documenti da consultare in cima; «Campioni» spiega la pianta che si apre dopo la prima foto e il tasto Planimetria.
+- DECISIONS D-13 aggiornata: i testi si applicano e si mostrano.
+
 ## [nembo-v58b] — 2026-11-13
 
 ### Cambiato

@@ -74,8 +74,8 @@ Una voce per decisione. Le date mancanti sono segnate: la decisione è precedent
 - **Decisione:** numerazione progressiva `nembo-vNN`; correzioni urgenti `nembo-vNNb`, mai con il punto; `VERSION` (sw.js) e `APP_VERSION` (core.js) sempre uguali.
 - **Alternative scartate:** SemVer (non serve a un'app senza API pubbliche).
 
-## D-13 — Testi approvati prima dell'applicazione
-- **Decisione:** ogni testo nuovo o modificato (interfaccia, Novità, guida, presentazione) si propone e si applica dopo l'approvazione del titolare. «Attività», mai «pratica»; mai «roba»; «essere», non «stare».
+## D-13 — Testi applicati e mostrati
+- **Decisione:** dalla v57 (13/11/2026) ogni testo nuovo o modificato (interfaccia, Novità, guida, presentazione) si applica direttamente e si mostra sempre al titolare, che indica cosa cambiare; prima si proponeva e si applicava dopo l'approvazione. «Attività», mai «pratica»; mai «roba»; «essere», non «stare».
 
 ## D-15 — Primo sopralluogo HSE a note
 - **Data:** 2026-11-11 (v53).
