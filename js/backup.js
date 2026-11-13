@@ -101,7 +101,6 @@ async function recordFiles(r, settings) {
   const s = settings || _settings;
   const pre = (r.type === 'dda' || r.type === 'mappatura' || r.type === 'hs' || r.type === 'vs' || r.type === 'ra' || r.type === 'firme' || r.type === 'aria') ? slug([r.codice, r.commessa].filter(Boolean).join('_')) : slug(['Radon', r.commessa || r.cliente].filter(Boolean).join('_'));
   const out = [];
-  const pdf = (bytes, name) => out.push({ blob: new Blob([bytes], { type: 'application/pdf' }), name: `${pre}_${name}.pdf` });
   const add = async (id, name) => {
     const b = id && await DB.getBlob(id); if (!b) return;
     const docx = b.type === MIME_DOCX;
@@ -112,33 +111,32 @@ async function recordFiles(r, settings) {
   if (r.type === 'ra') {
     for (const m of r.manufatti) for (const [k, f] of m.foto.entries()) await add(f, `${m.codice || 'manufatto'}_${k + 1}`);
   } else if (r.type === 'hs') {
-    try { out.push({ blob: await hsBuildDocx(r, s, {}), name: `${pre}_${slug(hsFileBase(r))}.docx` }); } catch (e) { console.warn('hs word', e); }
     for (const [k, p] of hsFotoOrd(r).filter(p => p.g !== 'prev').entries()) await add(p.id, `Foto_${k + 1}${p.cap ? '_' + p.cap : ''}`);
     for (const [k, o] of (r.cgFoto || []).entries()) await add(o.id, `Inquadramento_${k + 1}`);
     for (const d of (r.documenti || [])) await add(d.blobId, d.nome.replace(/\.[^.]+$/, ''));
   } else if (r.type === 'radon') {
-    pdf(await PdfGen.radonPdf(await loadTemplate('radon.pdf'), r), 'Scheda_radon');
     for (const [i, p] of r.punti.entries()) for (const [k, f] of p.foto.entries()) await add(f, `R${i + 1}_${k + 1}`);
     for (const d of r.rapporti) await add(d.blobId, d.nome.replace(/\.[^.]+$/, ''));
   } else if (r.type === 'vs') {
     for (const x of vsPhotos(r)) await add(x.id, x.name);
-    if (await DB.get(TEMPLATES['vs.docx'].key)) try { out.push({ blob: await vsBuildDocx(r, s, {}), name: vsFileBase(r) + '.docx' }); } catch (e) { console.warn('vs word', e); }
   } else if (r.type === 'firme' || r.type === 'aria' || r.type === 'app') {
     // solo fogli firme / monitoraggio aria
   } else {
-    for (const k of ['mca', 'fav']) if (r.campioni[k].length) pdf(await schedaCampioniPdfBytes(r, k, s), 'Scheda_campioni_' + k.toUpperCase());
     for (const x of r.recs) for (const [k, f] of x.foto.entries()) await add(f, `${x.nome}_${k + 1}`);
     for (const m of MATS) for (const c of r.campioni[m.k]) for (const [k, f] of (c.foto || []).entries()) await add(f, `${m.l}_${c.codice || 'campione'}_${k + 1}`);
     for (const x of ncOf(r)) for (const [k, f] of (x.foto || []).entries()) await add(f, `${x.codice}_${k + 1}`);
     for (const d of r.documenti) await add(d.blobId, d.nome.replace(/\.[^.]+$/, ''));
   }
   for (const [k, f] of (r.fotoAppunti || []).entries()) await add(f, `Appunti_${k + 1}`);
+  // file generati dalla scheda File: l'ultima revisione, così com'è (v58b: l'invio non genera nulla)
+  for (const d of recDocs(r, s)) {
+    const L = fileRevs(r, d), e = L[L.length - 1], b = e && e.blobId && await DB.getBlob(e.blobId);
+    if (b && b.blob) out.push({ blob: b.blob, name: `${pre}_${e.name}` });
+  }
   for (const [k, f] of (r.fotoAppunti2 || []).entries()) await add(f, `Appunti_Fase2_${k + 1}`);
   for (const p of (r.planimetrie || [])) await add(p.mergedBlobId || p.blobId, 'Planimetria_' + p.nome + (p.mergedBlobId ? '_annotata' : ''));
-  for (const f of (r.fogli || [])) if (foglioFirme(f)) pdf(await foglioPdf(r, f, s), foglioNome(f));
   for (const x of ariaPhotos(r)) await add(x.id, x.name);
   for (const d of ariaRapporti(r)) await add(d.blobId, 'Aria_' + d.nome.replace(/\.[^.]+$/, ''));
-  for (const o of ariaOutputs(r, s)) { try { const b = await o.make(); out.push({ blob: b instanceof Blob ? b : new Blob([b], { type: 'application/pdf' }), name: `${pre}_${o.name}${o.ext}` }); } catch (e) { console.warn('aria', e); } }
   return out;
 }
 

@@ -3,6 +3,9 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
+  { v: 58.1, data: '2026-11-13', tipo: 'minore', titolo: 'Invio a OneDrive più rapido',
+    voci: [
+      '«Invia a OneDrive» carica solo quello che c’è già: foto, video, documenti e i file che hai generato. Word, PDF ed Excel li generi dalla scheda File o dal Riepilogo.' ] },
   { v: 58, data: '2026-11-13', tipo: 'minore', titolo: 'Foto e video subito al sicuro',
     voci: [
       'Foto e video partono per OneDrive appena li aggiungi, se OneDrive è collegato e c’è rete; senza rete partono quando torna.',

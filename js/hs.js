@@ -478,7 +478,7 @@ function HsSchedeForm({ rec: initial, records, settings, onSave, onDelete, onSet
         : html`<${OdBtn} r=${r} settings=${settings} />`}
       gruppi=${[S && T === 'main' && ['Sezioni', [{ ic: 'back', l: 'Sezione precedente', fn: () => go(-1) }, { ic: 'list', l: 'Indice delle sezioni', fn: () => setSec(null) }]],
         ['Documenti', [
-          { ic: 'share', l: OD.account ? 'Carica su OneDrive' : 'Invia foto e Word a OneDrive', fn: upload },
+          { ic: 'share', l: OD.account ? 'Carica su OneDrive' : 'Invia a OneDrive', fn: upload },
           { ic: 'paper', l: 'Importa report precedente', s: 'Word o JSON della vecchia app', fn: () => imp.current.click() },
           { ic: 'plus', l: 'Nuovo sopralluogo periodico da questo', fn: nextYear }]],
         opzArchivio({ r, settings, onDelete, up, elimina: 'Elimina il sopralluogo' })].filter(Boolean)} />

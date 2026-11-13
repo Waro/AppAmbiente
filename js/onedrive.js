@@ -261,14 +261,9 @@ async function odRecordItems(r, settings) {
   }
   ariaPhotos(r).forEach(x => photo(x.id, 'aria', x.name));
   ariaRapporti(r).forEach(d => photo(d.blobId, 'aria', d.nome));
-  // documenti: quelli generati dalla scheda File vanno su così come sono (tutte le revisioni non ancora caricate);
-  // quelli mai generati vengono preparati al momento, come prima
-  for (const d of recDocs(r, s)) {
-    const L = fileRevs(r, d);
-    if (L.length) { for (const e of L) if (e.blobId) items.push({ kind: 'fileblob', blobId: e.blobId, type: d.type, segs: fileSegs(d, e.rev) }); continue; }
-    if (d.tpl && !(await DB.get(d.tpl))) continue;
-    items.push(d.type === PDF_MIME ? { kind: 'pdf', segs: fileSegs(d, 0), make: async () => new Uint8Array(await (await d.make()).arrayBuffer()) } : { kind: 'office', type: d.type, segs: fileSegs(d, 0), make: d.make });
-  }
+  // documenti: solo quelli già generati dalla scheda File, così come sono (tutte le revisioni non ancora caricate).
+  // Dalla v58b «Invia a OneDrive» non genera nulla: carica solo ciò che c'è.
+  for (const d of recDocs(r, s)) for (const e of fileRevs(r, d)) if (e.blobId) items.push({ kind: 'fileblob', blobId: e.blobId, type: d.type, segs: fileSegs(d, e.rev) });
   const { _new, ...data } = r;
   items.push({ kind: 'json', segs: ['dati'], make: async () => JSON.stringify({ app: 'nembo', version: 1, record: data }, null, 1) });
   return items;
