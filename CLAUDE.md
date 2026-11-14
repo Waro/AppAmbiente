@@ -2,6 +2,8 @@
 
 Nembo è una PWA offline-first per il lavoro sul campo (DDA, mappature MCA/FAV, sopralluoghi RA, radon, aria, HSE). Codice pubblico su GitHub Pages dal ramo `main`. Documentazione in [`docs/`](docs/README.md).
 
+**Lo sviluppo continua nel repository privato `Nembo`.** Questo repository pubblica la versione in uso con GitHub Pages e riceve solo correzioni urgenti, finché tutti non sono passati alla nuova app.
+
 ## Prima di cominciare
 
 - Controlla `APP_VERSION` in `js/core.js`: il lavoro parte sempre dall'ultima versione pubblicata. Una proposta su una versione vecchia toglie le funzioni arrivate dopo.
