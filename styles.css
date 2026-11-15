@@ -1088,6 +1088,8 @@ img.logo { background: none; object-fit: cover; }
 .onb-done .t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .onb-done .t b { font-size: var(--fs-lg); font-weight: 600; }
 .onb-done .t small { font-size: var(--fs-md); color: var(--muted); line-height: 1.4; }
+/* la × dei primi passi è quella dei suggerimenti, allineata al bordo destro della card (v59) */
+.onb-top .tip-x, .onb-done .tip-x { margin: calc(-1 * var(--sp-2)) calc(-1 * var(--sp-2)) calc(-1 * var(--sp-2)) 0; }
 .onb-big { width: 44px; height: 44px; border-radius: var(--r-sq); background: var(--ok-soft); color: var(--ok); display: grid; place-items: center; flex: none; }
 /* Benvenuto: illustrazioni fatte con i componenti dell'app, sul fondo delle Novità */
 .wl-art { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; padding: var(--sp-4); }

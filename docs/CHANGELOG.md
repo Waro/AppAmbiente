@@ -15,6 +15,7 @@ Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Nem
 - Rilievo § 9 Movimento e vibrazione: token `--dur-press`, `--dur-fast`, `--dur`, `--dur-slow`, `--ease-out`, `--ease-in`, `--ease-in-out`, `--ease-assesta`, `--press`, `--mv-1…3`; stato premuto su tutti i pulsanti; entrata di velo, finestra, avviso e planimetria.
 
 ### Cambiato
+- Suggerimenti e primi passi si chiudono tutti con la × in alto a destra: i primi passi non hanno più «Nascondi» in fondo né «Chiudi» nella card finale. L'avviso «Solo consultazione» del Riepilogo diventa il suggerimento «Riepilogo», una volta sola. Il suggerimento «Campioni» ricorda «Annulla» nell'avviso in basso.
 - Le durate scritte a mano in `styles.css` usano i token di movimento; il foglio dal basso sale con `--ease-assesta`.
 - «Riduci movimento» copre anche la pulsazione del microfono, lo stato premuto, entrate, uscite e oscillazione.
 - Guida dentro l'app allineata alle v56–v58 (questa parte non ha voce nelle Novità).

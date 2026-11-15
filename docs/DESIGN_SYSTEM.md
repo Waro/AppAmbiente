@@ -88,7 +88,7 @@ Penne della planimetria (`PLAN_COLORS` in `plan.js`), fisse perché finiscono ne
 | Fotocamera di Nembo: Foto · Video (v57, v58) | `.seg.cam-modo`, `.cam-shut.vid` | il controllo a segmenti di Nembo sopra il pulsante di scatto, solo negli appunti; in video il pulsante ha il centro `--danger` che diventa un quadrato durante la registrazione; in alto il tempo «0:45 / 2:00» con il punto `--danger`. Eccezione alla regola dei colori: il rosso della registrazione è la convenzione di tutte le fotocamere |
 | Impostazioni → Foto (v58) | `.sec-h` + `.card` | titoli di gruppo come negli elenchi delle impostazioni («Fotocamera predefinita», «Foto e video»); controllo a segmenti e interruttori `.fg-sw` |
 | Riga video (v57) | `VideoList`, `.row-apri` | come una riga allegato: icona video, nome · durata, stato (Su OneDrive / Sul telefono) in `.lock`, × per togliere; si apre a tutto schermo su `--media` (`.vid-ov`) |
-| Suggerimento, primi passi | `.tip`, `PrimiPassi` | uno solo per schermata |
+| Suggerimento, primi passi | `.tip`, `PrimiPassi` | uno solo per schermata; tutti si chiudono con la × in alto a destra (`.tip-x`, v59), anche i primi passi. Un avviso che dipende dai dati (commessa mancante, modello mancante, OneDrive non collegato) non è un suggerimento: non ha la × e sparisce quando il problema è risolto |
 
 ## 6. Stati di schermata
 

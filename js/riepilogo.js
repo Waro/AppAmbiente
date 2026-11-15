@@ -176,7 +176,7 @@ function RiepilogoPanel({ r, mats, onClose, onFile, azione, scelta }) {
     <div class="sheet-grab"></div>
     <div class="sheet-nav"><button class="btn link" onClick=${onClose}>Chiudi</button><b>Riepilogo</b><span></span></div>
     <div class="sheet-body">
-      <div class="notice mt-0">Solo consultazione. Per modificare, torna alla scheda.</div>
+      <${Suggerimento} id="riepilogo" />
       <p class="lead lead-gap">${sub}</p>
       ${corpo}
       ${(ap || apF.length > 0) && html`<div class="sec-h"><h3>Appunti</h3></div><div class="card">${ap && html`<div class="riep-ap">${ap}</div>`}
