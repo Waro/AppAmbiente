@@ -689,6 +689,7 @@
 "SLOT": "readonly",
 "slug": "readonly",
 "SN_COL": "readonly",
+"sopraBarre": "readonly",
 "SopralluogoHse": "readonly",
 "splash": "readonly",
 "SR_API": "readonly",

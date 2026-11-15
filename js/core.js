@@ -368,6 +368,16 @@ function segnala(sel, msg) {
   const f = el.matches('input,textarea,select') ? el : el.querySelector('input,textarea,select'); if (f && !f.disabled) f.focus({ preventScroll: true });
 }
 
+// distanza dal fondo dello schermo della barra in basso visibile (azioni, selezione, tab bar, planimetria); null se non c'è
+function sopraBarre() {
+  let top = Infinity;
+  document.querySelectorAll('.abar, .selbar, .tabbar, .plan-bar').forEach(b => {
+    if (b.closest('.esce')) return;
+    const r = b.getBoundingClientRect(); if (r.height && r.bottom > 0 && r.top < innerHeight && getComputedStyle(b).visibility !== 'hidden') top = Math.min(top, r.top);
+  });
+  return top === Infinity ? null : Math.max(0, Math.round(innerHeight - top));
+}
+
 // toast(testo) oppure toast(testo, { azione, onAzione, ms }): con l'azione (es. «Annulla») l'avviso resta più a lungo
 const toast = (t, o) => _toast(t, o);
 function Toast() {
@@ -375,7 +385,9 @@ function Toast() {
   _toast = (x, o = {}) => { setT({ x, o, k: Date.now() }); clearTimeout(tm.current); tm.current = setTimeout(() => setT(null), o.ms || (o.azione ? ANNULLA_MS : 2600)); };
   if (!t) return null;
   const az = () => { clearTimeout(tm.current); setT(null); t.o.onAzione && t.o.onAzione(); };
-  return html`<div key=${t.k} class=${'toast' + (t.o.azione ? ' con-az' : '')} role="status"><span>${t.x}</span>
+  // Rilievo: l'avviso da leggere è in alto; quello con un'azione è in basso, sopra la barra visibile, vicino al pollice
+  const sopra = t.o.azione ? sopraBarre() : null;
+  return html`<div key=${t.k} class=${'toast' + (t.o.azione ? ' con-az' : '')} style=${sopra ? '--toast-basso:calc(' + sopra + 'px + var(--sp-2))' : ''} role="status"><span>${t.x}</span>
     ${t.o.azione && html`<button class="toast-az" onClick=${az}>${t.o.azione}</button>`}</div>`;
 }
 

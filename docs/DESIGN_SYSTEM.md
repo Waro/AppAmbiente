@@ -70,7 +70,7 @@ Penne della planimetria (`PLAN_COLORS` in `plan.js`), fisse perché finiscono ne
 | Barre in basso flottanti (v52) | `.tabbar`, `.abar`, `.selbar`, `.plan-bar` | stesso disegno ovunque: binario `--track` al 95 % sfocato, `--r-card`, `--sh-pop`, `--sp-3` dal bordo inferiore (più l'area sicura), dentro i margini `--gutter`, al massimo 528 px; pulsanti secondari trasparenti in `--text2`, principale con il gradiente. In selezione la barra dell'attività aperta accanto si nasconde |
 | Card, blocco navy | `.card`, `.card-navy` | `tight`; navy con `--navy-glow` |
 | Avviso | `.notice` | predefinito (fascia `--blue-sky`), `err` |
-| Avviso in alto (v59) | `.toast`, `.toast.con-az`, `.toast-az` | `toast(testo)` per 2,6 s; `toast(testo, { azione, onAzione })` più largo, testo a sinistra e azione in `--blue-sky` a destra (bersaglio `--tap`), per 6 s. Un avviso nuovo sostituisce il precedente |
+| Avviso (v59) | `.toast`, `.toast.con-az`, `.toast-az` | regola: **l'avviso da leggere è in alto, quello con un'azione è in basso**. `toast(testo)`: in alto, centrato, per 2,6 s. `toast(testo, { azione, onAzione })`: in basso, 8 px sopra la barra visibile (azioni, selezione, tab bar, planimetria; `sopraBarre()`), senza barra in fondo sopra l'area sicura; più largo, testo a sinistra e azione in `--blue-sky` a destra (bersaglio `--tap`), per 6 s. Un avviso nuovo sostituisce il precedente |
 | Riga di elenco | `.rcard`, `.prow`, `.list` | `on` (aperta), selezionata, indicatore di stato |
 | Indicatore di stato | `.st-bar` + `--st` | `st-ok`, `st-warn`, `st-err`, `st-info`, `st-off` (grigio `--muted`, «Non pertinente», v53): barra di 4 px a sinistra, sempre con la parola. Lo stato di sezioni e capitoli HSE si mostra sempre così, nel sopralluogo a note e in quello periodico (v55), non con i badge |
 | Campo | `.inp`, `.fld`, `InpGrow`, `Appunti` | etichetta dentro il campo che sale quando scrivi (v56); un campo per riga; focus `--blue` 2 px; da sistemare `.errore` (contorno ed etichetta `--danger` 2 px, con `segnala()`, v59); icone fotocamera, galleria, microfono in colonna sul bordo destro, in `--blue`, microfono pieno se attivo; importato con lucchetto |
@@ -125,7 +125,7 @@ Il movimento spiega cosa succede (cosa è arrivato, da dove, cosa è cambiato), 
 | Tocco | ogni pulsante (`.btn`, `.btn-icon`, `.sq`, `.x`, `.fab`, `.addph`, `.chip`, `.chip-btn`, icone nel campo, segmenti, tab bar, `.sigbox`) si schiaccia a `--press` in `--dur-press` |
 | Foglio dal basso | sale di `--mv-3` in `--dur-slow` con `--ease-assesta` (supera appena e si assesta); il velo sfuma in `--dur`; alla chiusura scende in `--dur` con `--ease-in` |
 | Finestra (`.modal`) | si apre dal 94 % in `--dur` con `--ease-assesta`; si chiude al 96 % in `--dur-fast` |
-| Avviso in alto | scende di `--mv-2` entrando, sale uscendo (`--dur-fast`) |
+| Avviso | da leggere: scende di `--mv-2` entrando, sale uscendo; con azione: sale di `--mv-2` entrando, scende uscendo (`--dur-fast`) |
 | Planimetria | entra dal 98 % con dissolvenza in `--dur` |
 | Cambio scheda | scorrimento laterale in `--dur` (v56) |
 | Campo da sistemare | oscillazione `scuoti` in `--dur-slow` |

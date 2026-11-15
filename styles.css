@@ -1245,9 +1245,13 @@ img.logo { background: none; object-fit: cover; }
 @keyframes fogEsce { to { transform: translateY(var(--mv-3)); opacity: 0; } }
 @keyframes finEsce { to { transform: scale(.96); opacity: 0; } }
 @keyframes avvEsce { to { transform: translate(-50%, calc(-1 * var(--mv-2))); opacity: 0; } }
+@keyframes avvSale { from { transform: translate(-50%, var(--mv-2)); opacity: 0; } }
+@keyframes avvScende { to { transform: translate(-50%, var(--mv-2)); opacity: 0; } }
+.toast.con-az.esce { animation-name: avvScende; }
 
-/* Avviso con azione (es. «Annulla»): testo a sinistra, azione a destra, tocco grande */
-.toast.con-az { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); width: min(480px, calc(100% - 2 * var(--gutter))); max-width: none; padding: var(--sp-1) var(--sp-1) var(--sp-1) var(--sp-4); text-align: left; }
+/* Avviso con azione (es. «Annulla»): in basso, sopra la barra visibile (sopraBarre() in js/core.js), vicino al pollice;
+   testo a sinistra, azione a destra, tocco grande. Gli avvisi da leggere restano in alto. */
+.toast.con-az { top: auto; bottom: var(--toast-basso, calc(var(--sp-6) + env(safe-area-inset-bottom, 0px))); animation-name: avvSale; display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); width: min(480px, calc(100% - 2 * var(--gutter))); max-width: none; padding: var(--sp-1) var(--sp-1) var(--sp-1) var(--sp-4); text-align: left; }
 .toast-az { border: 0; background: none; color: var(--blue-sky); font: inherit; font-weight: 700; min-height: var(--tap); padding: 0 var(--sp-3); border-radius: var(--r-ctl); flex-shrink: 0; }
 
 /* Campo da sistemare (segnala() in js/core.js): contorno rosso e una breve oscillazione */

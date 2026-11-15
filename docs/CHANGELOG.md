@@ -8,7 +8,7 @@ Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Nem
 
 ### Aggiunto
 - Eliminazione con «Annulla» (`eliminaConAnnulla`, `inserisci` in `js/core.js`; D-16): campioni di DDA e Mappatura, NC, manufatti RA, punti aria, osservazioni HSE e del Verbale, foto (`PhotoStrip` con il nuovo `onRestore`, foto collegate e galleria HSE con `hsTogliFoto`, foto di inquadramento con `HS_CG_TOLTE`) spariscono subito; l'avviso offre «Annulla» per 6 s e rimette l'elemento nella sua posizione. `removeBlob` non cancella i file trattenuti (`_blobTrattenuti`): li cancella `cancellaBlob` alla scadenza o alla chiusura dell'app (`pagehide`).
-- Avviso con azione: `toast(testo, { azione, onAzione, ms })`, classe `.toast.con-az` con `.toast-az`.
+- Avviso con azione: `toast(testo, { azione, onAzione, ms })`, classe `.toast.con-az` con `.toast-az`. Rilievo: gli avvisi da leggere restano in alto, quelli con un'azione (oggi «Annulla») sono in basso, sopra la barra visibile (`sopraBarre()`), vicino al pollice.
 - Campo da sistemare (`segnala` in `js/core.js`): avviso, contorno `--danger` (`.errore`), oscillazione `scuoti`, vibrazione «errore», scorrimento sul campo. Usato per data e firma del tecnico nel radon, nome di chi firma, data e titolo in Programmazione.
 - Vibrazione unica (`vibra(tipo)` con i pattern `VIBRA`: tocco, ok, conferma, errore) al posto delle chiamate dirette a `navigator.vibrate`; nuove vibrazioni all'avvio e alla fine della dettatura e all'avvio del video. Interruttore «Vibrazione» in Impostazioni → Aspetto e avvio (`nembo_vibra`).
 - Uscite animate (`iniziaUscite` in `js/core.js`): alla chiusura di fogli, finestre e avvisi resta per un attimo una copia inerte `.esce` che scende o sfuma; nessuna modifica ai componenti.
