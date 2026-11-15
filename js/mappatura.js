@@ -81,10 +81,10 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
   const updCamp = (id, patch) => setCamp(tab, l => l.map(c => c.id === id ? { ...c, ...patch } : c));
   const lastPiano = () => { const l = r.campioni[tab] || []; return l.length ? l[l.length - 1].piano || '' : ''; };
   const addCamp = () => { const id = uid('c'); setCamp(tab, l => [...l, { id, codice: nextCode(tab), descrizione: '', quantita: '', piano: lastPiano(), ubicazione: '', data: today(), foto: [] }]); setOpenS({ [id]: true }); setTimeout(() => scrollToId('s-' + id), 80); };
-  const delCamp = async c => {
-    if (!confirm('Eliminare il campione ' + (c.codice || '') + '?')) return;
-    for (const b of blobIds(c)) await removeBlob(b);
-    setCamp(tab, l => renum(tab, l.filter(x => x.id !== c.id)));
+  const delCamp = c => {
+    const k = tab, i = (r.campioni[k] || []).findIndex(x => x.id === c.id);
+    eliminaConAnnulla({ msg: 'Campione ' + (c.codice || '') + ' eliminato', blobs: blobIds(c),
+      togli: () => setCamp(k, l => renum(k, l.filter(x => x.id !== c.id))), rimetti: () => setCamp(k, l => renum(k, inserisci(l, i, c))) });
   };
 
   const importInp = useRef();
@@ -144,7 +144,7 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
         <label class="fld"><span>Data prelievo</span><input type="date" value=${c.data || ''} onInput=${e => updCamp(c.id, { data: e.target.value })} /></label>
         <label class="fld"><span>Quantità</span><input placeholder="es. 180 mq" value=${c.quantita || ''} onInput=${e => updCamp(c.id, { quantita: e.target.value })} /></label>
         <${PhotoStrip} ids=${c.foto || []} max=${4} onAdd=${ids => { dopoFoto(r, c, apriPlan); updCamp(c.id, { foto: [...(c.foto || []), ...ids] }); }}
-          onRemove=${async id => { await removeBlob(id); updCamp(c.id, { foto: c.foto.filter(f => f !== id) }); }} />
+          onRemove=${async id => { await removeBlob(id); updCamp(c.id, { foto: c.foto.filter(f => f !== id) }); }} onRestore=${(id, i) => updCamp(c.id, { foto: inserisci(c.foto, i, id) })} />
         <button class="btn sm danger self-start" onClick=${() => delCamp(c)}>Elimina campione</button>
       <//>`)}</div></div>`)}
     <datalist id="dl-piani-m">${[...new Set([...allCampMap(r).map(c => c.piano).filter(Boolean), ...PIANI_COMUNI])].map(x => html`<option value=${x} />`)}</datalist>

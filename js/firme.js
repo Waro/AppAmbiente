@@ -229,7 +229,7 @@ function PassaTelefono({ f, r, societa, onAdd, onClose }) {
   const nome = useRef();
   const ok = p.nome.trim() && p.firma;
   const salva = () => {
-    if (!p.nome.trim()) { toast('Scrivi nome e cognome'); return; }
+    if (!p.nome.trim()) { segnala(nome.current, 'Scrivi nome e cognome'); return; }
     if (!p.firma) { toast('Manca la firma'); return; }
     onAdd({ id: uid('p'), nome: p.nome.trim(), societa: p.societa.trim(), ruolo: p.ruolo.trim(), firma: p.firma, ts: Date.now() });
     setFatti(fatti + 1); setP({ ...vuoto, societa: p.societa }); setLeggi(false);

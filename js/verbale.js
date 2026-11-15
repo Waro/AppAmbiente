@@ -40,7 +40,8 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
   const filtro = filtro0 && note.some(n => (n.tag || []).includes(filtro0)) ? filtro0 : null; // il tag filtrato non c'è più: nessun filtro
   const updN = (id, p) => up(q => ({ ...q, note: (q.note || []).map(n => n.id === id ? { ...n, ...p } : n) }));
   const addN = () => { const n = newNotaVs(); setT('note'); up(q => ({ ...q, note: [...(q.note || []), n] })); setFiltro(null); setTimeout(() => scrollToId('n-' + n.id), 80); };
-  const delN = async n => { if (!confirm('Eliminare l\'osservazione' + (n.titolo ? ' «' + n.titolo + '»' : '') + '?')) return; for (const f of n.foto || []) await removeBlob(f); up(q => ({ ...q, note: q.note.filter(x => x.id !== n.id) })); };
+  const delN = n => { const i = note.findIndex(x => x.id === n.id);
+    eliminaConAnnulla({ msg: 'Osservazione eliminata', blobs: n.foto || [], togli: () => up(q => ({ ...q, note: q.note.filter(x => x.id !== n.id) })), rimetti: () => up(q => ({ ...q, note: inserisci(q.note, i, n) })) }); };
   // ‹ › con il filtro: la nota si scambia con la vicina visibile
   const move = (n, d) => up(q => { const L = q.note.slice(), V = L.filter(x => !filtro || (x.tag || []).includes(filtro)); const a = V.findIndex(x => x.id === n.id), b = a + d; if (a < 0 || b < 0 || b >= V.length) return q;
     const i = L.indexOf(V[a]), j = L.indexOf(V[b]); [L[i], L[j]] = [L[j], L[i]]; return { ...q, note: L }; });
@@ -115,7 +116,8 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
       <${HsText} label="Attività di miglioramento" rows=${2} value=${n.mig} set=${v => updN(n.id, { mig: v })} />
       <div class="fld"><span>Foto</span></div>
       <${PhotoStrip} ids=${n.foto || []} max=${20} onAdd=${ids => updN(n.id, { foto: [...(n.foto || []), ...ids] })}
-        onRemove=${async id => { await removeBlob(id); up(q => ({ ...q, note: q.note.map(x => x.id === n.id ? { ...x, foto: x.foto.filter(f => f !== id) } : x) })); }} />
+        onRemove=${async id => { await removeBlob(id); up(q => ({ ...q, note: q.note.map(x => x.id === n.id ? { ...x, foto: x.foto.filter(f => f !== id) } : x) })); }}
+        onRestore=${(id, i) => up(q => ({ ...q, note: q.note.map(x => x.id === n.id ? { ...x, foto: inserisci(x.foto, i, id) } : x) }))} />
       <${TagPicker} tags=${n.tag || []} set=${t => updN(n.id, { tag: t })} />
     </div>`; })}
     ${!ns.sel && html`<button class="btn dashed block mt-1" onClick=${addN}>+ Nuova osservazione</button>`}

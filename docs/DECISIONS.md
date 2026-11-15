@@ -84,6 +84,13 @@ Una voce per decisione. Le date mancanti sono segnate: la decisione è precedent
 - **Alternative scartate:** convertire i report esistenti in note; tabella di rischio nella Check-list.
 - **Conseguenze:** due interfacce HSE per lo stesso tipo `hs`, distinte da `aNote`.
 
+## D-16 — «Annulla» al posto di «Sei sicuro?» per le eliminazioni frequenti
+- **Data:** 2026-11-15 (v60).
+- **Contesto:** in sopralluogo si eliminano spesso campioni, foto e osservazioni; la finestra di conferma del browser rallenta, è fuori dallo stile di Rilievo e non salva da un errore confermato per abitudine.
+- **Decisione:** campioni, NC, manufatti, punti aria, osservazioni (HSE e Verbale) e foto si eliminano subito, con «Annulla» nell'avviso per 6 s (`eliminaConAnnulla` in `js/core.js`). I file restano sul dispositivo (`_blobTrattenuti`) finché l'avviso non scade, poi si cancellano; chiudendo l'app si cancellano subito. «Annulla» rimette l'elemento nella sua posizione; i campioni tornano con la loro sigla.
+- **Alternative scartate:** finestra di conferma in stile Rilievo (resta un passaggio in più per ogni eliminazione); cestino dell'attività (più complesso, nessun bisogno emerso).
+- **Conseguenze:** la conferma resta per ciò che non si annulla o tocca più elementi (attività intera, punti radon rinumerati, fogli firme, ripristini, svuotamenti). Chiudendo l'app entro 6 s un'eliminazione non si annulla più. Un nuovo avviso sostituisce il precedente: l'eliminazione prima non si annulla più ma resta corretta.
+
 ## D-14 — Unione manuale delle proposte di Copilot
 - **Data:** 2026-11-10.
 - **Contesto:** Copilot non legge il repository da solo e la sua proposta v51 partiva dalla v49.

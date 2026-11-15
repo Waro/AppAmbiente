@@ -24,8 +24,8 @@ function Scanner({ title, target, onCode, onClose }) {
 
   const accept = code => {
     const r = cbRef.current(code) || {};
-    if (r.error) { setLast({ bad: true, text: r.error }); if (navigator.vibrate) navigator.vibrate([60, 60, 60]); return; }
-    beep(); if (navigator.vibrate) navigator.vibrate(80);
+    if (r.error) { setLast({ bad: true, text: r.error }); vibra('errore'); return; }
+    beep(); vibra('conferma');
     setHit(true); setTimeout(() => setHit(false), 500);
     setLast({ text: r.msg || ('Letto ' + code) });
     if (r.close) setTimeout(onClose, 350); else if (r.next) setTgt(r.next);
@@ -351,7 +351,7 @@ function Camera({ input, onClose }) {
     try {
       const b = await grab(); if (!b) throw new Error('scatto non riuscito');
       const file = new File([b], `foto_${Date.now()}.jpg`, { type: b.type || 'image/jpeg' });
-      if (navigator.vibrate) navigator.vibrate(30);
+      vibra('ok');
       if (!multi) { shotsRef.current = [{ file, url: '' }]; finish(); return; }
       setShots(s => [...s, { file, url: URL.createObjectURL(b) }]);
     } catch (e) { toast('Foto non scattata: riprova'); }
@@ -371,10 +371,10 @@ function Camera({ input, onClose }) {
       const dur = Math.max(1, Math.round((Date.now() - st.current.t0) / 1000));
       const type = ((mr.mimeType || tipo || 'video/webm').split(';')[0]) || 'video/webm';
       const file = new File(parts, `video_${Date.now()}_${Math.min(dur, VIDEO_MAX)}s.${type === 'video/mp4' ? 'mp4' : 'webm'}`, { type });
-      if (navigator.vibrate) navigator.vibrate(30);
+      vibra('ok');
       st.current.mr = null; finish([], [file]);
     };
-    mr.start(1000); st.current.mr = mr; st.current.t0 = Date.now(); setSecs(0); setRec(true);
+    mr.start(1000); vibra('ok'); st.current.mr = mr; st.current.t0 = Date.now(); setSecs(0); setRec(true);
     st.current.tick = setInterval(() => { const n = Math.floor((Date.now() - st.current.t0) / 1000); setSecs(n); if (n >= VIDEO_MAX && mr.state === 'recording') mr.stop(); }, 250);
   };
   const recStop = () => { const mr = st.current.mr; if (mr && mr.state === 'recording') mr.stop(); };

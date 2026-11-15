@@ -104,7 +104,7 @@ function PuntoCard({ p, n, open, toggle, lockPos, lockF2, onUpd, onDel, onScan }
       <div class="dosim"><${Inp} label="Dosimetro Fase 2" value=${p.codiceF2} set=${v => set({ codiceF2: v.trim() })} disabled=${lockF2 || !lockPos} placeholder=${!lockPos ? 'Al ritiro della Fase 1' : ''} />
         ${lockPos && !lockF2 && html`<button class="sq" aria-label="Scansiona dosimetro Fase 2" onClick=${() => onScan(p.id, 'codiceF2')}><${Icon} n="scan" s=${20} /></button>`}</div>
       <div><div class="fld"><span>Foto (1–3)</span></div>
-        <${PhotoStrip} ids=${p.foto} max=${3} onAdd=${ids => set({ foto: [...p.foto, ...ids] })} onRemove=${async id => { await removeBlob(id); set({ foto: p.foto.filter(f => f !== id) }); }} /></div>
+        <${PhotoStrip} ids=${p.foto} max=${3} onAdd=${ids => set({ foto: [...p.foto, ...ids] })} onRemove=${async id => { await removeBlob(id); set({ foto: p.foto.filter(f => f !== id) }); }} onRestore=${(id, i) => set({ foto: inserisci(p.foto, i, id) })} /></div>
       ${lockPos ? html`<span class="lock"><${Icon} n="lock" s=${13} /> Dati di posa bloccati dopo la firma</span>`
         : html`<button class="btn sm danger self-start" onClick=${() => onDel(p)}>Elimina punto</button>`}
     </div>`}
@@ -195,8 +195,8 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
 
   const conferma = i => {
     const mm = m[i];
-    if (!mm.data) { toast('Indica la data'); return; }
-    if (!mm.firmaTecnico) { toast('Manca la firma del tecnico'); return; }
+    if (!mm.data) { segnala('.rd-data-' + i, 'Indica la data'); return; }
+    if (!mm.firmaTecnico) { segnala('.rd-ft-' + i, 'Manca la firma del tecnico'); return; }
     const warn = [];
     if (!mm.firmaReferente) warn.push('manca la firma del referente');
     if (i === 0) {
@@ -205,7 +205,7 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
       const noFoto = r.punti.filter(p => !p.foto.length).length; if (noFoto) warn.push(`${noFoto} punti senza foto`);
     }
     if (i === 1) { const no2 = r.punti.filter(p => !p.codiceF2).length; if (no2) warn.push(`${no2} punti senza dosimetro di Fase 2`); }
-    if (i > 0 && m[i - 1].data && mm.data < m[i - 1].data) { toast('La data è precedente a quella del momento prima'); return; }
+    if (i > 0 && m[i - 1].data && mm.data < m[i - 1].data) { segnala('.rd-data-' + i, 'La data è precedente a quella del momento prima'); return; }
     if (warn.length && !confirm('Attenzione: ' + warn.join(', ') + '.\nConfermare comunque?')) return;
     setM(i, { confermato: true });
     toast(MOMENTI[i] + ' confermato');
@@ -323,7 +323,7 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
           ${mm.confermato && html`<span class="badge b-ok">Confermato</span>`}</div>
         ${!enabled ? html`<div class="lock">Si compila dopo aver confermato il momento ${i}${prevista ? ' · previsto ' + fmtD(prevista) : ''}</div>` : html`
           <div class="grid2">
-            <${Inp} label="Data" type="date" value=${mm.data} disabled=${ro} set=${v => setM(i, { data: v })} />
+            <${Inp} label="Data" type="date" cls=${'rd-data-' + i} value=${mm.data} disabled=${ro} set=${v => setM(i, { data: v })} />
             <${OraDurata} ora=${mm.ora} durata=${mm.durata} stato=${mm.stato} tipo="radon" disabled=${ro} set=${p => setM(i, p)} />
             <div class="fld"><span>${prevista ? 'Previsto' : ''}</span>${prevista && html`<div style="padding:var(--sp-3) 0;font-size:var(--fs-md)">${fmtD(prevista)}</div>`}</div>
           </div>
@@ -333,7 +333,7 @@ function RadonForm({ rec: initial, settings, onSave, onDelete, header, embedded,
             <${Inp} label="Nome" value=${mm.tecnicoNome} disabled=${ro} set=${v => setM(i, { tecnicoNome: v })} />
           </div>
           <div class="row mt-2">
-            <button class=${'sigbox' + (mm.firmaTecnico ? ' has' : '')} disabled=${ro} onClick=${() => setSig({ i, who: 'firmaTecnico', title: 'Firma tecnico · ' + [mm.tecnicoNome, mm.tecnicoCognome].join(' ') })}>
+            <button class=${'sigbox rd-ft-' + i + (mm.firmaTecnico ? ' has' : '')} disabled=${ro} onClick=${() => setSig({ i, who: 'firmaTecnico', title: 'Firma tecnico · ' + [mm.tecnicoNome, mm.tecnicoCognome].join(' ') })}>
               ${mm.firmaTecnico ? html`<img src=${mm.firmaTecnico} alt="Firma tecnico" />` : html`<span><${Icon} n="sign" s=${18} /> Tocca per firmare</span>`}</button>
           </div>
           ${!ro && !mm.firmaTecnico && settings.firmaTecnico && html`<button class="btn sm mt-2" onClick=${() => setM(i, { firmaTecnico: settings.firmaTecnico })}>Usa la firma salvata</button>`}

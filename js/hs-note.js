@@ -120,7 +120,7 @@ function useNoteSel() {
       // la scheda premuta sparisce (al suo posto le righe): la fine del tocco si ascolta sulla finestra
       const fine = e => { skip.current = e.type === 'pointerdown' ? 0 : Date.now() + 80; EV.forEach(k => removeEventListener(k, fine, true)); };
       const EV = ['pointerup', 'pointercancel', 'pointerdown']; EV.forEach(k => addEventListener(k, fine, true));
-      setSel(s => { const x = new Set(s || []); x.add(id); return x; }); try { navigator.vibrate && navigator.vibrate(18); } catch (err) { /* senza vibrazione */ }
+      setSel(s => { const x = new Set(s || []); x.add(id); return x; }); vibra('tocco');
     }, 480);
   };
   const props = id => ({
@@ -196,11 +196,11 @@ function HsNoteTab({ r, up, ns, filtro, setFiltro, addN, onRiep }) {
   const note = r.noteSop || [], C = hsCapi(r), num = hsNumNote(r);
   const tagsV = Object.keys(collectTags(note)).sort((a, b) => a.localeCompare(b, 'it'));
   const updN = (id, p) => up(q => ({ ...q, noteSop: (q.noteSop || []).map(n => n.id === id ? { ...n, ...p } : n) }));
-  const delN = async n => {
-    if (!confirm('Eliminare l\'osservazione' + (n.titolo ? ' «' + n.titolo + '»' : '') + '?')) return;
-    const fs = (r.foto || []).filter(p => p.ref === 'n.' + n.id);
-    for (const p of fs) await removeBlob(p.id);
-    up(q => ({ ...q, noteSop: q.noteSop.filter(x => x.id !== n.id), foto: (q.foto || []).filter(p => p.ref !== 'n.' + n.id) }));
+  const delN = n => {
+    const i = note.findIndex(x => x.id === n.id), fs = (r.foto || []).filter(p => p.ref === 'n.' + n.id);
+    eliminaConAnnulla({ msg: 'Osservazione eliminata', blobs: fs.map(p => p.id),
+      togli: () => up(q => ({ ...q, noteSop: q.noteSop.filter(x => x.id !== n.id), foto: (q.foto || []).filter(p => p.ref !== 'n.' + n.id) })),
+      rimetti: () => up(q => ({ ...q, noteSop: inserisci(q.noteSop, i, n), foto: [...(q.foto || []), ...fs] })) });
   };
   // ‹ › spostano la nota dentro il suo capitolo
   const move = (n, d) => up(q => {

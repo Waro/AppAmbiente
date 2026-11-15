@@ -51,8 +51,8 @@ function useDictation(get, set) {
       ref.current.set(cur + (cur && !/\s$/.test(cur) ? ' ' : '') + t.charAt(0).toUpperCase() + t.slice(1));
     };
     rec.onerror = ev => { if (ev.error !== 'aborted') toast(ev.error === 'network' ? 'Dettatura: serve la connessione' : 'Dettatura interrotta (' + ev.error + ')'); };
-    rec.onend = () => { setOn(false); if (_recActive === rec) _recActive = null; };
-    try { rec.start(); _recActive = rec; setOn(true); } catch (e) { toast('Impossibile avviare la dettatura'); }
+    rec.onend = () => { setOn(false); vibra('tocco'); if (_recActive === rec) _recActive = null; };
+    try { rec.start(); _recActive = rec; setOn(true); vibra('tocco'); } catch (e) { toast('Impossibile avviare la dettatura'); }
   };
   return [on, toggle];
 }
@@ -109,11 +109,16 @@ function FotoIn({ r, up, rif, nome }) {
     <input ref=${inp} type="file" accept="image/*" capture="environment" multiple hidden onClick=${e => e.stopPropagation()}
       onChange=${e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) hsAddPhotos(fs, 'new', rif, up, (r.foto || []).length).then(() => toast(fs.length > 1 ? 'Foto aggiunte e collegate alla sezione' : 'Foto aggiunta e collegata alla sezione')); }} />`;
 }
+// foto di inquadramento tolte, per rimetterle con «Annulla» con le loro dimensioni (v60)
+const HS_CG_TOLTE = new Map();
+// elimina una foto della galleria HSE con «Annulla»: torna nella stessa posizione con collegamento e gruppo
+const hsTogliFoto = (r, up, p) => { const i = (r.foto || []).findIndex(x => x.id === p.id);
+  eliminaConAnnulla({ msg: 'Foto eliminata', blobs: [p.id], togli: () => up(q => ({ ...q, foto: (q.foto || []).filter(x => x.id !== p.id) })), rimetti: () => up(q => ({ ...q, foto: inserisci(q.foto, i, p) })) }); };
 // togli: le miniature si possono eliminare (note del sopralluogo, dove non c'è la galleria)
 function FotoCollegate({ r, rif, up, togli }) {
   const [view, setView] = useState(null); const L = hsFotoDi(r, rif);
   if (!L.length) return null;
-  const via = async p => { if (!confirm('Eliminare la foto?')) return; setView(null); await removeBlob(p.id); up(q => ({ ...q, foto: (q.foto || []).filter(x => x.id !== p.id) })); };
+  const via = p => { setView(null); hsTogliFoto(r, up, p); };
   if (togli) return html`<div class="photos mt-2">${L.map((p, i) => html`<${Thumb} key=${p.id} id=${p.id} onOpen=${() => setView(i)} onRemove=${() => via(p)} />`)}
     ${view !== null && html`<${Viewer} ids=${L.map(p => p.id)} index=${view} onClose=${() => setView(null)} />`}</div>`;
   return html`<div class="hs-fotos">${L.map((p, i) => html`<button key=${p.id} class="ck-th" aria-label=${'Foto ' + (i + 1)} onClick=${() => setView(i)}><${Thumb44} id=${p.id} /></button>`)}
@@ -184,7 +189,7 @@ function HsGallery({ r, up, items, sezioni }) {
     const i = same.findIndex(x => x.id === p.id), j = i + d; if (j < 0 || j >= same.length) return q;
     const a = q.foto.indexOf(same[i]), b = q.foto.indexOf(same[j]); const f = q.foto.slice(); [f[a], f[b]] = [f[b], f[a]]; return { ...q, foto: f };
   });
-  const del = async p => { if (!confirm('Eliminare la foto?')) return; await removeBlob(p.id); up(q => ({ ...q, foto: q.foto.filter(x => x.id !== p.id) })); };
+  const del = p => hsTogliFoto(r, up, p);
   const delPrev = async () => {
     const L = (r.foto || []).filter(x => x.g === 'prev'); if (!L.length) return;
     if (!confirm(`Eliminare tutte le ${L.length} foto del sopralluogo precedente? Le foto del sopralluogo attuale restano.`)) return;
@@ -440,7 +445,8 @@ function HsSchedeForm({ rec: initial, records, settings, onSave, onDelete, onSet
   else if (S && S.k === 'descr') body = html`<div class="card"><${HsText} label="Condizioni generali dell'immobile" rows=${10} value=${r.descr} base=${B.descr} set=${v => up({ descr: v })} /></div>
     <div class="sec-h"><h3>Foto di inquadramento</h3></div>
     <div class="card"><${PhotoStrip} ids=${(r.cgFoto || []).map(o => o.id)} max=${8} onAdd=${ids => up(q => ({ ...q, cgFoto: [...(q.cgFoto || []), ...ids.map(id => ({ id, w: 16, h: 11 }))] }))}
-      onRemove=${async id => { await removeBlob(id); up(q => ({ ...q, cgFoto: (q.cgFoto || []).filter(o => o.id !== id) })); }} />
+      onRemove=${async id => { const o = (r.cgFoto || []).find(x => x.id === id); if (o) HS_CG_TOLTE.set(id, o); await removeBlob(id); up(q => ({ ...q, cgFoto: (q.cgFoto || []).filter(o => o.id !== id) })); }}
+      onRestore=${(id, i) => up(q => ({ ...q, cgFoto: inserisci(q.cgFoto, i, HS_CG_TOLTE.get(id) || { id, w: 16, h: 11 }) }))} />
       <p class="lead" style="margin:var(--sp-2) 0 0;font-size:var(--fs-sm)">Restano nel report anche nei sopralluoghi successivi.</p></div>`;
   else if (S && S.k === 'azioni') body = html`<div>
     ${(r.azioni || []).map((a, i) => { const set = patch => up(p => ({ ...p, azioni: p.azioni.map((x, j) => j === i ? { ...x, ...patch } : x) })); return html`<div class="card" key=${i}>

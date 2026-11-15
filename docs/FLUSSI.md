@@ -168,6 +168,18 @@ flowchart TD
 
 Nel sopralluogo HSE a note il Riepilogo mostra check-list, osservazioni per capitolo con le foto e appunti; in fondo «Genera report» (lo stesso `DocBtn` della barra).
 
+## 6d. Eliminazione con «Annulla» (v60)
+
+```mermaid
+flowchart TD
+  T["tocco su Elimina (campione, NC, manufatto, punto aria, osservazione, foto)"] --> V["l'elemento sparisce subito<br/>i suoi file restano trattenuti sul dispositivo"]
+  V --> A["avviso «… eliminato» con Annulla, 6 s"]
+  A -- "Annulla" --> R["l'elemento torna nella sua posizione<br/>(campioni rinumerati come prima)"]
+  A -- "scade o chiudi l'app" --> C["i file vengono cancellati dal dispositivo"]
+```
+
+Un campo da sistemare (data o firma del radon, nome di chi firma, data e titolo in Programmazione) passa da `segnala()`: avviso, campo contornato di rosso, vibrazione «errore», scorrimento sul campo.
+
 ## 7. Scheda File
 
 ```mermaid

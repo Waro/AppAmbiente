@@ -422,9 +422,9 @@ function AgAddSheet({ start, records, settings, onSave, onDelete, onJson, onClos
   const dur = f.durata || (tab === 'app' ? 60 : durataBase(tipoT, settings));
   const st = progDi(f.stato, f.ora);
   const save = async () => {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(f.data || '')) { toast('Indica la data'); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(f.data || '')) { segnala('.ag-f-data', 'Indica la data'); return; }
     if (tab === 'app') {
-      if (!(f.titolo || '').trim()) { toast('Scrivi un titolo'); return; }
+      if (!(f.titolo || '').trim()) { segnala('.ag-f-tit', 'Scrivi un titolo'); return; }
       const r = ed ? { ...ed, titolo: f.titolo.trim(), luogo: f.luogo, note: f.note, data: f.data, ora: f.ora, durata: dur, stato: f.stato, updatedAt: Date.now() }
         : newApp({ titolo: f.titolo.trim(), luogo: f.luogo, note: f.note, data: f.data, ora: f.ora, durata: dur, stato: f.stato });
       onSave([r], ed ? 'Appuntamento aggiornato' : 'Appuntamento aggiunto');
@@ -446,9 +446,9 @@ function AgAddSheet({ start, records, settings, onSave, onDelete, onJson, onClos
       ${!ed && html`<div class="seg" style="margin-bottom:var(--sp-3)"><button class=${tab === 'app' ? 'on' : ''} onClick=${() => setTab('app')}>Appuntamento</button><button class=${tab === 'att' ? 'on' : ''} onClick=${() => setTab('att')}>Attività</button></div>`}
       ${tab === 'att' && html`<p class="hint-p" style="margin:0 var(--sp-1) var(--sp-3)">L'attività compare nella programmazione e nell'elenco della sua area: la apri quando inizi il sopralluogo.</p>`}
       <div class="card"><div class="grid2">
-        ${tab === 'app' ? html`<${Inp} cls="full" label="Titolo *" value=${f.titolo} set=${v => set({ titolo: v })} placeholder="es. Riunione di cantiere" />`
+        ${tab === 'app' ? html`<${Inp} cls="full ag-f-tit" label="Titolo *" value=${f.titolo} set=${v => set({ titolo: v })} placeholder="es. Riunione di cantiere" />`
           : html`<label class="fld full"><span>Tipo di attività</span><select value=${f.tipo} onChange=${e => set({ tipo: e.target.value, durata: 0 })}>${AG_TIPI_NUOVI.map(([k, l]) => html`<option value=${k}>${l}</option>`)}</select></label>`}
-        <${Inp} label="Data" type="date" value=${f.data} set=${v => set({ data: v })} />
+        <${Inp} label="Data" type="date" cls="ag-f-data" value=${f.data} set=${v => set({ data: v })} />
         <label class="fld"><span>Ora</span><input type="time" step="1800" value=${f.ora || ''} onInput=${e => set({ ora: e.target.value })} /></label>
         ${durSel}
         <label class="fld"><span>Stato</span><select value=${st} onChange=${e => set({ stato: e.target.value })}>${PROG.map(([k, l]) => html`<option value=${k}>${l}</option>`)}</select></label>

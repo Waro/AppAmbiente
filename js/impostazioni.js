@@ -55,6 +55,7 @@ function Settings({ settings, setSettings, onTemplates, go, page, wide, unreadEr
   const [k, setK] = useState(0);
   const [cacheVer, setCacheVer] = useState(null);
   const [look, setLookSt] = useState(getLook());
+  const [vib, setVib] = useState(vibraOn());
   const [sel, setSel] = useState(page || 'aspetto');
   useEffect(() => { if (window.caches) caches.keys().then(ks => setCacheVer(ks[0] || '—')); }, []);
   const cfgInp = useRef();
@@ -104,7 +105,9 @@ function Settings({ settings, setSettings, onTemplates, go, page, wide, unreadEr
       <p class="lead" style="margin:var(--sp-2) var(--sp-1) 0;font-size:var(--fs-sm)">Automatico segue il tema chiaro o scuro del dispositivo. Stile e aspetto valgono solo su questo dispositivo.</p>
       <div class="fld mt-4"><span>Business unit mostrata in Oggi</span></div>
       <div class="seg mt-2">${BUS.map(([k2, l]) => html`<button class=${(s.buDefault || 'ambiente') === k2 ? 'on' : ''} onClick=${() => set({ buDefault: k2 })}>${l}</button>`)}</div>
-    </div>`;
+    </div>
+    <div class="card"><label class="fg-sw"><span>Vibrazione</span><${Toggle} on=${vib} label="Vibrazione" set=${v => { setVibraOn(v); setVib(v); if (v) vibra('ok'); }} /></label>
+      <p class="lead" style="margin:var(--sp-2) 0 0;font-size:var(--fs-sm)">Il telefono vibra quando scatti una foto, leggi un codice, avvii o fermi la dettatura e tieni premuto per selezionare. Vale solo su questo dispositivo.</p></div>`;
       case 'foto': return html`<${CamSerieCard} />`;
       case 'novita': return html`<${NovitaCard} go=${go} />`;
       case 'config': return html`<div class="card tight">
