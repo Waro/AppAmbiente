@@ -203,7 +203,7 @@ function NcSection({ r, up, mat, list }) {
         <label class="fld"><span>Campione di riferimento</span><select value=${x.rif || ''} onChange=${e => upd(x.id, { rif: e.target.value })}>
             <option value="">Nessun campione di riferimento</option>${camp.map(c => html`<option value=${c.id}>Come ${c.codice}${c.descrizione ? ' · ' + c.descrizione.slice(0, 40) : ''}</option>`)}
             ${precC.length > 0 && html`<optgroup label="Indagine precedente">${precC.map(c => html`<option value=${c.id}>Come ${c.codice} (precedente)${c.esito ? ' · ' + c.esito : ''}${c.descrizione ? ' · ' + c.descrizione.slice(0, 30) : ''}</option>`)}</optgroup>`}</select></label>
-        <${PhotoStrip} ids=${x.foto || []} max=${4} onAdd=${ids => upd(x.id, { foto: [...(x.foto || []), ...ids] })}
+        <${PhotoStrip} vref=${'nc.' + x.id} vdove=${x.codice} ids=${x.foto || []} max=${4} onAdd=${ids => upd(x.id, { foto: [...(x.foto || []), ...ids] })}
           onRemove=${async id => { await removeBlob(id); upd(x.id, { foto: x.foto.filter(f => f !== id) }); }} onRestore=${(id, i) => upd(x.id, { foto: inserisci(x.foto, i, id) })} />
         <button class="btn sm danger self-start" onClick=${() => del(x)}>Elimina ${x.codice}</button>
       <//>`; })}</div>

@@ -4,6 +4,17 @@ Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Nem
 
 ## [Non rilasciato]
 
+## [nembo-v60] — 2026-11-15
+
+### Aggiunto
+- Video ovunque ci sono le foto: tasto Video (`VideoIn` in `js/core.js`) accanto a fotocamera e galleria in `PhotoStrip` (props `vref`, `vdove`: campioni DDA e Mappatura, NC, aree REC, manufatti RA, punti radon e aria, osservazioni del Verbale, foto di inquadramento HSE), nel campo con le icone (`FotoIn`: sezioni HSE e osservazioni del sopralluogo a note), nelle voci della checklist del Sintetico e nella galleria del report HSE. I video vanno in `r.video` con `ref` (il punto) e `dove` (nome per OneDrive); si vedono sotto le foto di quel punto (`VideoRif`, `VideoList` con `ref`). Attività di destinazione: quella aperta (`vDest`, registrata da `useAutosave`).
+- Campo video separato dal campo foto (`input._vid`, `consegna` in `js/capture.js`): la galleria sceglie foto e video e manda ciascuno al suo campo; la fotocamera di Nembo ha il selettore Foto · Video ovunque c'è il video e, dal tasto Video, si apre già in video.
+- OneDrive: `r.video` nella cartella `video/` con il punto nel nome (`Video_AAAA-MM-GG_hhmmss_<punto>`).
+
+### Corretto
+- Appunti: con la fotocamera del telefono il tasto fotocamera apriva la galleria (Android apre la fotocamera solo se il campo accetta un tipo solo; il campo accettava foto e video). Ora il campo foto accetta solo foto e il video ha il suo tasto.
+- Visore PDF: tutte le pagine, disegnate quando servono (quella aperta e le vicine, al massimo `PDF_TENUTE` = 12 in memoria); tolto il limite di 40 pagine (`PDF_MAX_PAG`). Pagine create al momento con `_virtuali` in `blobUrl`.
+
 ## [nembo-v59] — 2026-11-15
 
 ### Aggiunto

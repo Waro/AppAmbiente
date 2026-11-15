@@ -143,7 +143,7 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
         <${CampFields} c=${c} list="dl-piani-m" upd=${patch => updCamp(c.id, patch)} codice=${html`<${SiglaAuto} codice=${c.codice} c=${mat.c} />`} />
         <label class="fld"><span>Data prelievo</span><input type="date" value=${c.data || ''} onInput=${e => updCamp(c.id, { data: e.target.value })} /></label>
         <label class="fld"><span>Quantità</span><input placeholder="es. 180 mq" value=${c.quantita || ''} onInput=${e => updCamp(c.id, { quantita: e.target.value })} /></label>
-        <${PhotoStrip} ids=${c.foto || []} max=${4} onAdd=${ids => { dopoFoto(r, c, apriPlan); updCamp(c.id, { foto: [...(c.foto || []), ...ids] }); }}
+        <${PhotoStrip} vref=${'camp.' + c.id} vdove=${c.codice || 'Campione'} ids=${c.foto || []} max=${4} onAdd=${ids => { dopoFoto(r, c, apriPlan); updCamp(c.id, { foto: [...(c.foto || []), ...ids] }); }}
           onRemove=${async id => { await removeBlob(id); updCamp(c.id, { foto: c.foto.filter(f => f !== id) }); }} onRestore=${(id, i) => updCamp(c.id, { foto: inserisci(c.foto, i, id) })} />
         <button class="btn sm danger self-start" onClick=${() => delCamp(c)}>Elimina campione</button>
       <//>`)}</div></div>`)}

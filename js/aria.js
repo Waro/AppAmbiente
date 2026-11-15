@@ -110,7 +110,7 @@ function AriaPuntoCard({ p, open, toggle, onUpd, onMet, onDel, onScan, settings 
       ${e && e.over && html`<div class="notice err" style="margin-top:0">Valore oltre il limite di ${fmtNum(e.lim)} ff/l</div>`}`}
       <${Area} label="Note" rows=${2} value=${p.note} set=${v => set({ note: v })} />
       <div><div class="fld"><span>Foto della postazione</span></div>
-        <${PhotoStrip} ids=${p.foto} max=${3} onAdd=${ids => set({ foto: [...p.foto, ...ids] })} onRemove=${async id => { await removeBlob(id); set({ foto: p.foto.filter(f => f !== id) }); }} onRestore=${(id, i) => set({ foto: inserisci(p.foto, i, id) })} /></div>
+        <${PhotoStrip} vref=${'aria.' + p.id} vdove=${p.codice || 'Punto'} ids=${p.foto} max=${3} onAdd=${ids => set({ foto: [...p.foto, ...ids] })} onRemove=${async id => { await removeBlob(id); set({ foto: p.foto.filter(f => f !== id) }); }} onRestore=${(id, i) => set({ foto: inserisci(p.foto, i, id) })} /></div>
       <button class="btn sm danger self-start" onClick=${() => onDel(p)}>Elimina punto</button>
     </div>`}
   </div>`;

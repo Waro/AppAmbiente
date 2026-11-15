@@ -276,7 +276,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
           <button class="x" aria-label="Elimina area" onClick=${() => delRec(x)}>×</button></div>
         <div class="stack"><label class="fld"><span>Nome</span><input placeholder=" " value=${x.nome} onInput=${e => updRec(x.id, { nome: e.target.value })} /></label>
         <${Appunti} rec=${x} up=${p => updRec(x.id, p)} k="descrizione" foto=${null} rows=${2} label="Descrizione" nudo /></div>
-        <div class="mt-3"><${PhotoStrip} ids=${x.foto} max=${6}
+        <div class="mt-3"><${PhotoStrip} vref=${'rec.' + x.id} vdove=${x.nome || 'Area REC'} ids=${x.foto} max=${6}
           onAdd=${async ids => { updRec(x.id, { foto: [...x.foto, ...ids] }); if (x.lat == null) { const g = await getPosition(); if (g) updRec(x.id, g); } }}
           onRemove=${async id => { await removeBlob(id); updRec(x.id, { foto: x.foto.filter(f => f !== id) }); }} onRestore=${(id, i) => updRec(x.id, { foto: inserisci(x.foto, i, id) })} /></div>
         <div class="mt-2">${x.lat != null ? html`<span class="geo"><${Icon} n="pin" s=${14} /> ${x.lat}, ${x.lon}</span>` : html`<span class="lock">La posizione GPS si salva con la prima foto</span>`}</div>
@@ -330,7 +330,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
           ${tab === 'altro' && html`<label class="fld"><span>Tipo di campione</span><input placeholder="es. rifiuto, aria, sedimento" value=${c.tipo} onInput=${e => updCamp(c.id, { tipo: e.target.value })} /></label>`}
           <label class="fld"><span>Data prelievo</span><input type="date" value=${c.data || ''} onInput=${e => updCamp(c.id, { data: e.target.value })} /></label>
           ${(tab === 'mca' || tab === 'fav') && html`<label class="fld"><span>Quantità</span><input placeholder="es. 180 mq" value=${c.quantita || ''} onInput=${e => updCamp(c.id, { quantita: e.target.value })} /></label>`}
-          <${PhotoStrip} ids=${c.foto || []} max=${4} onAdd=${ids => { dopoFoto(r, c, apriPlan); updCamp(c.id, { foto: [...(c.foto || []), ...ids] }); }}
+          <${PhotoStrip} vref=${'camp.' + c.id} vdove=${c.codice || 'Campione'} ids=${c.foto || []} max=${4} onAdd=${ids => { dopoFoto(r, c, apriPlan); updCamp(c.id, { foto: [...(c.foto || []), ...ids] }); }}
             onRemove=${async id => { await removeBlob(id); updCamp(c.id, { foto: c.foto.filter(f => f !== id) }); }} onRestore=${(id, i) => updCamp(c.id, { foto: inserisci(c.foto, i, id) })} />
           <button class="btn sm danger self-start" onClick=${() => delCamp(c)}>Elimina campione</button>
         <//>`)}</div></div>`)}

@@ -12,7 +12,7 @@ const MIME_DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingm
 const MIME_XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 const ALLEGATI_ACCEPT = 'image/jpeg,image/png,image/webp,application/pdf,.pdf,.docx,' + MIME_DOCX;
 const ALLEGATO_MAX = 60 * 1048576;
-const PDF_MAX_PAG = 40;
+const PDF_TENUTE = 12; // pagine dei PDF tenute pronte in memoria (le altre si ridisegnano quando ci torni)
 
 const errAllegato = msg => Object.assign(new Error(msg), { code: 'ALLEGATO' });
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -107,34 +107,45 @@ async function apriAllegato(it, show) {
   toast('Tipo di file non ammesso: lo salvo senza aprirlo');
   downloadBlob(new Blob([b.blob], { type: 'application/octet-stream' }), nome);
 }
-// PDF mostrato come immagini delle pagine (PDF.js non esegue gli script del documento)
+// PDF mostrato come immagini delle pagine (PDF.js non esegue gli script del documento).
+// v60: tutte le pagine, disegnate quando servono (quella aperta e le vicine); in memoria al massimo PDF_TENUTE pagine.
 function PdfViewer({ blob, nome, onClose }) {
   const [ids, setIds] = useState(null);
   useEffect(() => {
-    let alive = true; const made = [];
+    let alive = true, doc = null, coda = Promise.resolve(); const pronte = [], tutte = [];
+    const libera = id => { if (urlCache.has(id)) { URL.revokeObjectURL(urlCache.get(id)); urlCache.delete(id); } };
+    const disegna = async i => {
+      const page = await doc.getPage(i);
+      const v1 = page.getViewport({ scale: 1 });
+      const v = page.getViewport({ scale: Math.min(4, 2000 / Math.max(v1.width, v1.height)) });
+      const c = document.createElement('canvas'); c.width = Math.round(v.width); c.height = Math.round(v.height);
+      const ctx = c.getContext('2d'); ctx.fillStyle = PRINT.carta; ctx.fillRect(0, 0, c.width, c.height);
+      await page.render({ canvasContext: ctx, viewport: v }).promise;
+      const out = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.86));
+      c.width = c.height = 0; page.cleanup();
+      return out;
+    };
     (async () => {
       try {
-        const doc = await openPdf(new Uint8Array(await blob.arrayBuffer()));
-        const n = Math.min(doc.numPages, PDF_MAX_PAG);
-        for (let i = 1; i <= n && alive; i++) {
-          if (n > 1) _progress({ title: 'Apro il PDF', text: nome, done: i - 1, total: n });
-          const page = await doc.getPage(i);
-          const v1 = page.getViewport({ scale: 1 });
-          const v = page.getViewport({ scale: Math.min(4, 2000 / Math.max(v1.width, v1.height)) });
-          const c = document.createElement('canvas'); c.width = Math.round(v.width); c.height = Math.round(v.height);
-          const ctx = c.getContext('2d'); ctx.fillStyle = PRINT.carta; ctx.fillRect(0, 0, c.width, c.height);
-          await page.render({ canvasContext: ctx, viewport: v }).promise;
-          const out = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.86));
-          c.width = c.height = 0; page.cleanup();
-          const id = uid('pdfpag'); urlCache.set(id, URL.createObjectURL(out)); made.push(id);
+        _progress({ title: 'Apro il PDF', text: nome });
+        doc = await openPdf(new Uint8Array(await blob.arrayBuffer()));
+        const base = uid('pdfpag');
+        for (let i = 1; i <= doc.numPages; i++) {
+          const id = base + '_' + i; tutte.push(id);
+          // una pagina per volta; quando sono troppe, si liberano le più vecchie
+          _virtuali.set(id, () => (coda = coda.then(async () => {
+            if (!alive) return null;
+            const b = await disegna(i);
+            pronte.push(id); while (pronte.length > PDF_TENUTE) libera(pronte.shift());
+            return b;
+          })));
         }
-        if (doc.numPages > PDF_MAX_PAG && alive) toast(`Mostro le prime ${PDF_MAX_PAG} pagine di ${doc.numPages}`);
-        doc.destroy();
-        if (alive) setIds(made);
+        await blobUrl(tutte[0]);
+        if (alive) setIds(tutte);
       } catch (e) { if (alive) { fail('PDF non leggibile', e); onClose(); } }
       _progress(null);
     })();
-    return () => { alive = false; made.forEach(id => { URL.revokeObjectURL(urlCache.get(id)); urlCache.delete(id); }); };
+    return () => { alive = false; tutte.forEach(id => { _virtuali.delete(id); libera(id); }); coda.then(() => doc && doc.destroy()); };
   }, []);
   if (!ids) return null;
   return html`<${Viewer} ids=${ids} labelOf=${() => nome} onClose=${onClose} />`;
@@ -161,7 +172,7 @@ const TIPI_REC = ['dda', 'mappatura', 'radon', 'ra', 'hs', 'vs', 'firme', 'aria'
 const ID_OK = /^[A-Za-z0-9_-]{1,80}$/;
 const CHIAVI_VIETATE = new Set(['__proto__', 'constructor', 'prototype']);
 const ARR_FOTO = new Set(['foto', 'fotoPrec', 'fotoAppunti', 'fotoAppunti2']);
-const ARR_OGG = new Set(['manufatti', 'punti', 'momenti', 'recs', 'checklist', 'documenti', 'rapporti', 'planimetrie', 'fogli', 'partecipanti', 'noteSop', 'videoAppunti', 'videoAppunti2']);
+const ARR_OGG = new Set(['manufatti', 'punti', 'momenti', 'recs', 'checklist', 'documenti', 'rapporti', 'planimetrie', 'fogli', 'partecipanti', 'noteSop', 'videoAppunti', 'videoAppunti2', 'video']);
 const DATA_OK = /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=\s]*$/;
 const REC_MAX = 20 * 1048576;
 function chiaviVietate(o) {

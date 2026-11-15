@@ -102,10 +102,12 @@ function RiformulaSheet({ prop, testo, onApply, onClose }) {
 // foto collegate a una sezione del report Esteso: fotocamera dentro il campo, sotto il microfono (ref = chiave della sezione, es. sch.elettrici.Illuminazione)
 const hsFotoDi = (r, ref) => (r.foto || []).filter(p => p.ref === ref);
 function FotoIn({ r, up, rif, nome }) {
+  // v60: anche il video; va in r.video con ref = rif (la sezione o la nota)
   const inp = useRef(); const n = hsFotoDi(r, rif).length; const lab = 'Foto per ' + nome;
   return html`<button type="button" class="cam-in" aria-label=${lab + (n ? ', ' + n + (n === 1 ? ' collegata' : ' collegate') : '')} title=${lab} onClick=${() => camOpen(inp.current)}>
     <${Icon} n="camera" s=${22} />${n > 0 && html`<i class="ck-badge">${n}</i>`}</button>
     <button type="button" class="gal-in" aria-label=${'Galleria: ' + lab} title="Scegli dalla galleria" onClick=${() => galOpen(inp.current)}><${Icon} n="image" s=${22} /></button>
+    <${VideoIn} fotoRef=${inp} vref=${rif} dove=${nome} cls="vid-in" s=${22} />
     <input ref=${inp} type="file" accept="image/*" capture="environment" multiple hidden onClick=${e => e.stopPropagation()}
       onChange=${e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) hsAddPhotos(fs, 'new', rif, up, (r.foto || []).length).then(() => toast(fs.length > 1 ? 'Foto aggiunte e collegate alla sezione' : 'Foto aggiunta e collegata alla sezione')); }} />`;
 }
@@ -135,7 +137,7 @@ function HsText({ label, value, set, base, gruppo, rows = 4, onRiformula, placeh
   const changed = base != null && base !== '' && (value || '') !== base;
   return html`<div class="fld hs-text"><span>${label}</span>
     <div class="mic-wrap"><textarea rows=${rows} value=${value || ''} placeholder=${placeholder || ' '} onInput=${e => set(e.target.value)}></textarea><div class="ico-col">${foto && html`<${FotoIn} ...${foto} />`}<${MicBtn} rec=${rec} toggle=${toggleRec} /></div></div>
-    ${foto && html`<${FotoCollegate} ...${foto} />`}
+    ${foto && html`<${FotoCollegate} ...${foto} /><${VideoRif} vref=${foto.rif} />`}
     <div class="hs-tools">
       ${base ? html`<span class="hs-base">${changed ? 'Modificato: le righe nuove escono in rosso' : 'Dal report precedente (nero nel Word)'}</span>` : null}
     </div>
@@ -205,7 +207,9 @@ function HsGallery({ r, up, items, sezioni }) {
         <button class="btn link sm" onClick=${() => setAperti(a => ({ ...a, [G.g]: !a[G.g] }))}>${aperti[G.g] ? 'Chiudi' : 'Apri'}</button></div>
       ${aperti[G.g] && html`<div class="row" style="margin-bottom:var(--sp-3)">
           ${G.g === 'new' && html`<button class="btn grow" onClick=${() => { target.current = 'new'; camOpen(cam.current); }}><${Icon} n="camera" s=${18} /> Scatta</button>`}
-          <button class="btn grow" onClick=${() => { target.current = G.g; inp.current.click(); }}><${Icon} n="image" s=${18} /> Dalla galleria</button></div>
+          <button class="btn grow" onClick=${() => { target.current = G.g; inp.current.click(); }}><${Icon} n="image" s=${18} /> Dalla galleria</button>
+          ${G.g === 'new' && html`<${VideoIn} vref="galleria" dove="Foto" cls="btn grow" s=${18} testo="Video" />`}</div>
+        ${G.g === 'new' && html`<${VideoRif} vref="galleria" />`}
         ${L.length > 0 && html`<div class="row" style="margin:calc(-1 * var(--sp-1)) 0 var(--sp-2);gap:var(--sp-1)"><span class="lock tb-grow">Nel report:</span>
           <button class="btn link sm" onClick=${() => up(q => ({ ...q, foto: q.foto.map(x => (x.g === 'prev') === (G.g === 'prev') ? { ...x, inc: true } : x) }))}>includi tutte</button>
           <button class="btn link sm" onClick=${() => up(q => ({ ...q, foto: q.foto.map(x => (x.g === 'prev') === (G.g === 'prev') ? { ...x, inc: false } : x) }))}>escludi tutte</button>
@@ -254,11 +258,13 @@ function HsCheck({ it, r, up, base }) {
     <div class="seg sm ck-seg">${HS_RISP.map(([k, l]) => html`<button class=${r.risp[it.id] === k ? 'on' : ''} aria-pressed=${r.risp[it.id] === k} onClick=${() => risp(k)}>${l}</button>`)}</div>
     <div class="ck-act">
       <span class="ck-cam"><${HsCam} up=${up} r=${r} refId=${it.id} label=${'Foto per la voce ' + it.ref} />${linked.length > 0 && html`<i class="ck-badge">${linked.length}</i>`}</span>
+      <${VideoIn} vref=${it.id} dove=${'Voce ' + it.ref} cls="btn-icon" s=${18} />
       <button class=${'btn-icon' + (nota || open ? ' on' : '')} aria-label="Note" title="Note" aria-expanded=${open} onClick=${() => setOpen(!open)}><${Icon} n="note" s=${18} /></button>
     </div>
     ${(linked.length > 0 || (!open && nota)) ? html`<div class="ck-extra">
       ${linked.map((p, i) => html`<button key=${p.id} class="ck-th" aria-label=${'Foto ' + (i + 1)} onClick=${() => setView(i)}><${Thumb44} id=${p.id} /></button>`)}
       ${!open && nota ? html`<button class="ck-nota" onClick=${() => setOpen(true)}>${nota}</button>` : null}</div>` : null}
+    <div class="ck-vid"><${VideoRif} vref=${it.id} /></div>
     ${open && html`<div class="ck-ed">
       <div class="mic-wrap"><textarea ref=${ta} class="inp" rows="2" placeholder="Annotazioni" value=${nota} onInput=${e => setNota(e.target.value)}></textarea><div class="ico-col"><${MicBtn} rec=${rec} toggle=${toggleRec} /></div></div>
       <div class="hs-tools">
@@ -444,7 +450,7 @@ function HsSchedeForm({ rec: initial, records, settings, onSave, onDelete, onSet
   }
   else if (S && S.k === 'descr') body = html`<div class="card"><${HsText} label="Condizioni generali dell'immobile" rows=${10} value=${r.descr} base=${B.descr} set=${v => up({ descr: v })} /></div>
     <div class="sec-h"><h3>Foto di inquadramento</h3></div>
-    <div class="card"><${PhotoStrip} ids=${(r.cgFoto || []).map(o => o.id)} max=${8} onAdd=${ids => up(q => ({ ...q, cgFoto: [...(q.cgFoto || []), ...ids.map(id => ({ id, w: 16, h: 11 }))] }))}
+    <div class="card"><${PhotoStrip} vref="cg" vdove="Inquadramento" ids=${(r.cgFoto || []).map(o => o.id)} max=${8} onAdd=${ids => up(q => ({ ...q, cgFoto: [...(q.cgFoto || []), ...ids.map(id => ({ id, w: 16, h: 11 }))] }))}
       onRemove=${async id => { const o = (r.cgFoto || []).find(x => x.id === id); if (o) HS_CG_TOLTE.set(id, o); await removeBlob(id); up(q => ({ ...q, cgFoto: (q.cgFoto || []).filter(o => o.id !== id) })); }}
       onRestore=${(id, i) => up(q => ({ ...q, cgFoto: inserisci(q.cgFoto, i, HS_CG_TOLTE.get(id) || { id, w: 16, h: 11 }) }))} />
       <p class="lead" style="margin:var(--sp-2) 0 0;font-size:var(--fs-sm)">Restano nel report anche nei sopralluoghi successivi.</p></div>`;

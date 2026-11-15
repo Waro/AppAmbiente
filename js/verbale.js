@@ -115,7 +115,7 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
       <${HsText} label="Situazione rilevata" rows=${4} value=${n.testo} set=${v => updN(n.id, { testo: v })} />
       <${HsText} label="Attività di miglioramento" rows=${2} value=${n.mig} set=${v => updN(n.id, { mig: v })} />
       <div class="fld"><span>Foto</span></div>
-      <${PhotoStrip} ids=${n.foto || []} max=${20} onAdd=${ids => updN(n.id, { foto: [...(n.foto || []), ...ids] })}
+      <${PhotoStrip} vref=${'n.' + n.id} vdove=${n.titolo || 'Nota ' + (i + 1)} ids=${n.foto || []} max=${20} onAdd=${ids => updN(n.id, { foto: [...(n.foto || []), ...ids] })}
         onRemove=${async id => { await removeBlob(id); up(q => ({ ...q, note: q.note.map(x => x.id === n.id ? { ...x, foto: x.foto.filter(f => f !== id) } : x) })); }}
         onRestore=${(id, i) => up(q => ({ ...q, note: q.note.map(x => x.id === n.id ? { ...x, foto: inserisci(x.foto, i, id) } : x) }))} />
       <${TagPicker} tags=${n.tag || []} set=${t => updN(n.id, { tag: t })} />

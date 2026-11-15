@@ -254,6 +254,8 @@ async function odRecordItems(r, settings) {
   (r.fotoAppunti2 || []).forEach((f, k) => photo(f, 'foto', `Appunti_Fase2_${k + 1}`));
   // video degli appunti: caricati una volta sola, poi tolti dal telefono
   [...(r.videoAppunti || []), ...(r.videoAppunti2 || [])].forEach(v => v && v.id && items.push({ kind: 'video', blobId: v.id, segs: ['video', v.nome || v.id] }));
+  // video fatti accanto alle foto (v60): nel nome il punto in cui sono stati fatti (campione, nota, punto…)
+  (r.video || []).forEach(v => v && v.id && items.push({ kind: 'video', blobId: v.id, segs: ['video', (v.nome || v.id) + (v.dove ? '_' + v.dove : '')] }));
   // planimetrie: la versione annotata viene rigenerata a ogni modifica, quindi va sostituita (non è nel registro "una volta sola")
   for (const p of (r.planimetrie || [])) {
     const id = p.mergedBlobId || p.blobId;

@@ -259,11 +259,19 @@ function camOpen(input) {
   }
   _camSet({ input });
 }
-// galleria: le foto (e, negli appunti, i video) scelte arrivano allo stesso campo della fotocamera
+/* v60: accanto a un campo foto può esserci un campo video (input._vid, vedi VideoIn): la fotocamera del telefono si apre
+   solo con un tipo per volta (con foto e video insieme Android apre la galleria), quindi il campo foto accetta solo foto
+   e il video ha il suo tasto. Galleria e fotocamera di Nembo accettano tutti e due e mandano i video al campo video. */
+const conVideoDi = input => /video/.test(input.accept || '') || !!input._vid;
+function consegna(input, files) {
+  const v = input._vid; if (!v) { camDeliver(input, files); return; }
+  camDeliver(input, files.filter(f => !isVideo(f))); camDeliver(v, files.filter(isVideo));
+}
+// galleria: le foto (e, dove c'è il video, i video) scelte arrivano ai campi della fotocamera
 function galOpen(input) {
   if (!input) return;
-  const g = document.createElement('input'); g.type = 'file'; g.accept = /video/.test(input.accept) ? 'image/*,video/*' : 'image/*'; g.multiple = !!input.multiple;
-  g.onchange = () => { const files = [...g.files]; if (files.length) { input._gal = true; try { camDeliver(input, files); } finally { input._gal = false; } } };
+  const g = document.createElement('input'); g.type = 'file'; g.accept = conVideoDi(input) ? 'image/*,video/*' : 'image/*'; g.multiple = !!input.multiple;
+  g.onchange = () => { const files = [...g.files]; if (files.length) { input._gal = true; if (input._vid) input._vid._gal = true; try { consegna(input, files); } finally { input._gal = false; if (input._vid) input._vid._gal = false; } } };
   g.click();
 }
 function CamSerieCard() {
@@ -288,20 +296,20 @@ function camDeliver(input, files) {
 }
 function CameraHost() { const [s, set] = useState(null); _camSet = set; return s ? html`<${Camera} key=${Date.now()} input=${s.input} onClose=${() => set(null)} />` : null; }
 
-// video degli appunti (v57): durata massima in secondi e peso massimo in MB (anche per i video del telefono)
+// video (appunti dalla v57, ovunque ci sono foto dalla v60): durata massima in secondi e peso massimo in MB (anche per i video del telefono)
 const VIDEO_MAX = 120;
 const VIDEO_MAX_MB = 400;
 const fmtDurata = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
 function Camera({ input, onClose }) {
   const multi = !!input.multiple && camSerie();
-  const conVideo = /video/.test(input.accept || '');
+  const fotoOk = /image/.test(input.accept || ''), conVideo = conVideoDi(input); // dal tasto Video: solo video
   const video = useRef(); const gal = useRef(); const st = useRef({});
   const [shots, setShots] = useState([]); const shotsRef = useRef(shots); shotsRef.current = shots;
   const [err, setErr] = useState(null);
   const [torch, setTorch] = useState(null);
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState(false);
-  const [modo, setModo] = useState('foto');
+  const [modo, setModo] = useState(fotoOk ? 'foto' : 'video');
   const [rec, setRec] = useState(false); const [secs, setSecs] = useState(0);
   // chiudendo, le foto già scattate non si perdono; una registrazione in corso si ferma e il video viene tenuto
   // extra: file dalla galleria; nuovi: video appena registrato. Copia nel telefono solo di scatti e video nuovi.
@@ -310,7 +318,7 @@ function Camera({ input, onClose }) {
     if (mr && mr.state === 'recording') { st.current.chiudi = true; mr.stop(); return; }
     const scatti = [...shotsRef.current.map(s => s.file), ...nuovi];
     const files = [...scatti, ...extra]; shotsRef.current.forEach(s => URL.revokeObjectURL(s.url)); onClose();
-    setTimeout(() => { input._gal = true; try { camDeliver(input, files); } finally { input._gal = false; } copiaNelTelefono(scatti); }, 0);
+    setTimeout(() => { input._gal = true; if (input._vid) input._vid._gal = true; try { consegna(input, files); } finally { input._gal = false; if (input._vid) input._vid._gal = false; } copiaNelTelefono(scatti); }, 0);
   };
   useBackClose(() => finish());
   useEffect(() => {
@@ -388,7 +396,7 @@ function Camera({ input, onClose }) {
       ${torch !== null ? html`<button class=${'cam-b' + (torch ? ' on' : '')} aria-label="Torcia" onClick=${toggleTorch}><${Icon} n="torch" s=${21} /></button>` : html`<span style="width:var(--tap)"></span>`}
     </div>
     ${err && html`<div class="cam-err">${err}<button class="btn mt-3" onClick=${() => { onClose(); input.click(); }}><${Icon} n="camera" s=${18} /> Fotocamera del telefono</button></div>`}
-    ${conVideo && !rec && html`<div class="seg cam-modo" role="group" aria-label="Modalità">${[['foto', 'Foto'], ['video', 'Video']].map(([k, l]) => html`<button class=${modo === k ? 'on' : ''} aria-pressed=${modo === k} disabled=${busy} onClick=${() => setModo(k)}>${l}</button>`)}</div>`}
+    ${fotoOk && conVideo && !rec && html`<div class="seg cam-modo" role="group" aria-label="Modalità">${[['foto', 'Foto'], ['video', 'Video']].map(([k, l]) => html`<button class=${modo === k ? 'on' : ''} aria-pressed=${modo === k} disabled=${busy} onClick=${() => setModo(k)}>${l}</button>`)}</div>`}
     <div class="cam-bot">
       ${rec ? html`<span class="cam-sp"></span>` : html`<button class="cam-gal" aria-label="Scegli dalla galleria" onClick=${() => gal.current.click()}>
         ${last ? html`<img src=${last.url} alt="" />` : html`<${Icon} n="image" s=${24} />`}<small>Galleria</small></button>`}
@@ -397,6 +405,6 @@ function Camera({ input, onClose }) {
         : html`<button class="cam-shut" aria-label="Scatta" disabled=${busy || !!err} onClick=${shoot}><i></i></button>`}
       ${multi && shots.length && !rec ? html`<button class="cam-done" onClick=${() => finish()}>Fine</button>` : html`<span class="cam-sp"></span>`}
     </div>
-    <input ref=${gal} type="file" accept=${conVideo ? 'image/*,video/*' : 'image/*'} multiple=${multi} hidden onChange=${e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) finish(fs); }} />
+    <input ref=${gal} type="file" accept=${[fotoOk && 'image/*', conVideo && 'video/*'].filter(Boolean).join(',')} multiple=${multi} hidden onChange=${e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) finish(fs); }} />
   </div>`;
 }

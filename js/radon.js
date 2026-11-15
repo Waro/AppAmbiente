@@ -104,7 +104,7 @@ function PuntoCard({ p, n, open, toggle, lockPos, lockF2, onUpd, onDel, onScan }
       <div class="dosim"><${Inp} label="Dosimetro Fase 2" value=${p.codiceF2} set=${v => set({ codiceF2: v.trim() })} disabled=${lockF2 || !lockPos} placeholder=${!lockPos ? 'Al ritiro della Fase 1' : ''} />
         ${lockPos && !lockF2 && html`<button class="sq" aria-label="Scansiona dosimetro Fase 2" onClick=${() => onScan(p.id, 'codiceF2')}><${Icon} n="scan" s=${20} /></button>`}</div>
       <div><div class="fld"><span>Foto (1–3)</span></div>
-        <${PhotoStrip} ids=${p.foto} max=${3} onAdd=${ids => set({ foto: [...p.foto, ...ids] })} onRemove=${async id => { await removeBlob(id); set({ foto: p.foto.filter(f => f !== id) }); }} onRestore=${(id, i) => set({ foto: inserisci(p.foto, i, id) })} /></div>
+        <${PhotoStrip} vref=${'punto.' + p.id} vdove=${'R' + n} ids=${p.foto} max=${3} onAdd=${ids => set({ foto: [...p.foto, ...ids] })} onRemove=${async id => { await removeBlob(id); set({ foto: p.foto.filter(f => f !== id) }); }} onRestore=${(id, i) => set({ foto: inserisci(p.foto, i, id) })} /></div>
       ${lockPos ? html`<span class="lock"><${Icon} n="lock" s=${13} /> Dati di posa bloccati dopo la firma</span>`
         : html`<button class="btn sm danger self-start" onClick=${() => onDel(p)}>Elimina punto</button>`}
     </div>`}
