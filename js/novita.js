@@ -3,6 +3,12 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
+  { v: 59, data: '2026-11-15', tipo: 'minore', titolo: 'Più veloce da usare sul campo',
+    voci: [
+      'Campioni, manufatti, punti, osservazioni e foto si eliminano subito, senza «Sei sicuro?»: se ti sei sbagliato tocca «Annulla» nell’avviso in basso.',
+      'I tasti rispondono al tocco e i fogli si aprono e si chiudono con un movimento breve.',
+      'Se manca un dato, Nembo ti porta sul campo da sistemare e lo contorna di rosso.',
+      'Il telefono vibra anche quando avvii o fermi la dettatura e quando inizi un video. Se non vuoi le vibrazioni, spegnile in Impostazioni → Aspetto e avvio.' ] },
   { v: 58.1, data: '2026-11-13', tipo: 'minore', titolo: 'Invio a OneDrive più rapido',
     voci: [
       '«Invia a OneDrive» carica solo quello che c’è già: foto, video, documenti e i file che hai generato. Word, PDF ed Excel li generi dalla scheda File o dal Riepilogo.' ] },

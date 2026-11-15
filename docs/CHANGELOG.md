@@ -4,6 +4,31 @@ Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Nem
 
 ## [Non rilasciato]
 
+## [nembo-v59] — 2026-11-15
+
+### Aggiunto
+- Eliminazione con «Annulla» (`eliminaConAnnulla`, `inserisci` in `js/core.js`; D-16): campioni di DDA e Mappatura, NC, manufatti RA, punti aria, osservazioni HSE e del Verbale, foto (`PhotoStrip` con il nuovo `onRestore`, foto collegate e galleria HSE con `hsTogliFoto`, foto di inquadramento con `HS_CG_TOLTE`) spariscono subito; l'avviso offre «Annulla» per 6 s e rimette l'elemento nella sua posizione. `removeBlob` non cancella i file trattenuti (`_blobTrattenuti`): li cancella `cancellaBlob` alla scadenza o alla chiusura dell'app (`pagehide`).
+- Avviso con azione: `toast(testo, { azione, onAzione, ms })`, classe `.toast.con-az` con `.toast-az`. Rilievo: gli avvisi da leggere restano in alto, quelli con un'azione (oggi «Annulla») sono in basso, sopra la barra visibile (`sopraBarre()`), vicino al pollice.
+- Campo da sistemare (`segnala` in `js/core.js`): avviso, contorno `--danger` (`.errore`), oscillazione `scuoti`, vibrazione «errore», scorrimento sul campo. Usato per data e firma del tecnico nel radon, nome di chi firma, data e titolo in Programmazione.
+- Vibrazione unica (`vibra(tipo)` con i pattern `VIBRA`: tocco, ok, conferma, errore) al posto delle chiamate dirette a `navigator.vibrate`; nuove vibrazioni all'avvio e alla fine della dettatura e all'avvio del video. Interruttore «Vibrazione» in Impostazioni → Aspetto e avvio (`nembo_vibra`).
+- Uscite animate (`iniziaUscite` in `js/core.js`): alla chiusura di fogli, finestre e avvisi resta per un attimo una copia inerte `.esce` che scende o sfuma; nessuna modifica ai componenti.
+- Rilievo § 9 Movimento e vibrazione: token `--dur-press`, `--dur-fast`, `--dur`, `--dur-slow`, `--ease-out`, `--ease-in`, `--ease-in-out`, `--ease-assesta`, `--press`, `--mv-1…3`; stato premuto su tutti i pulsanti; entrata di velo, finestra, avviso e planimetria.
+
+### Cambiato
+- Suggerimenti e primi passi si chiudono tutti con la × in alto a destra: i primi passi non hanno più «Nascondi» in fondo né «Chiudi» nella card finale. L'avviso «Solo consultazione» del Riepilogo diventa il suggerimento «Riepilogo», una volta sola. Il suggerimento «Campioni» ricorda «Annulla» nell'avviso in basso.
+- Le durate scritte a mano in `styles.css` usano i token di movimento; il foglio dal basso sale con `--ease-assesta`.
+- «Riduci movimento» copre anche la pulsazione del microfono, lo stato premuto, entrate, uscite e oscillazione.
+- Guida dentro l'app allineata alle v56–v58 (questa parte non ha voce nelle Novità).
+- Benvenuto: la prima slide cita anche i video e il caricamento subito su OneDrive.
+- Suggerimenti: «Scheda File» spiega i documenti da consultare in cima; «Campioni» spiega la pianta che si apre dopo la prima foto e il tasto Planimetria.
+- DECISIONS D-13 aggiornata: i testi si applicano e si mostrano.
+
+### Corretto
+- Campi foto (`ImgSlot`: foto di copertina e immagini dei report HSE e del Verbale): l'etichetta non si sovrappone più alla fotocamera. Il campo nascosto per il file faceva scattare l'etichetta interna dei campi (v56); i selettori di `.fld` escludono `input[type=file]`.
+
+### Rimosso
+- Le finestre di conferma del browser per le eliminazioni elencate sopra.
+
 ## [nembo-v58b] — 2026-11-13
 
 ### Cambiato

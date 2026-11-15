@@ -22,7 +22,7 @@ const Sel = (() => {
       timer = setTimeout(() => {
         timer = null; S.skip = true;
         if (active) S.toggle(id); else S.start(id);
-        try { navigator.vibrate && navigator.vibrate(18); } catch (err) { /* senza vibrazione */ }
+        vibra('tocco');
       }, 480);
     },
     move(e) { if (timer && Math.hypot(e.clientX - x0, e.clientY - y0) > 10) S.cancel(); },

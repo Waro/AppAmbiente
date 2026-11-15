@@ -110,7 +110,7 @@ function AriaPuntoCard({ p, open, toggle, onUpd, onMet, onDel, onScan, settings 
       ${e && e.over && html`<div class="notice err" style="margin-top:0">Valore oltre il limite di ${fmtNum(e.lim)} ff/l</div>`}`}
       <${Area} label="Note" rows=${2} value=${p.note} set=${v => set({ note: v })} />
       <div><div class="fld"><span>Foto della postazione</span></div>
-        <${PhotoStrip} ids=${p.foto} max=${3} onAdd=${ids => set({ foto: [...p.foto, ...ids] })} onRemove=${async id => { await removeBlob(id); set({ foto: p.foto.filter(f => f !== id) }); }} /></div>
+        <${PhotoStrip} ids=${p.foto} max=${3} onAdd=${ids => set({ foto: [...p.foto, ...ids] })} onRemove=${async id => { await removeBlob(id); set({ foto: p.foto.filter(f => f !== id) }); }} onRestore=${(id, i) => set({ foto: inserisci(p.foto, i, id) })} /></div>
       <button class="btn sm danger self-start" onClick=${() => onDel(p)}>Elimina punto</button>
     </div>`}
   </div>`;
@@ -130,10 +130,10 @@ function AriaSection({ r, up, settings, inRa }) {
     const np = newAriaPunto({ codice: ariaNextCode(P, met), metodica: met, flusso: last ? last.flusso : '' });
     upA(a => ({ punti: [...a.punti, np] })); setOpenP({ [np.id]: true }); setTimeout(() => scrollToId('s-' + np.id), 80);
   };
-  const delP = async p => {
-    if (!confirm('Eliminare il punto ' + (p.codice || '') + '?')) return;
-    for (const b of blobIds(p)) await removeBlob(b);
-    upA(a => ({ punti: a.punti.filter(x => x.id !== p.id) }));
+  const delP = p => {
+    const i = P.findIndex(x => x.id === p.id);
+    eliminaConAnnulla({ msg: 'Punto ' + (p.codice || '') + ' eliminato', blobs: blobIds(p),
+      togli: () => upA(a => ({ punti: a.punti.filter(x => x.id !== p.id) })), rimetti: () => upA(a => ({ punti: inserisci(a.punti, i, p) })) });
   };
   const onScan = p => setScan({
     title: 'Membrana ' + (p.codice || ''), target: (p.codice || 'Punto') + ' · ID supporto',

@@ -376,7 +376,7 @@ Stati calcolati, non salvati: `radonStato`, `attAperta`, `photoItems`, `odStatus
 | `cfg_od` | configurazione su OneDrive: `{ ok, last, mese, err, nonOra, firmaRemota }` (v51) |
 | `cfg_pin` | sale e chiave AES non esportabile ricavata dal PIN (v51) |
 
-`localStorage`: `nembo_style`, `nembo_mode`, `nembo_nav`, `nembo_onb`, `nembo_tips`, `nembo_tab_<tipo>`, `nembo_ag_v`, `nembo_cam_serie`, `nembo_solo_penna`, cache di MSAL.
+`localStorage`: `nembo_style`, `nembo_mode`, `nembo_nav`, `nembo_onb`, `nembo_tips`, `nembo_tab_<tipo>`, `nembo_ag_v`, `nembo_cam_serie`, `nembo_solo_penna`, `nembo_vibra` (`off` = vibrazioni spente, v59; assente = accese), cache di MSAL.
 
 ## 9. OneDrive
 

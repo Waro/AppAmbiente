@@ -191,10 +191,10 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
   const updCamp = (id, patch) => setCamp(tab, l => l.map(c => c.id === id ? { ...c, ...patch } : c));
   const lastPiano = () => { const l = r.campioni[tab] || []; return l.length ? l[l.length - 1].piano || '' : ''; };
   const addCamp = () => { const id = uid('c'); setCamp(tab, l => [...l, { id, codice: nextCode(tab), descrizione: '', tipo: '', quantita: '', piano: lastPiano(), ubicazione: '', data: today(), foto: [] }]); setOpenS({ [id]: true }); setTimeout(() => scrollToId('s-' + id), 80); };
-  const delCamp = async c => {
-    if (!confirm('Eliminare il campione ' + (c.codice || '') + '?')) return;
-    for (const b of blobIds(c)) await removeBlob(b);
-    setCamp(tab, l => renum(tab, l.filter(x => x.id !== c.id)));
+  const delCamp = c => {
+    const k = tab, i = (r.campioni[k] || []).findIndex(x => x.id === c.id);
+    eliminaConAnnulla({ msg: 'Campione ' + (c.codice || '') + ' eliminato', blobs: blobIds(c),
+      togli: () => setCamp(k, l => renum(k, l.filter(x => x.id !== c.id))), rimetti: () => setCamp(k, l => renum(k, inserisci(l, i, c))) });
   };
 
   // checklist Fase 2: punti previsti da campionare, spuntati man mano che si preleva
@@ -278,7 +278,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
         <${Appunti} rec=${x} up=${p => updRec(x.id, p)} k="descrizione" foto=${null} rows=${2} label="Descrizione" nudo /></div>
         <div class="mt-3"><${PhotoStrip} ids=${x.foto} max=${6}
           onAdd=${async ids => { updRec(x.id, { foto: [...x.foto, ...ids] }); if (x.lat == null) { const g = await getPosition(); if (g) updRec(x.id, g); } }}
-          onRemove=${async id => { await removeBlob(id); updRec(x.id, { foto: x.foto.filter(f => f !== id) }); }} /></div>
+          onRemove=${async id => { await removeBlob(id); updRec(x.id, { foto: x.foto.filter(f => f !== id) }); }} onRestore=${(id, i) => updRec(x.id, { foto: inserisci(x.foto, i, id) })} /></div>
         <div class="mt-2">${x.lat != null ? html`<span class="geo"><${Icon} n="pin" s=${14} /> ${x.lat}, ${x.lon}</span>` : html`<span class="lock">La posizione GPS si salva con la prima foto</span>`}</div>
       </div>`)}
       <button class="btn dashed" onClick=${addRec}>+ Aggiungi area</button>
@@ -331,7 +331,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
           <label class="fld"><span>Data prelievo</span><input type="date" value=${c.data || ''} onInput=${e => updCamp(c.id, { data: e.target.value })} /></label>
           ${(tab === 'mca' || tab === 'fav') && html`<label class="fld"><span>Quantità</span><input placeholder="es. 180 mq" value=${c.quantita || ''} onInput=${e => updCamp(c.id, { quantita: e.target.value })} /></label>`}
           <${PhotoStrip} ids=${c.foto || []} max=${4} onAdd=${ids => { dopoFoto(r, c, apriPlan); updCamp(c.id, { foto: [...(c.foto || []), ...ids] }); }}
-            onRemove=${async id => { await removeBlob(id); updCamp(c.id, { foto: c.foto.filter(f => f !== id) }); }} />
+            onRemove=${async id => { await removeBlob(id); updCamp(c.id, { foto: c.foto.filter(f => f !== id) }); }} onRestore=${(id, i) => updCamp(c.id, { foto: inserisci(c.foto, i, id) })} />
           <button class="btn sm danger self-start" onClick=${() => delCamp(c)}>Elimina campione</button>
         <//>`)}</div></div>`)}
       <datalist id="dl-piani-c">${[...new Set([...allCamp(r).map(c => c.piano).filter(Boolean), ...PIANI_COMUNI])].map(x => html`<option value=${x} />`)}</datalist>

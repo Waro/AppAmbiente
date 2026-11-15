@@ -227,7 +227,7 @@ function ManufattoCard({ m, open, toggle, onUpd, onDel, conclusa }) {
       <div class="stati">${RA_STATI.map(s => html`<button class=${m.stato === s.k ? 'on' : ''} style=${'--sc:' + s.v} title=${s.l} onClick=${() => set({ stato: m.stato === s.k ? '' : s.k })}>${s.l}</button>`)}</div>
       <${Area} label="Note" rows=${3} value=${m.note} set=${v => set({ note: v })} placeholder="Condizioni rilevate, interventi consigliati…" />
       <div><div class="fld"><span>Foto (fino a 3)</span></div>
-        <${PhotoStrip} ids=${m.foto} max=${3} gallery=${gal(m)} labelOf=${lab(m)} onAdd=${ids => set({ foto: [...m.foto, ...ids] })} onRemove=${async id => { await removeBlob(id); set({ foto: m.foto.filter(f => f !== id) }); }} /></div>
+        <${PhotoStrip} ids=${m.foto} max=${3} gallery=${gal(m)} labelOf=${lab(m)} onAdd=${ids => set({ foto: [...m.foto, ...ids] })} onRemove=${async id => { await removeBlob(id); set({ foto: m.foto.filter(f => f !== id) }); }} onRestore=${(id, i) => set({ foto: inserisci(m.foto, i, id) })} /></div>
       <button class="btn sm danger self-start" onClick=${() => onDel(m)}>Elimina manufatto</button>
     </div>`}
   </div>`;
@@ -246,10 +246,10 @@ function RaForm({ rec: initial, records, settings, onSave, onDelete, header, emb
   const clienti = nomiClienti(records);
   const updM = (id, patch) => up(p => ({ ...p, manufatti: p.manufatti.map(x => x.id === id ? { ...x, ...patch } : x) }));
   const addM = () => { const m = newManufatto({ codice: 'M' + (r.manufatti.length + 1) }); up(p => ({ ...p, manufatti: [...p.manufatti, m] })); setOpenM({ [m.id]: true }); setF('tutti'); setTimeout(() => scrollToId('m-' + m.id), 80); };
-  const delM = async m => {
-    if (!confirm('Eliminare il manufatto ' + (m.codice || '') + '?')) return;
-    for (const b of blobIds(m)) await removeBlob(b);
-    up(p => ({ ...p, manufatti: p.manufatti.filter(x => x.id !== m.id) }));
+  const delM = m => {
+    const i = r.manufatti.findIndex(x => x.id === m.id);
+    eliminaConAnnulla({ msg: 'Manufatto ' + (m.codice || '') + ' eliminato', blobs: blobIds(m),
+      togli: () => up(p => ({ ...p, manufatti: p.manufatti.filter(x => x.id !== m.id) })), rimetti: () => up(p => ({ ...p, manufatti: inserisci(p.manufatti, i, m) })) });
   };
   const doImport = e => {
     const file = e.target.files[0]; e.target.value = ''; if (!file) return;

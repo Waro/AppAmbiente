@@ -8,7 +8,7 @@ if (window.top !== window.self) {
   try { window.top.location.replace(window.self.location.href); } catch (e) { /* riquadro isolato: la pagina resta vuota */ }
   throw new Error('Nembo aperto dentro un riquadro');
 }
-const APP_VERSION = 'nembo-v58b';
+const APP_VERSION = 'nembo-v59';
 
 /* ---------------- aspetto: stile ("essenziale" o "originale") × modo ("auto", "chiaro" o "scuro") ----------------
    Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno.
@@ -45,6 +45,18 @@ function setLook(patch) {
   const look = { ...getLook(), ...patch };
   try { localStorage.setItem('nembo_style', look.style); localStorage.setItem('nembo_mode', look.mode); } catch (e) {}
   applyLook(look); return look;
+}
+
+/* ---------------- vibrazione (v59) ----------------
+   Un solo punto per tutte le vibrazioni, con pattern fissi per tipo di evento. Solo per eventi che contano
+   (scatto, scansione, dettatura, selezione), mai su ogni tocco; sempre insieme a un segnale visivo.
+   Si spegne in Impostazioni → Aspetto e avvio; la scelta vale solo su questo dispositivo (nembo_vibra). */
+const VIBRA = { tocco: 18, ok: 30, conferma: 80, errore: [60, 60, 60] };
+const vibraOn = () => { try { return localStorage.getItem('nembo_vibra') !== 'off'; } catch (e) { return true; } };
+const setVibraOn = on => { try { if (on) localStorage.removeItem('nembo_vibra'); else localStorage.setItem('nembo_vibra', 'off'); } catch (e) {} };
+function vibra(tipo) {
+  if (!vibraOn() || !navigator.vibrate) return;
+  try { navigator.vibrate(VIBRA[tipo] || VIBRA.ok); } catch (e) { /* senza vibrazione */ }
 }
 applyLook(getLook());
 if (_darkMq) { const f = () => { const l = getLook(); if (l.mode === 'auto') applyLook(l); }; _darkMq.addEventListener ? _darkMq.addEventListener('change', f) : _darkMq.addListener(f); }
@@ -134,9 +146,42 @@ function useBlobUrl(id) {
   return u;
 }
 async function removeBlob(id) {
+  if (_blobTrattenuti.has(id)) return; // eliminazione con «Annulla» in corso: la cancella eliminaConAnnulla alla scadenza
+  await cancellaBlob(id);
+}
+async function cancellaBlob(id) {
   if (urlCache.has(id)) { URL.revokeObjectURL(urlCache.get(id)); urlCache.delete(id); }
   await DB.delBlob(id);
 }
+// inserisce x in posizione i (fuori dall'elenco: in fondo); serve a rimettere un elemento dov'era
+const inserisci = (l, i, x) => { const a = (l || []).slice(); a.splice(i >= 0 && i <= a.length ? i : a.length, 0, x); return a; };
+
+/* ---------------- eliminazione con «Annulla» (v59) ----------------
+   Per gli elementi che si eliminano spesso (campioni, NC, manufatti, punti, osservazioni, foto) niente «Sei sicuro?»:
+   l'elemento sparisce subito e l'avviso in alto offre «Annulla» per qualche secondo.
+   togli() lo toglie dal record, rimetti() lo rimette dov'era. Le foto e i file (blobs) restano sul dispositivo
+   finché l'avviso non scade, così «Annulla» li ritrova; poi vengono cancellati come prima. */
+const ANNULLA_MS = 6000;
+const _blobTrattenuti = new Set();
+const _annullaInCorso = new Map();
+function eliminaConAnnulla({ msg, togli, rimetti, blobs = [] }) {
+  const id = uid('ann');
+  blobs.forEach(b => _blobTrattenuti.add(b));
+  togli();
+  const libera = () => blobs.forEach(b => _blobTrattenuti.delete(b));
+  const scade = async () => {
+    _annullaInCorso.delete(id); libera();
+    for (const b of blobs) { try { await cancellaBlob(b); } catch (e) { /* già cancellato */ } }
+  };
+  const timer = setTimeout(scade, ANNULLA_MS);
+  _annullaInCorso.set(id, { timer, scade });
+  toast(msg, { azione: 'Annulla', ms: ANNULLA_MS, onAzione: () => {
+    if (!_annullaInCorso.has(id)) return;
+    clearTimeout(timer); _annullaInCorso.delete(id); libera(); rimetti(); toast('Ripristinato');
+  } });
+}
+// chiudendo l'app i file in attesa vengono cancellati subito
+addEventListener('pagehide', () => { for (const x of [..._annullaInCorso.values()]) { clearTimeout(x.timer); x.scade(); } });
 // attività senza documenti da consultare né video (v57): serve ai controlli «attività vuota»
 const senzaAllegati = r => !(r.documenti || []).length && !(r.videoAppunti || []).length && !(r.videoAppunti2 || []).length;
 // tutti gli id di file contenuti in un record
@@ -291,11 +336,59 @@ function useBackClose(onClose) {
 
 /* ---------------- toast ---------------- */
 let _toast = () => {};
-const toast = (t) => _toast(t);
+/* Uscite animate (v59): quando un foglio dal basso, una finestra o un avviso si chiude, al suo posto resta per un attimo
+   una copia inerte che scende o sfuma (classe .esce, Rilievo: Movimento). I componenti si chiudono come prima;
+   con «Riduci movimento» del dispositivo la copia non si crea. */
+const USCITE = '.sheet-ov, .ov:not(.vid-ov), .toast';
+const _menoMoto = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+function iniziaUscite() {
+  new MutationObserver(ms => {
+    if (_menoMoto && _menoMoto.matches) return;
+    for (const m of ms) for (const n of m.removedNodes) {
+      if (n.nodeType !== 1 || !n.matches(USCITE) || n.classList.contains('esce')) continue;
+      const c = n.cloneNode(true); c.classList.add('esce'); c.setAttribute('aria-hidden', 'true'); c.inert = true;
+      c.querySelectorAll('[id]').forEach(e => e.removeAttribute('id'));
+      document.body.appendChild(c);
+      const via = () => c.remove(); c.addEventListener('animationend', e => e.target === c && via()); setTimeout(via, 400);
+    }
+  }).observe(document.body, { childList: true, subtree: true });
+}
+if (document.body) iniziaUscite(); else addEventListener('DOMContentLoaded', iniziaUscite);
+
+/* Campo da sistemare (v59): l'avviso dice cosa manca, il campo si contorna di rosso e oscilla un attimo,
+   il telefono vibra (errore) e la pagina ci porta sopra. Il rosso sparisce al primo tocco o alla prima lettera. */
+function segnala(sel, msg) {
+  toast(msg); vibra('errore');
+  const el0 = typeof sel === 'string' ? document.querySelector(sel) : sel; if (!el0) return;
+  const el = el0.closest('.fld') || el0;
+  el.classList.remove('scuoti'); void el.offsetWidth; el.classList.add('errore', 'scuoti');
+  el.scrollIntoView({ behavior: _menoMoto && _menoMoto.matches ? 'auto' : 'smooth', block: 'center' });
+  const ok = () => { el.classList.remove('errore', 'scuoti'); ['input', 'click', 'change'].forEach(k => el.removeEventListener(k, ok)); };
+  ['input', 'click', 'change'].forEach(k => el.addEventListener(k, ok));
+  const f = el.matches('input,textarea,select') ? el : el.querySelector('input,textarea,select'); if (f && !f.disabled) f.focus({ preventScroll: true });
+}
+
+// distanza dal fondo dello schermo della barra in basso visibile (azioni, selezione, tab bar, planimetria); null se non c'è
+function sopraBarre() {
+  let top = Infinity;
+  document.querySelectorAll('.abar, .selbar, .tabbar, .plan-bar').forEach(b => {
+    if (b.closest('.esce')) return;
+    const r = b.getBoundingClientRect(); if (r.height && r.bottom > 0 && r.top < innerHeight && getComputedStyle(b).visibility !== 'hidden') top = Math.min(top, r.top);
+  });
+  return top === Infinity ? null : Math.max(0, Math.round(innerHeight - top));
+}
+
+// toast(testo) oppure toast(testo, { azione, onAzione, ms }): con l'azione (es. «Annulla») l'avviso resta più a lungo
+const toast = (t, o) => _toast(t, o);
 function Toast() {
   const [t, setT] = useState(null); const tm = useRef();
-  _toast = (x) => { setT(x); clearTimeout(tm.current); tm.current = setTimeout(() => setT(null), 2600); };
-  return t ? html`<div class="toast" role="status">${t}</div>` : null;
+  _toast = (x, o = {}) => { setT({ x, o, k: Date.now() }); clearTimeout(tm.current); tm.current = setTimeout(() => setT(null), o.ms || (o.azione ? ANNULLA_MS : 2600)); };
+  if (!t) return null;
+  const az = () => { clearTimeout(tm.current); setT(null); t.o.onAzione && t.o.onAzione(); };
+  // Rilievo: l'avviso da leggere è in alto; quello con un'azione è in basso, sopra la barra visibile, vicino al pollice
+  const sopra = t.o.azione ? sopraBarre() : null;
+  return html`<div key=${t.k} class=${'toast' + (t.o.azione ? ' con-az' : '')} style=${sopra ? '--toast-basso:calc(' + sopra + 'px + var(--sp-2))' : ''} role="status"><span>${t.x}</span>
+    ${t.o.azione && html`<button class="toast-az" onClick=${az}>${t.o.azione}</button>`}</div>`;
 }
 
 /* ---------------- icone ---------------- */
@@ -402,8 +495,15 @@ function Thumb({ id, onRemove, onOpen }) {
   return html`<div class="ph">${u && html`<img src=${u} alt="Foto" onClick=${() => onOpen && onOpen()} />`}
     ${onRemove && html`<button class="x" aria-label="Elimina foto" onClick=${onRemove}>×</button>`}</div>`;
 }
-function PhotoStrip({ ids = [], max = 10, onAdd, onRemove, readonly, gallery, labelOf, noAdd }) {
+// onRestore(id, posizione): rimette la foto tolta con «Annulla» (v59). Senza onRestore resta la conferma.
+function PhotoStrip({ ids = [], max = 10, onAdd, onRemove, onRestore, readonly, gallery, labelOf, noAdd }) {
   const inp = useRef(); const [busy, setBusy] = useState(false); const [view, setView] = useState(null);
+  const P = useRef(); P.current = { onRemove, onRestore }; // «Annulla» usa i gestori dell'ultimo disegno
+  const togli = id => {
+    if (!onRestore) { if (confirm('Eliminare la foto?')) onRemove(id); return; }
+    const pos = ids.indexOf(id);
+    eliminaConAnnulla({ msg: 'Foto eliminata', blobs: [id], togli: () => P.current.onRemove(id), rimetti: () => P.current.onRestore(id, pos) });
+  };
   const gal = gallery && gallery.length ? gallery : ids;
   const pick = async e => {
     const files = [...e.target.files]; e.target.value = ''; if (!files.length) return;
@@ -413,7 +513,7 @@ function PhotoStrip({ ids = [], max = 10, onAdd, onRemove, readonly, gallery, la
     setBusy(false);
   };
   return html`<div class="photos">
-    ${ids.map(id => html`<${Thumb} key=${id} id=${id} onOpen=${() => setView(Math.max(0, gal.indexOf(id)))} onRemove=${readonly ? null : () => { if (confirm('Eliminare la foto?')) onRemove(id); }} />`)}
+    ${ids.map(id => html`<${Thumb} key=${id} id=${id} onOpen=${() => setView(Math.max(0, gal.indexOf(id)))} onRemove=${readonly ? null : () => togli(id)} />`)}
     ${!readonly && !noAdd && ids.length < max && html`<button class="addph" aria-label="Aggiungi foto" onClick=${() => camOpen(inp.current)}>
       ${busy ? html`<div style="display:grid;place-items:center;gap:var(--sp-1)"><div class="spin" />${typeof busy === 'string' && html`<small style="font-size:var(--fs-2xs);font-weight:700">${busy}</small>`}</div>` : html`<${Icon} n="camera" s=${22} />`}</button>
       ${!busy && html`<button class="addph gal" aria-label="Scegli dalla galleria" title="Scegli dalla galleria" onClick=${() => galOpen(inp.current)}><${Icon} n="image" s=${20} /></button>`}`}
@@ -754,7 +854,8 @@ function NotePhotos({ rec, field = 'fotoAppunti', up, noAdd }) {
   const tk = field === 'fotoAppunti' ? 'tagAppunti' : 'tag' + field.slice(4); // tag degli appunti
   return html`<div class="mt-3"><${PhotoStrip} ids=${ids} max=${Infinity} noAdd=${noAdd}
     onAdd=${add => up(p => ({ ...p, [field]: [...(p[field] || []), ...add] }))}
-    onRemove=${async id => { await removeBlob(id); up(p => ({ ...p, [field]: (p[field] || []).filter(f => f !== id) })); }} />
+    onRemove=${async id => { await removeBlob(id); up(p => ({ ...p, [field]: (p[field] || []).filter(f => f !== id) })); }}
+    onRestore=${(id, i) => up(p => ({ ...p, [field]: inserisci(p[field], i, id) }))} />
     <${TagPicker} tags=${rec[tk] || []} set=${t => up({ [tk]: t })} /></div>`;
 }
 

@@ -191,7 +191,8 @@ function NcSection({ r, up, mat, list }) {
   const add = () => { const id = uid('nc'); const last = L[L.length - 1];
     setNc(l => [...l, { id, codice: '', k: mat.k, piano: last ? last.piano : '', ubicazione: '', descrizione: '', quantita: '', rif: '', foto: [] }]);
     setOpenN({ [id]: true }); setTimeout(() => scrollToId('s-' + id), 80); };
-  const del = async x => { if (!confirm('Eliminare ' + x.codice + '?')) return; for (const b of blobIds(x)) await removeBlob(b); setNc(l => l.filter(y => y.id !== x.id)); };
+  const del = x => { const i = ncOf(r).findIndex(y => y.id === x.id);
+    eliminaConAnnulla({ msg: x.codice + ' eliminato', blobs: blobIds(x), togli: () => setNc(l => l.filter(y => y.id !== x.id)), rimetti: () => setNc(l => inserisci(l, i, x)) }); };
   const next = 'NC' + (precBase(r, 'NC') + ncOf(r).length + 1);
   const precC = ((r.precedente || {}).campioni || []).filter(c => c.k === mat.k);
   return html`<div class="list mt-4"><div class="list-h"><b>Manufatti non campionati</b><span>${L.length}</span></div>${L.map(x => { const rc = ncRif(r, x); const cx = { ...x, descrizione: x.descrizione, quantita: [x.quantita, rc && 'come ' + rc].filter(Boolean).join(' · ') };
@@ -203,7 +204,7 @@ function NcSection({ r, up, mat, list }) {
             <option value="">Nessun campione di riferimento</option>${camp.map(c => html`<option value=${c.id}>Come ${c.codice}${c.descrizione ? ' · ' + c.descrizione.slice(0, 40) : ''}</option>`)}
             ${precC.length > 0 && html`<optgroup label="Indagine precedente">${precC.map(c => html`<option value=${c.id}>Come ${c.codice} (precedente)${c.esito ? ' · ' + c.esito : ''}${c.descrizione ? ' · ' + c.descrizione.slice(0, 30) : ''}</option>`)}</optgroup>`}</select></label>
         <${PhotoStrip} ids=${x.foto || []} max=${4} onAdd=${ids => upd(x.id, { foto: [...(x.foto || []), ...ids] })}
-          onRemove=${async id => { await removeBlob(id); upd(x.id, { foto: x.foto.filter(f => f !== id) }); }} />
+          onRemove=${async id => { await removeBlob(id); upd(x.id, { foto: x.foto.filter(f => f !== id) }); }} onRestore=${(id, i) => upd(x.id, { foto: inserisci(x.foto, i, id) })} />
         <button class="btn sm danger self-start" onClick=${() => del(x)}>Elimina ${x.codice}</button>
       <//>`; })}</div>
     <button class="btn dashed mt-3" onClick=${add}>+ Aggiungi manufatto non campionato ${next}</button>`;

@@ -74,8 +74,8 @@ Una voce per decisione. Le date mancanti sono segnate: la decisione è precedent
 - **Decisione:** numerazione progressiva `nembo-vNN`; correzioni urgenti `nembo-vNNb`, mai con il punto; `VERSION` (sw.js) e `APP_VERSION` (core.js) sempre uguali.
 - **Alternative scartate:** SemVer (non serve a un'app senza API pubbliche).
 
-## D-13 — Testi approvati prima dell'applicazione
-- **Decisione:** ogni testo nuovo o modificato (interfaccia, Novità, guida, presentazione) si propone e si applica dopo l'approvazione del titolare. «Attività», mai «pratica»; mai «roba»; «essere», non «stare».
+## D-13 — Testi applicati e mostrati
+- **Decisione:** dalla v57 (13/11/2026) ogni testo nuovo o modificato (interfaccia, Novità, guida, presentazione) si applica direttamente e si mostra sempre al titolare, che indica cosa cambiare; prima si proponeva e si applicava dopo l'approvazione. «Attività», mai «pratica»; mai «roba»; «essere», non «stare».
 
 ## D-15 — Primo sopralluogo HSE a note
 - **Data:** 2026-11-11 (v53).
@@ -83,6 +83,13 @@ Una voce per decisione. Le date mancanti sono segnate: la decisione è precedent
 - **Decisione:** il primo sopralluogo HSE ha l'interfaccia del Verbale HSE; i tag proposti sono i capitoli del formato scelto e, quando si usa un capitolo, le sue sottosezioni (Esteso) o voci (Sintetico). Nembo compila il Word del formato associando le note ai capitoli (`hsNoteAOld`). La tabella di rischio e le risposte Sì/No/N.A. si compilano nel Word. I sopralluoghi periodici e i report già salvati restano a schede o a checklist; il Verbale HSE resta un'attività a sé.
 - **Alternative scartate:** convertire i report esistenti in note; tabella di rischio nella Check-list.
 - **Conseguenze:** due interfacce HSE per lo stesso tipo `hs`, distinte da `aNote`.
+
+## D-16 — «Annulla» al posto di «Sei sicuro?» per le eliminazioni frequenti
+- **Data:** 2026-11-15 (v59).
+- **Contesto:** in sopralluogo si eliminano spesso campioni, foto e osservazioni; la finestra di conferma del browser rallenta, è fuori dallo stile di Rilievo e non salva da un errore confermato per abitudine.
+- **Decisione:** campioni, NC, manufatti, punti aria, osservazioni (HSE e Verbale) e foto si eliminano subito, con «Annulla» nell'avviso per 6 s (`eliminaConAnnulla` in `js/core.js`). I file restano sul dispositivo (`_blobTrattenuti`) finché l'avviso non scade, poi si cancellano; chiudendo l'app si cancellano subito. «Annulla» rimette l'elemento nella sua posizione; i campioni tornano con la loro sigla.
+- **Alternative scartate:** finestra di conferma in stile Rilievo (resta un passaggio in più per ogni eliminazione); cestino dell'attività (più complesso, nessun bisogno emerso).
+- **Conseguenze:** la conferma resta per ciò che non si annulla o tocca più elementi (attività intera, punti radon rinumerati, fogli firme, ripristini, svuotamenti). Chiudendo l'app entro 6 s un'eliminazione non si annulla più. Un nuovo avviso sostituisce il precedente: l'eliminazione prima non si annulla più ma resta corretta.
 
 ## D-14 — Unione manuale delle proposte di Copilot
 - **Data:** 2026-11-10.

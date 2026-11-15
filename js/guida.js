@@ -2,7 +2,8 @@
    Testi generici, senza dati reali: il file è pubblico. Tutto resta solo su questo dispositivo.
    - Benvenuto: 4 slide nel foglio delle Novità; l'ultima fa scegliere la business unit (settings.buDefault).
    - Primi passi: Fase 1 «Prepara il dispositivo», Fase 2 «Prova sul campo». Si spuntano da soli con i dati veri.
-   - Suggerimenti: una card per funzione, una volta sola (localStorage nembo_tips); si riattivano in Impostazioni → Guida. */
+   - Suggerimenti: una card per funzione, una volta sola (localStorage nembo_tips); si riattivano in Impostazioni → Guida.
+   Suggerimenti e primi passi si chiudono tutti con la × in alto a destra (v59). */
 
 /* ---------------- suggerimenti ---------------- */
 const TIPS_KEY = 'nembo_tips';
@@ -11,8 +12,9 @@ const tipsReset = () => { try { localStorage.removeItem(TIPS_KEY); } catch (e) {
 const SUGGERIMENTI = {
   programmazione: { t: 'Programmazione', s: 'Tocca una fascia vuota o + per programmare un sopralluogo o un appuntamento. In alto passi da Giorno a Settimana e Mese. La durata proposta per ogni tipo si cambia in Impostazioni → Programmazione.' },
   planimetrie: { t: 'Planimetrie', s: 'Apri una pianta per scriverci sopra: penna, evidenziatore, forme, testo e gomma sono nella barra degli strumenti. Con «Solo penna» il dito sposta la pianta e scrive solo la penna del tablet.' },
-  campioni: { t: 'Campioni', s: 'I codici si assegnano da soli: A1, A2… per MCA e F1, F2… per FAV. I manufatti non campionati sono NC1, NC2…, ognuno con il campione di riferimento.' },
-  file: { t: 'Scheda File', s: 'Qui generi i documenti dell’attività. Grigio: da generare. Verde: generato e su OneDrive, tocca per aprirlo. Ambra: i dati sono cambiati, rigeneralo. «Rigenera» crea una nuova revisione senza cancellare la precedente.' },
+  campioni: { t: 'Campioni', s: 'I codici si assegnano da soli: A1, A2… per MCA e F1, F2… per FAV. I manufatti non campionati sono NC1, NC2…, ognuno con il campione di riferimento. Dopo la prima foto di un campione si apre la pianta del suo piano, con l’etichetta pronta; il tasto Planimetria la apre quando vuoi. Se elimini un campione per sbaglio, tocca «Annulla» nell’avviso in basso.' },
+  riepilogo: { t: 'Riepilogo', s: 'Qui vedi tutto il sopralluogo in sola lettura, per controllare prima di uscire. Per modificare, chiudi e torna alla scheda.' },
+  file: { t: 'Scheda File', s: 'In cima allega i PDF da consultare durante il sopralluogo: si aprono anche senza rete. Sotto generi i documenti dell’attività. Grigio: da generare. Verde: generato e su OneDrive, tocca per aprirlo. Ambra: i dati sono cambiati, rigeneralo. «Rigenera» crea una nuova revisione senza cancellare la precedente.' },
   dettatura: { t: 'Dettatura', s: 'Il microfono nei campi di testo usa la dettatura di Chrome: per trascriverla, l’audio viene inviato ai server di Google. Se nel sopralluogo ci sono dati riservati, scrivi a mano.' },
   radon: { t: 'Dosimetri', s: 'Tocca lo scanner per leggere il codice a barre dei dosimetri: dopo ogni lettura passa da solo al punto successivo. Un codice già usato viene segnalato subito.' },
 };
@@ -51,7 +53,7 @@ function BenvenutoSheet({ settings, setSettings, onClose }) {
       ${bu === v && html`<${Icon} n="check" s=${18} w=${2.6} />`}</button>`)}</div>`,
   ];
   const txt = [
-    ['Benvenuto in Nembo', 'Raccogli dati, foto e planimetrie dei sopralluoghi sul telefono o sul tablet, anche senza rete. I dati restano su questo dispositivo e vanno su OneDrive quando lo colleghi.'],
+    ['Benvenuto in Nembo', 'Raccogli dati, foto, video e planimetrie dei sopralluoghi sul telefono o sul tablet, anche senza rete. I dati restano su questo dispositivo; se colleghi OneDrive, foto e video partono appena li aggiungi.'],
     ['Ogni attività ha il suo colore', 'DDA, mappature, sopralluoghi RA, campagne radon, monitoraggi dell’aria e sopralluoghi HSE. Il tasto + in basso apre un nuovo sopralluogo.'],
     ['Dal campo al file', 'Nella scheda File di ogni attività generi schede campioni, riepiloghi e report. Verde: generato e su OneDrive. Ambra: i dati sono cambiati, da rigenerare.'],
     ['Scegli la tua Business Unit', 'Decide le attività che vedi in Oggi. Puoi cambiarla quando vuoi in Impostazioni → Aspetto e avvio.'],
@@ -108,7 +110,7 @@ function PrimiPassi({ settings, records = [], tplOk, hsTplOk, lastBackup, goSett
   if (n === all.length) return html`<div class="card onb onb-done">
     <span class="onb-big"><${Icon} n="check" s=${22} w=${2.6} /></span>
     <div class="t"><b>Pronto per il primo sopralluogo</b><small>Hai preparato il dispositivo e provato il giro completo, dal campo al file. Al prossimo sopralluogo tocca +.</small></div>
-    <button class="btn sm" onClick=${close}>Chiudi</button></div>`;
+    <button class="tip-x" aria-label="Chiudi i primi passi" onClick=${close}><${Icon} n="x" s=${18} /></button></div>`;
   const steps = ok1 ? fase2 : fase1;
   const item = x => html`<button class=${'onb-it' + (x.ok ? ' ok' : '')} key=${x.l} disabled=${x.ok || !x.go} onClick=${x.go}>
       <span class="onb-ck">${x.ok && html`<${Icon} n="check" s=${14} w=${2.6} />`}</span>
@@ -117,10 +119,10 @@ function PrimiPassi({ settings, records = [], tplOk, hsTplOk, lastBackup, goSett
     <div class="onb-top">
       <div class="ring-wrap" aria-hidden="true"><${Ring} p=${n / all.length} size=${44} w=${5} color="var(--ok)" /></div>
       <div class="t"><b>Primi passi</b><small>Fase ${ok1 ? 2 : 1} di 2 · ${ok1 ? 'Prova sul campo' : 'Prepara il dispositivo'}</small></div>
-      <span class="onb-of">${n} di ${all.length}</span></div>
+      <span class="onb-of">${n} di ${all.length}</span>
+      <button class="tip-x" aria-label="Chiudi i primi passi" onClick=${close}><${Icon} n="x" s=${18} /></button></div>
     ${ok1 && html`<div class="onb-it ok onb-fase"><span class="onb-ck"><${Icon} n="check" s=${14} w=${2.6} /></span><span class="t"><b>Dispositivo pronto</b></span></div>`}
     ${steps.map(item)}
-    <button class="btn link" style="margin-top:var(--sp-1);font-size:var(--fs-sm)" onClick=${close}>Nascondi</button>
   </div>`;
 }
 
