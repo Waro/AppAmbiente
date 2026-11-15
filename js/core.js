@@ -8,7 +8,7 @@ if (window.top !== window.self) {
   try { window.top.location.replace(window.self.location.href); } catch (e) { /* riquadro isolato: la pagina resta vuota */ }
   throw new Error('Nembo aperto dentro un riquadro');
 }
-const APP_VERSION = 'nembo-v59';
+const APP_VERSION = 'nembo-v60';
 
 /* ---------------- aspetto: stile ("essenziale" o "originale") × modo ("auto", "chiaro" o "scuro") ----------------
    Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno.
@@ -134,9 +134,15 @@ const DB = (() => {
 
 // URL delle immagini salvate (cache in memoria)
 const urlCache = new Map();
+// immagini create al momento (pagine dei PDF, v60): id → funzione che restituisce l'immagine; una sola alla volta per id
+const _virtuali = new Map(), _inCorso = new Map();
 async function blobUrl(id) {
   if (!id) return null;
   if (urlCache.has(id)) return urlCache.get(id);
+  if (_virtuali.has(id)) {
+    if (!_inCorso.has(id)) _inCorso.set(id, _virtuali.get(id)().then(b => { _inCorso.delete(id); if (!b || !_virtuali.has(id)) return null; const u = URL.createObjectURL(b); urlCache.set(id, u); return u; }, () => { _inCorso.delete(id); return null; }));
+    return _inCorso.get(id);
+  }
   const b = await DB.getBlob(id); if (!b) return null;
   const u = URL.createObjectURL(b.blob); urlCache.set(id, u); return u;
 }
@@ -183,7 +189,7 @@ function eliminaConAnnulla({ msg, togli, rimetti, blobs = [] }) {
 // chiudendo l'app i file in attesa vengono cancellati subito
 addEventListener('pagehide', () => { for (const x of [..._annullaInCorso.values()]) { clearTimeout(x.timer); x.scade(); } });
 // attività senza documenti da consultare né video (v57): serve ai controlli «attività vuota»
-const senzaAllegati = r => !(r.documenti || []).length && !(r.videoAppunti || []).length && !(r.videoAppunti2 || []).length;
+const senzaAllegati = r => !(r.documenti || []).length && !(r.videoAppunti || []).length && !(r.videoAppunti2 || []).length && !(r.video || []).length;
 // tutti gli id di file contenuti in un record
 function blobIds(obj, out = []) {
   if (typeof obj === 'string') { if (obj.startsWith('b_')) out.push(obj); }
@@ -482,9 +488,13 @@ function InpGrow({ label, value, set, disabled, placeholder, cls = '', list, imp
       onKeyDown=${e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } }}
       onInput=${e => { set(e.target.value.replace(/\n/g, ' ')); growFit(e.target); }}></textarea><${ImpNote} L=${L} imp=${imp} set=${set} /></label>`;
 }
-function Area({ label, value, set, rows = 3, disabled, placeholder, cls = '', imp }) {
+// media (v60): { onFoto, resto, vref, vdove } → fotocamera, galleria e video nel campo (IcoMedia)
+function Area({ label, value, set, rows = 3, disabled, placeholder, cls = '', imp, media }) {
   const L = useLock(imp, value);
   if (L.locked) return html`<${LockView} label=${label} value=${value} L=${L} cls=${cls} />`;
+  if (media && !disabled) return html`<div class=${'fld ' + cls}><span>${label}</span><div class="mic-wrap">
+    <textarea ref=${L.ref} rows=${rows} placeholder=${placeholder || ' '} value=${value || ''} onInput=${e => set(e.target.value)}></textarea>
+    <div class="ico-col"><${IcoMedia} ...${media} /></div></div><${ImpNote} L=${L} imp=${imp} set=${set} /></div>`;
   return html`<label class=${'fld ' + cls}><span>${label}</span>
     <textarea ref=${L.ref} rows=${rows} disabled=${disabled} placeholder=${placeholder || ' '} value=${value || ''} onInput=${e => set(e.target.value)}></textarea><${ImpNote} L=${L} imp=${imp} set=${set} /></label>`;
 }
@@ -496,7 +506,8 @@ function Thumb({ id, onRemove, onOpen }) {
     ${onRemove && html`<button class="x" aria-label="Elimina foto" onClick=${onRemove}>×</button>`}</div>`;
 }
 // onRestore(id, posizione): rimette la foto tolta con «Annulla» (v59). Senza onRestore resta la conferma.
-function PhotoStrip({ ids = [], max = 10, onAdd, onRemove, onRestore, readonly, gallery, labelOf, noAdd }) {
+// vref, vdove (v60): accanto alle foto il tasto Video; i video vanno in r.video con ref = vref e si vedono sotto le foto
+function PhotoStrip({ ids = [], max = 10, onAdd, onRemove, onRestore, readonly, gallery, labelOf, noAdd, vref, vdove }) {
   const inp = useRef(); const [busy, setBusy] = useState(false); const [view, setView] = useState(null);
   const P = useRef(); P.current = { onRemove, onRestore }; // «Annulla» usa i gestori dell'ultimo disegno
   const togli = id => {
@@ -505,6 +516,7 @@ function PhotoStrip({ ids = [], max = 10, onAdd, onRemove, onRestore, readonly, 
     eliminaConAnnulla({ msg: 'Foto eliminata', blobs: [id], togli: () => P.current.onRemove(id), rimetti: () => P.current.onRestore(id, pos) });
   };
   const gal = gallery && gallery.length ? gallery : ids;
+  const conV = vref != null && !readonly && !!vDest(); // i video del punto si vedono anche quando i tasti sono nel campo di testo
   const pick = async e => {
     const files = [...e.target.files]; e.target.value = ''; if (!files.length) return;
     setBusy(true);
@@ -512,14 +524,35 @@ function PhotoStrip({ ids = [], max = 10, onAdd, onRemove, onRestore, readonly, 
     catch (err) { fail('Foto non salvata', err); }
     setBusy(false);
   };
-  return html`<div class="photos">
-    ${ids.map(id => html`<${Thumb} key=${id} id=${id} onOpen=${() => setView(Math.max(0, gal.indexOf(id)))} onRemove=${readonly ? null : () => togli(id)} />`)}
-    ${!readonly && !noAdd && ids.length < max && html`<button class="addph" aria-label="Aggiungi foto" onClick=${() => camOpen(inp.current)}>
-      ${busy ? html`<div style="display:grid;place-items:center;gap:var(--sp-1)"><div class="spin" />${typeof busy === 'string' && html`<small style="font-size:var(--fs-2xs);font-weight:700">${busy}</small>`}</div>` : html`<${Icon} n="camera" s=${22} />`}</button>
-      ${!busy && html`<button class="addph gal" aria-label="Scegli dalla galleria" title="Scegli dalla galleria" onClick=${() => galOpen(inp.current)}><${Icon} n="image" s=${20} /></button>`}`}
-    <input ref=${inp} type="file" accept="image/*" capture="environment" multiple hidden onChange=${pick} />
+  // v60: senza campo di testo vicino, i tasti sono pulsanti sopra le foto (Scatta · Video · Galleria); noAdd: i tasti sono nel campo
+  const add = !readonly && !noAdd, puo = ids.length < max;
+  return html`${add && html`<div class=${'row ph-btns' + (ids.length ? ' mb-2' : '')}>
+      ${puo && html`<button class="btn sm grow" disabled=${!!busy} onClick=${() => camOpen(inp.current)}>${busy ? html`<div class="spin" />${typeof busy === 'string' ? ' ' + busy : ''}` : html`<${Icon} n="camera" s=${16} /> Scatta`}</button>`}
+      ${conV && html`<${VideoIn} fotoRef=${inp} vref=${vref} dove=${vdove} cls="btn sm grow" s=${16} testo="Video" />`}
+      ${puo && html`<button class="btn sm grow" disabled=${!!busy} aria-label="Scegli dalla galleria" onClick=${() => galOpen(inp.current)}><${Icon} n="image" s=${16} /> Galleria</button>`}</div>
+      <input ref=${inp} type="file" accept="image/*" capture="environment" multiple hidden onChange=${pick} />`}
+    ${ids.length > 0 && html`<div class="photos">
+    ${ids.map(id => html`<${Thumb} key=${id} id=${id} onOpen=${() => setView(Math.max(0, gal.indexOf(id)))} onRemove=${readonly ? null : () => togli(id)} />`)}</div>`}
     ${view !== null && html`<${Viewer} ids=${gal} index=${view} labelOf=${labelOf} onClose=${() => setView(null)} />`}
-  </div>`;
+    ${conV && html`<${VideoRif} vref=${vref} />`}`;
+}
+/* Fotocamera, galleria e video dentro un campo di testo (v60), nella colonna di icone sul bordo destro.
+   onFoto(ids): foto salvate; resto: quante foto si possono ancora aggiungere; vref, vdove: come in PhotoStrip. */
+function IcoMedia({ onFoto, resto = Infinity, vref, vdove }) {
+  const inp = useRef(); const [busy, setBusy] = useState(false);
+  const pick = async e => {
+    const fs = [...e.target.files].filter(f => !isVideo(f)); e.target.value = ''; if (!fs.length) return;
+    const list = fs.slice(0, Math.max(0, resto));
+    if (list.length < fs.length) toast(resto > 0 ? 'Puoi aggiungere ancora ' + resto + ' foto' : 'Hai già il numero massimo di foto');
+    if (!list.length) return;
+    setBusy(true); const out = [];
+    for (const f of list) { try { out.push(await saveImage(f)); } catch (err) { fail('Foto non salvata', err); } }
+    setBusy(false); if (out.length) await onFoto(out);
+  };
+  return html`<button type="button" class="cam-in" aria-label="Scatta una foto" title="Scatta una foto" disabled=${busy} onClick=${() => camOpen(inp.current)}>${busy ? html`<div class="spin" />` : html`<${Icon} n="camera" s=${22} />`}</button>
+    ${vref != null && vDest() && html`<${VideoIn} fotoRef=${inp} vref=${vref} dove=${vdove} cls="vid-in" s=${22} />`}
+    <button type="button" class="gal-in" aria-label="Scegli dalla galleria" title="Scegli dalla galleria" disabled=${busy} onClick=${() => galOpen(inp.current)}><${Icon} n="image" s=${22} /></button>
+    <input ref=${inp} type="file" accept="image/*" capture="environment" multiple hidden onClick=${e => e.stopPropagation()} onChange=${pick} />`;
 }
 // Visualizzatore a schermo intero: scorri a destra/sinistra (o usa frecce e tastiera) per le altre foto.
 // Zoom: due dita o doppio tocco sul telefono, rotella o doppio clic sul PC; con la foto ingrandita si trascina per muoversi.
@@ -647,6 +680,7 @@ function FileList({ items = [], onAdd, onRemove, label = 'Allega documento', not
 }
 
 /* ---------------- salvataggio automatico ---------------- */
+const _vDest = []; const vDest = () => _vDest[_vDest.length - 1] || null;
 function useAutosave(initial, onSave) {
   const [rec, setRec] = useState(initial);
   const t = useRef(); const latest = useRef(initial); const dirty = useRef(false);
@@ -661,6 +695,11 @@ function useAutosave(initial, onSave) {
       return next;
     });
   }, []);
+  // attività aperta: i video fatti accanto alle foto (VideoIn, v60) vanno in r.video di questa attività.
+  // Registrata già al primo disegno, così le schede figlie vedono subito il tasto Video.
+  const vd = useRef(null);
+  if (!vd.current && initial && initial.id && TIPI_REC.includes(initial.type)) { vd.current = { rec: () => latest.current, up: update }; _vDest.push(vd.current); }
+  useEffect(() => () => { const i = _vDest.indexOf(vd.current); if (i >= 0) _vDest.splice(i, 1); }, []);
   useEffect(() => {
     const vis = () => { if (document.visibilityState === 'hidden') flush(); };
     document.addEventListener('visibilitychange', vis);
@@ -862,17 +901,18 @@ function NotePhotos({ rec, field = 'fotoAppunti', up, noAdd }) {
 /* ---------------- appunti (v56) ----------------
    Campo con l'etichetta dentro e, in colonna sul bordo destro, fotocamera, galleria e microfono (Rilievo: Campo).
    foto = campo delle foto degli appunti (null: solo dettatura). Le miniature e i tag restano sotto il campo. */
-function IcoFoto({ inp }) {
+function IcoFoto({ inp, onVideos }) {
   return html`<button type="button" class="cam-in" aria-label="Scatta una foto" title="Scatta una foto" onClick=${() => camOpen(inp.current)}><${Icon} n="camera" s=${22} /></button>
+    ${onVideos && html`<${VideoIn} fotoRef=${inp} onVideos=${onVideos} cls="vid-in" s=${22} />`}
     <button type="button" class="gal-in" aria-label="Scegli dalla galleria" title="Scegli dalla galleria" onClick=${() => galOpen(inp.current)}><${Icon} n="image" s=${22} /></button>`;
 }
-function Appunti({ rec, up, k = 'appunti', foto = 'fotoAppunti', rows = 4, label = 'Appunti', placeholder, nudo, disabled }) {
+function Appunti({ rec, up, k = 'appunti', foto = 'fotoAppunti', rows = 4, label = 'Appunti', placeholder, nudo, disabled, media }) {
   const inp = useRef();
   const [on, toggle] = useDictation(() => rec[k] || '', v => up({ [k]: v }));
   // video solo negli appunti delle attività (v57)
   const vf = rec && rec.type && rec.id ? { fotoAppunti: 'videoAppunti', fotoAppunti2: 'videoAppunti2' }[foto] : null;
-  const add = async e => {
-    const fs = [...e.target.files]; e.target.value = ''; if (!fs.length) return;
+  const add = e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) addFiles(fs); };
+  const addFiles = async fs => {
     const out = [], vid = []; // foto degli appunti senza limite di numero (v56)
     for (const f of fs) {
       if (isVideo(f)) {
@@ -887,8 +927,8 @@ function Appunti({ rec, up, k = 'appunti', foto = 'fotoAppunti', rows = 4, label
   };
   const campo = html`<div class="fld"><span>${label}</span>
     <div class="mic-wrap"><textarea rows=${rows} disabled=${disabled} placeholder=${placeholder || ' '} value=${rec[k] || ''} onInput=${e => up({ [k]: e.target.value })}></textarea>
-      ${!disabled && html`<div class="ico-col">${foto && html`<${IcoFoto} inp=${inp} />`}<${MicBtn} rec=${on} toggle=${toggle} /></div>`}</div></div>
-    ${foto && html`<input ref=${inp} type="file" accept=${vf ? 'image/*,video/*' : 'image/*'} capture="environment" multiple hidden onChange=${add} />
+      ${!disabled && html`<div class="ico-col">${foto && html`<${IcoFoto} inp=${inp} onVideos=${vf ? addFiles : null} />`}${!foto && media && html`<${IcoMedia} ...${media} />`}<${MicBtn} rec=${on} toggle=${toggle} /></div>`}</div></div>
+    ${foto && html`<input ref=${inp} type="file" accept="image/*" capture="environment" multiple hidden onChange=${add} />
       <${NotePhotos} rec=${rec} field=${foto} up=${up} noAdd />`}
     ${vf && html`<${VideoList} rec=${rec} field=${vf} up=${up} />`}`;
   return nudo ? campo : html`<div class="card">${campo}</div>`;
@@ -920,8 +960,9 @@ async function salvaVideo(f) {
   await DB.putBlob({ id, blob: f, type: f.type || 'video/mp4', name: nome });
   return { id, nome, durata: isFinite(d) ? Math.round(d) : 0, t };
 }
-function VideoList({ rec, field, up }) {
-  const L = rec[field] || []; const od = useOdFiles(); const [play, setPlay] = useState(null);
+// ref (v60): solo i video fatti in quel punto (r.video)
+function VideoList({ rec, field, up, ref }) {
+  const L = (rec[field] || []).filter(v => ref == null || v.ref === ref); const od = useOdFiles(); const [play, setPlay] = useState(null);
   if (!L.length) return null;
   const apri = async v => {
     const b = await DB.getBlob(v.id);
@@ -933,7 +974,7 @@ function VideoList({ rec, field, up }) {
   };
   const chiudi = () => { URL.revokeObjectURL(play.url); setPlay(null); };
   const togli = async v => {
-    if (!confirm('Togliere ' + v.nome + ' dagli appunti?' + (od.sent[v.id] ? ' Su OneDrive resta.' : ''))) return;
+    if (!confirm('Togliere ' + v.nome + (ref == null ? ' dagli appunti' : '') + '?' + (od.sent[v.id] ? ' Su OneDrive resta.' : ''))) return;
     await removeBlob(v.id); up(p => ({ ...p, [field]: (p[field] || []).filter(x => x.id !== v.id) }));
   };
   return html`<div class="stack mt-3">${L.map(v => html`<div class="row" key=${v.id}>
@@ -943,6 +984,27 @@ function VideoList({ rec, field, up }) {
       <button class="x" aria-label=${'Togli ' + v.nome} onClick=${() => togli(v)}>×</button></div>`)}
     ${play && html`<${VideoPlayer} url=${play.url} nome=${play.nome} onClose=${chiudi} />`}</div>`;
 }
+/* ---------------- video accanto alle foto (v60) ----------------
+   Tasto Video con il suo campo (solo video, così la fotocamera del telefono si apre in modalità video). fotoRef: il campo
+   foto vicino, a cui il campo video si collega (input._vid) per galleria e fotocamera di Nembo. Senza onVideos i video
+   vanno in r.video dell'attività aperta con ref = vref e dove = testo per il nome del file su OneDrive. */
+async function salvaVideoRif(files, ref, dove) {
+  const d = vDest(); if (!d) return;
+  const out = [];
+  for (const f of files) {
+    if (!isVideo(f)) { toast('Qui puoi aggiungere solo video'); continue; }
+    try { out.push({ ...(await salvaVideo(f)), ref, dove: dove || '' }); } catch (err) { if (err.code === 'VIDEO') toast(err.message); else fail('Video non salvato', err); }
+  }
+  if (out.length) { d.up(p => ({ ...p, video: [...(p.video || []), ...out] })); toast(out.length === 1 ? 'Video aggiunto' : out.length + ' video aggiunti'); }
+}
+function VideoIn({ fotoRef, vref, dove, onVideos, cls, s = 20, testo }) {
+  const inp = useRef();
+  useEffect(() => { const f = fotoRef && fotoRef.current; if (f) f._vid = inp.current; return () => { if (f && f._vid === inp.current) f._vid = null; }; });
+  const got = e => { const fs = [...e.target.files]; e.target.value = ''; if (!fs.length) return; if (onVideos) onVideos(fs); else salvaVideoRif(fs, vref, dove); };
+  return html`<button type="button" class=${cls} aria-label="Registra un video" title="Registra un video" onClick=${() => camOpen(inp.current)}><${Icon} n="video" s=${s} />${testo ? ' ' + testo : ''}</button>
+    <input ref=${inp} type="file" accept="video/*" capture="environment" hidden onClick=${e => e.stopPropagation()} onChange=${got} />`;
+}
+function VideoRif({ vref }) { const d = vDest(); return d ? html`<${VideoList} rec=${d.rec()} field="video" up=${d.up} ref=${vref} />` : null; }
 function VideoPlayer({ url, nome, onClose }) {
   useBackClose(onClose);
   return html`<div class="ov vid-ov" role="dialog" aria-label=${nome} onClick=${onClose}>

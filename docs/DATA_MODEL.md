@@ -22,7 +22,7 @@ Versioni: database IndexedDB **1** (`indexedDB.open('nembo', 1)`), formato dei r
 
 ```mermaid
 erDiagram
-  RECORDS ||--o{ BLOBS : "foto, allegati, planimetrie (id b_…); video degli appunti (id v_…)"
+  RECORDS ||--o{ BLOBS : "foto, allegati, planimetrie (id b_…); video degli appunti e dei punti (id v_…)"
   RECORDS {
     string id PK "prefisso per tipo + tempo + casuale"
     string type "dda | mappatura | ra | radon | aria | hs | vs | firme | cli | app"
@@ -182,6 +182,7 @@ Tipi: `string`, `number` (ms dall'epoca per gli istanti), `bool`, `data` = strin
 | `planimetrie` | array | — | `[]` | no | § 4.6 |
 | `appunti`, `fotoAppunti` | string, blobId[] | — | `''`, `[]` | foto: possibile | Appunti liberi e foto |
 | `videoAppunti` (DDA Fase 2: `videoAppunti2`) | array, facoltativo | `{ id: 'v_…', nome, durata (s), t (ms) }`; durata ≤ 120 s, file ≤ 400 MB | assente = `[]` | possibile (persone riprese) | Video degli appunti (v57): solo OneDrive (cartella `video`), mai nel Word, nel backup ZIP o nella sincronizzazione; dopo il caricamento il file locale si cancella |
+| `video` | array, facoltativo | `{ id: 'v_…', nome, durata (s), t (ms), ref, dove }`; `ref` = punto in cui è stato fatto (`camp.<id>`, `nc.<id>`, `rec.<id>`, `man.<id>`, `punto.<id>`, `aria.<id>`, `n.<id>`, sezione o voce HSE, `cg`, `galleria`); `dove` = nome del punto per il file su OneDrive | assente = `[]` | possibile (persone riprese) | Video fatti accanto alle foto (v60): stesse regole di `videoAppunti` (solo OneDrive, fuori da Word, ZIP e sincronizzazione). Se il punto viene eliminato il video resta in `r.video` e su OneDrive |
 | `tagAppunti` (DDA anche `tagAppunti2`) | string[] | — | — | no | Tag degli appunti; ogni campo che inizia con `tag` è raccolto da `collectTags` |
 | `documenti` | array | `{ id, nome, blobId, script? }`, file ammessi da `controlli.js` | `[]` | possibile | Documenti da consultare (scheda File, tutte le attività con la scheda File dalla v57; prima solo DDA e HSE) |
 | `fogli` | array | — | `[]` | sì | Fogli firme § 4.7 |
@@ -217,7 +218,8 @@ Tipi: `string`, `number` (ms dall'epoca per gli istanti), `bool`, `data` = strin
 | Campo | Tipo | Vincoli | Default | Dato personale | Descrizione |
 |---|---|---|---|---|---|
 | `id` | string | PK | `uid('c')` | no | — |
-| `codice` | string | MCA `A<n>`, FAV `F<n>` automatici; altre matrici libero | prossimo | no | Rinumerato finché la matrice non è in `congelati` |
+| `codice` | string | MCA `A<n>`, FAV `F<n>` automatici; terreni `S<n> <da>-<a> m` da `sond` e profondità (v60); altre matrici libero | prossimo | no | Rinumerato finché la matrice non è in `congelati` (non i terreni) |
+| `sond`, `profDa`, `profA` | number, string, string | solo terreni (v60); profondità in metri con la virgola | sondaggio dell'ultimo campione di terreno (1 al primo), `''`, `''` | no | Numero del sondaggio e profondità di prelievo; più campioni con lo stesso `sond` e quote diverse. Assenti nei campioni prima della v60: si ricavano dalla sigla (`terrenoDa`) quando si modifica |
 | `piano`, `ubicazione`, `descrizione` | string | — | piano dell'ultimo | no | Nella scheda: «Piano - Ubicazione - Descrizione» |
 | `tipo`, `quantita` | string | — | `''` | no | Tipologia e quantità con unità |
 | `data` | data | — | oggi | no | Data di prelievo |

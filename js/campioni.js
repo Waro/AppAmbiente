@@ -167,14 +167,34 @@ function PianoInp({ value, set, list }) {
     onChange=${e => { const v = e.target.value.trim(); if (v !== (value || '')) set(v); }} onKeyDown=${e => { if (e.key === 'Enter') e.target.blur(); }} /></label>`;
 }
 // sigla del campione: assegnata da Nembo (sola lettura) o libera
+/* Terreni (v60): sigla «S<n> <da>-<a> m» dal numero del sondaggio e dalla profondità di prelievo in metri;
+   più campioni con lo stesso sondaggio e quote diverse. Il nuovo campione prende il sondaggio dell'ultimo. */
+const virgolaDec = v => String(v == null ? '' : v).trim().replace(/\./g, ',');
+function codTerreno(c) { const d = virgolaDec(c.profDa), a = virgolaDec(c.profA), p = d && a ? d + '-' + a : d || a; return 'S' + (c.sond || '') + (p ? ' ' + p + ' m' : ''); }
+// sigle scritte a mano prima della v60 (es. «S2 1,0-2,0 m»): numero e profondità per i campi
+function terrenoDa(c) {
+  if (c.sond != null) return c;
+  const m = /^S\s*(\d+)(?:\s+([\d.,]+)(?:\s*-\s*([\d.,]+))?)?/i.exec(c.codice || '');
+  return m ? { ...c, sond: +m[1], profDa: m[2] || '', profA: m[3] || '' } : { ...c, sond: '', profDa: '', profA: '' };
+}
+function nuovoTerreno(r) { const l = (r.campioni || {}).terreni || [], s = l.length ? terrenoDa(l[l.length - 1]).sond || 1 : 1; return { sond: s, profDa: '', profA: '', codice: 'S' + s }; }
+function SiglaTerreno({ c, upd }) {
+  const x = terrenoDa(c);
+  const set = p => { const n = { ...x, ...p }; upd({ sond: n.sond, profDa: n.profDa, profA: n.profA, codice: codTerreno(n) }); };
+  return html`<${SiglaAuto} codice=${c.codice} c="var(--terreni)" />
+    <${Inp} label="Sondaggio (numero dopo S)" inputmode="numeric" value=${x.sond === '' ? '' : String(x.sond)} set=${v => { const d = v.replace(/\D/g, ''); set({ sond: d ? +d : '' }); }} />
+    <${Inp} label="Profondità da (m)" inputmode="decimal" value=${x.profDa} set=${v => set({ profDa: virgolaDec(v) })} placeholder="es. 0,5" />
+    <${Inp} label="Profondità a (m)" inputmode="decimal" value=${x.profA} set=${v => set({ profA: virgolaDec(v) })} placeholder="es. 1,0" />`;
+}
 const SiglaAuto = ({ codice, c }) => html`<div class="fld sigla"><span>Sigla</span><div class="code-auto" style=${'color:' + c}>${codice || '—'}</div></div>`;
 // campi comuni del campione, uno per riga: Sigla, Piano, Ubicazione, Descrizione (con la dettatura)
-function CampFields({ c, upd, list, codice }) {
+// media (v60): fotocamera, galleria e video nella descrizione (vedi IcoMedia)
+function CampFields({ c, upd, list, codice, media }) {
   const [rec, toggle] = useDictation(() => c.descrizione || '', v => upd({ descrizione: v }));
   return html`${codice}<${PianoInp} value=${c.piano} list=${list} set=${v => upd({ piano: v })} />
     <label class="fld"><span>Ubicazione</span><input placeholder=" " value=${c.ubicazione || ''} onInput=${e => upd({ ubicazione: e.target.value })} /></label>
     <div class="fld"><span>Descrizione</span><div class="mic-wrap"><textarea rows="2" placeholder=" " aria-label="Descrizione" value=${c.descrizione} onInput=${e => upd({ descrizione: e.target.value })}></textarea>
-      <div class="ico-col"><${MicBtn} rec=${rec} toggle=${toggle} /></div></div></div>`;
+      <div class="ico-col">${media && html`<${IcoMedia} ...${media} />`}<${MicBtn} rec=${rec} toggle=${toggle} /></div></div></div>`;
 }
 
 /* ---------------- NC: manufatti non campionati (MCA e FAV, numerazione unica NC1, NC2…) ----------------
@@ -198,12 +218,13 @@ function NcSection({ r, up, mat, list }) {
   return html`<div class="list mt-4"><div class="list-h"><b>Manufatti non campionati</b><span>${L.length}</span></div>${L.map(x => { const rc = ncRif(r, x); const cx = { ...x, descrizione: x.descrizione, quantita: [x.quantita, rc && 'come ' + rc].filter(Boolean).join(' · ') };
       return html`<${SampleRow} key=${x.id} c=${cx} mat=${mat} open=${!!openN[x.id]} toggle=${() => setOpenN(o => ({ ...o, [x.id]: !o[x.id] }))}
         onPhoto=${ids => upd(x.id, { foto: [...(x.foto || []), ...ids] })}>
-        <${CampFields} c=${x} list=${list} upd=${patch => upd(x.id, patch)} codice=${html`<${SiglaAuto} codice=${x.codice} c=${mat.c} />`} />
+        <${CampFields} c=${x} list=${list} upd=${patch => upd(x.id, patch)} codice=${html`<${SiglaAuto} codice=${x.codice} c=${mat.c} />`}
+          media=${{ onFoto: ids => upd(x.id, { foto: [...(x.foto || []), ...ids] }), resto: 4 - (x.foto || []).length, vref: 'nc.' + x.id, vdove: x.codice }} />
         <label class="fld"><span>Quantità</span><input placeholder="es. 180 mq" value=${x.quantita || ''} onInput=${e => upd(x.id, { quantita: e.target.value })} /></label>
         <label class="fld"><span>Campione di riferimento</span><select value=${x.rif || ''} onChange=${e => upd(x.id, { rif: e.target.value })}>
             <option value="">Nessun campione di riferimento</option>${camp.map(c => html`<option value=${c.id}>Come ${c.codice}${c.descrizione ? ' · ' + c.descrizione.slice(0, 40) : ''}</option>`)}
             ${precC.length > 0 && html`<optgroup label="Indagine precedente">${precC.map(c => html`<option value=${c.id}>Come ${c.codice} (precedente)${c.esito ? ' · ' + c.esito : ''}${c.descrizione ? ' · ' + c.descrizione.slice(0, 30) : ''}</option>`)}</optgroup>`}</select></label>
-        <${PhotoStrip} ids=${x.foto || []} max=${4} onAdd=${ids => upd(x.id, { foto: [...(x.foto || []), ...ids] })}
+        <${PhotoStrip} noAdd vref=${'nc.' + x.id} vdove=${x.codice} ids=${x.foto || []} max=${4} onAdd=${ids => upd(x.id, { foto: [...(x.foto || []), ...ids] })}
           onRemove=${async id => { await removeBlob(id); upd(x.id, { foto: x.foto.filter(f => f !== id) }); }} onRestore=${(id, i) => upd(x.id, { foto: inserisci(x.foto, i, id) })} />
         <button class="btn sm danger self-start" onClick=${() => del(x)}>Elimina ${x.codice}</button>
       <//>`; })}</div>

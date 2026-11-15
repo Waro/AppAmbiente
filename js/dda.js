@@ -190,7 +190,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
   const setCamp = (k, fn) => up(p => ({ ...p, campioni: { ...p.campioni, [k]: fn(p.campioni[k]) } }));
   const updCamp = (id, patch) => setCamp(tab, l => l.map(c => c.id === id ? { ...c, ...patch } : c));
   const lastPiano = () => { const l = r.campioni[tab] || []; return l.length ? l[l.length - 1].piano || '' : ''; };
-  const addCamp = () => { const id = uid('c'); setCamp(tab, l => [...l, { id, codice: nextCode(tab), descrizione: '', tipo: '', quantita: '', piano: lastPiano(), ubicazione: '', data: today(), foto: [] }]); setOpenS({ [id]: true }); setTimeout(() => scrollToId('s-' + id), 80); };
+  const addCamp = () => { const id = uid('c'); setCamp(tab, l => [...l, { id, codice: nextCode(tab), ...(tab === 'terreni' ? nuovoTerreno(r) : {}), descrizione: '', tipo: '', quantita: '', piano: lastPiano(), ubicazione: '', data: today(), foto: [] }]); setOpenS({ [id]: true }); setTimeout(() => scrollToId('s-' + id), 80); };
   const delCamp = c => {
     const k = tab, i = (r.campioni[k] || []).findIndex(x => x.id === c.id);
     eliminaConAnnulla({ msg: 'Campione ' + (c.codice || '') + ' eliminato', blobs: blobIds(c),
@@ -210,7 +210,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
     setTab(it.matrice); addCamp2(it.matrice, it.descrizione, it.ubicazione);
     updCk(it.id, { fatto: true });
   };
-  const addCamp2 = (k, descrizione, ubicazione) => { const id = uid('c'); setCamp(k, l => [...l, { id, codice: nextCode2(k), descrizione, piano: '', ubicazione: ubicazione || '', tipo: '', quantita: '', data: today(), foto: [] }]); setOpenS({ [id]: true }); };
+  const addCamp2 = (k, descrizione, ubicazione) => { const id = uid('c'); setCamp(k, l => [...l, { id, codice: nextCode2(k), ...(k === 'terreni' ? nuovoTerreno(r) : {}), descrizione, piano: '', ubicazione: ubicazione || '', tipo: '', quantita: '', data: today(), foto: [] }]); setOpenS({ [id]: true }); };
   const nextCode2 = nextCode;
 
   const doImport1 = e => {
@@ -275,8 +275,9 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
         <div class="row mb-2"><span class="mdot" style="background:var(--rec)"></span><span class="tb-grow"></span>
           <button class="x" aria-label="Elimina area" onClick=${() => delRec(x)}>×</button></div>
         <div class="stack"><label class="fld"><span>Nome</span><input placeholder=" " value=${x.nome} onInput=${e => updRec(x.id, { nome: e.target.value })} /></label>
-        <${Appunti} rec=${x} up=${p => updRec(x.id, p)} k="descrizione" foto=${null} rows=${2} label="Descrizione" nudo /></div>
-        <div class="mt-3"><${PhotoStrip} ids=${x.foto} max=${6}
+        <${Appunti} rec=${x} up=${p => updRec(x.id, p)} k="descrizione" foto=${null} rows=${2} label="Descrizione" nudo
+          media=${{ onFoto: async ids => { updRec(x.id, { foto: [...x.foto, ...ids] }); if (x.lat == null) { const g = await getPosition(); if (g) updRec(x.id, g); } }, resto: 6 - x.foto.length, vref: 'rec.' + x.id, vdove: x.nome || 'Area REC' }} /></div>
+        <div class="mt-3"><${PhotoStrip} noAdd vref=${'rec.' + x.id} vdove=${x.nome || 'Area REC'} ids=${x.foto} max=${6}
           onAdd=${async ids => { updRec(x.id, { foto: [...x.foto, ...ids] }); if (x.lat == null) { const g = await getPosition(); if (g) updRec(x.id, g); } }}
           onRemove=${async id => { await removeBlob(id); updRec(x.id, { foto: x.foto.filter(f => f !== id) }); }} onRestore=${(id, i) => updRec(x.id, { foto: inserisci(x.foto, i, id) })} /></div>
         <div class="mt-2">${x.lat != null ? html`<span class="geo"><${Icon} n="pin" s=${14} /> ${x.lat}, ${x.lon}</span>` : html`<span class="lock">La posizione GPS si salva con la prima foto</span>`}</div>
@@ -325,17 +326,18 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
       ${byPiano(camp).map(([piano, list]) => html`<div key=${piano}>
         <div class="list mt-3"><div class="list-h"><b>${piano}</b><span>${list.length}</span></div>${list.map(c => html`<${SampleRow} key=${c.id} c=${c} mat=${mat} open=${!!openS[c.id]} toggle=${() => setOpenS(o => ({ ...o, [c.id]: !o[c.id] }))}
           onPhoto=${ids => { dopoFoto(r, c, apriPlan); updCamp(c.id, { foto: [...(c.foto || []), ...ids] }); }}>
-          <${CampFields} c=${c} list="dl-piani-c" upd=${patch => updCamp(c.id, patch)} codice=${mat.auto ? html`<${SiglaAuto} codice=${c.codice} c=${mat.c} />`
-              : html`<label class="fld"><span>Sigla</span><input class="code-free" value=${c.codice} placeholder=" " onInput=${e => updCamp(c.id, { codice: e.target.value })} /></label>`} />
+          <${CampFields} c=${c} list="dl-piani-c" upd=${patch => updCamp(c.id, patch)} codice=${tab === 'terreni' ? html`<${SiglaTerreno} c=${c} upd=${patch => updCamp(c.id, patch)} />` : mat.auto ? html`<${SiglaAuto} codice=${c.codice} c=${mat.c} />`
+              : html`<label class="fld"><span>Sigla</span><input class="code-free" value=${c.codice} placeholder=" " onInput=${e => updCamp(c.id, { codice: e.target.value })} /></label>`}
+            media=${{ onFoto: ids => { dopoFoto(r, c, apriPlan); updCamp(c.id, { foto: [...(c.foto || []), ...ids] }); }, resto: 4 - (c.foto || []).length, vref: 'camp.' + c.id, vdove: c.codice || 'Campione' }} />
           ${tab === 'altro' && html`<label class="fld"><span>Tipo di campione</span><input placeholder="es. rifiuto, aria, sedimento" value=${c.tipo} onInput=${e => updCamp(c.id, { tipo: e.target.value })} /></label>`}
           <label class="fld"><span>Data prelievo</span><input type="date" value=${c.data || ''} onInput=${e => updCamp(c.id, { data: e.target.value })} /></label>
           ${(tab === 'mca' || tab === 'fav') && html`<label class="fld"><span>Quantità</span><input placeholder="es. 180 mq" value=${c.quantita || ''} onInput=${e => updCamp(c.id, { quantita: e.target.value })} /></label>`}
-          <${PhotoStrip} ids=${c.foto || []} max=${4} onAdd=${ids => { dopoFoto(r, c, apriPlan); updCamp(c.id, { foto: [...(c.foto || []), ...ids] }); }}
+          <${PhotoStrip} noAdd vref=${'camp.' + c.id} vdove=${c.codice || 'Campione'} ids=${c.foto || []} max=${4} onAdd=${ids => { dopoFoto(r, c, apriPlan); updCamp(c.id, { foto: [...(c.foto || []), ...ids] }); }}
             onRemove=${async id => { await removeBlob(id); updCamp(c.id, { foto: c.foto.filter(f => f !== id) }); }} onRestore=${(id, i) => updCamp(c.id, { foto: inserisci(c.foto, i, id) })} />
           <button class="btn sm danger self-start" onClick=${() => delCamp(c)}>Elimina campione</button>
         <//>`)}</div></div>`)}
       <datalist id="dl-piani-c">${[...new Set([...allCamp(r).map(c => c.piano).filter(Boolean), ...PIANI_COMUNI])].map(x => html`<option value=${x} />`)}</datalist>
-      <button class="btn dashed mt-3" onClick=${addCamp}>+ Aggiungi campione ${mat.auto ? nextCode(tab) : ''}</button>
+      <button class="btn dashed mt-3" onClick=${addCamp}>+ Aggiungi campione ${tab === 'terreni' ? 'S' + nuovoTerreno(r).sond : mat.auto ? nextCode(tab) : ''}</button>
       ${(tab === 'mca' || tab === 'fav') && html`<${NcSection} r=${r} up=${up} mat=${mat} list="dl-piani-c" />`}
       <div style="height:10px"></div>
 
@@ -373,7 +375,7 @@ function DdaForm({ rec: initial, records, settings, onSave, onDelete, onSettings
     <${BarraAtt} r=${r} settings=${settings}
       left=${html`<button class="btn-icon lg" aria-label="Planimetrie" title="Planimetrie" onClick=${() => { if (T === 'anag' || T === 'firme') setT(r.fase === 2 ? 'camp' : 'sop'); setTimeout(() => scrollToId('plan-' + r.id), 120); }}><${Icon} n="map" s=${22} /></button>`}
       center=${T === 'sop' ? html`<button class="btn pri" onClick=${addRec}><${Icon} n="plus" s=${20} w=${2.4} /> Nuova area REC</button>`
-        : T === 'camp' ? html`<button class="btn pri" onClick=${addCamp}><${Icon} n="plus" s=${20} w=${2.4} /> Nuovo campione ${mat.auto ? nextCode(tab) : mat.l}</button>`
+        : T === 'camp' ? html`<button class="btn pri" onClick=${addCamp}><${Icon} n="plus" s=${20} w=${2.4} /> Nuovo campione ${tab === 'terreni' ? 'S' + nuovoTerreno(r).sond : mat.auto ? nextCode(tab) : mat.l}</button>`
         : html`<${OdBtn} r=${r} settings=${settings} />`}
       gruppi=${[['Documenti', [
         (r.campioni.mca.length || r.campioni.fav.length) && { ic: 'gear', l: 'Laboratorio, offerta, codici analisi', fn: onSettings },

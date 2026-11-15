@@ -108,9 +108,10 @@ function AriaPuntoCard({ p, open, toggle, onUpd, onMet, onDel, onScan, settings 
         <${Inp} label=${'Concentrazione (ff/l)' + (m.lim != null ? ' · limite ' + fmtNum(m.lim) : '')} value=${p.conc} set=${v => set({ conc: v })} placeholder="es. <0,38" />
       </div>
       ${e && e.over && html`<div class="notice err" style="margin-top:0">Valore oltre il limite di ${fmtNum(e.lim)} ff/l</div>`}`}
-      <${Area} label="Note" rows=${2} value=${p.note} set=${v => set({ note: v })} />
-      <div><div class="fld"><span>Foto della postazione</span></div>
-        <${PhotoStrip} ids=${p.foto} max=${3} onAdd=${ids => set({ foto: [...p.foto, ...ids] })} onRemove=${async id => { await removeBlob(id); set({ foto: p.foto.filter(f => f !== id) }); }} onRestore=${(id, i) => set({ foto: inserisci(p.foto, i, id) })} /></div>
+      <${Area} label="Note" rows=${2} value=${p.note} set=${v => set({ note: v })}
+        media=${{ onFoto: ids => set({ foto: [...p.foto, ...ids] }), resto: 3 - p.foto.length, vref: 'aria.' + p.id, vdove: p.codice || 'Punto' }} />
+      <div>${p.foto.length > 0 && html`<div class="fld"><span>Foto della postazione</span></div>`}
+        <${PhotoStrip} noAdd vref=${'aria.' + p.id} vdove=${p.codice || 'Punto'} ids=${p.foto} max=${3} onAdd=${ids => set({ foto: [...p.foto, ...ids] })} onRemove=${async id => { await removeBlob(id); set({ foto: p.foto.filter(f => f !== id) }); }} onRestore=${(id, i) => set({ foto: inserisci(p.foto, i, id) })} /></div>
       <button class="btn sm danger self-start" onClick=${() => onDel(p)}>Elimina punto</button>
     </div>`}
   </div>`;
