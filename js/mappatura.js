@@ -140,10 +140,11 @@ function MappaturaForm({ rec: initial, records, settings, onSave, onDelete, onSe
     ${byPiano(camp).map(([piano, list]) => html`<div key=${piano}>
       <div class="list mt-3"><div class="list-h"><b>${piano}</b><span>${list.length}</span></div>${list.map(c => html`<${SampleRow} key=${c.id} c=${c} mat=${mat} open=${!!openS[c.id]} toggle=${() => setOpenS(o => ({ ...o, [c.id]: !o[c.id] }))}
         onPhoto=${ids => { dopoFoto(r, c, apriPlan); updCamp(c.id, { foto: [...(c.foto || []), ...ids] }); }}>
-        <${CampFields} c=${c} list="dl-piani-m" upd=${patch => updCamp(c.id, patch)} codice=${html`<${SiglaAuto} codice=${c.codice} c=${mat.c} />`} />
+        <${CampFields} c=${c} list="dl-piani-m" upd=${patch => updCamp(c.id, patch)} codice=${html`<${SiglaAuto} codice=${c.codice} c=${mat.c} />`}
+          media=${{ onFoto: ids => { dopoFoto(r, c, apriPlan); updCamp(c.id, { foto: [...(c.foto || []), ...ids] }); }, resto: 4 - (c.foto || []).length, vref: 'camp.' + c.id, vdove: c.codice || 'Campione' }} />
         <label class="fld"><span>Data prelievo</span><input type="date" value=${c.data || ''} onInput=${e => updCamp(c.id, { data: e.target.value })} /></label>
         <label class="fld"><span>Quantità</span><input placeholder="es. 180 mq" value=${c.quantita || ''} onInput=${e => updCamp(c.id, { quantita: e.target.value })} /></label>
-        <${PhotoStrip} vref=${'camp.' + c.id} vdove=${c.codice || 'Campione'} ids=${c.foto || []} max=${4} onAdd=${ids => { dopoFoto(r, c, apriPlan); updCamp(c.id, { foto: [...(c.foto || []), ...ids] }); }}
+        <${PhotoStrip} noAdd vref=${'camp.' + c.id} vdove=${c.codice || 'Campione'} ids=${c.foto || []} max=${4} onAdd=${ids => { dopoFoto(r, c, apriPlan); updCamp(c.id, { foto: [...(c.foto || []), ...ids] }); }}
           onRemove=${async id => { await removeBlob(id); updCamp(c.id, { foto: c.foto.filter(f => f !== id) }); }} onRestore=${(id, i) => updCamp(c.id, { foto: inserisci(c.foto, i, id) })} />
         <button class="btn sm danger self-start" onClick=${() => delCamp(c)}>Elimina campione</button>
       <//>`)}</div></div>`)}

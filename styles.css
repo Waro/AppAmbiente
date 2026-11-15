@@ -416,8 +416,6 @@ input[type=checkbox] { accent-color: var(--blue); }
 .ph { width: 68px; height: 68px; border-radius: var(--r-md); overflow: hidden; position: relative; background: var(--fill-soft); flex-shrink: 0; }
 .ph img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .ph .x { position: absolute; top: 3px; right: 3px; width: 24px; height: 24px; background: rgba(0,0,0,.55); color: var(--on-dark); font-size: var(--fs-md); }
-.addph { width: 68px; height: 68px; border-radius: var(--r-md); border: 1.5px dashed var(--chev); background: transparent; color: var(--blue); display: grid; place-items: center; flex-shrink: 0; }
-.addph.gal, .addph.vid { border-style: solid; border-color: var(--sep); color: var(--text2); }
 .imgb { width: 132px; justify-content: center; }
 .geo { font-size: var(--fs-sm); color: var(--ok); display: inline-flex; gap: 4px; align-items: center; }
 
@@ -513,7 +511,7 @@ input[type=checkbox] { accent-color: var(--blue); }
 
 .toast { position: fixed; top: calc(16px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); background: var(--navy); color: var(--on-dark); font-size: var(--fs-base); font-weight: 500; padding: 11px 18px; border-radius: var(--r-btn); z-index: 100; box-shadow: 0 8px 24px rgba(0,0,0,.25); max-width: 90%; text-align: center; }
 .spin { width: 18px; height: 18px; border: 3px solid rgba(255,255,255,.4); border-top-color: var(--on-dark); border-radius: 50%; animation: spin .9s linear infinite; }
-.btn:not(.pri) .spin, .addph .spin { border-color: var(--sep); border-top-color: var(--blue); }
+.btn:not(.pri) .spin, .ico-col .spin { border-color: var(--sep); border-top-color: var(--blue); }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* planimetrie */
@@ -1176,7 +1174,9 @@ img.logo { background: none; object-fit: cover; }
 .ico-col .mic-in.rec { background: none; color: var(--blue); }
 .ico-col .ck-badge { top: 2px; right: 2px; }
 .mic-wrap:has(.gal-in) textarea { min-height: 140px; }
-.mic-wrap:has(.vid-in) textarea { min-height: calc(4 * var(--tap) + var(--sp-2)); } /* fotocamera, galleria, video, microfono (v60) */
+.mic-wrap:has(.ico-col .gal-in):not(:has(.vid-in)):not(:has(.mic-in)) textarea { min-height: calc(2 * var(--tap) + var(--sp-2)); }
+.mic-wrap:has(.vid-in):not(:has(.mic-in)) textarea { min-height: calc(3 * var(--tap) + var(--sp-2)); } /* fotocamera, galleria, video (v60) */
+.mic-wrap:has(.vid-in):has(.mic-in) textarea { min-height: calc(4 * var(--tap) + var(--sp-2)); } /* fotocamera, galleria, video, microfono (v60) */
 .mic-wrap:has(.ico-col > :nth-child(2):last-child) textarea { min-height: 100px; }
 
 /* elenchi con il titolo dentro la card, a tutta larghezza (piani dei campioni, manufatti non campionati) */
@@ -1225,9 +1225,9 @@ img.logo { background: none; object-fit: cover; }
    Rilievo · Movimento (v59): tocco, entrate e uscite, campo da sistemare
    ============================================================ */
 /* Tocco: ogni tasto risponde subito schiacciandosi appena (--press in --dur-press) */
-.btn, .btn-icon, .sq, .x, .fab, .addph, .chip, .chip-btn, .mic-in, .cam-in, .gal-in, .seg button, .toast-az, .sigbox {
+.btn, .btn-icon, .sq, .x, .fab, .chip, .chip-btn, .mic-in, .cam-in, .gal-in, .vid-in, .seg button, .toast-az, .sigbox {
   transition: transform var(--dur-press) var(--ease-out), background-color var(--dur-fast) var(--ease-out); }
-:is(.btn, .btn-icon, .sq, .x, .fab, .addph, .chip, .chip-btn, .mic-in, .cam-in, .gal-in, .seg button, .tabbar button, .toast-az, .sigbox):active:not(:disabled) { transform: scale(var(--press)); }
+:is(.btn, .btn-icon, .sq, .x, .fab, .chip, .chip-btn, .mic-in, .cam-in, .gal-in, .vid-in, .seg button, .tabbar button, .toast-az, .sigbox):active:not(:disabled) { transform: scale(var(--press)); }
 
 /* Entrate: velo che sfuma, foglio che sale e si assesta, finestra che si apre dal centro, avviso che scende */
 .sheet-ov, .ov { animation: veloEntra var(--dur) var(--ease-out); }
@@ -1267,7 +1267,7 @@ img.logo { background: none; object-fit: cover; }
 
 /* Riduci movimento: niente spostamenti né oscillazioni; restano i cambi di colore e i messaggi */
 @media (prefers-reduced-motion: reduce) {
-  :is(.btn, .btn-icon, .sq, .x, .fab, .addph, .chip, .chip-btn, .mic-in, .cam-in, .gal-in, .seg button, .tabbar button, .toast-az, .sigbox):active:not(:disabled) { transform: none; }
+  :is(.btn, .btn-icon, .sq, .x, .fab, .chip, .chip-btn, .mic-in, .cam-in, .gal-in, .vid-in, .seg button, .tabbar button, .toast-az, .sigbox):active:not(:disabled) { transform: none; }
   .sheet-ov, .ov, .modal, .toast, .planwrap, .scuoti { animation: none; }
   .mic-in.rec { animation: none; }
 }

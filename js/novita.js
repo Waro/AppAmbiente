@@ -6,6 +6,7 @@ const NOVITA = [
   { v: 60, data: '2026-11-15', tipo: 'minore', titolo: 'Video ovunque ci sono le foto',
     voci: [
       'Accanto alla fotocamera e alla galleria c’è il tasto Video: su campioni, manufatti, punti, osservazioni HSE e del Verbale, sezioni e voci del sopralluogo HSE e appunti. Il video resta dove l’hai fatto e va su OneDrive, nella cartella video dell’attività, con il nome del punto.',
+      'Fotocamera, galleria e video sono dentro la casella di testo vicina, come negli appunti: nella descrizione del campione, nelle note del manufatto o del punto, nella situazione rilevata. Dove non c’è una casella trovi i pulsanti Scatta, Galleria e Video sotto le foto.',
       'La galleria sceglie insieme foto e video; nella fotocamera di Nembo passi da Foto a Video con il selettore.',
       'Negli appunti la fotocamera del telefono si apre di nuovo per scattare, non più sulla galleria.',
       'I PDF da consultare si aprono con tutte le pagine, non più solo le prime 40.' ] },

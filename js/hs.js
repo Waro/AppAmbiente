@@ -130,13 +130,13 @@ function FotoCollegate({ r, rif, up, togli }) {
 const HS_EST_REF = HS_SCHEDE.flatMap((s, i) => s.subs ? s.subs.map(sb => ({ id: 'sch.' + s.k + '.' + sb, ref: String(i + 1), txt: (s.s || s.l) + ' · ' + sb }))
   : [{ id: 'sch.' + s.k, ref: String(i + 1), txt: s.s || s.l }]);
 // campo di testo con dettatura, frasi ricorrenti e (per la situazione rilevata) riformulazione
-function HsText({ label, value, set, base, gruppo, rows = 4, onRiformula, placeholder, foto }) {
+function HsText({ label, value, set, base, gruppo, rows = 4, onRiformula, placeholder, foto, media }) {
   const [frasi, setFrasi] = useState(false);
   const [rif, setRif] = useState(null);
   const [rec, toggleRec] = useDictation(() => value, set);
   const changed = base != null && base !== '' && (value || '') !== base;
   return html`<div class="fld hs-text"><span>${label}</span>
-    <div class="mic-wrap"><textarea rows=${rows} value=${value || ''} placeholder=${placeholder || ' '} onInput=${e => set(e.target.value)}></textarea><div class="ico-col">${foto && html`<${FotoIn} ...${foto} />`}<${MicBtn} rec=${rec} toggle=${toggleRec} /></div></div>
+    <div class="mic-wrap"><textarea rows=${rows} value=${value || ''} placeholder=${placeholder || ' '} onInput=${e => set(e.target.value)}></textarea><div class="ico-col">${foto && html`<${FotoIn} ...${foto} />`}${media && html`<${IcoMedia} ...${media} />`}<${MicBtn} rec=${rec} toggle=${toggleRec} /></div></div>
     ${foto && html`<${FotoCollegate} ...${foto} /><${VideoRif} vref=${foto.rif} />`}
     <div class="hs-tools">
       ${base ? html`<span class="hs-base">${changed ? 'Modificato: le righe nuove escono in rosso' : 'Dal report precedente (nero nel Word)'}</span>` : null}

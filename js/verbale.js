@@ -112,10 +112,11 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
         <button class="x" title="Dopo" aria-label="Sposta dopo" disabled=${vis[vis.length - 1] === n} onClick=${() => move(n, 1)}>›</button>
         <button class="x" title="Elimina l'osservazione" aria-label="Elimina l'osservazione" onClick=${() => delN(n)}><${Icon} n="trash" s=${15} /></button></div>
       <${Inp} label="Titolo" value=${n.titolo} set=${v => updN(n.id, { titolo: v })} placeholder="es. Uscita di emergenza lato nord" />
-      <${HsText} label="Situazione rilevata" rows=${4} value=${n.testo} set=${v => updN(n.id, { testo: v })} />
+      <${HsText} label="Situazione rilevata" rows=${4} value=${n.testo} set=${v => updN(n.id, { testo: v })}
+        media=${{ onFoto: ids => up(q => ({ ...q, note: q.note.map(x => x.id === n.id ? { ...x, foto: [...(x.foto || []), ...ids] } : x) })), resto: 20 - (n.foto || []).length, vref: 'n.' + n.id, vdove: n.titolo || 'Osservazione ' + (i + 1) }} />
       <${HsText} label="Attività di miglioramento" rows=${2} value=${n.mig} set=${v => updN(n.id, { mig: v })} />
-      <div class="fld"><span>Foto</span></div>
-      <${PhotoStrip} vref=${'n.' + n.id} vdove=${n.titolo || 'Nota ' + (i + 1)} ids=${n.foto || []} max=${20} onAdd=${ids => updN(n.id, { foto: [...(n.foto || []), ...ids] })}
+      ${(n.foto || []).length > 0 && html`<div class="fld"><span>Foto</span></div>`}
+      <${PhotoStrip} noAdd vref=${'n.' + n.id} vdove=${n.titolo || 'Osservazione ' + (i + 1)} ids=${n.foto || []} max=${20} onAdd=${ids => updN(n.id, { foto: [...(n.foto || []), ...ids] })}
         onRemove=${async id => { await removeBlob(id); up(q => ({ ...q, note: q.note.map(x => x.id === n.id ? { ...x, foto: x.foto.filter(f => f !== id) } : x) })); }}
         onRestore=${(id, i) => up(q => ({ ...q, note: q.note.map(x => x.id === n.id ? { ...x, foto: inserisci(x.foto, i, id) } : x) }))} />
       <${TagPicker} tags=${n.tag || []} set=${t => updN(n.id, { tag: t })} />

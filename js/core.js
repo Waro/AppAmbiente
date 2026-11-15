@@ -488,9 +488,13 @@ function InpGrow({ label, value, set, disabled, placeholder, cls = '', list, imp
       onKeyDown=${e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } }}
       onInput=${e => { set(e.target.value.replace(/\n/g, ' ')); growFit(e.target); }}></textarea><${ImpNote} L=${L} imp=${imp} set=${set} /></label>`;
 }
-function Area({ label, value, set, rows = 3, disabled, placeholder, cls = '', imp }) {
+// media (v60): { onFoto, resto, vref, vdove } → fotocamera, galleria e video nel campo (IcoMedia)
+function Area({ label, value, set, rows = 3, disabled, placeholder, cls = '', imp, media }) {
   const L = useLock(imp, value);
   if (L.locked) return html`<${LockView} label=${label} value=${value} L=${L} cls=${cls} />`;
+  if (media && !disabled) return html`<div class=${'fld ' + cls}><span>${label}</span><div class="mic-wrap">
+    <textarea ref=${L.ref} rows=${rows} placeholder=${placeholder || ' '} value=${value || ''} onInput=${e => set(e.target.value)}></textarea>
+    <div class="ico-col"><${IcoMedia} ...${media} /></div></div><${ImpNote} L=${L} imp=${imp} set=${set} /></div>`;
   return html`<label class=${'fld ' + cls}><span>${label}</span>
     <textarea ref=${L.ref} rows=${rows} disabled=${disabled} placeholder=${placeholder || ' '} value=${value || ''} onInput=${e => set(e.target.value)}></textarea><${ImpNote} L=${L} imp=${imp} set=${set} /></label>`;
 }
@@ -512,7 +516,7 @@ function PhotoStrip({ ids = [], max = 10, onAdd, onRemove, onRestore, readonly, 
     eliminaConAnnulla({ msg: 'Foto eliminata', blobs: [id], togli: () => P.current.onRemove(id), rimetti: () => P.current.onRestore(id, pos) });
   };
   const gal = gallery && gallery.length ? gallery : ids;
-  const conV = vref != null && !readonly && !noAdd && !!vDest();
+  const conV = vref != null && !readonly && !!vDest(); // i video del punto si vedono anche quando i tasti sono nel campo di testo
   const pick = async e => {
     const files = [...e.target.files]; e.target.value = ''; if (!files.length) return;
     setBusy(true);
@@ -520,15 +524,35 @@ function PhotoStrip({ ids = [], max = 10, onAdd, onRemove, onRestore, readonly, 
     catch (err) { fail('Foto non salvata', err); }
     setBusy(false);
   };
-  return html`<div class="photos">
-    ${ids.map(id => html`<${Thumb} key=${id} id=${id} onOpen=${() => setView(Math.max(0, gal.indexOf(id)))} onRemove=${readonly ? null : () => togli(id)} />`)}
-    ${!readonly && !noAdd && ids.length < max && html`<button class="addph" aria-label="Aggiungi foto" onClick=${() => camOpen(inp.current)}>
-      ${busy ? html`<div style="display:grid;place-items:center;gap:var(--sp-1)"><div class="spin" />${typeof busy === 'string' && html`<small style="font-size:var(--fs-2xs);font-weight:700">${busy}</small>`}</div>` : html`<${Icon} n="camera" s=${22} />`}</button>
-      ${!busy && html`<button class="addph gal" aria-label="Scegli dalla galleria" title="Scegli dalla galleria" onClick=${() => galOpen(inp.current)}><${Icon} n="image" s=${20} /></button>`}`}
-    ${conV && html`<${VideoIn} fotoRef=${inp} vref=${vref} dove=${vdove} cls="addph vid" s=${22} />`}
-    <input ref=${inp} type="file" accept="image/*" capture="environment" multiple hidden onChange=${pick} />
+  // v60: senza campo di testo vicino, i tasti sono pulsanti sotto le foto (Scatta · Galleria · Video); noAdd: i tasti sono nel campo
+  const add = !readonly && !noAdd;
+  return html`${ids.length > 0 && html`<div class="photos">
+    ${ids.map(id => html`<${Thumb} key=${id} id=${id} onOpen=${() => setView(Math.max(0, gal.indexOf(id)))} onRemove=${readonly ? null : () => togli(id)} />`)}</div>`}
+    ${add && html`<div class=${'row ph-btns' + (ids.length ? ' mt-2' : '')}>
+      ${ids.length < max && html`<button class="btn sm grow" disabled=${!!busy} onClick=${() => camOpen(inp.current)}>${busy ? html`<div class="spin" />${typeof busy === 'string' ? ' ' + busy : ''}` : html`<${Icon} n="camera" s=${16} /> Scatta`}</button>
+        <button class="btn sm grow" disabled=${!!busy} aria-label="Scegli dalla galleria" onClick=${() => galOpen(inp.current)}><${Icon} n="image" s=${16} /> Galleria</button>`}
+      ${conV && html`<${VideoIn} fotoRef=${inp} vref=${vref} dove=${vdove} cls="btn sm grow" s=${16} testo="Video" />`}</div>
+      <input ref=${inp} type="file" accept="image/*" capture="environment" multiple hidden onChange=${pick} />`}
     ${view !== null && html`<${Viewer} ids=${gal} index=${view} labelOf=${labelOf} onClose=${() => setView(null)} />`}
-  </div>${conV && html`<${VideoRif} vref=${vref} />`}`;
+    ${conV && html`<${VideoRif} vref=${vref} />`}`;
+}
+/* Fotocamera, galleria e video dentro un campo di testo (v60), nella colonna di icone sul bordo destro.
+   onFoto(ids): foto salvate; resto: quante foto si possono ancora aggiungere; vref, vdove: come in PhotoStrip. */
+function IcoMedia({ onFoto, resto = Infinity, vref, vdove }) {
+  const inp = useRef(); const [busy, setBusy] = useState(false);
+  const pick = async e => {
+    const fs = [...e.target.files].filter(f => !isVideo(f)); e.target.value = ''; if (!fs.length) return;
+    const list = fs.slice(0, Math.max(0, resto));
+    if (list.length < fs.length) toast(resto > 0 ? 'Puoi aggiungere ancora ' + resto + ' foto' : 'Hai già il numero massimo di foto');
+    if (!list.length) return;
+    setBusy(true); const out = [];
+    for (const f of list) { try { out.push(await saveImage(f)); } catch (err) { fail('Foto non salvata', err); } }
+    setBusy(false); if (out.length) await onFoto(out);
+  };
+  return html`<button type="button" class="cam-in" aria-label="Scatta una foto" title="Scatta una foto" disabled=${busy} onClick=${() => camOpen(inp.current)}>${busy ? html`<div class="spin" />` : html`<${Icon} n="camera" s=${22} />`}</button>
+    <button type="button" class="gal-in" aria-label="Scegli dalla galleria" title="Scegli dalla galleria" disabled=${busy} onClick=${() => galOpen(inp.current)}><${Icon} n="image" s=${22} /></button>
+    ${vref != null && vDest() && html`<${VideoIn} fotoRef=${inp} vref=${vref} dove=${vdove} cls="vid-in" s=${22} />`}
+    <input ref=${inp} type="file" accept="image/*" capture="environment" multiple hidden onClick=${e => e.stopPropagation()} onChange=${pick} />`;
 }
 // Visualizzatore a schermo intero: scorri a destra/sinistra (o usa frecce e tastiera) per le altre foto.
 // Zoom: due dita o doppio tocco sul telefono, rotella o doppio clic sul PC; con la foto ingrandita si trascina per muoversi.
@@ -882,7 +906,7 @@ function IcoFoto({ inp, onVideos }) {
     <button type="button" class="gal-in" aria-label="Scegli dalla galleria" title="Scegli dalla galleria" onClick=${() => galOpen(inp.current)}><${Icon} n="image" s=${22} /></button>
     ${onVideos && html`<${VideoIn} fotoRef=${inp} onVideos=${onVideos} cls="vid-in" s=${22} />`}`;
 }
-function Appunti({ rec, up, k = 'appunti', foto = 'fotoAppunti', rows = 4, label = 'Appunti', placeholder, nudo, disabled }) {
+function Appunti({ rec, up, k = 'appunti', foto = 'fotoAppunti', rows = 4, label = 'Appunti', placeholder, nudo, disabled, media }) {
   const inp = useRef();
   const [on, toggle] = useDictation(() => rec[k] || '', v => up({ [k]: v }));
   // video solo negli appunti delle attività (v57)
@@ -903,7 +927,7 @@ function Appunti({ rec, up, k = 'appunti', foto = 'fotoAppunti', rows = 4, label
   };
   const campo = html`<div class="fld"><span>${label}</span>
     <div class="mic-wrap"><textarea rows=${rows} disabled=${disabled} placeholder=${placeholder || ' '} value=${rec[k] || ''} onInput=${e => up({ [k]: e.target.value })}></textarea>
-      ${!disabled && html`<div class="ico-col">${foto && html`<${IcoFoto} inp=${inp} onVideos=${vf ? addFiles : null} />`}<${MicBtn} rec=${on} toggle=${toggle} /></div>`}</div></div>
+      ${!disabled && html`<div class="ico-col">${foto && html`<${IcoFoto} inp=${inp} onVideos=${vf ? addFiles : null} />`}${!foto && media && html`<${IcoMedia} ...${media} />`}<${MicBtn} rec=${on} toggle=${toggle} /></div>`}</div></div>
     ${foto && html`<input ref=${inp} type="file" accept="image/*" capture="environment" multiple hidden onChange=${add} />
       <${NotePhotos} rec=${rec} field=${foto} up=${up} noAdd />`}
     ${vf && html`<${VideoList} rec=${rec} field=${vf} up=${up} />`}`;

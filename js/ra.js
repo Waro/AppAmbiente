@@ -225,9 +225,10 @@ function ManufattoCard({ m, open, toggle, onUpd, onDel, conclusa }) {
           <${PhotoStrip} ids=${m.fotoPrec} readonly gallery=${gal(m)} labelOf=${lab(m)} /></div>`}</div>`}
       <div class="fld"><span>Stato di conservazione</span></div>
       <div class="stati">${RA_STATI.map(s => html`<button class=${m.stato === s.k ? 'on' : ''} style=${'--sc:' + s.v} title=${s.l} onClick=${() => set({ stato: m.stato === s.k ? '' : s.k })}>${s.l}</button>`)}</div>
-      <${Area} label="Note" rows=${3} value=${m.note} set=${v => set({ note: v })} placeholder="Condizioni rilevate, interventi consigliati…" />
-      <div><div class="fld"><span>Foto (fino a 3)</span></div>
-        <${PhotoStrip} vref=${'man.' + m.id} vdove=${m.codice || 'Manufatto'} ids=${m.foto} max=${3} gallery=${gal(m)} labelOf=${lab(m)} onAdd=${ids => set({ foto: [...m.foto, ...ids] })} onRemove=${async id => { await removeBlob(id); set({ foto: m.foto.filter(f => f !== id) }); }} onRestore=${(id, i) => set({ foto: inserisci(m.foto, i, id) })} /></div>
+      <${Area} label="Note" rows=${3} value=${m.note} set=${v => set({ note: v })} placeholder="Condizioni rilevate, interventi consigliati…"
+        media=${{ onFoto: ids => set({ foto: [...m.foto, ...ids] }), resto: 3 - m.foto.length, vref: 'man.' + m.id, vdove: m.codice || 'Manufatto' }} />
+      <div>${m.foto.length > 0 && html`<div class="fld"><span>Foto (fino a 3)</span></div>`}
+        <${PhotoStrip} noAdd vref=${'man.' + m.id} vdove=${m.codice || 'Manufatto'} ids=${m.foto} max=${3} gallery=${gal(m)} labelOf=${lab(m)} onAdd=${ids => set({ foto: [...m.foto, ...ids] })} onRemove=${async id => { await removeBlob(id); set({ foto: m.foto.filter(f => f !== id) }); }} onRestore=${(id, i) => set({ foto: inserisci(m.foto, i, id) })} /></div>
       <button class="btn sm danger self-start" onClick=${() => onDel(m)}>Elimina manufatto</button>
     </div>`}
   </div>`;

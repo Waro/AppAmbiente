@@ -393,6 +393,7 @@
 "hsZip": "readonly",
 "html": "readonly",
 "IcoFoto": "readonly",
+"IcoMedia": "readonly",
 "Icon": "readonly",
 "icsEvents": "readonly",
 "ID_OK": "readonly",
