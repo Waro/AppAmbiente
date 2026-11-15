@@ -12,6 +12,7 @@ from pathlib import Path
 root = Path(__file__).resolve().parent.parent
 order = [f for f in re.findall(r'<script src="([^"]+\.js)"', (root / 'index.html').read_text(encoding='utf-8')) if not f.startswith('vendor/')]
 names = {}
+dove = {}  # nome → file in cui è dichiarato: lo stesso nome in due file blocca il caricamento del secondo
 for f in order:
     s = (root / f).read_text(encoding='utf-8')
     found = re.findall(r'^(?:async\s+)?function\s*\*?\s*([A-Za-z_$][\w$]*)', s, re.M)
@@ -23,5 +24,11 @@ for f in order:
                 found.append(part.split(':')[-1].split('=')[0].strip())
     for n in found:
         names.setdefault(n, 'readonly')
+        dove.setdefault(n, []).append(f)
 (root / 'globals.json').write_text(json.dumps(dict(sorted(names.items(), key=lambda x: x[0].lower())), indent=0, ensure_ascii=False) + '\n', encoding='utf-8')
 print(f'globals.json: {len(names)} nomi da {len(order)} file')
+doppi = {n: fs for n, fs in dove.items() if len(fs) > 1}
+if doppi:
+    for n, fs in sorted(doppi.items()):
+        print(f'ERRORE: «{n}» dichiarato più volte: {", ".join(fs)}')
+    raise SystemExit(1)

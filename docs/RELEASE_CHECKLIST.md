@@ -7,7 +7,7 @@
 ## Codice
 - [ ] `VERSION` in `sw.js` e `APP_VERSION` in `js/core.js` uguali (`nembo-vNN`; correzione urgente `nembo-vNNb`, mai con il punto).
 - [ ] File nuovi in `FILES` di `sw.js` e in `index.html` (ordine di caricamento).
-- [ ] `python3 tools/aggiorna-globals.py` e poi `npx eslint@8.57.0 pdfgen.js sw.js js` senza errori: un nome globale mancante o rinominato si vedrebbe solo al tocco del pulsante.
+- [ ] `python3 tools/aggiorna-globals.py` (si ferma se lo stesso nome globale è dichiarato in due file: il secondo file non si caricherebbe) e poi `npx eslint@8.57.0 pdfgen.js sw.js js` senza errori: un nome globale mancante o rinominato si vedrebbe solo al tocco del pulsante.
 - [ ] Forma dei record cambiata → `REC_SCHEMA` aumentato e passaggio in `migraRecord`; nuovo store → versione di `indexedDB.open` e `onupgradeneeded`.
 - [ ] Nessun colore, dimensione, raggio o spazio scritto a mano: token e classi di Rilievo.
 - [ ] Nessun dato reale: ricerca di nomi, domini, indirizzi, ID (`grep -riE "<azienda>|<cliente>|<cognome>|@<dominio>"`), anche nei commenti, negli esempi e nei messaggi di commit.

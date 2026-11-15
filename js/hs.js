@@ -106,8 +106,8 @@ function FotoIn({ r, up, rif, nome }) {
   const inp = useRef(); const n = hsFotoDi(r, rif).length; const lab = 'Foto per ' + nome;
   return html`<button type="button" class="cam-in" aria-label=${lab + (n ? ', ' + n + (n === 1 ? ' collegata' : ' collegate') : '')} title=${lab} onClick=${() => camOpen(inp.current)}>
     <${Icon} n="camera" s=${22} />${n > 0 && html`<i class="ck-badge">${n}</i>`}</button>
-    <button type="button" class="gal-in" aria-label=${'Galleria: ' + lab} title="Scegli dalla galleria" onClick=${() => galOpen(inp.current)}><${Icon} n="image" s=${22} /></button>
     <${VideoIn} fotoRef=${inp} vref=${rif} dove=${nome} cls="vid-in" s=${22} />
+    <button type="button" class="gal-in" aria-label=${'Galleria: ' + lab} title="Scegli dalla galleria" onClick=${() => galOpen(inp.current)}><${Icon} n="image" s=${22} /></button>
     <input ref=${inp} type="file" accept="image/*" capture="environment" multiple hidden onClick=${e => e.stopPropagation()}
       onChange=${e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) hsAddPhotos(fs, 'new', rif, up, (r.foto || []).length).then(() => toast(fs.length > 1 ? 'Foto aggiunte e collegate alla sezione' : 'Foto aggiunta e collegata alla sezione')); }} />`;
 }
@@ -207,8 +207,8 @@ function HsGallery({ r, up, items, sezioni }) {
         <button class="btn link sm" onClick=${() => setAperti(a => ({ ...a, [G.g]: !a[G.g] }))}>${aperti[G.g] ? 'Chiudi' : 'Apri'}</button></div>
       ${aperti[G.g] && html`<div class="row" style="margin-bottom:var(--sp-3)">
           ${G.g === 'new' && html`<button class="btn grow" onClick=${() => { target.current = 'new'; camOpen(cam.current); }}><${Icon} n="camera" s=${18} /> Scatta</button>`}
-          <button class="btn grow" onClick=${() => { target.current = G.g; inp.current.click(); }}><${Icon} n="image" s=${18} /> Dalla galleria</button>
-          ${G.g === 'new' && html`<${VideoIn} vref="galleria" dove="Foto" cls="btn grow" s=${18} testo="Video" />`}</div>
+          ${G.g === 'new' && html`<${VideoIn} vref="galleria" dove="Foto" cls="btn grow" s=${18} testo="Video" />`}
+          <button class="btn grow" onClick=${() => { target.current = G.g; inp.current.click(); }}><${Icon} n="image" s=${18} /> Dalla galleria</button></div>
         ${G.g === 'new' && html`<${VideoRif} vref="galleria" />`}
         ${L.length > 0 && html`<div class="row" style="margin:calc(-1 * var(--sp-1)) 0 var(--sp-2);gap:var(--sp-1)"><span class="lock tb-grow">Nel report:</span>
           <button class="btn link sm" onClick=${() => up(q => ({ ...q, foto: q.foto.map(x => (x.g === 'prev') === (G.g === 'prev') ? { ...x, inc: true } : x) }))}>includi tutte</button>

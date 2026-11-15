@@ -524,15 +524,15 @@ function PhotoStrip({ ids = [], max = 10, onAdd, onRemove, onRestore, readonly, 
     catch (err) { fail('Foto non salvata', err); }
     setBusy(false);
   };
-  // v60: senza campo di testo vicino, i tasti sono pulsanti sotto le foto (Scatta · Galleria · Video); noAdd: i tasti sono nel campo
-  const add = !readonly && !noAdd;
-  return html`${ids.length > 0 && html`<div class="photos">
-    ${ids.map(id => html`<${Thumb} key=${id} id=${id} onOpen=${() => setView(Math.max(0, gal.indexOf(id)))} onRemove=${readonly ? null : () => togli(id)} />`)}</div>`}
-    ${add && html`<div class=${'row ph-btns' + (ids.length ? ' mt-2' : '')}>
-      ${ids.length < max && html`<button class="btn sm grow" disabled=${!!busy} onClick=${() => camOpen(inp.current)}>${busy ? html`<div class="spin" />${typeof busy === 'string' ? ' ' + busy : ''}` : html`<${Icon} n="camera" s=${16} /> Scatta`}</button>
-        <button class="btn sm grow" disabled=${!!busy} aria-label="Scegli dalla galleria" onClick=${() => galOpen(inp.current)}><${Icon} n="image" s=${16} /> Galleria</button>`}
-      ${conV && html`<${VideoIn} fotoRef=${inp} vref=${vref} dove=${vdove} cls="btn sm grow" s=${16} testo="Video" />`}</div>
+  // v60: senza campo di testo vicino, i tasti sono pulsanti sopra le foto (Scatta · Video · Galleria); noAdd: i tasti sono nel campo
+  const add = !readonly && !noAdd, puo = ids.length < max;
+  return html`${add && html`<div class=${'row ph-btns' + (ids.length ? ' mb-2' : '')}>
+      ${puo && html`<button class="btn sm grow" disabled=${!!busy} onClick=${() => camOpen(inp.current)}>${busy ? html`<div class="spin" />${typeof busy === 'string' ? ' ' + busy : ''}` : html`<${Icon} n="camera" s=${16} /> Scatta`}</button>`}
+      ${conV && html`<${VideoIn} fotoRef=${inp} vref=${vref} dove=${vdove} cls="btn sm grow" s=${16} testo="Video" />`}
+      ${puo && html`<button class="btn sm grow" disabled=${!!busy} aria-label="Scegli dalla galleria" onClick=${() => galOpen(inp.current)}><${Icon} n="image" s=${16} /> Galleria</button>`}</div>
       <input ref=${inp} type="file" accept="image/*" capture="environment" multiple hidden onChange=${pick} />`}
+    ${ids.length > 0 && html`<div class="photos">
+    ${ids.map(id => html`<${Thumb} key=${id} id=${id} onOpen=${() => setView(Math.max(0, gal.indexOf(id)))} onRemove=${readonly ? null : () => togli(id)} />`)}</div>`}
     ${view !== null && html`<${Viewer} ids=${gal} index=${view} labelOf=${labelOf} onClose=${() => setView(null)} />`}
     ${conV && html`<${VideoRif} vref=${vref} />`}`;
 }
@@ -550,8 +550,8 @@ function IcoMedia({ onFoto, resto = Infinity, vref, vdove }) {
     setBusy(false); if (out.length) await onFoto(out);
   };
   return html`<button type="button" class="cam-in" aria-label="Scatta una foto" title="Scatta una foto" disabled=${busy} onClick=${() => camOpen(inp.current)}>${busy ? html`<div class="spin" />` : html`<${Icon} n="camera" s=${22} />`}</button>
-    <button type="button" class="gal-in" aria-label="Scegli dalla galleria" title="Scegli dalla galleria" disabled=${busy} onClick=${() => galOpen(inp.current)}><${Icon} n="image" s=${22} /></button>
     ${vref != null && vDest() && html`<${VideoIn} fotoRef=${inp} vref=${vref} dove=${vdove} cls="vid-in" s=${22} />`}
+    <button type="button" class="gal-in" aria-label="Scegli dalla galleria" title="Scegli dalla galleria" disabled=${busy} onClick=${() => galOpen(inp.current)}><${Icon} n="image" s=${22} /></button>
     <input ref=${inp} type="file" accept="image/*" capture="environment" multiple hidden onClick=${e => e.stopPropagation()} onChange=${pick} />`;
 }
 // Visualizzatore a schermo intero: scorri a destra/sinistra (o usa frecce e tastiera) per le altre foto.
@@ -903,8 +903,8 @@ function NotePhotos({ rec, field = 'fotoAppunti', up, noAdd }) {
    foto = campo delle foto degli appunti (null: solo dettatura). Le miniature e i tag restano sotto il campo. */
 function IcoFoto({ inp, onVideos }) {
   return html`<button type="button" class="cam-in" aria-label="Scatta una foto" title="Scatta una foto" onClick=${() => camOpen(inp.current)}><${Icon} n="camera" s=${22} /></button>
-    <button type="button" class="gal-in" aria-label="Scegli dalla galleria" title="Scegli dalla galleria" onClick=${() => galOpen(inp.current)}><${Icon} n="image" s=${22} /></button>
-    ${onVideos && html`<${VideoIn} fotoRef=${inp} onVideos=${onVideos} cls="vid-in" s=${22} />`}`;
+    ${onVideos && html`<${VideoIn} fotoRef=${inp} onVideos=${onVideos} cls="vid-in" s=${22} />`}
+    <button type="button" class="gal-in" aria-label="Scegli dalla galleria" title="Scegli dalla galleria" onClick=${() => galOpen(inp.current)}><${Icon} n="image" s=${22} /></button>`;
 }
 function Appunti({ rec, up, k = 'appunti', foto = 'fotoAppunti', rows = 4, label = 'Appunti', placeholder, nudo, disabled, media }) {
   const inp = useRef();

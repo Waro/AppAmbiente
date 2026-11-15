@@ -167,6 +167,25 @@ function PianoInp({ value, set, list }) {
     onChange=${e => { const v = e.target.value.trim(); if (v !== (value || '')) set(v); }} onKeyDown=${e => { if (e.key === 'Enter') e.target.blur(); }} /></label>`;
 }
 // sigla del campione: assegnata da Nembo (sola lettura) o libera
+/* Terreni (v60): sigla «S<n> <da>-<a> m» dal numero del sondaggio e dalla profondità di prelievo in metri;
+   più campioni con lo stesso sondaggio e quote diverse. Il nuovo campione prende il sondaggio dell'ultimo. */
+const virgolaDec = v => String(v == null ? '' : v).trim().replace(/\./g, ',');
+function codTerreno(c) { const d = virgolaDec(c.profDa), a = virgolaDec(c.profA), p = d && a ? d + '-' + a : d || a; return 'S' + (c.sond || '') + (p ? ' ' + p + ' m' : ''); }
+// sigle scritte a mano prima della v60 (es. «S2 1,0-2,0 m»): numero e profondità per i campi
+function terrenoDa(c) {
+  if (c.sond != null) return c;
+  const m = /^S\s*(\d+)(?:\s+([\d.,]+)(?:\s*-\s*([\d.,]+))?)?/i.exec(c.codice || '');
+  return m ? { ...c, sond: +m[1], profDa: m[2] || '', profA: m[3] || '' } : { ...c, sond: '', profDa: '', profA: '' };
+}
+function nuovoTerreno(r) { const l = (r.campioni || {}).terreni || [], s = l.length ? terrenoDa(l[l.length - 1]).sond || 1 : 1; return { sond: s, profDa: '', profA: '', codice: 'S' + s }; }
+function SiglaTerreno({ c, upd }) {
+  const x = terrenoDa(c);
+  const set = p => { const n = { ...x, ...p }; upd({ sond: n.sond, profDa: n.profDa, profA: n.profA, codice: codTerreno(n) }); };
+  return html`<${SiglaAuto} codice=${c.codice} c="var(--terreni)" />
+    <${Inp} label="Sondaggio (numero dopo S)" inputmode="numeric" value=${x.sond === '' ? '' : String(x.sond)} set=${v => { const d = v.replace(/\D/g, ''); set({ sond: d ? +d : '' }); }} />
+    <${Inp} label="Profondità da (m)" inputmode="decimal" value=${x.profDa} set=${v => set({ profDa: virgolaDec(v) })} placeholder="es. 0,5" />
+    <${Inp} label="Profondità a (m)" inputmode="decimal" value=${x.profA} set=${v => set({ profA: virgolaDec(v) })} placeholder="es. 1,0" />`;
+}
 const SiglaAuto = ({ codice, c }) => html`<div class="fld sigla"><span>Sigla</span><div class="code-auto" style=${'color:' + c}>${codice || '—'}</div></div>`;
 // campi comuni del campione, uno per riga: Sigla, Piano, Ubicazione, Descrizione (con la dettatura)
 // media (v60): fotocamera, galleria e video nella descrizione (vedi IcoMedia)
