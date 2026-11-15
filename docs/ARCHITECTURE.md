@@ -80,7 +80,7 @@ Ogni file usa le funzioni dei file caricati prima; `globals.json` le elenca per 
 | 2 | `vendor/signature_pad.umd.min.js`, `msal-browser.min.js` | Firma a schermo, accesso Microsoft |
 | 3 | `pdfgen.js` | PDF con pdf-lib: scheda radon, schede campioni, fogli firme, schede aria |
 | 4 | `js/core.js` | Versione, controllo anti-iframe, tema, `DB` (IndexedDB), foto, `needLib`, componenti base, `TIPO_COL`, `PRINT`, `migraRecord` |
-| 5 | `js/capture.js` | Scanner codici a barre, firma a schermo intero, fotocamera interna |
+| 5 | `js/capture.js` | Scanner codici a barre, firma a schermo intero, fotocamera interna (Foto · Video), galleria, smistamento di foto e video |
 | 6 | `js/plan.js` | Planimetrie: visualizzatore PDF.js, strumenti di disegno, etichette, PDF annotato, import da JSON |
 | 7 | `js/office.js` | Excel (ExcelJS, JSZip sul modello) e Word (docx) |
 | 8 | `js/campioni.js`, `js/dda.js`, `js/mappatura.js`, `js/radon.js`, `js/ra.js` | Attività ambientali, import e indagine precedente; campioni e NC condivisi da DDA e Mappatura in `campioni.js` (v54) |
@@ -157,6 +157,7 @@ Stato `route = { v, id?, p?, from? }` in `App`; il tasto Indietro (Android e bro
 
 - `App` tiene `allRecs` (tutti i record), `records` (solo attività), `settings`, `route`.
 - Ogni scheda usa `useAutosave`: ogni modifica aggiorna `updatedAt`, salva dopo 500 ms (e subito se l'app va in background) con `saveRec` → `DB.put` → `Sync.schedule()`.
+- Attività aperta (v60): `useAutosave` registra l'attività in `_vDest` già al primo disegno; `vDest()` la restituisce ai componenti che non ricevono `up`, come il tasto Video (`VideoIn`), che salva in `r.video` con `ref` = punto in cui è stato fatto.
 - Le impostazioni si salvano a ogni modifica (`setSettings`); dalla v51 anche la configurazione su OneDrive, 5 s dopo.
 - Store reattivi leggeri con `subscribe`: `Sync`, `OD`, `Sel` (selezione), notifiche, configurazione su OneDrive.
 
@@ -165,6 +166,8 @@ Stato `route = { v, id?, p?, from? }` in `App`; il tasto Indietro (Android e bro
 - Tutto in `vendor/` e `fonts/`, **nessuna CDN**; la CSP lo impone.
 - Le librerie pesanti si caricano quando servono: `needLib('pdflib' | 'pdfjs' | 'jszip' | 'exceljs' | 'docx')`. PDF.js 4.10 è un modulo ES (`import()`), con il worker in `vendor/pdfjs.worker.min.mjs`.
 - `sw.js` mette in cache tutti i file elencati in `FILES`: ogni file nuovo va aggiunto lì.
+- Visore PDF (v60, `PdfViewer` in `js/controlli.js`): le pagine sono immagini create al momento (`_virtuali` in `blobUrl`), una per volta, solo per la pagina aperta e le vicine; in memoria al massimo `PDF_TENUTE` = 12 pagine, le altre si ridisegnano quando ci si torna. Nessun limite di pagine.
+- Foto e video (v60): il campo foto accetta solo foto e il video ha il suo campo (`input._vid`), perché Android apre la fotocamera del telefono solo se il campo accetta un tipo solo; galleria e fotocamera di Nembo smistano foto e video con `consegna` (`js/capture.js`).
 
 CSP (in `index.html`):
 `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self' https://login.microsoftonline.com https://graph.microsoft.com https://*.sharepoint.com; frame-src https://login.microsoftonline.com; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'`

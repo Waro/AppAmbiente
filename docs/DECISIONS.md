@@ -91,6 +91,20 @@ Una voce per decisione. Le date mancanti sono segnate: la decisione è precedent
 - **Alternative scartate:** finestra di conferma in stile Rilievo (resta un passaggio in più per ogni eliminazione); cestino dell'attività (più complesso, nessun bisogno emerso).
 - **Conseguenze:** la conferma resta per ciò che non si annulla o tocca più elementi (attività intera, punti radon rinumerati, fogli firme, ripristini, svuotamenti). Chiudendo l'app entro 6 s un'eliminazione non si annulla più. Un nuovo avviso sostituisce il precedente: l'eliminazione prima non si annulla più ma resta corretta.
 
+## D-17 — Video accanto alle foto, con un tasto proprio
+- **Data:** 2026-11-15 (v60).
+- **Contesto:** si chiedeva di registrare video ovunque si fanno foto. Android apre la fotocamera del telefono da una pagina web solo se il campo accetta un tipo solo (foto oppure video), senza il tasto per cambiare modalità; con foto e video insieme apre la galleria. Era la causa della fotocamera degli appunti che apriva la galleria.
+- **Decisione:** fotocamera = solo foto; tasto Video separato, che apre la fotocamera in video; la galleria sceglie foto e video e li smista. Ordine dei tasti: fotocamera, video, galleria, dettatura. I tasti stanno nel campo di testo vicino (colonna di icone); dove non c'è un campo, pulsanti «Scatta · Video · Galleria» sopra le foto. Il video resta nel punto in cui è stato fatto (`r.video` con `ref`) e su OneDrive porta il nome del punto.
+- **Alternative scartate:** tocco prolungato sulla fotocamera per il video (poco visibile); scelta Foto / Video a ogni tocco con la fotocamera del telefono (un tocco in più anche per le foto); tutti i video negli appunti (si perde il collegamento al punto).
+- **Conseguenze:** il campo di testo con i tasti è più alto (3 o 4 icone). Se si elimina il punto, i suoi video restano in `r.video` e su OneDrive ma non si vedono più in Nembo.
+
+## D-18 — Sigla dei campioni di terreno dal sondaggio e dalla profondità
+- **Data:** 2026-11-15 (v60).
+- **Contesto:** nei terreni si prelevano più campioni dallo stesso sondaggio a quote diverse; la sigla scritta a mano non era uniforme.
+- **Decisione:** sigla `S<n> <da>-<a> m` (es. «S1 0,5-1,0 m») composta dai campi Sondaggio, Profondità da e Profondità a; il nuovo campione propone il sondaggio dell'ultimo con la profondità vuota. Le sigle precedenti restano; se sono già nel formato S, i campi si ricavano dalla sigla quando si modifica il campione.
+- **Alternative scartate:** sigla libera come prima; nuovo sondaggio a ogni campione (più tocchi per le quote dello stesso sondaggio).
+- **Conseguenze:** nessun controllo sui doppioni (stesso sondaggio e stessa profondità).
+
 ## D-14 — Unione manuale delle proposte di Copilot
 - **Data:** 2026-11-10.
 - **Contesto:** Copilot non legge il repository da solo e la sua proposta v51 partiva dalla v49.

@@ -88,6 +88,7 @@ I dati importati sono protetti dal lucchetto (`impOf`, `markImp`).
 - **Numerazione che prosegue** (dalla v50): in DDA Fase 2 e Mappatura i nuovi campioni proseguono dopo l'indagine importata o dopo le attività
   in Nembo dello stesso immobile (`precNembo`, `precBase`): dopo A6 il primo nuovo è A7, dopo NC3 il primo NC è NC4. L'interruttore
   «Prosegui la numerazione» (`r.numerazione`) lo spegne.
+- **Sigla dei terreni** (dalla v60): `S<n> <da>-<a> m` (es. «S1 0,5-1,0 m») dai campi Sondaggio, Profondità da e Profondità a; più campioni nello stesso sondaggio a quote diverse; il nuovo campione propone il sondaggio dell'ultimo.
 
 **Checklist "Punti da campionare" (Fase 2):** elenco libero di cosa si prevede di campionare (matrice, cosa, dove), utile per
 non dimenticare nulla sul campo. "Da aree REC" propone una voce per ogni area REC della Fase 1 non ancora ripresa.
@@ -224,7 +225,7 @@ Ogni attività è divisa in schede, con un selettore come quello Ambiente / HSE 
 - Nel DDA la fase (1 o 2) si sceglie in Anagrafica.
 - Si passa alla scheda accanto anche scorrendo a destra o a sinistra sul contenuto (v56).
 - **Riepilogo** (v56): nel blocco blu dei contatori di Campioni e Osservazioni HSE; pannello dal basso di sola consultazione, con «Genera file» o «Genera report». Dopo la prima foto di un campione non ancora in pianta si apre la planimetria del suo piano con l'etichetta pronta; il tasto *Planimetria* sopra l'elenco apre la pianta senza aggiungere campioni.
-- Campi (v56): etichetta dentro il campo, un campo per riga; negli appunti fotocamera, galleria e microfono dentro la casella, foto senza limite.
+- Campi (v56): etichetta dentro il campo, un campo per riga; negli appunti fotocamera, galleria e microfono dentro la casella, foto senza limite. Dalla v60 fotocamera, video e galleria (in quest'ordine, sopra il microfono) sono nel campo di testo vicino a ogni gruppo di foto (descrizione del campione, note del manufatto o del punto, situazione rilevata); dove non c'è un campo, pulsanti *Scatta · Video · Galleria* sopra le foto.
 - Eliminazioni (v59): campioni, NC, manufatti, punti aria, osservazioni e foto si eliminano subito con «Annulla» nell'avviso per 6 s; la conferma resta per l'attività intera e per ciò che non si annulla. Un dato mancante porta sul campo e lo contorna di rosso.
 - Movimento e vibrazione (v59): tasti che rispondono al tocco, fogli e finestre che entrano ed escono, rispetto di «Riduci movimento»; vibrazione per scatto, scansione, dettatura, video e selezione, spegnibile in Impostazioni → Aspetto e avvio (Rilievo § 9).
 - Nembo ricorda l'ultima scheda aperta per ogni tipo di attività; un'attività nuova si apre su Anagrafica. La ricerca apre la scheda giusta (`useSchede`, `Schede` in core.js, evento `nembo-goto` con `tab:chiave`).
@@ -477,7 +478,7 @@ Nembo non si apre dentro altre pagine (controllo all'inizio di `js/core.js`). I 
   Firma non corrispondente: ripristino annullato. Backup senza firma o di un dispositivo non riconosciuto: Nembo chiede conferma.
   File modificati, di tipo non ammesso o attività non valide vengono scartati e riportati nelle Notifiche; impostazioni e modelli passano gli stessi controlli del caricamento a mano.
 - **Allegati**: solo foto, PDF e Word (.docx). Le foto vengono ridisegnate in JPEG; i PDF si aprono nel visore di Nembo senza eseguire script
-  (quelli che ne contengono sono segnalati); i Word con macro, controlli ActiveX, oggetti eseguibili o contenuti da Internet vengono rifiutati
+  (quelli che ne contengono sono segnalati), con tutte le pagine disegnate man mano che ci arrivi (dalla v60; prima le prime 40); i Word con macro, controlli ActiveX, oggetti eseguibili o contenuti da Internet vengono rifiutati
   e si aprono con l'app Word. I .doc (Word 97–2003) non sono ammessi: salvali prima come .docx.
 - **Codici MCA/FAV**: si rinumerano eliminando un campione finché non generi la scheda campioni; da lì restano fissi.
 - **Radon**: "Conferma e blocca" richiede data e firma del tecnico; blocca i dati di posa. "Sblocca" cancella le firme di quel momento.
