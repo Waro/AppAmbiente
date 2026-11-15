@@ -109,7 +109,7 @@ function FotoIn({ r, up, rif, nome }) {
     <input ref=${inp} type="file" accept="image/*" capture="environment" multiple hidden onClick=${e => e.stopPropagation()}
       onChange=${e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) hsAddPhotos(fs, 'new', rif, up, (r.foto || []).length).then(() => toast(fs.length > 1 ? 'Foto aggiunte e collegate alla sezione' : 'Foto aggiunta e collegata alla sezione')); }} />`;
 }
-// foto di inquadramento tolte, per rimetterle con «Annulla» con le loro dimensioni (v60)
+// foto di inquadramento tolte, per rimetterle con «Annulla» con le loro dimensioni (v59)
 const HS_CG_TOLTE = new Map();
 // elimina una foto della galleria HSE con «Annulla»: torna nella stessa posizione con collegamento e gruppo
 const hsTogliFoto = (r, up, p) => { const i = (r.foto || []).findIndex(x => x.id === p.id);

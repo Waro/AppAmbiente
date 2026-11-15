@@ -8,7 +8,7 @@ if (window.top !== window.self) {
   try { window.top.location.replace(window.self.location.href); } catch (e) { /* riquadro isolato: la pagina resta vuota */ }
   throw new Error('Nembo aperto dentro un riquadro');
 }
-const APP_VERSION = 'nembo-v60';
+const APP_VERSION = 'nembo-v59';
 
 /* ---------------- aspetto: stile ("essenziale" o "originale") × modo ("auto", "chiaro" o "scuro") ----------------
    Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno.
@@ -47,7 +47,7 @@ function setLook(patch) {
   applyLook(look); return look;
 }
 
-/* ---------------- vibrazione (v60) ----------------
+/* ---------------- vibrazione (v59) ----------------
    Un solo punto per tutte le vibrazioni, con pattern fissi per tipo di evento. Solo per eventi che contano
    (scatto, scansione, dettatura, selezione), mai su ogni tocco; sempre insieme a un segnale visivo.
    Si spegne in Impostazioni → Aspetto e avvio; la scelta vale solo su questo dispositivo (nembo_vibra). */
@@ -156,7 +156,7 @@ async function cancellaBlob(id) {
 // inserisce x in posizione i (fuori dall'elenco: in fondo); serve a rimettere un elemento dov'era
 const inserisci = (l, i, x) => { const a = (l || []).slice(); a.splice(i >= 0 && i <= a.length ? i : a.length, 0, x); return a; };
 
-/* ---------------- eliminazione con «Annulla» (v60) ----------------
+/* ---------------- eliminazione con «Annulla» (v59) ----------------
    Per gli elementi che si eliminano spesso (campioni, NC, manufatti, punti, osservazioni, foto) niente «Sei sicuro?»:
    l'elemento sparisce subito e l'avviso in alto offre «Annulla» per qualche secondo.
    togli() lo toglie dal record, rimetti() lo rimette dov'era. Le foto e i file (blobs) restano sul dispositivo
@@ -336,7 +336,7 @@ function useBackClose(onClose) {
 
 /* ---------------- toast ---------------- */
 let _toast = () => {};
-/* Uscite animate (v60): quando un foglio dal basso, una finestra o un avviso si chiude, al suo posto resta per un attimo
+/* Uscite animate (v59): quando un foglio dal basso, una finestra o un avviso si chiude, al suo posto resta per un attimo
    una copia inerte che scende o sfuma (classe .esce, Rilievo: Movimento). I componenti si chiudono come prima;
    con «Riduci movimento» del dispositivo la copia non si crea. */
 const USCITE = '.sheet-ov, .ov:not(.vid-ov), .toast';
@@ -355,7 +355,7 @@ function iniziaUscite() {
 }
 if (document.body) iniziaUscite(); else addEventListener('DOMContentLoaded', iniziaUscite);
 
-/* Campo da sistemare (v60): l'avviso dice cosa manca, il campo si contorna di rosso e oscilla un attimo,
+/* Campo da sistemare (v59): l'avviso dice cosa manca, il campo si contorna di rosso e oscilla un attimo,
    il telefono vibra (errore) e la pagina ci porta sopra. Il rosso sparisce al primo tocco o alla prima lettera. */
 function segnala(sel, msg) {
   toast(msg); vibra('errore');
@@ -483,7 +483,7 @@ function Thumb({ id, onRemove, onOpen }) {
   return html`<div class="ph">${u && html`<img src=${u} alt="Foto" onClick=${() => onOpen && onOpen()} />`}
     ${onRemove && html`<button class="x" aria-label="Elimina foto" onClick=${onRemove}>×</button>`}</div>`;
 }
-// onRestore(id, posizione): rimette la foto tolta con «Annulla» (v60). Senza onRestore resta la conferma.
+// onRestore(id, posizione): rimette la foto tolta con «Annulla» (v59). Senza onRestore resta la conferma.
 function PhotoStrip({ ids = [], max = 10, onAdd, onRemove, onRestore, readonly, gallery, labelOf, noAdd }) {
   const inp = useRef(); const [busy, setBusy] = useState(false); const [view, setView] = useState(null);
   const P = useRef(); P.current = { onRemove, onRestore }; // «Annulla» usa i gestori dell'ultimo disegno

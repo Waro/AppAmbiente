@@ -3,7 +3,7 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
-  { v: 60, data: '2026-11-15', tipo: 'minore', titolo: 'Più veloce da usare sul campo',
+  { v: 59, data: '2026-11-15', tipo: 'minore', titolo: 'Più veloce da usare sul campo',
     voci: [
       'Campioni, manufatti, punti, osservazioni e foto si eliminano subito, senza «Sei sicuro?»: se ti sei sbagliato tocca «Annulla» nell’avviso in alto.',
       'I tasti rispondono al tocco e i fogli si aprono e si chiudono con un movimento breve.',

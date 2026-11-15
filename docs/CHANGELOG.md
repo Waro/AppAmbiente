@@ -4,9 +4,7 @@ Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Nem
 
 ## [Non rilasciato]
 
-## [nembo-v60] — 2026-11-15
-
-Comprende la v59 (non pubblicata da sola).
+## [nembo-v59] — 2026-11-15
 
 ### Aggiunto
 - Eliminazione con «Annulla» (`eliminaConAnnulla`, `inserisci` in `js/core.js`; D-16): campioni di DDA e Mappatura, NC, manufatti RA, punti aria, osservazioni HSE e del Verbale, foto (`PhotoStrip` con il nuovo `onRestore`, foto collegate e galleria HSE con `hsTogliFoto`, foto di inquadramento con `HS_CG_TOLTE`) spariscono subito; l'avviso offre «Annulla» per 6 s e rimette l'elemento nella sua posizione. `removeBlob` non cancella i file trattenuti (`_blobTrattenuti`): li cancella `cancellaBlob` alla scadenza o alla chiusura dell'app (`pagehide`).
@@ -19,20 +17,16 @@ Comprende la v59 (non pubblicata da sola).
 ### Cambiato
 - Le durate scritte a mano in `styles.css` usano i token di movimento; il foglio dal basso sale con `--ease-assesta`.
 - «Riduci movimento» copre anche la pulsazione del microfono, lo stato premuto, entrate, uscite e oscillazione.
-
-### Rimosso
-- Le finestre di conferma del browser per le eliminazioni elencate sopra.
-
-## [nembo-v59] — 2026-11-13
-
-### Cambiato
-Guida dentro l'app allineata alle v56–v58, senza voce nelle Novità.
+- Guida dentro l'app allineata alle v56–v58 (questa parte non ha voce nelle Novità).
 - Benvenuto: la prima slide cita anche i video e il caricamento subito su OneDrive.
 - Suggerimenti: «Scheda File» spiega i documenti da consultare in cima; «Campioni» spiega la pianta che si apre dopo la prima foto e il tasto Planimetria.
 - DECISIONS D-13 aggiornata: i testi si applicano e si mostrano.
 
 ### Corretto
 - Campi foto (`ImgSlot`: foto di copertina e immagini dei report HSE e del Verbale): l'etichetta non si sovrappone più alla fotocamera. Il campo nascosto per il file faceva scattare l'etichetta interna dei campi (v56); i selettori di `.fld` escludono `input[type=file]`.
+
+### Rimosso
+- Le finestre di conferma del browser per le eliminazioni elencate sopra.
 
 ## [nembo-v58b] — 2026-11-13
 

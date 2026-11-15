@@ -56,7 +56,7 @@ Penne della planimetria (`PLAN_COLORS` in `plan.js`), fisse perché finiscono ne
 | Raggi | `--r-2xs` 4 · `--r-xs` 6 · `--r-sm` 8 · `--r-ctl` 10 · `--r-md` 12 · `--r-btn` 14 · `--r-card` 18 · `--r-card-lg` 22 · `--r-pill` · `--r-sq` 30 % (squircle, con `corner-shape` dove c'è) |
 | Ombre e veli | `--sh-pri`, `--sh-seg`, `--sh-card` (mai `none`, per combinarsi con l'indicatore di stato), `--sh-pop`, `--scrim`, `--scrim-strong` |
 | Bersaglio minimo | `--tap` 44 px; pulsante principale 52 px |
-| Movimento (v60) | durate `--dur-press` 100 ms · `--dur-fast` 150 · `--dur` 220 · `--dur-slow` 320; curve `--ease-out`, `--ease-in`, `--ease-in-out`, `--ease-assesta`; scala del tocco `--press` 0,96; distanze `--mv-1` 6 · `--mv-2` 16 · `--mv-3` 48 px. Uso nel § 9 |
+| Movimento (v59) | durate `--dur-press` 100 ms · `--dur-fast` 150 · `--dur` 220 · `--dur-slow` 320; curve `--ease-out`, `--ease-in`, `--ease-in-out`, `--ease-assesta`; scala del tocco `--press` 0,96; distanze `--mv-1` 6 · `--mv-2` 16 · `--mv-3` 48 px. Uso nel § 9 |
 
 ## 5. Componenti
 
@@ -70,10 +70,10 @@ Penne della planimetria (`PLAN_COLORS` in `plan.js`), fisse perché finiscono ne
 | Barre in basso flottanti (v52) | `.tabbar`, `.abar`, `.selbar`, `.plan-bar` | stesso disegno ovunque: binario `--track` al 95 % sfocato, `--r-card`, `--sh-pop`, `--sp-3` dal bordo inferiore (più l'area sicura), dentro i margini `--gutter`, al massimo 528 px; pulsanti secondari trasparenti in `--text2`, principale con il gradiente. In selezione la barra dell'attività aperta accanto si nasconde |
 | Card, blocco navy | `.card`, `.card-navy` | `tight`; navy con `--navy-glow` |
 | Avviso | `.notice` | predefinito (fascia `--blue-sky`), `err` |
-| Avviso in alto (v60) | `.toast`, `.toast.con-az`, `.toast-az` | `toast(testo)` per 2,6 s; `toast(testo, { azione, onAzione })` più largo, testo a sinistra e azione in `--blue-sky` a destra (bersaglio `--tap`), per 6 s. Un avviso nuovo sostituisce il precedente |
+| Avviso in alto (v59) | `.toast`, `.toast.con-az`, `.toast-az` | `toast(testo)` per 2,6 s; `toast(testo, { azione, onAzione })` più largo, testo a sinistra e azione in `--blue-sky` a destra (bersaglio `--tap`), per 6 s. Un avviso nuovo sostituisce il precedente |
 | Riga di elenco | `.rcard`, `.prow`, `.list` | `on` (aperta), selezionata, indicatore di stato |
 | Indicatore di stato | `.st-bar` + `--st` | `st-ok`, `st-warn`, `st-err`, `st-info`, `st-off` (grigio `--muted`, «Non pertinente», v53): barra di 4 px a sinistra, sempre con la parola. Lo stato di sezioni e capitoli HSE si mostra sempre così, nel sopralluogo a note e in quello periodico (v55), non con i badge |
-| Campo | `.inp`, `.fld`, `InpGrow`, `Appunti` | etichetta dentro il campo che sale quando scrivi (v56); un campo per riga; focus `--blue` 2 px; da sistemare `.errore` (contorno ed etichetta `--danger` 2 px, con `segnala()`, v60); icone fotocamera, galleria, microfono in colonna sul bordo destro, in `--blue`, microfono pieno se attivo; importato con lucchetto |
+| Campo | `.inp`, `.fld`, `InpGrow`, `Appunti` | etichetta dentro il campo che sale quando scrivi (v56); un campo per riga; focus `--blue` 2 px; da sistemare `.errore` (contorno ed etichetta `--danger` 2 px, con `segnala()`, v59); icone fotocamera, galleria, microfono in colonna sul bordo destro, in `--blue`, microfono pieno se attivo; importato con lucchetto |
 | Schede | `Schede` (`.seg.schede`) | anche con lo scorrimento laterale sul contenuto (v56) |
 | Elenco con titolo | `.list` + `.list-h` | titolo dentro la card, a tutta larghezza (v56) |
 | Riepilogo | `RiepilogoPanel` (`.sheet.riep-sheet`), `RiepGo` | pannello dal basso, solo consultazione; avvisi con `st-bar st-warn` e la parola; azione principale in fondo (v56); stato del caricamento su OneDrive come elenco `.prow.st-bar` (verde tutto caricato, ambra da caricare, grigio da generare, v58) |
@@ -95,8 +95,8 @@ Penne della planimetria (`PLAN_COLORS` in `plan.js`), fisse perché finiscono ne
 | Stato | Come si mostra |
 |---|---|
 | Vuoto | `.empty`: titolo + cosa fare («Nessuna indagine» · «Tocca + …») |
-| Eliminazione (v60) | campioni, NC, manufatti, punti aria, osservazioni e foto: spariscono subito, avviso «… eliminato» con «Annulla» per 6 s (`eliminaConAnnulla`); i file restano sul dispositivo fino alla scadenza. Conferma (`confirm`) solo per ciò che non si annulla o tocca più elementi: attività intera, punti radon (rinumerati), fogli firme, ripristini, svuotamenti |
-| Dato mancante (v60) | `segnala(campo, testo)`: avviso con cosa manca, campo `.errore` con una breve oscillazione, vibrazione «errore», la pagina scorre sul campo; il rosso sparisce al primo tocco o alla prima lettera |
+| Eliminazione (v59) | campioni, NC, manufatti, punti aria, osservazioni e foto: spariscono subito, avviso «… eliminato» con «Annulla» per 6 s (`eliminaConAnnulla`); i file restano sul dispositivo fino alla scadenza. Conferma (`confirm`) solo per ciò che non si annulla o tocca più elementi: attività intera, punti radon (rinumerati), fogli firme, ripristini, svuotamenti |
+| Dato mancante (v59) | `segnala(campo, testo)`: avviso con cosa manca, campo `.errore` con una breve oscillazione, vibrazione «errore», la pagina scorre sul campo; il rosso sparisce al primo tocco o alla prima lettera |
 | Caricamento | `.spin` nel pulsante o al centro; mai schermata bianca |
 | Errore | `notice err` con codice; errori imprevisti in Notifiche (`APP-JS`); schermata «Qualcosa non ha funzionato» con Torna a Oggi, Ricarica, Segnala |
 | Offline | l'app funziona; invii e sincronizzazione ripartono al ritorno della rete; icona di sincronizzazione arancione |
@@ -116,7 +116,7 @@ Penne della planimetria (`PLAN_COLORS` in `plan.js`), fisse perché finiscono ne
 
 Italiano, seconda persona singolare, frasi brevi. «Attività», mai «pratica»; mai «roba»; «essere», non «stare». Iniziale maiuscola solo sulla prima parola; sigle in maiuscolo (DDA, MCA, FAV, RA, HSE, NC). Percorsi con la freccia: «Impostazioni → OneDrive». Nessuna emoji.
 
-## 9. Movimento e vibrazione (v60)
+## 9. Movimento e vibrazione (v59)
 
 Il movimento spiega cosa succede (cosa è arrivato, da dove, cosa è cambiato), non decora. Nembo si usa tutti i giorni: niente attese per un'animazione.
 

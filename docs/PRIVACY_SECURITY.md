@@ -42,7 +42,7 @@ Dove viaggiano: IndexedDB del dispositivo; OneDrive aziendale dell'utente (carte
 | OneDrive | percorsi interni solo sotto `_nembo/`, senza `..`; nessuna cancellazione; 60 MB per file (2 GB per i backup, a blocchi) | `onedrive.js` (`okSync`, `putRaw`) |
 | Firma del tecnico su OneDrive (v51) | solo cifrata: AES-GCM 256, chiave PBKDF2-SHA256 310.000 iterazioni da PIN di 6 cifre; sul dispositivo resta la chiave non esportabile, mai il PIN | `controlli.js` (`firmaCifra`, `firmaDecifra`) |
 | Rimozione | «Rimuovi i dati da questo dispositivo» controlla che le attività siano su OneDrive, poi cancella attività, foto, configurazione, modelli, firma e accesso | `DB.wipe` |
-| Eliminazione con «Annulla» (v60) | una foto o un file di un elemento eliminato resta sul dispositivo al massimo 6 s, o fino alla chiusura dell'app, poi si cancella come prima | `eliminaConAnnulla`, `cancellaBlob` |
+| Eliminazione con «Annulla» (v59) | una foto o un file di un elemento eliminato resta sul dispositivo al massimo 6 s, o fino alla chiusura dell'app, poi si cancella come prima | `eliminaConAnnulla`, `cancellaBlob` |
 
 ## 4. Servizi di terze parti
 

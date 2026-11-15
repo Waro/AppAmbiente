@@ -51,7 +51,7 @@
   --sh-pri: 0 4px 14px var(--pri-shadow); --sh-seg: 0 1px 3px rgba(0,0,0,.10); --sh-card: 0 0 0 transparent; /* non "none": deve potersi combinare con altre ombre (indicatore di stato) */
   --sh-pop: 0 8px 24px rgba(20,30,60,.16), 0 1px 3px rgba(20,30,60,.08);
   --scrim: rgba(16,22,42,.45); --scrim-strong: rgba(16,22,42,.55);
-  /* Movimento (v60): il movimento spiega cosa succede, non decora. Durate brevi per chi usa l'app tutti i giorni;
+  /* Movimento (v59): il movimento spiega cosa succede, non decora. Durate brevi per chi usa l'app tutti i giorni;
      mai lineare: si entra con --ease-out, si esce con --ease-in, ci si sposta con --ease-in-out;
      --ease-assesta supera appena l'arrivo e si assesta (fogli, finestre). Con «Riduci movimento» niente spostamenti. */
   --dur-press: 100ms; --dur-fast: 150ms; --dur: 220ms; --dur-slow: 320ms;
@@ -1218,7 +1218,7 @@ img.logo { background: none; object-fit: cover; }
 .vid-ov .vw-x { position: absolute; top: calc(env(safe-area-inset-top, 0px) + var(--sp-3)); right: var(--sp-4); }
 
 /* ============================================================
-   Rilievo · Movimento (v60): tocco, entrate e uscite, campo da sistemare
+   Rilievo · Movimento (v59): tocco, entrate e uscite, campo da sistemare
    ============================================================ */
 /* Tocco: ogni tasto risponde subito schiacciandosi appena (--press in --dur-press) */
 .btn, .btn-icon, .sq, .x, .fab, .addph, .chip, .chip-btn, .mic-in, .cam-in, .gal-in, .seg button, .toast-az, .sigbox {

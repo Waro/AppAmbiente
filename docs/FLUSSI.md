@@ -168,7 +168,7 @@ flowchart TD
 
 Nel sopralluogo HSE a note il Riepilogo mostra check-list, osservazioni per capitolo con le foto e appunti; in fondo «Genera report» (lo stesso `DocBtn` della barra).
 
-## 6d. Eliminazione con «Annulla» (v60)
+## 6d. Eliminazione con «Annulla» (v59)
 
 ```mermaid
 flowchart TD
