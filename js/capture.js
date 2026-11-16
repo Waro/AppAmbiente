@@ -276,13 +276,16 @@ function galOpen(input) {
 }
 function CamSerieCard() {
   const [cam, setCam] = useState(camScelta); const [on, set] = useState(() => _ls('nembo_cam_serie') === '1');
-  const [auto, setAuto] = useState(odAutoOn); const [copia, setCopia] = useState(camCopia);
+  const [auto, setAuto] = useState(odAutoOn); const [copia, setCopia] = useState(camCopia); const [ris, setRis] = useState(videoRis);
   const scegli = v => { setCamScelta(v); setCam(v); };
   return html`<div class="sec-h mt-1"><h3>Fotocamera predefinita</h3></div><div class="card">
     <div class="seg">${[['tel', 'Telefono'], ['nembo', 'Nembo']].map(([k, l]) => html`<button class=${cam === k ? 'on' : ''} aria-pressed=${cam === k} onClick=${() => scegli(k)}>${l}</button>`)}</div>
-    <p class="hint-p" style="margin:var(--sp-2) 0 0">${cam === 'tel' ? 'Telefono: foto più nitide, con tutte le lenti. Negli appunti puoi scegliere foto o video.' : 'Nembo: resti nell\'app; negli appunti puoi registrare anche video.'}</p>
+    <p class="hint-p" style="margin:var(--sp-2) 0 0">${cam === 'tel' ? 'Telefono: foto più nitide, con tutte le lenti. Il tasto video la apre già in modalità video; la risoluzione dei video si sceglie nella fotocamera del telefono.' : 'Nembo: resti nell\'app e passi da foto a video con il selettore.'}</p>
     ${cam === 'nembo' && html`<label class="fg-sw mt-3"><span>Scatti in serie</span><${Toggle} on=${on} label="Scatti in serie" set=${v => { setCamSerie(v); set(v); }} /></label>
-      <p class="hint-p" style="margin:var(--sp-2) 0 0">Più foto di seguito senza chiudere la fotocamera.</p>`}
+      <p class="hint-p" style="margin:var(--sp-2) 0 0">Più foto di seguito senza chiudere la fotocamera.</p>
+      <div class="fg-sw mt-4"><span>Risoluzione dei video</span></div>
+      <div class="seg mt-1" role="group" aria-label="Risoluzione dei video">${Object.keys(VIDEO_RIS).map(k => html`<button class=${ris === k ? 'on' : ''} aria-pressed=${ris === k} onClick=${() => { _ls('nembo_video_ris', k); setRis(k); }}>${k}p</button>`)}</div>
+      <p class="hint-p" style="margin:var(--sp-2) 0 0">Circa ${VIDEO_RIS[ris].mb} MB al minuto${ris === '480' ? ': meno spazio e invio più rapido' : ris === '1080' ? ': più dettagli, più spazio e invio più lento' : ''}. Ogni video dura al massimo ${Math.round(VIDEO_MAX / 60)} minuti.</p>`}
     </div><div class="sec-h"><h3>Foto e video</h3></div><div class="card">
     <label class="fg-sw"><span>Carica subito su OneDrive</span><${Toggle} on=${auto} label="Carica subito su OneDrive" set=${v => { _ls('nembo_od_auto', v ? '1' : '0'); setAuto(v); if (v) OdAuto.vai(); }} /></label>
     <p class="hint-p" style="margin:var(--sp-2) 0 0">Foto e video partono appena li aggiungi, se OneDrive è collegato e c'è rete; senza rete partono quando torna. I video caricati non occupano più spazio sul telefono.</p>
@@ -296,9 +299,14 @@ function camDeliver(input, files) {
 }
 function CameraHost() { const [s, set] = useState(null); _camSet = set; return s ? html`<${Camera} key=${Date.now()} input=${s.input} onClose=${() => set(null)} />` : null; }
 
-// video (appunti dalla v57, ovunque ci sono foto dalla v60): durata massima in secondi e peso massimo in MB (anche per i video del telefono)
-const VIDEO_MAX = 120;
-const VIDEO_MAX_MB = 400;
+// video (appunti dalla v57, ovunque ci sono foto dalla v60): durata massima in secondi e peso massimo in MB (anche per i video del telefono).
+// v61: 10 minuti; il peso massimo copre un video Full HD del telefono di 10 minuti
+const VIDEO_MAX = 600;
+const VIDEO_MAX_MB = 2048;
+/* risoluzione dei video della fotocamera di Nembo (v61, Impostazioni → Foto, per dispositivo): lato corto in pixel e
+   bitrate; mb = peso indicativo al minuto. Con la fotocamera del telefono la risoluzione si sceglie nella sua app. */
+const VIDEO_RIS = { 480: { w: 854, h: 480, bps: 1000000, mb: 8 }, 720: { w: 1280, h: 720, bps: 2500000, mb: 19 }, 1080: { w: 1920, h: 1080, bps: 5000000, mb: 38 } };
+const videoRis = () => { const v = _ls('nembo_video_ris'); return VIDEO_RIS[v] ? String(v) : '720'; };
 const fmtDurata = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
 function Camera({ input, onClose }) {
   const multi = !!input.multiple && camSerie();
@@ -313,6 +321,7 @@ function Camera({ input, onClose }) {
   const [rec, setRec] = useState(false); const [secs, setSecs] = useState(0);
   // chiudendo, le foto già scattate non si perdono; una registrazione in corso si ferma e il video viene tenuto
   // extra: file dalla galleria; nuovi: video appena registrato. Copia nel telefono solo di scatti e video nuovi.
+  const ris = VIDEO_RIS[videoRis()];
   const finish = (extra = [], nuovi = []) => {
     const mr = st.current.mr;
     if (mr && mr.state === 'recording') { st.current.chiudi = true; mr.stop(); return; }
@@ -324,7 +333,7 @@ function Camera({ input, onClose }) {
   useEffect(() => {
     let alive = true, stream; setErr(null); setTorch(null);
     const vid = modo === 'video';
-    const chiedi = audio => navigator.mediaDevices.getUserMedia({ audio, video: { facingMode: { ideal: 'environment' }, width: { ideal: vid ? 1280 : 3840 }, height: { ideal: vid ? 720 : 2160 } } });
+    const chiedi = audio => navigator.mediaDevices.getUserMedia({ audio, video: { facingMode: { ideal: 'environment' }, width: { ideal: vid ? ris.w : 3840 }, height: { ideal: vid ? ris.h : 2160 } } });
     (async () => {
       try {
         // video: con il microfono se il permesso c'è, altrimenti senza audio
@@ -365,12 +374,12 @@ function Camera({ input, onClose }) {
     } catch (e) { toast('Foto non scattata: riprova'); }
     setBusy(false);
   };
-  // registrazione: 720p, ferma da sola a VIDEO_MAX secondi; la durata va nel nome del file (i WebM registrati non la riportano)
+  // registrazione: risoluzione scelta in Impostazioni → Foto (720p di serie), ferma da sola a VIDEO_MAX secondi; la durata va nel nome del file (i WebM registrati non la riportano)
   const recStart = () => {
     const s = st.current.stream;
     if (!s || !window.MediaRecorder) { toast('Su questo telefono Nembo non può registrare: usa la fotocamera del telefono'); return; }
     const tipo = ['video/mp4;codecs=avc1,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'].find(t => MediaRecorder.isTypeSupported(t)) || '';
-    let mr; try { mr = new MediaRecorder(s, { ...(tipo ? { mimeType: tipo } : {}), videoBitsPerSecond: 2500000, audioBitsPerSecond: 96000 }); }
+    let mr; try { mr = new MediaRecorder(s, { ...(tipo ? { mimeType: tipo } : {}), videoBitsPerSecond: ris.bps, audioBitsPerSecond: 96000 }); }
     catch (e) { toast('Registrazione non avviata: riprova'); return; }
     const parts = [];
     mr.ondataavailable = e => { if (e.data && e.data.size) parts.push(e.data); };
@@ -392,7 +401,7 @@ function Camera({ input, onClose }) {
     ${flash && html`<div class="cam-flash"></div>`}
     <div class="cam-top">
       <button class="cam-b" aria-label="Chiudi" onClick=${() => finish()}><${Icon} n="x" s=${22} /></button>
-      <span class=${'cam-n' + (rec ? ' rec' : '')}>${modo === 'video' ? (rec ? fmtDurata(secs) + ' / ' + fmtDurata(VIDEO_MAX) : 'Registrazione ferma a ' + VIDEO_MAX + ' secondi') : shots.length ? shots.length + ' foto' : ''}</span>
+      <span class=${'cam-n' + (rec ? ' rec' : '')}>${modo === 'video' ? (rec ? fmtDurata(secs) + ' / ' + fmtDurata(VIDEO_MAX) : videoRis() + 'p · si ferma a ' + fmtDurata(VIDEO_MAX)) : shots.length ? shots.length + ' foto' : ''}</span>
       ${torch !== null ? html`<button class=${'cam-b' + (torch ? ' on' : '')} aria-label="Torcia" onClick=${toggleTorch}><${Icon} n="torch" s=${21} /></button>` : html`<span style="width:var(--tap)"></span>`}
     </div>
     ${err && html`<div class="cam-err">${err}<button class="btn mt-3" onClick=${() => { onClose(); input.click(); }}><${Icon} n="camera" s=${18} /> Fotocamera del telefono</button></div>`}

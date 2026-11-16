@@ -3,6 +3,10 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
+  { v: 61, data: '2026-11-16', tipo: 'minore', titolo: 'Video più lunghi',
+    voci: [
+      'I video possono durare fino a 10 minuti, sia con la fotocamera del telefono sia con quella di Nembo.',
+      'Con la fotocamera di Nembo scegli la risoluzione dei video in Impostazioni → Foto: 480p, 720p o 1080p. Più è alta, più spazio occupa il video e più tempo serve per caricarlo.' ] },
   { v: 60, data: '2026-11-15', tipo: 'minore', titolo: 'Video ovunque ci sono le foto',
     voci: [
       'Accanto alla fotocamera e alla galleria c’è il tasto Video: su campioni, manufatti, punti, osservazioni HSE e del Verbale, sezioni e voci del sopralluogo HSE e appunti. Il video resta dove l’hai fatto e va su OneDrive, nella cartella video dell’attività, con il nome del punto.',
