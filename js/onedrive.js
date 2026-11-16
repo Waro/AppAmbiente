@@ -121,7 +121,7 @@ const OD = (() => {
       const real = await sniff(blob);
       if (real !== type) throw new Error('il contenuto non corrisponde a un file ' + EXT[type]);
     }
-    if (/^video\//.test(type) ? blob.size > VIDEO_MAX_MB * 1048576 : blob.size > MAX_SIZE) throw new Error(/^video\//.test(type) ? 'video oltre ' + VIDEO_MAX_MB + ' MB' : 'file oltre 60 MB');
+    if (/^video\//.test(type) ? blob.size > VIDEO_MAX_MB * 1048576 : blob.size > MAX_SIZE) throw new Error(/^video\//.test(type) ? 'video oltre ' + Math.round(VIDEO_MAX_MB / 1024) + ' GB' : 'file oltre 60 MB');
     const path = buildPath(segments, type);
     const conflict = replace ? 'replace' : 'rename';
     const t = await token();

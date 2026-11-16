@@ -8,7 +8,7 @@ if (window.top !== window.self) {
   try { window.top.location.replace(window.self.location.href); } catch (e) { /* riquadro isolato: la pagina resta vuota */ }
   throw new Error('Nembo aperto dentro un riquadro');
 }
-const APP_VERSION = 'nembo-v60';
+const APP_VERSION = 'nembo-v61';
 
 /* ---------------- aspetto: stile ("essenziale" o "originale") × modo ("auto", "chiaro" o "scuro") ----------------
    Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno.
@@ -949,11 +949,11 @@ function videoDurata(f) {
 }
 const videoErr = m => Object.assign(new Error(m), { code: 'VIDEO' });
 async function salvaVideo(f) {
-  if (f.size > VIDEO_MAX_MB * 1048576) throw videoErr('Video troppo grande: massimo ' + VIDEO_MAX_MB + ' MB');
+  if (f.size > VIDEO_MAX_MB * 1048576) throw videoErr('Video troppo grande: massimo ' + Math.round(VIDEO_MAX_MB / 1024) + ' GB');
   // i video registrati da Nembo hanno la durata nel nome (i WebM non la riportano); per gli altri la legge il telefono
   const m = /^video_\d+_(\d+)s\.(mp4|webm)$/.exec(f.name || '');
   const d = m ? +m[1] : await videoDurata(f);
-  if (isFinite(d) && d > VIDEO_MAX + 1) throw videoErr('Video troppo lungo: massimo ' + VIDEO_MAX + ' secondi');
+  if (isFinite(d) && d > VIDEO_MAX + 1) throw videoErr('Video troppo lungo: massimo ' + Math.round(VIDEO_MAX / 60) + ' minuti');
   const t = Date.now(), dt = new Date(t), p2 = n => String(n).padStart(2, '0');
   const nome = `Video_${dt.getFullYear()}-${p2(dt.getMonth() + 1)}-${p2(dt.getDate())}_${p2(dt.getHours())}${p2(dt.getMinutes())}${p2(dt.getSeconds())}`;
   const id = uid('v');

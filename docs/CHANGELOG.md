@@ -4,6 +4,13 @@ Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Nem
 
 ## [Non rilasciato]
 
+## [nembo-v61] — 2026-11-16
+
+### Modificato
+- Video fino a 10 minuti (`VIDEO_MAX` = 600 s) e 2 GB (`VIDEO_MAX_MB` = 2048, copre un video Full HD del telefono di 10 minuti); messaggi in minuti e GB. I video non si spezzano: OneDrive li carica già a pezzi con la sessione di caricamento.
+- Impostazioni → Foto: «Risoluzione dei video» della fotocamera di Nembo, 480p · 720p · 1080p (`nembo_video_ris`, per dispositivo, 720p di serie; `VIDEO_RIS` in `js/capture.js` con risoluzione richiesta, bitrate 1 / 2,5 / 5 Mbit/s e peso indicativo 8 / 19 / 38 MB al minuto). Nella fotocamera, in alto, risoluzione e durata massima.
+- Impostazioni → Foto: spiegazioni di Telefono e Nembo aggiornate (non parlano più solo degli appunti).
+
 ## [nembo-v60] — 2026-11-15
 
 ### Aggiunto

@@ -181,7 +181,7 @@ Tipi: `string`, `number` (ms dall'epoca per gli istanti), `bool`, `data` = strin
 | `tecnico` | string | — | nome e cognome dalle impostazioni | sì | Tecnico che compila |
 | `planimetrie` | array | — | `[]` | no | § 4.6 |
 | `appunti`, `fotoAppunti` | string, blobId[] | — | `''`, `[]` | foto: possibile | Appunti liberi e foto |
-| `videoAppunti` (DDA Fase 2: `videoAppunti2`) | array, facoltativo | `{ id: 'v_…', nome, durata (s), t (ms) }`; durata ≤ 120 s, file ≤ 400 MB | assente = `[]` | possibile (persone riprese) | Video degli appunti (v57): solo OneDrive (cartella `video`), mai nel Word, nel backup ZIP o nella sincronizzazione; dopo il caricamento il file locale si cancella |
+| `videoAppunti` (DDA Fase 2: `videoAppunti2`) | array, facoltativo | `{ id: 'v_…', nome, durata (s), t (ms) }`; durata ≤ 600 s, file ≤ 2 GB (prima della v61: 120 s e 400 MB) | assente = `[]` | possibile (persone riprese) | Video degli appunti (v57): solo OneDrive (cartella `video`), mai nel Word, nel backup ZIP o nella sincronizzazione; dopo il caricamento il file locale si cancella |
 | `video` | array, facoltativo | `{ id: 'v_…', nome, durata (s), t (ms), ref, dove }`; `ref` = punto in cui è stato fatto (`camp.<id>`, `nc.<id>`, `rec.<id>`, `man.<id>`, `punto.<id>`, `aria.<id>`, `n.<id>`, sezione o voce HSE, `cg`, `galleria`); `dove` = nome del punto per il file su OneDrive | assente = `[]` | possibile (persone riprese) | Video fatti accanto alle foto (v60): stesse regole di `videoAppunti` (solo OneDrive, fuori da Word, ZIP e sincronizzazione). Se il punto viene eliminato il video resta in `r.video` e su OneDrive |
 | `tagAppunti` (DDA anche `tagAppunti2`) | string[] | — | — | no | Tag degli appunti; ogni campo che inizia con `tag` è raccolto da `collectTags` |
 | `documenti` | array | `{ id, nome, blobId, script? }`, file ammessi da `controlli.js` | `[]` | possibile | Documenti da consultare (scheda File, tutte le attività con la scheda File dalla v57; prima solo DDA e HSE) |
@@ -378,7 +378,7 @@ Stati calcolati, non salvati: `radonStato`, `attAperta`, `photoItems`, `odStatus
 | `cfg_od` | configurazione su OneDrive: `{ ok, last, mese, err, nonOra, firmaRemota }` (v51) |
 | `cfg_pin` | sale e chiave AES non esportabile ricavata dal PIN (v51) |
 
-`localStorage`: `nembo_style`, `nembo_mode`, `nembo_nav`, `nembo_onb`, `nembo_tips`, `nembo_tab_<tipo>`, `nembo_ag_v`, `nembo_cam_serie`, `nembo_solo_penna`, `nembo_vibra` (`off` = vibrazioni spente, v59; assente = accese), cache di MSAL.
+`localStorage`: `nembo_style`, `nembo_mode`, `nembo_nav`, `nembo_onb`, `nembo_tips`, `nembo_tab_<tipo>`, `nembo_ag_v`, `nembo_cam_serie`, `nembo_video_ris` (`480` | `720` | `1080`, v61), `nembo_solo_penna`, `nembo_vibra` (`off` = vibrazioni spente, v59; assente = accese), cache di MSAL.
 
 ## 9. OneDrive
 
