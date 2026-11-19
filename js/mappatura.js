@@ -5,7 +5,7 @@ const MAP_MATS = MATS.filter(m => m.k === 'mca' || m.k === 'fav');
 
 function newMappatura(records, settings) {
   const y = new Date().getFullYear();
-  const n = records.filter(r => r.type === 'mappatura' && (r.codice || '').startsWith('MAP-' + y)).map(r => +r.codice.slice(-3)).reduce((a, b) => Math.max(a, b), 0) + 1;
+  const n = nextProgressivo(records, 'mappatura', 'MAP', y);
   return {
     id: uid('map'), type: 'mappatura', codice: `MAP-${y}-${String(n).padStart(3, '0')}`, createdAt: Date.now(), updatedAt: Date.now(),
     commessa: '', cliente: '', citta: '', indirizzo: '', sito: '', data: today(), tecnico: `${settings.tecnicoNome} ${settings.tecnicoCognome}`.trim(), tab: 'mca',

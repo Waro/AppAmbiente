@@ -3,6 +3,9 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
+  { v: 61.1, data: '2026-11-19', tipo: 'minore', titolo: 'Numerazione delle attività corretta',
+    voci: [
+      'Creando molte attività di seguito, il codice non diventa più «NaN»: il numero successivo riparte sempre dall’ultimo codice valido.' ] },
   { v: 61, data: '2026-11-16', tipo: 'minore', titolo: 'Video più lunghi',
     voci: [
       'I video possono durare fino a 10 minuti, sia con la fotocamera del telefono sia con quella di Nembo.',

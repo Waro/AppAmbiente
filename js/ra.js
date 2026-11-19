@@ -15,7 +15,7 @@ const dayBefore = iso => { const x = new Date(iso + 'T12:00:00'); x.setDate(x.ge
 
 function newRa(records, settings) {
   const y = new Date().getFullYear();
-  const n = records.filter(r => r.type === 'ra' && (r.codice || '').startsWith('RA-' + y)).map(r => +r.codice.slice(-3)).reduce((a, b) => Math.max(a, b), 0) + 1;
+  const n = nextProgressivo(records, 'ra', 'RA', y);
   return {
     id: uid('ra'), type: 'ra', codice: `RA-${y}-${String(n).padStart(3, '0')}`, createdAt: Date.now(), updatedAt: Date.now(),
     commessa: '', cliente: '', citta: '', sito: '', indirizzo: '', data: today(), tecnico: `${settings.tecnicoNome} ${settings.tecnicoCognome}`.trim(),

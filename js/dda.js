@@ -87,7 +87,7 @@ function downloadDda2Template() {
 
 function newDda(records, settings) {
   const y = new Date().getFullYear();
-  const n = records.filter(r => r.type === 'dda' && (r.codice || '').startsWith('DDA-' + y)).map(r => +r.codice.slice(-3)).reduce((a, b) => Math.max(a, b), 0) + 1;
+  const n = nextProgressivo(records, 'dda', 'DDA', y);
   return {
     id: uid('dda'), type: 'dda', codice: `DDA-${y}-${String(n).padStart(3, '0')}`, createdAt: Date.now(), updatedAt: Date.now(),
     commessa: '', cliente: '', citta: '', indirizzo: '', sito: '', data: today(), tecnico: `${settings.tecnicoNome} ${settings.tecnicoCognome}`.trim(), fase: 1,

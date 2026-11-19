@@ -4,6 +4,11 @@ Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Nem
 
 ## [Non rilasciato]
 
+## [nembo-v61b] — 2026-11-19
+
+### Corretto
+- Numerazione delle attività: con un solo codice del 2026 senza tre cifre finali (per esempio `VS-2026-NaN`) il progressivo diventava `NaN` e si propagava a tutte le attività create dopo. Il progressivo si calcola ora con `nextProgressivo` (`js/core.js`), che considera solo i codici `PREFISSO-ANNO-cifre`; usato da DDA, Mappatura, RA, HSE, Verbale HSE, Aria e Firme al posto di `slice(-3)`.
+
 ## [nembo-v61] — 2026-11-16
 
 ### Modificato

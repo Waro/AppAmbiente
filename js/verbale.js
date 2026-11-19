@@ -2,7 +2,7 @@
 
 function newVerbale(records, s) {
   const y = new Date().getFullYear();
-  const n = records.filter(r => r.type === 'vs' && (r.codice || '').startsWith('VS-' + y)).map(r => +r.codice.slice(-3)).reduce((a, b) => Math.max(a, b), 0) + 1;
+  const n = nextProgressivo(records, 'vs', 'VS', y);
   return { id: uid('vs'), type: 'vs', codice: `VS-${y}-${String(n).padStart(3, '0')}`, createdAt: Date.now(), updatedAt: Date.now(),
     commessa: '', cliente: '', citta: '', sito: '', indirizzo: '', data: today(), tecnico: `${s.tecnicoNome} ${s.tecnicoCognome}`.trim(),
     note: [], appunti: '', fotoAppunti: [], documenti: [], visite: [], img: {},

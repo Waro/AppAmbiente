@@ -280,7 +280,7 @@ const HS_AN_OPT = {
 const hsEmptyScheda = s => ({ sit: '', subs: s.subs ? Object.fromEntries(s.subs.map(x => [x, ''])) : null, mig: '', natura: '', costo: '', idr: '', prio: null, cProp: false, cCond: false, termine: '' });
 function newHs(records, settings, formato) {
   const y = new Date().getFullYear();
-  const n = records.filter(r => r.type === 'hs' && (r.codice || '').startsWith('HS-' + y)).map(r => +r.codice.slice(-3)).reduce((a, b) => Math.max(a, b), 0) + 1;
+  const n = nextProgressivo(records, 'hs', 'HS', y);
   const s = settings;
   const sint = formato === 'sintetico';
   return {

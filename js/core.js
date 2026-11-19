@@ -8,7 +8,7 @@ if (window.top !== window.self) {
   try { window.top.location.replace(window.self.location.href); } catch (e) { /* riquadro isolato: la pagina resta vuota */ }
   throw new Error('Nembo aperto dentro un riquadro');
 }
-const APP_VERSION = 'nembo-v61';
+const APP_VERSION = 'nembo-v61b';
 
 /* ---------------- aspetto: stile ("essenziale" o "originale") × modo ("auto", "chiaro" o "scuro") ----------------
    Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno.
@@ -80,6 +80,12 @@ const html = htm.bind(h);
 /* ---------------- utilità ---------------- */
 const uid = (p = 'r') => p + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const today = () => new Date().toISOString().slice(0, 10);
+
+// prossimo progressivo annuale di un tipo di attività (es. VS-2026-007): ignora i codici che non seguono il formato
+const nextProgressivo = (records, type, pre, y = new Date().getFullYear()) => {
+  const re = new RegExp('^' + pre + '-' + y + '-(\\d+)$');
+  return records.reduce((m, r) => { const k = r.type === type && re.exec(r.codice || ''); return k ? Math.max(m, parseInt(k[1], 10)) : m; }, 0) + 1;
+};
 const fmtD = iso => { if (!iso) return ''; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; };
 const addMonths = (iso, n) => { if (!iso) return ''; const d = new Date(iso + 'T12:00:00'); d.setMonth(d.getMonth() + n); return d.toISOString().slice(0, 10); };
 const daysBetween = (a, b) => Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 86400000);

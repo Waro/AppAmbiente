@@ -58,7 +58,7 @@ const ariaLabels = r => ariaOn(r) ? ariaOf(r).punti.map(p => { const e = ariaEsi
 /* ---------------- attività a sé ---------------- */
 function newAria(records, s) {
   const y = new Date().getFullYear();
-  const n = records.filter(r => r.type === 'aria' && (r.codice || '').startsWith('ARIA-' + y)).map(r => +r.codice.slice(-3)).reduce((a, b) => Math.max(a, b), 0) + 1;
+  const n = nextProgressivo(records, 'aria', 'ARIA', y);
   return { id: uid('ar'), type: 'aria', codice: `ARIA-${y}-${String(n).padStart(3, '0')}`, createdAt: Date.now(), updatedAt: Date.now(),
     commessa: '', cliente: '', citta: '', sito: '', indirizzo: '', data: today(), tecnico: `${s.tecnicoNome} ${s.tecnicoCognome}`.trim(),
     aria: emptyAria(true), planimetrie: [], fogli: [], appunti: '', fotoAppunti: [], documenti: [] };

@@ -264,7 +264,7 @@ function PassaTelefono({ f, r, societa, onAdd, onClose }) {
 /* ---------------- foglio firme come attività a sé ---------------- */
 function newFirmeRec(records, s) {
   const y = new Date().getFullYear();
-  const n = records.filter(r => r.type === 'firme' && (r.codice || '').startsWith('FIR-' + y)).map(r => +r.codice.slice(-3)).reduce((a, b) => Math.max(a, b), 0) + 1;
+  const n = nextProgressivo(records, 'firme', 'FIR', y);
   return { id: uid('fir'), type: 'firme', codice: `FIR-${y}-${String(n).padStart(3, '0')}`, createdAt: Date.now(), updatedAt: Date.now(),
     commessa: '', cliente: '', citta: '', sito: '', indirizzo: '', data: today(), tecnico: `${s.tecnicoNome} ${s.tecnicoCognome}`.trim(), fogli: [], appunti: '' };
 }
