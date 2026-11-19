@@ -4,6 +4,11 @@ Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Nem
 
 ## [Non rilasciato]
 
+## [nembo-v62] — 2026-11-19
+
+### Aggiunto
+- Verbale HSE: Opzioni → «Dati e documenti» con «Carica file JSON» (`importVerbale` in `js/verbale.js`, `type` `vs-verbale`), «Allega PDF da consultare» e «Scarica il modello JSON» (`VS_TEMPLATE`). Il JSON compila solo i campi vuoti di anagrafica (bloccati col lucchetto, come nell'RA) e dati del report (`titolo`, `fondo`, `presenti`, `descrArea`); `planimetrie` (immagini o PDF in base64, formato dell'import RA) diventano documenti da consultare nella scheda File (`importPlanimetrie`). Nessun campo nuovo nel record: `documenti` e `meta` esistevano già.
+
 ## [nembo-v61b] — 2026-11-19
 
 ### Corretto

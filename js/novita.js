@@ -3,6 +3,11 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
+  { v: 62, data: '2026-11-19', tipo: 'minore', titolo: 'Verbale HSE: importa i dati da un file',
+    voci: [
+      'Nel Verbale HSE, in Opzioni → Dati e documenti, «Carica file JSON» compila commessa, cliente, sito, città, indirizzo e dati del report, e aggiunge planimetrie e documenti da consultare. Si compilano solo i campi vuoti: quello che hai già scritto non cambia.',
+      '«Allega PDF da consultare» aggiunge uno o più PDF alla scheda File: si aprono anche senza rete durante il sopralluogo.',
+      '«Scarica il modello JSON» dà il file di esempio da far preparare all’AI.' ] },
   { v: 61.1, data: '2026-11-19', tipo: 'minore', titolo: 'Numerazione delle attività corretta',
     voci: [
       'Creando molte attività di seguito, il codice non diventa più «NaN»: il numero successivo riparte sempre dall’ultimo codice valido.' ] },

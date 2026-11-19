@@ -121,11 +121,12 @@ flowchart LR
   J --> T{type}
   T -- nembo-programmazione --> A["agendaJson: un'attività per riga,<br/>duplicati saltati, RA ripresi dall'anno prima"]
   T -- ra-mappatura --> R["importRa: manufatti nuovi + planimetrie"]
+  T -- vs-verbale --> V["importVerbale (v62): anagrafica e dati del report nei campi vuoti,<br/>planimetrie → documenti da consultare"]
   T -- dda-fase1 --> D1["importDda: solo campi vuoti, lucchetto"]
   T -- dda-fase2 --> D2{dove}
   D2 -- DDA / Mappatura --> P2["importPrecedente: r.precedente,<br/>numerazione, rinumera i campioni non bloccati"]
   D2 -- RA --> R2["campioni MCA non negativi e NC MCA → manufatti"]
-  A & R & D1 & P2 & R2 --> PL["importPlanimetrie: immagini → PDF di una pagina,<br/>nomi già presenti saltati"]
+  A & R & V & D1 & P2 & R2 --> PL["importPlanimetrie: immagini → PDF di una pagina,<br/>nomi già presenti saltati"]
 ```
 
 Numerazione che prosegue (v50): `precBase` prende il numero più alto tra indagine importata e attività in Nembo dello stesso immobile (`precNembo`, `stessoImmobile`); i nuovi campioni partono da lì, salvo `numerazione: "nuova"` o interruttore spento.

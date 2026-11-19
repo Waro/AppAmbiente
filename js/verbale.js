@@ -8,6 +8,31 @@ function newVerbale(records, s) {
     note: [], appunti: '', fotoAppunti: [], documenti: [], visite: [], img: {},
     meta: { titolo: '', fondo: '', dataReport: '', redatto: `${s.tecnicoNome} ${s.tecnicoCognome}`.trim(), verificato: '', protocollo: '', procura: '', revisione: '00', presenti: '', descrArea: '' } };
 }
+/* ---------------- import da file (v62) ---------------- */
+const VS_TEMPLATE = {
+  app: 'nembo', type: 'vs-verbale',
+  commessa: '', cliente: '', citta: '', indirizzo: '', sito: '',
+  meta: { titolo: '', fondo: '', presenti: '', descrArea: '' },
+  planimetrie: [{ nome: 'Pianta piano terra', dati: 'data:application/pdf;base64,...' }],
+};
+// anagrafica e dati del report: solo nei campi vuoti; planimetrie e documenti: PDF da consultare nella scheda File
+async function importVerbale(text, rec) {
+  let d;
+  try { d = JSON.parse(text); } catch (e) { throw new Error('il file non è un JSON valido'); }
+  if (!d || Array.isArray(d) || (d.type && d.type !== 'vs-verbale')) throw new Error('il file non è per il Verbale HSE');
+  const patch = {}, str = v => (v == null ? '' : String(v)).trim();
+  for (const k of ['commessa', 'cliente', 'citta', 'indirizzo', 'sito']) if (str(d[k]) && !rec[k]) patch[k] = str(d[k]);
+  const head = Object.keys(patch).length;
+  if (head) { const t = markImp({ imp: rec.imp }, patch, IMP_ANAG); if (t.imp) patch.imp = t.imp; }
+  const m = rec.meta || {}, mp = {};
+  if (d.meta && typeof d.meta === 'object') for (const k of ['titolo', 'fondo', 'presenti', 'descrArea']) if (str(d.meta[k]) && !str(m[k])) mp[k] = str(d.meta[k]);
+  if (Object.keys(mp).length) patch.meta = { ...m, ...mp };
+  const noti = (rec.documenti || []).map(x => ({ nome: String(x.nome || '').replace(/\.pdf$/i, '') }));
+  const pl = await importPlanimetrie(d.planimetrie, noti);
+  if (pl.length) patch.documenti = [...(rec.documenti || []), ...pl.map(x => ({ id: uid('d'), nome: x.nome + '.pdf', blobId: x.blobId }))];
+  if (!head && !Object.keys(mp).length && !pl.length) throw new Error('nel file non ci sono dati nuovi: i campi sono già compilati e le planimetrie già presenti');
+  return { patch, head, dati: Object.keys(mp).length, plan: pl.length };
+}
 const newNotaVs = () => ({ id: uid('n'), titolo: '', testo: '', mig: '', foto: [], tag: [] });
 const verbaleIsEmpty = r => senzaAllegati(r) && !r.commessa && !r.cliente && !r.sito && !r.citta && !r.indirizzo && !(r.note || []).some(n => n.titolo || n.testo || n.foto.length) && !r.appunti && !(r.fotoAppunti || []).length;
 const vsPhotos = r => r.type === 'vs' ? (r.note || []).flatMap((n, i) => (n.foto || []).map((f, k) => ({ id: f, name: `Nota_${i + 1}_${(n.titolo || 'senza_titolo').slice(0, 40)}_${k + 1}` }))) : [];
@@ -34,6 +59,29 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
   const [filtro0, setFiltro] = useState(null);
   const [T, setT] = useSchede('vs', ['anag', 'note', 'file'], initial._new, { 'n-': 'note' });
   const clienti = nomiClienti(records);
+  const imp = useRef(), pdfIn = useRef();
+  const doImport = e => {
+    const file = e.target.files[0]; e.target.value = ''; if (!file) return;
+    const rd = new FileReader();
+    rd.onload = async () => {
+      try {
+        const { patch, head, dati, plan } = await importVerbale(rd.result, r);
+        up(patch);
+        toast('Importati ' + [head && head + (head === 1 ? ' dato del sito' : ' dati del sito'), dati && dati + (dati === 1 ? ' dato del report' : ' dati del report'), plan && plan + (plan === 1 ? ' documento da consultare' : ' documenti da consultare')].filter(Boolean).join(', '));
+      } catch (err) { fail('Import non riuscito', err); }
+    };
+    rd.readAsText(file);
+  };
+  const allegaPdf = async e => {
+    const files = [...e.target.files]; e.target.value = ''; if (!files.length) return;
+    for (const f of files) {
+      try {
+        const a = await allegato(f), blobId = uid('b'); await DB.putBlob({ id: blobId, blob: a.blob, type: a.type, name: a.name });
+        up(q => ({ ...q, documenti: [...(q.documenti || []), { id: uid('d'), nome: a.name, blobId }] }));
+        toast(a.name + ' allegato: lo trovi nella scheda File');
+      } catch (err) { if (err.code === 'ALLEGATO') toast(err.message); else fail('Allegato non salvato', err); }
+    }
+  };
   const upload = () => OD.account ? odSync([r], settings) : sendToOneDrive(r, settings);
   const note = r.note || [];
   const tagsV = Object.keys(collectTags(note)).sort((a, b) => a.localeCompare(b, 'it'));
@@ -126,12 +174,18 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
     <${Appunti} rec=${r} up=${up} rows=${3} />`}
     `}
     ${T === 'file' && html`<${FileTab} r=${r} up=${up} settings=${settings} />`}
+    <input ref=${imp} type="file" accept="application/json,text/plain,application/octet-stream,.json" hidden onChange=${doImport} />
+    <input ref=${pdfIn} type="file" accept="application/pdf,.pdf" multiple hidden onChange=${allegaPdf} />
     ${ns.sel ? html`<${ActionBar}><button class="btn pri" disabled=${!selNote.length} onClick=${() => setTagSheet(true)}><${Icon} n="tag" s=${20} /> Tag (${selNote.length})</button><//>`
     : html`<${BarraAtt} r=${r} settings=${settings}
       left=${html`<${VsCam} onAdd=${ids => { const nn = { ...newNotaVs(), foto: ids }; setT('note'); up(q => ({ ...q, note: [...(q.note || []), nn] })); setFiltro(null); setTimeout(() => scrollToId('n-' + nn.id), 80); }} />`}
       center=${T === 'note' ? html`<button class="btn pri" onClick=${addN}><${Icon} n="plus" s=${20} w=${2.4} /> Nuova osservazione</button>`
         : html`<${OdBtn} r=${r} settings=${settings} />`}
-      gruppi=${[['Documenti', [{ ic: 'share', l: OD.account ? 'Carica su OneDrive' : 'Invia a OneDrive', fn: upload }]], opzArchivio({ r, settings, onDelete, up, elimina: 'Elimina il verbale' })]} />`}
+      gruppi=${[['Dati e documenti', [
+        { ic: 'file', l: 'Carica file JSON', s: 'Dati del sito e del report, planimetrie e documenti: si compilano solo i campi vuoti', fn: () => imp.current.click() },
+        { ic: 'paper', l: 'Allega PDF da consultare', s: 'Si aprono nella scheda File, anche senza rete', fn: () => pdfIn.current.click() },
+        { ic: 'paper', l: 'Scarica il modello JSON', fn: () => downloadBlob(new Blob([JSON.stringify(VS_TEMPLATE, null, 1)], { type: 'application/json' }), 'Nembo_modello_Verbale_HSE.json') }]],
+        ['Documenti', [{ ic: 'share', l: OD.account ? 'Carica su OneDrive' : 'Invia a OneDrive', fn: upload }]], opzArchivio({ r, settings, onDelete, up, elimina: 'Elimina il verbale' })]} />`}
     ${tagSheet && ns.sel && html`<${TagMultiSheet} note=${selNote} fissi=${[]} altri=${tagsV} onSet=${setNote} onClose=${() => setTagSheet(false)} />`}
   </div>`;
 }
