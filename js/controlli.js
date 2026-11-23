@@ -168,7 +168,7 @@ async function tipoFileArrivo(data, meta = {}) {
 }
 
 /* ---------------- attività in arrivo (backup ZIP, sincronizzazione) ---------------- */
-const TIPI_REC = ['dda', 'mappatura', 'radon', 'ra', 'hs', 'vs', 'firme', 'aria', 'app', 'cli'];
+const TIPI_REC = ['dda', 'mappatura', 'radon', 'ra', 'hs', 'vs', 'firme', 'aria', 'app', 'cli', 'todo'];
 const ID_OK = /^[A-Za-z0-9_-]{1,80}$/;
 const CHIAVI_VIETATE = new Set(['__proto__', 'constructor', 'prototype']);
 const ARR_FOTO = new Set(['foto', 'fotoPrec', 'fotoAppunti', 'fotoAppunti2']);
@@ -187,7 +187,7 @@ function modelloDi(r) {
     switch (r.type) {
       case 'dda': return newDda([], s); case 'mappatura': return newMappatura([], s); case 'radon': return newRadon(s);
       case 'ra': return newRa([], s); case 'hs': return newHs([], s, r.formato); case 'vs': return newVerbale([], s);
-      case 'firme': return newFirmeRec([], s); case 'aria': return newAria([], s); case 'app': return newApp(); case 'cli': return newCliente();
+      case 'firme': return newFirmeRec([], s); case 'aria': return newAria([], s); case 'app': return newApp(); case 'cli': return newCliente(); case 'todo': return newTodo();
     }
   } catch (e) { /* modello non disponibile: si controlla solo la forma */ }
   return {};

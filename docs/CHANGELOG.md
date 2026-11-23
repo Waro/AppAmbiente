@@ -4,6 +4,22 @@ Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Nem
 
 ## [Non rilasciato]
 
+## [nembo-v63] — 2026-11-23
+
+### Aggiunto
+- **Attività da PC** (`js/gestione.js`): voce «Attività» nel menu laterale con un elenco unico di tutte le attività di campo, vista Tabella o Kanban (`nembo_att_f`), ricerca (anche nel contenuto, con `cercaVoci`) e filtri per BU, tipo, stato e periodo. Dettaglio affiancato in sola lettura: tipo, stato, riepilogo (`riepilogoDati`), ToDo, quanto raccolto in campo con le foto, appunti, caricamento su OneDrive; «Modifica» apre l'attività.
+- **Stato di avanzamento** (`AVANZ`, `avanzDi` in `js/todo.js`): Programmata, In corso, Report, Da revisionare, Inviata, Conclusa. Calcolato da data, `conclusa` e stato radon finché non si sceglie a mano (`avanzamento`, `avanzMan`). Cambiare lo stato non rende l'attività «da ricaricare» su OneDrive (`odTieniCaricata`).
+- **Kanban**: sei colonne, trascinamento delle card (HTML5), contatore e barra dei ToDo, card con ToDo scaduto segnata; con ToDo aperti compare un avviso (`AvvisoSposta`) con i ToDo da spuntare e «Sposta comunque».
+- **ToDo** (`type: 'todo'`): viste Oggi, 7 giorni, Tutti, Per attività e filtro per lista; inserimento rapido con riconoscimento di data, ora, `#lista`, `p1`–`p4` e `@attività` (`rapidoLeggi`); sottoattività, note, ripetizione; card ToDo nel dettaglio dell'attività e «ToDo di oggi» in Oggi; sul telefono scorrimento a sinistra con «Rimanda» ed «Elimina» (con «Annulla»); tasto Q da PC; contatore nel menu laterale.
+- **ToDo predefiniti** per tipo e stato (`PREDEF_BASE`, Impostazioni → ToDo predefiniti, `todoAuto`, `todoPredef`), creati al cambio di stato con id fisso (`kv.todo_visti`, nessun ToDo per lo storico al primo avvio).
+- **Programmazione → Tabella** (solo da 1000 px, `AgTabella` in `js/agenda.js`): quattro settimane modificabili sul posto (data, ora, indirizzo, città, drone, stato), «Duplica» e riga nuova.
+- Icone `kanban`, `todo`, `copy`; suggerimenti `attivita` e `todo`.
+
+### Modificato
+- Tab bar del telefono: Oggi · ToDo · DDA · Mappature · RA (Radon da Oggi → Strumenti e dati, nuova riga «Campagne radon»); con la BU HSE: Oggi · ToDo · HSE · Verbali · RA.
+- Oggi da PC: seconda riga con Da completare, Strumenti e dati e ToDo di oggi; la card Scadenze non si allunga più sotto la prima riga.
+- `TIPI_REC` accetta `todo` (sincronizzazione, ripristino); backup ZIP e invio a OneDrive ignorano i ToDo come cartelle.
+
 ## [nembo-v62] — 2026-11-19
 
 ### Aggiunto

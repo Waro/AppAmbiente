@@ -7,7 +7,7 @@ Tutti gli esempi usano dati inventati.
 
 | Entità | Tecnologia | Chiave | Chi lo vede |
 |---|---|---|---|
-| Attività (tutti i tipi), clienti, appuntamenti | IndexedDB `nembo`, store `records` | `id` (keyPath) | solo il dispositivo |
+| Attività (tutti i tipi), clienti, appuntamenti, ToDo (v63) | IndexedDB `nembo`, store `records` | `id` (keyPath) | solo il dispositivo (con la sincronizzazione anche gli altri dispositivi dell'utente) |
 | Foto, allegati, planimetrie, file generati | IndexedDB `nembo`, store `blobs` | `id` (`b_…`) | solo il dispositivo |
 | Video degli appunti (v57) | IndexedDB `nembo`, store `blobs`, fino al caricamento su OneDrive | `id` (`v_…`) | il dispositivo, poi solo OneDrive |
 | Impostazioni, modelli, stati interni | IndexedDB `nembo`, store `kv` | chiave testuale | solo il dispositivo |
@@ -25,7 +25,7 @@ erDiagram
   RECORDS ||--o{ BLOBS : "foto, allegati, planimetrie (id b_…); video degli appunti e dei punti (id v_…)"
   RECORDS {
     string id PK "prefisso per tipo + tempo + casuale"
-    string type "dda | mappatura | ra | radon | aria | hs | vs | firme | cli | app"
+    string type "dda | mappatura | ra | radon | aria | hs | vs | firme | cli | app | todo"
     string codice "DDA-AAAA-NNN, MAP-, RA-, ARIA-, HS-, VS-, FIR-"
     number createdAt
     number updatedAt "a ogni modifica"
@@ -50,6 +50,7 @@ Le parti sono oggetti annidati nel record dell'attività, non tabelle separate: 
 ```mermaid
 erDiagram
   CLIENTE ||..o{ ATTIVITA : "cliente = nome (testo)"
+  ATTIVITA ||..o{ TODO : "todo.att = id (v63)"
   ATTIVITA ||--o{ PLANIMETRIA : planimetrie
   ATTIVITA ||--o{ FOGLIO_FIRME : fogli
   FOGLIO_FIRME ||--o{ PARTECIPANTE : partecipanti
@@ -192,6 +193,8 @@ Tipi: `string`, `number` (ms dall'epoca per gli istanti), `bool`, `data` = strin
 | `conclusa` | object \| null | — | assente | no | `{ il: data, motivo, mancanze: string[] }` (v50) |
 | `drone` | bool | solo dda, mappatura, ra | — | no | Sopralluogo con drone |
 | `copiaDi`, `copiaNota` | string | — | — | no | Copia nata da un conflitto di sincronizzazione |
+| `avanzamento` | string, facoltativo | enum § 6 (`AVANZ`) | assente | no | Stato di avanzamento scelto a mano (v63). Assente = calcolato (`avanzBase`): Report se `conclusa`, Programmata se la data è futura, altrimenti In corso; radon dallo stato della campagna. Lo stato mostrato è `avanzDi(r)` |
+| `avanzMan` | bool, facoltativo | — | assente | no | `true` se lo stato è stato scelto a mano (Kanban o dettaglio): vale anche se è «prima» di quello calcolato |
 
 ### 4.2 DDA (`type: 'dda'`)
 
@@ -324,6 +327,24 @@ Come la DDA per `campioni` (solo `mca`, `fav`), `nc`, `congelati`, `schede`, `pr
 | `hsComm…`, `hsVerificato`, `hsApprovato`, `hsFirma`, `hsDeveloper`, `hsPropertyManager`, `hsProcuratore`, `hsTecnici` | sì | Valori proposti nei report HSE |
 | `msClientId`, `msTenantId` | no (identificativi, non segreti) | Registrazione dell'app in Entra ID; mai nel codice |
 
+### 4.12 ToDo (`type: 'todo'`, v63)
+
+Record a sé nello store `records`, come i clienti: si sincronizzano tra i dispositivi, ma non hanno cartella su OneDrive e nel backup ZIP sono solo nel manifest.
+
+| Campo | Tipo | Vincoli | Default | Dato personale | Descrizione |
+|---|---|---|---|---|---|
+| `id` | string | PK | `uid('td')`; i predefiniti `td_<id attività>_<stato>_<n>` | no | L'id fisso dei predefiniti evita doppioni se due dispositivi vedono lo stesso cambio di stato |
+| `titolo`, `note` | string | — | `''` | possibile (testo libero) | Cosa c'è da fare |
+| `data`, `ora` | data, ora | — | `''` | no | Scadenza; senza data = «Tutti → Senza data» |
+| `prio` | number | 1–4 | 4 | no | Priorità (4 = nessuna); colori `PRIO` |
+| `lista` | string | senza `#` | `''` | no | Lista personale (#Telefonate, #Strumenti…) |
+| `att` | string | FK → `records.id` di un'attività | `''` | no | Attività collegata |
+| `fatto` | number | ms | 0 | no | Istante in cui è stato fatto; 0 = aperto |
+| `sotto` | array | `{ id, t, fatto }` | `[]` | possibile | Sottoattività |
+| `ricorre` | string | `''`, `settimana`, `mese`, `anno` | `''` | no | Fatto un ToDo ricorrente, ne nasce uno nuovo alla data successiva (`todoProssima`) |
+| `origine`, `origineNota` | string | `mano`, `auto` | `mano` | no | Come è nato (predefinito, a mano) e la frase mostrata nel dettaglio |
+| `createdAt`, `updatedAt`, `schema` | — | come le attività | — | no | — |
+
 ## 5. Relazioni
 
 | Relazione | Cardinalità | Realizzazione | Alla cancellazione |
@@ -335,6 +356,7 @@ Come la DDA per `campioni` (solo `mca`, `fav`), `nc`, `congelati`, `schede`, `pr
 | Risultato → campione | N:1 | `campione` = codice | resta con il codice scritto |
 | Attività → cliente | N:1 | testo `cliente` confrontato con `cli.nome` (`clienteDi`) | nessun vincolo: l'attività tiene il nome |
 | RA → RA anno prima | 1:1 | `ripresoDa`, stesso immobile (`stessoImmobile`) | nessun vincolo |
+| ToDo → attività (v63) | N:1 | `todo.att` = id dell'attività | eliminando l'attività il ToDo resta, «Senza attività» |
 | Attività su più dispositivi | — | `_nembo/records/<id>.json` | eliminazione = lapide `{ deleted, id, deletedAt }`, propagata agli altri dispositivi |
 
 Non ci sono relazioni N:M.
@@ -344,6 +366,9 @@ Non ci sono relazioni N:M.
 | Campo | Valori |
 |---|---|
 | `type` | `dda`, `mappatura`, `ra`, `radon`, `aria`, `hs`, `vs`, `firme`, `cli`, `app` |
+| `avanzamento` (v63, `AVANZ`) | `programmata`, `in_corso`, `report`, `da_revisionare`, `inviata`, `conclusa` |
+| ToDo `prio` | 1, 2, 3, 4 (nessuna) |
+| ToDo `ricorre` | `''`, `settimana`, `mese`, `anno` |
 | `stato` (programmazione) | `confermato`, `in_attesa`, `da_programmare`, `annullato`; vuoto = calcolato dall'ora (`progDi`) |
 | matrici (`MATS`) | `terreni`, `acque`, `mca` (codici A), `fav` (codici F), `altro` |
 | `check[voce]` | `presente`, `assente`, `nv` (non verificabile) |
@@ -355,7 +380,7 @@ Non ci sono relazioni N:M.
 | HSE `prio` | 1 non conforme, 2 da monitorare, 3 conforme |
 | notifica `level` | `ok`, `warn`, `err`, `info`, `new` |
 
-Stati calcolati, non salvati: `radonStato`, `attAperta`, `photoItems`, `odStatus`, `fileSig`, `syncColore`.
+Stati calcolati, non salvati: `avanzDi` (v63), `radonStato`, `attAperta`, `photoItems`, `odStatus`, `fileSig`, `syncColore`.
 
 ## 7. Indici e vincoli di unicità
 
@@ -379,6 +404,25 @@ Stati calcolati, non salvati: `radonStato`, `attAperta`, `photoItems`, `odStatus
 | `cfg_pin` | sale e chiave AES non esportabile ricavata dal PIN (v51) |
 
 `localStorage`: `nembo_style`, `nembo_mode`, `nembo_nav`, `nembo_onb`, `nembo_tips`, `nembo_tab_<tipo>`, `nembo_ag_v`, `nembo_cam_serie`, `nembo_video_ris` (`480` | `720` | `1080`, v61), `nembo_solo_penna`, `nembo_vibra` (`off` = vibrazioni spente, v59; assente = accese), cache di MSAL.
+
+### Aggiunte della v63
+
+- `kv.todo_visti`: `{ id attività: ultimo stato visto }`. Al primo avvio della v63 registra lo stato di tutte le attività senza creare ToDo; poi, quando uno stato cambia, crea i ToDo predefiniti (`useTodoPredef`).
+- `kv.settings.todoAuto` (bool, `true`): ToDo predefiniti automatici; `kv.settings.todoPredef` (object): `{ chiave tipo: { stato: [[testo, giorni, priorità]] }, _v: 1 }`, vuoto = valori di partenza `PREDEF_BASE`. Chiavi dei tipi: `dda1`, `dda2`, `mappatura`, `ra`, `radon`, `aria`, `hs`, `vs`. I giorni in «Programmata» sono rispetto alla data dell'attività (anche negativi), negli altri stati dal giorno del cambio.
+- `localStorage`: `nembo_att_f` (vista e filtri dell'elenco Attività, senza la ricerca), `nembo_td_v` (vista dei ToDo), `nembo_ag_v` accetta anche `tab` (tabella della Programmazione, solo da 1000 px).
+
+## 8 bis. Corrispondenza con gli elenchi SharePoint (preparazione, v63)
+
+Nembo resta su OneDrive finché l'IT non abilita l'accesso al sito (vedi `DECISIONS.md`, D-43). Il modello è già pensato perché il passaggio cambi solo il punto in cui si salva:
+
+| Nembo | Elenco SharePoint | Colonne principali |
+|---|---|---|
+| attività (`dda`, `mappatura`, `ra`, `radon`, `aria`, `hs`, `vs`) | **Attivita** (uno solo, D-42) | `IdNembo` (= `id`), `Tipo` (scelta: `predefKey`), `Stato` (scelta: `AVANZ`), `Data`, `Indirizzo`, `Citta`, `Commessa` (ricerca), `Immobile` (ricerca), `Dati` (JSON del record, `updatedAt` come versione) |
+| campioni, manufatti, punti, osservazioni | **Campioni** e simili, figli di Attivita | come oggi dentro il record; si separano solo quando serve filtrarli da SharePoint |
+| ToDo (`todo`) | **DaFare** | `IdNembo`, `Titolo`, `Scadenza`, `Priorita`, `Lista`, `Attivita` (ricerca), `Fatto`, `AssegnatoA` (persona: vuota finché l'app è personale) |
+| foto, allegati, file generati | libreria **AllegatiNembo** | percorso per attività, come la cartella su OneDrive |
+
+Conflitti: oggi vince l'`updatedAt` più recente e l'altra versione diventa una copia (§ 9 e `sync.js`); su SharePoint lo stesso controllo si fa con l'ETag dell'elemento.
 
 ## 9. OneDrive
 

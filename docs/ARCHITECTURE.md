@@ -93,7 +93,8 @@ Ogni file usa le funzioni dei file caricati prima; `globals.json` le elenca per 
 | 15 | `js/agenda.js` | Programmazione, piano JSON, .ics |
 | 16 | `js/onedrive.js` | `OD` (MSAL + Graph), caricamento per attività, stato di invio |
 | 17 | `js/sync.js` | Sincronizzazione tra dispositivi (`_nembo/`) |
-| 18 | `js/home.js` | Oggi, Nuova attività, `attAperta`, `daCompletare` |
+| 18 | `js/todo.js`, `js/gestione.js` | Stato di avanzamento (`AVANZ`, `avanzDi`), ToDo (record `todo`, inserimento rapido, predefiniti per tipo e stato); elenco «Attività» da PC: tabella, Kanban, dettaglio in sola lettura (v63) |
+| 18b | `js/home.js` | Oggi, Nuova attività, `attAperta`, `daCompletare`, ToDo di oggi |
 | 19 | `js/backup.js`, `js/config.js`, `js/impostazioni.js` | ZIP, ripristino e pagina Backup; file di configurazione e copia su OneDrive; Impostazioni, dati sul dispositivo e Notifiche (v54, prima in `app.js`) |
 | 20 | `js/app.js` | `App`: stato globale, sincronizzazione dalla Home, navigazione, avvio |
 
@@ -144,6 +145,7 @@ Stato `route = { v, id?, p?, from? }` in `App`; il tasto Indietro (Android e bro
 | Rotta | Schermata |
 |---|---|
 | `home` | Oggi |
+| `attivita`, `todo` | Attività (tabella e Kanban) e ToDo (v63); `attivita` solo dal menu laterale |
 | `ddaList` → `dda`, `mappaturaList` → `mappatura`, `raList` → `ra`, `radonList` → `radon`, `ariaList` → `aria` | Elenchi e schede Ambiente |
 | `hsList` → `hs`, `vsList` → `vs` | HSE |
 | `firmeList` → `firme`, `cliList` → `cli`, `agenda`, `cerca`, `backup` | Strumenti |
@@ -155,7 +157,8 @@ Stato `route = { v, id?, p?, from? }` in `App`; il tasto Indietro (Android e bro
 
 ## 7. Stato e salvataggio
 
-- `App` tiene `allRecs` (tutti i record), `records` (solo attività), `settings`, `route`.
+- `App` tiene `allRecs` (tutti i record), `records` (solo attività), `todos` (ToDo, v63), `settings`, `route`. `useTodoPredef` guarda i cambi di stato delle attività e aggiunge i ToDo predefiniti.
+- Verso SharePoint (D-43): il salvataggio passa sempre da `saveRec`/`removeRec` e dalla sincronizzazione; un secondo modo di salvare (elenchi SharePoint) si aggiungerà lì, senza toccare le schermate.
 - Ogni scheda usa `useAutosave`: ogni modifica aggiorna `updatedAt`, salva dopo 500 ms (e subito se l'app va in background) con `saveRec` → `DB.put` → `Sync.schedule()`.
 - Attività aperta (v60): `useAutosave` registra l'attività in `_vDest` già al primo disegno; `vDest()` la restituisce ai componenti che non ricevono `up`, come il tasto Video (`VideoIn`), che salva in `r.video` con `ref` = punto in cui è stato fatto.
 - Le impostazioni si salvano a ogni modifica (`setSettings`); dalla v51 anche la configurazione su OneDrive, 5 s dopo.
