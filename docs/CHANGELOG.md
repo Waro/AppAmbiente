@@ -4,6 +4,11 @@ Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Nem
 
 ## [Non rilasciato]
 
+## [nembo-v63b] — 2026-11-23
+
+### Corretto
+- Oggi da PC: tre colonne uguali (`repeat(3, minmax(0, 1fr))`) allineate alle tre voci del selettore BU (`.home-bu`, griglia con `gap` `--sp-4` = gap delle card più il bordo interno del selettore). Prima la terza colonna era fissa a 260–340 px e le card non coincidevano con il selettore. Nessuna voce nelle Novità.
+
 ## [nembo-v63] — 2026-11-23
 
 ### Aggiunto
