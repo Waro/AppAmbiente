@@ -1026,10 +1026,12 @@ img.logo { background: none; object-fit: cover; }
   .hg-n { grid-area: n; } .hg-r { grid-area: r; } .hg-c { grid-area: c; } .hg-s { grid-area: s; } .hg-d { grid-area: d; } .hg-t { grid-area: t; }
 }
 /* PC e tablet in orizzontale: tre colonne (Prossimo · Attività di oggi · Scadenze), card della prima riga alte uguali.
-   Seconda riga: Da completare, Strumenti e dati, ToDo di oggi (v63). */
+   Seconda riga: Da completare, Strumenti e dati, ToDo di oggi (v63). Tre colonne uguali, allineate alle voci del selettore BU (v63b). */
 @media (min-width: 1000px) {
   .frame.wide > .shell:not(.split) > .content.home2 { max-width: none; }
-  .home-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(260px, 340px); grid-template-areas: "n r d" "c s t"; }
+  .home-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-areas: "n r d" "c s t"; }
+  /* le tre voci del selettore BU sopra le tre colonne: stessi bordi (gap del selettore = gap delle card + 2 × il bordo interno di 2 px) */
+  .home-bu { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-4); }
   .hg-n, .hg-r, .hg-d { align-self: stretch; display: flex; flex-direction: column; }
   .hg-n .card-navy, .hg-r .card, .hg-d .card { flex: 1 0 auto; }
   .hg-r .rings { width: 100%; }
@@ -1117,7 +1119,7 @@ img.logo { background: none; object-fit: cover; }
 .kb-bar i { display: block; height: 100%; background: var(--navy-ink); border-radius: var(--r-pill); }
 .kb-more, .kb-vuota { font-size: var(--fs-sm); color: var(--muted); text-align: center; padding: var(--sp-2); }
 /* ToDo: cerchio di spunta con il colore della priorità (toni smorzati dei tag, lontani da stati e azioni) */
-.td-card { padding: 0 var(--sp-3); }
+.td-card { padding: 0 var(--sp-3); overflow: hidden; }
 .td-row { display: grid; grid-template-columns: var(--tap) 1fr; align-items: start; gap: 0; padding: var(--sp-1) 0; position: relative; background: var(--card); touch-action: pan-y; }
 .td-card > .td-row + .td-row { border-top: .5px solid var(--sep); }
 .td-row.on { background: var(--blue-soft); box-shadow: inset 4px 0 0 var(--blue); margin: 0 calc(-1 * var(--sp-3)); padding-left: var(--sp-3); padding-right: var(--sp-3); }

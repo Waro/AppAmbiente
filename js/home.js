@@ -173,7 +173,7 @@ function Home({ records: allRecords, todos = [], saveRec, removeRec, settings, o
     <span class="sq tint" style=${'--c:' + c}><${Icon} n=${ic} s=${20} /></span><span class="t"><b>${l}</b><small>${sub}</small></span><span class=${'num' + (crit ? ' crit' : '')}>${num}</span></button>`;
   return html`<div class="content home2">
     <${LargeTitle} top eye=${eye} title="Oggi" acts=${html`<button class="btn-icon" aria-label="Cerca in tutte le attività" onClick=${goCerca}><${Icon} n="search" s=${20} /></button>${syncBtn}${avatar}`} />
-    <div class="seg" style="margin-bottom:var(--gap)">${BUS.map(([k, l]) => html`<button class=${bu === k ? 'on' : ''} onClick=${() => setBu(k)}>${l}</button>`)}</div>
+    <div class="seg home-bu" style="margin-bottom:var(--gap)">${BUS.map(([k, l]) => html`<button class=${bu === k ? 'on' : ''} onClick=${() => setBu(k)}>${l}</button>`)}</div>
     <${PrimiPassi} settings=${settings} records=${allRecords} tplOk=${tplOk} hsTplOk=${hsTplOk} lastBackup=${lastBackup} goSettings=${goSettings} goBackup=${goBackup} newAct=${newAct} installEvt=${installEvt} onInstall=${onInstall} />
 
     ${bu === 'sicurezza' ? html`<div class="card"><div class="empty" style="padding:var(--sp-6) var(--sp-3)"><b>Nessuna attività Sicurezza in Nembo</b>Per ora l'app gestisce le attività Ambiente e HSE. Puoi scegliere la business unit predefinita in Impostazioni.</div></div>` : html`
