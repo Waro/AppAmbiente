@@ -76,8 +76,8 @@ function useWide() {
 }
 const LIST_OF = { cli: 'cliList', dda: 'ddaList', mappatura: 'mappaturaList', radon: 'radonList', ra: 'raList', hs: 'hsList', vs: 'vsList', firme: 'firmeList', aria: 'ariaList' };
 const DETAIL_OF = { cliList: 'cli', ddaList: 'dda', mappaturaList: 'mappatura', radonList: 'radon', raList: 'ra', hsList: 'hs', vsList: 'vs', firmeList: 'firme', ariaList: 'aria' };
-const TOP_ROUTES = ['home', 'agenda', 'ddaList', 'mappaturaList', 'raList', 'radonList', 'hsList', 'vsList', 'firmeList', 'ariaList'];
-const ROUTE_TITLE = { home: 'Oggi', ddaList: 'Ambiente · DDA', mappaturaList: 'Mappatura MCA e FAV', raList: 'Sopralluogo RA', radonList: 'Campagne radon', ariaList: 'Monitoraggio aria', aria: 'Monitoraggio aria',
+const TOP_ROUTES = ['home', 'attivita', 'todo', 'agenda', 'ddaList', 'mappaturaList', 'raList', 'radonList', 'hsList', 'vsList', 'firmeList', 'ariaList'];
+const ROUTE_TITLE = { home: 'Oggi', attivita: 'Attività', todo: 'ToDo', ddaList: 'Ambiente · DDA', mappaturaList: 'Mappatura MCA e FAV', raList: 'Sopralluogo RA', radonList: 'Campagne radon', ariaList: 'Monitoraggio aria', aria: 'Monitoraggio aria',
   hsList: 'Sopralluoghi HSE', hs: 'Sopralluogo HSE', vsList: 'Verbali HSE', vs: 'Verbale HSE', firmeList: 'Fogli firme', firme: 'Fogli firme', agenda: 'Programmazione', cerca: 'Cerca', cliList: 'Clienti', cli: 'Cliente', settings: 'Impostazioni', backup: 'Backup', notifiche: 'Notifiche', dda: 'DDA', mappatura: 'Mappatura', ra: 'Sopralluogo RA', radon: 'Campagna radon' };
 
 /* ---------------- menu laterale (tablet in orizzontale e PC) ---------------- */
@@ -90,9 +90,9 @@ const NAV_AREAS = [
 ];
 const NAV_HS = [{ v: 'hsList', d: 'hs', ic: 'helmet', l: 'Sopralluoghi HSE' }, { v: 'vsList', d: 'vs', ic: 'note', l: 'Verbali HSE' }];
 const NAV_TOOLS = [{ v: 'agenda', ic: 'clock', l: 'Programmazione' }, { v: 'cliList', d: 'cli', ic: 'building', l: 'Clienti' }, { v: 'firmeList', d: 'firme', ic: 'sign', l: 'Fogli firme' }, { v: 'backup', ic: 'archive', l: 'Backup' }];
-// tab bar del telefono: Oggi + le quattro aree
-const TABS = [{ v: 'home', ic: 'today', l: 'Oggi' }, { v: 'ddaList', ic: 'leaf', l: 'DDA' }, { v: 'mappaturaList', ic: 'pin', l: 'Mappature' },
-  { v: 'raList', ic: 'shield', l: 'RA' }, { v: 'radonList', ic: 'radon', l: 'Radon' }];
+// tab bar del telefono: Oggi, ToDo e tre aree (dalla v63 la Radon si apre da Oggi → Strumenti e dati)
+const TABS = [{ v: 'home', ic: 'today', l: 'Oggi' }, { v: 'todo', ic: 'todo', l: 'ToDo' }, { v: 'ddaList', ic: 'leaf', l: 'DDA' }, { v: 'mappaturaList', ic: 'pin', l: 'Mappature' },
+  { v: 'raList', ic: 'shield', l: 'RA' }];
 // menu ridotto o esteso: la scelta dell'utente resta; altrimenti ridotto sotto i 1300 px
 function useNavMin() {
   const [min, setMin] = useState(() => {
@@ -104,7 +104,7 @@ function useNavMin() {
 }
 // colori delle icone nel menu laterale esteso: gli stessi del foglio "Nuova attività"
 const SN_COL = {
-  home: 'var(--blue)', ddaList: TIPO_COL.dda, mappaturaList: TIPO_COL.mappatura, raList: TIPO_COL.ra, radonList: TIPO_COL.radon, ariaList: TIPO_COL.aria,
+  home: 'var(--blue)', attivita: 'var(--navy-ink)', todo: 'var(--navy-ink)', ddaList: TIPO_COL.dda, mappaturaList: TIPO_COL.mappatura, raList: TIPO_COL.ra, radonList: TIPO_COL.radon, ariaList: TIPO_COL.aria,
   hsList: TIPO_COL.hs, vsList: TIPO_COL.vs, agenda: 'var(--navy-ink)', firmeList: TIPO_COL.firme, cerca: 'var(--navy-ink)', cliList: TIPO_COL.dda,
   backup: 'var(--text2)', settings: 'var(--text2)',
 };
@@ -123,6 +123,8 @@ function SideNav({ route, go, counts, settings, min, toggle, unreadErr = 0 }) {
     <button class="sn-brand" title="Oggi" onClick=${() => nav('home')}><img class="logo" src="icons/icon-192.png" alt="" /><div><b>Nembo</b>${name && html`<small>${name}</small>`}</div></button>
     <div class="sn-sec">Oggi</div><div class="sn-div"></div>
     ${item({ v: 'home', ic: 'today', l: 'Oggi' }, 0)}
+    ${item({ v: 'attivita', ic: 'kanban', l: 'Attività' }, counts.att)}
+    ${item({ v: 'todo', ic: 'todo', l: 'ToDo' }, counts.todo)}
     ${item({ v: 'cerca', ic: 'search', l: 'Cerca' }, 0)}
     <div class="sn-sec">Aree di lavoro</div>
     ${NAV_AREAS.map(x => item(x, counts[x.d]))}
@@ -138,7 +140,7 @@ function SideNav({ route, go, counts, settings, min, toggle, unreadErr = 0 }) {
     <div class="sn-ver">${APP_VERSION}${sync && html`<br /><span class=${'sn-sync ' + syncPhase}>${sync}</span>`}</div>
   </aside>`;
 }
-const TABS_HS = [{ v: 'home', ic: 'today', l: 'Oggi' }, { v: 'hsList', ic: 'helmet', l: 'HSE' }, { v: 'vsList', ic: 'note', l: 'Verbali' }, { v: 'ddaList', ic: 'leaf', l: 'DDA' }, { v: 'raList', ic: 'shield', l: 'RA' }];
+const TABS_HS = [{ v: 'home', ic: 'today', l: 'Oggi' }, { v: 'todo', ic: 'todo', l: 'ToDo' }, { v: 'hsList', ic: 'helmet', l: 'HSE' }, { v: 'vsList', ic: 'note', l: 'Verbali' }, { v: 'raList', ic: 'shield', l: 'RA' }];
 function TabBar({ route, tab, bu }) {
   const tabs = bu === 'hs' ? TABS_HS : TABS;
   return html`<nav class="tabbar" aria-label="Sezioni" style=${'grid-template-columns:repeat(' + tabs.length + ',1fr)'}>${tabs.map(t => html`<button class=${route.v === t.v ? 'on' : ''} aria-current=${route.v === t.v ? 'page' : null} onClick=${() => tab(t.v)}>
@@ -149,8 +151,9 @@ function App() {
   const wide = useWide();
   const [ready, setReady] = useState(false);
   const [allRecs, setRecords] = useState([]);
-  // le attività; i clienti (tipo 'cli') sono a parte
-  const records = useMemo(() => allRecs.filter(r => r.type !== 'cli'), [allRecs]);
+  // le attività; i clienti (tipo 'cli') e i ToDo (tipo 'todo', v63) sono a parte
+  const records = useMemo(() => allRecs.filter(r => r.type !== 'cli' && r.type !== 'todo'), [allRecs]);
+  const todos = useMemo(() => allRecs.filter(r => r.type === 'todo'), [allRecs]);
   const clienti = useMemo(() => allRecs.filter(r => r.type === 'cli'), [allRecs]);
   setClienti(clienti);
   setRecsNum(records);
@@ -183,7 +186,7 @@ function App() {
     return rs;
   };
   useEffect(() => {
-    reload().then(async rs => { setReady(true); const haDati = rs.some(r => r.type !== 'cli');
+    reload().then(async rs => { setReady(true); const haDati = rs.some(r => r.type !== 'cli' && r.type !== 'todo');
       if (await benvenutoDaMostrare(haDati, await DB.get('settings')).catch(() => false)) setBenvenuto(true);
       novitaDaMostrare(haDati).then(l => l && setNovita(l)).catch(e => console.warn('novità', e)); radonReminders(rs).then(n => n && DB.all().then(setRecords)); Sync.start(); });
     const offRec = Sync.onRecords(() => DB.all().then(setRecords));
@@ -232,14 +235,29 @@ function App() {
   // caricamento subito (v58): al ritorno della rete e all'avvio, le attività delle ultime due settimane
   const recsRef = useRef(allRecs); recsRef.current = allRecs;
   useEffect(() => {
-    const tutte = () => recsRef.current.filter(r => (r.updatedAt || 0) > Date.now() - 14 * 864e5).forEach(r => OdAuto.metti(r));
+    const tutte = () => recsRef.current.filter(r => r.type !== 'todo' && (r.updatedAt || 0) > Date.now() - 14 * 864e5).forEach(r => OdAuto.metti(r));
     const t = setTimeout(tutte, 10000); addEventListener('online', tutte);
     return () => { clearTimeout(t); removeEventListener('online', tutte); };
   }, []);
   const saveRec = useCallback(async rec => {
     await DB.put(rec);
     setRecords(rs => { const i = rs.findIndex(x => x.id === rec.id); if (i < 0) return [...rs, rec]; const c = rs.slice(); c[i] = rec; return c; });
-    Sync.schedule(); OdAuto.metti(rec);
+    Sync.schedule(); if (rec.type !== 'todo') OdAuto.metti(rec);
+  }, []);
+  // ToDo predefiniti quando un'attività cambia stato (v63)
+  useTodoPredef(records, todos, settings, saveRec, ready);
+  // Q da qualunque schermata (PC): apre ToDo con l'inserimento rapido
+  const routeRef = useRef(route); routeRef.current = route; const goRef = useRef(go); goRef.current = go;
+  useEffect(() => {
+    const k = e => {
+      if (e.ctrlKey || e.metaKey || e.altKey || (e.key !== 'q' && e.key !== 'Q')) return;
+      const el = document.activeElement; if (el && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el.isContentEditable)) return;
+      if (document.querySelector('.sheet-ov, .ov')) return;
+      e.preventDefault();
+      if (routeRef.current.v !== 'todo') goRef.current({ v: 'todo' });
+      setTimeout(() => { const i = document.querySelector('.td-qa-in input'); if (i) i.focus(); }, 80);
+    };
+    addEventListener('keydown', k); return () => removeEventListener('keydown', k);
   }, []);
   const delRec = async rec => {
     if (!confirm('Eliminare definitivamente? Foto e allegati vengono cancellati da questo telefono.')) return;
@@ -325,7 +343,7 @@ function App() {
   let body, wideCreate = null;
   if (route.v === 'home') {
     wideCreate = () => setSheet(true);
-    body = html`<${Home} records=${records} settings=${settings} open=${openRec} newAct=${() => setSheet(true)} syncBtn=${syncBtn}
+    body = html`<${Home} records=${records} todos=${todos} saveRec=${saveRec} removeRec=${removeRec} settings=${settings} open=${openRec} newAct=${() => setSheet(true)} syncBtn=${syncBtn}
       avatar=${html`<button class="ava" aria-label=${unreadErr ? `Impostazioni e notifiche, ${unreadErr} ${unreadErr === 1 ? 'errore non letto' : 'errori non letti'}` : 'Impostazioni e notifiche'} onClick=${() => go({ v: 'settings' })}>${initials.toUpperCase() || html`<${Icon} n="gear" s=${20} />`}${unreadErr > 0 && html`<span class="dot">${unreadErr}</span>`}</button>`}
       tplOk=${tplOk} lastBackup=${lastBackup} goList=${v => go({ v })} goSettings=${p => go({ v: 'settings', p: typeof p === 'string' ? p : undefined })} goBackup=${() => go({ v: 'backup' })} goCerca=${() => go({ v: 'cerca' })}
       installEvt=${installEvt} onInstall=${async () => { installEvt.prompt(); await installEvt.userChoice; setInstallEvt(null); }} />`;
@@ -354,6 +372,12 @@ function App() {
     body = split(html`<${HsList} records=${records} acts=${listActs(createHs, 'Nuovo sopralluogo HSE')} activeId=${wide ? route.id : null} open=${id => wide ? select(id) : go({ v: 'hs', id })} create=${createHs} />`,
       dRec && html`<${HsForm} ...${formProps(dRec)} onOpenNew=${openNewRec} onSave=${r => saveRec({ ...r, _new: r._new && hsIsEmpty(r) })} />`,
       ['Nessun sopralluogo selezionato', 'Toccane uno dall\'elenco per aprirlo qui.']);
+  } else if (route.v === 'attivita') {
+    wideCreate = () => setSheet(true);
+    body = html`<${AttivitaView} records=${records} todos=${todos} settings=${settings} saveRec=${saveRec} removeRec=${removeRec} openRec=${openRec} wide=${wide} />`;
+  } else if (route.v === 'todo') {
+    wideCreate = () => { const i = document.querySelector('.td-qa-in input'); if (i) i.focus(); };
+    body = html`<${TodoView} records=${records} todos=${todos} settings=${settings} saveRec=${saveRec} removeRec=${removeRec} wide=${wide} openRec=${openRec} acts=${bell} />`;
   } else if (route.v === 'cerca') {
     body = html`<${Cerca} records=${records} openRec=${openRec} acts=${null} />`;
   } else if (route.v === 'agenda') {
@@ -411,7 +435,8 @@ function App() {
   const splitActive = wide && !!DETAIL_OF[route.v];
   // numeri del menu laterale: solo le attività aperte (i sopralluoghi conclusi non contano)
   const aperte = t => records.filter(r => r.type === t && attAperta(r, od)).length;
-  const counts = { dda: aperte('dda'), mappatura: aperte('mappatura'), cli: clienti.length, ra: aperte('ra'), hs: aperte('hs'), vs: aperte('vs'), firme: aperte('firme'), aria: aperte('aria'), radon: aperte('radon') };
+  const counts = { att: records.filter(r => AVANZ_TIPI.includes(r.type) && !r._new && avanzDi(r) === 'da_revisionare').length,
+    todo: todos.filter(t => todoAperto(t) && t.data && t.data <= today()).length, dda: aperte('dda'), mappatura: aperte('mappatura'), cli: clienti.length, ra: aperte('ra'), hs: aperte('hs'), vs: aperte('vs'), firme: aperte('firme'), aria: aperte('aria'), radon: aperte('radon') };
   return html`<div class=${'frame' + (wide ? ' wide' : '')}>
     ${wide && html`<${SideNav} route=${route} go=${go} counts=${counts} settings=${settings} min=${navMin} toggle=${toggleNav} unreadErr=${unreadErr} />`}
     <div class=${'shell' + (splitActive ? ' split' : '') + (!wide && isTop ? ' has-tabs' : '') + (Sel.active ? ' sel-on' : '')}>

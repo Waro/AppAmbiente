@@ -109,3 +109,18 @@ Una voce per decisione. Le date mancanti sono segnate: la decisione è precedent
 - **Data:** 2026-11-10.
 - **Contesto:** Copilot non legge il repository da solo e la sua proposta v51 partiva dalla v49.
 - **Decisione:** a Copilot si allega sempre lo ZIP del codice attuale; le proposte si uniscono con un merge a tre vie e si ricontrollano su Rilievo.
+
+## D-42 — Stato di avanzamento, Kanban e ToDo legati alle attività
+- **Data:** 2026-11-23.
+- **Contesto:** da PC Nembo serviva come gestionale: consultare quanto fatto in campo senza generare i report, revisionare, programmare e seguire cosa resta da fare.
+- **Decisione:** ogni attività ha uno stato di avanzamento (Programmata, In corso, Report, Da revisionare, Inviata, Conclusa), calcolato finché non lo si sceglie a mano dal Kanban o dal dettaglio. Un solo elenco «Attività» per tutti i tipi, con il tipo come etichetta filtrabile (non un elenco per tipo). I ToDo sono record a sé collegati facoltativamente a un'attività; quando un'attività entra in uno stato si aggiungono i ToDo predefiniti per tipo e stato; spostare un'attività con ToDo aperti mostra solo un avviso. Colori di priorità dai toni dei tag, mai rosso, ambra o verde. Il dettaglio da PC è in sola lettura; «Modifica» apre le schede dell'attività.
+- **Alternative scartate:** un elenco per tipo di attività (Kanban e filtri più complicati); blocco del Kanban con ToDo aperti; priorità in rosso, arancio e blu come in Todoist (si confondono con gli stati); modifica dei campi direttamente nel dettaglio (doppione delle schede, più errori).
+- **Conseguenze:** nuovi campi facoltativi `avanzamento` e `avanzMan`, nuovo tipo di record `todo`, chiave `kv.todo_visti`; sul telefono ToDo prende il posto di Radon nella barra in basso (Radon da Oggi → Strumenti e dati).
+
+## D-43 — Dati pronti per SharePoint senza cambiare l'archivio di oggi
+- **Data:** 2026-11-23.
+- **Contesto:** il passaggio agli elenchi SharePoint dipende dal nuovo tenant e dall'IT; intanto le funzioni da gestionale servono subito.
+- **Decisione:** l'archivio resta IndexedDB sul dispositivo con la sincronizzazione su OneDrive. I nuovi dati (stato, ToDo) hanno già la forma degli elenchi SharePoint (`DATA_MODEL.md`, § 8 bis): id stabili, `updatedAt` come versione, ricerca verso l'attività. Il passaggio aggiungerà un secondo modo di salvare accanto a `sync.js`, senza toccare le schermate.
+- **App nativa:** sul PC non serve; sul telefono porterebbe notifiche dei ToDo all'ora giusta e file più al sicuro, ma l'accesso Microsoft nativo richiede un URI di reindirizzamento in Entra ID: da chiedere nella call con l'IT. Fino ad allora i promemoria dei ToDo sono dentro l'app (Oggi, contatori), non notifiche di sistema.
+- **Conseguenze:** nessuna migrazione dei record esistenti; quando arriverà SharePoint, le colonne Stato e Tipo e l'elenco DaFare si creano come nel § 8 bis.
+

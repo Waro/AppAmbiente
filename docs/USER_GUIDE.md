@@ -30,6 +30,10 @@ Su un secondo dispositivo collega prima OneDrive: se c'è già la tua configuraz
 | Sopralluogo HSE | + → **Sopralluogo HSE** → Avanti → **Primo sopralluogo** (Esteso o Sintetico lo scegli in Anagrafica o nel Riepilogo, prima di generare il report), oppure Word, JSON o un report in Nembo (periodico) |
 | Osservazioni HSE | scheda **Osservazioni**: appunti in cima; scrivi, detta, fotografa; dai il tag del capitolo e poi quello della sottosezione o voce; tieni premuta un'osservazione (su PC «Seleziona») per taggarne più insieme; la × sulla miniatura elimina la foto |
 | Check-list HSE | scheda **Check-list**: verde con osservazioni, rosso senza osservazioni, grigio non pertinente |
+| Vedere il lavoro da PC (v63) | menu laterale → **Attività**: cerca e filtra, clicca una riga per vedere a destra cosa è stato raccolto, **Modifica** per aprire l'attività; il selettore passa al **Kanban**, dove trascini le card per cambiare lo stato |
+| ToDo (v63) | **ToDo** (nella barra in basso sul telefono, nel menu da PC): scrivi «domani 9 #Telefonate p1 @Via Roma» e Invio; scorri a sinistra per rimandare o eliminare; da PC il tasto **Q** apre l'inserimento da qualunque schermata |
+| ToDo automatici | Impostazioni → **ToDo predefiniti**: per ogni tipo di attività scegli i ToDo da aggiungere quando entra in uno stato |
+| Programmare da PC | Programmazione → **Tabella**: modifica le righe sul posto, **Duplica** per un immobile simile, riga in fondo per una nuova attività |
 | Più attività insieme | tieni premuta una riga (su PC «Seleziona»), tocca le altre → Carica su OneDrive |
 | Chiudere con mancanze | ⋯ Opzioni → **Concludi l'attività** (si riapre dalle Opzioni) |
 | Backup | Backup → **Salva su OneDrive** (o Crea backup completo senza OneDrive) |

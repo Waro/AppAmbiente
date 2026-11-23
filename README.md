@@ -170,6 +170,13 @@ Nuova attività HSE: Nuova attività → *Verbale HSE* (codice `VS-AAAA-NNN`). D
 - `js/vs-word.js` (`vsBuildDocx`, `vsWord`): una scheda per nota, una per pagina; foto nella colonna «Documentazione fotografica». Il sommario si aggiorna all'apertura in Word.
 - Verbale: in Anagrafica *Dati del report* (titolo, fondo, data report, redatto, verificato, protocollo, revisione, procura, foto di copertina), *Identificazione dell'asset* (descrizione area, presenti, inquadramento), *Sopralluoghi precedenti*; nelle note *Situazione rilevata* e *Attività di miglioramento*. *Genera Word* al centro della barra in Anagrafica e in Opzioni; il Word va anche nello ZIP e su OneDrive.
 
+## Attività da PC, Kanban e ToDo (v63)
+
+- **Attività** (menu laterale, da 1000 px): tutte le attività in una tabella con ricerca e filtri (BU, tipo, stato, periodo). Clic su una riga: a destra il riepilogo in sola lettura (raccolto in campo, foto, appunti, ToDo, caricamento su OneDrive); «Modifica» apre l'attività. Il selettore passa al **Kanban**: Programmata, In corso, Report, Da revisionare, Inviata, Conclusa; si trascinano le card.
+- **ToDo**: inserimento rapido (`domani 9 #lista p1 @indirizzo`), viste Oggi, 7 giorni, Tutti, Per attività, sottoattività, ripetizione. Sul telefono è nella barra in basso; si scorre a sinistra per rimandare o eliminare. Da PC il tasto Q apre l'inserimento rapido.
+- **ToDo predefiniti** (Impostazioni → ToDo predefiniti): per ogni tipo di attività e stato, i ToDo da aggiungere da soli.
+- **Programmazione → Tabella** (da PC): quattro settimane modificabili sul posto, con Duplica.
+
 ## Programmazione
 
 Ogni attività ha **data, ora di inizio, durata prevista e stato** (campi accanto alla Data; nel radon per ciascun momento).

@@ -211,6 +211,19 @@ flowchart TB
 
 «Concludi l'attività» (v50) salva `conclusa = { il, motivo, mancanze }`: l'attività esce da «Da completare» e dai numeri del menu anche con foto o manufatti mancanti; nell'RA i manufatti senza stato restano «Non visionato». Si riapre dalle Opzioni.
 
+## 8b. Stato di avanzamento, Kanban e ToDo (v63)
+
+```mermaid
+flowchart LR
+  P[Programmata] -->|data arrivata| C[In corso] -->|Concludi attività| R[Report] -->|a mano| V[Da revisionare] -->|a mano| I[Inviata] -->|a mano| F[Conclusa]
+```
+
+- Finché nessuno lo sceglie, lo stato si calcola (`avanzBase`): Report con `conclusa`, Programmata con la data futura, altrimenti In corso; per il radon dallo stato della campagna. Dal Kanban (trascinando) o dal dettaglio si sceglie a mano (`avanzMan`): da lì vale quello.
+- Al cambio di stato `useTodoPredef` confronta `kv.todo_visti` e crea i ToDo predefiniti del tipo per quello stato (id fisso, niente doppioni tra dispositivi). Al primo avvio registra gli stati senza creare nulla.
+- Spostare un'attività con ToDo aperti apre l'avviso con i ToDo da spuntare: «Annulla» o «Sposta comunque». Non blocca mai.
+- Cambiare lo stato aggiorna `updatedAt` (si sincronizza) ma non rende l'attività «da ricaricare» su OneDrive (`odTieniCaricata`): i file non cambiano.
+- ToDo: fatto un ToDo ricorrente nasce il successivo; eliminare un ToDo non chiede conferma (avviso con «Annulla»).
+
 ## 9. Aggiornamento dell'app
 
 ```mermaid

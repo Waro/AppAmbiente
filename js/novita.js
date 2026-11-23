@@ -3,6 +3,15 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
+  { v: 63, data: '2026-11-23', tipo: 'minore', titolo: 'Attività da PC, Kanban e ToDo',
+    voci: [
+      'Nel menu laterale c’è «Attività»: tutte le attività in una tabella, con ricerca e filtri per BU, tipo, stato e periodo. Cliccandone una vedi a destra cosa è stato raccolto in campo, senza generare il report; «Modifica» la apre con le sue schede.',
+      'Con il selettore passi alla vista Kanban: sei colonne, da Programmata a Conclusa. Trascina una card per cambiare lo stato; Programmata, In corso e Report si aggiornano anche da soli.',
+      'Nuovi ToDo, come in Todoist: scrivi «domani 9 #Telefonate p1 @Via Roma» e Nembo riconosce data, ora, lista, priorità e attività. Hanno sottoattività, note e ripetizione, e li trovi anche sul telefono: nella barra in basso c’è ToDo al posto di Radon, che si apre da Oggi → Strumenti e dati.',
+      'Quando un’attività cambia stato, Nembo aggiunge i suoi ToDo predefiniti: li scegli in Impostazioni → ToDo predefiniti. Se sposti un’attività con ToDo aperti, un avviso te lo ricorda.',
+      'Sul telefono scorri un ToDo a sinistra per rimandarlo a domani o eliminarlo. Da PC il tasto Q apre l’inserimento rapido da qualunque schermata.',
+      'In Programmazione, da PC, la vista Tabella mostra quattro settimane da modificare sul posto: data, ora, indirizzo, città, drone e stato. Duplica una riga per i giri con più immobili simili.',
+      'In Oggi c’è la card «ToDo di oggi».' ] },
   { v: 62, data: '2026-11-19', tipo: 'minore', titolo: 'Verbale HSE: importa i dati da un file',
     voci: [
       'Nel Verbale HSE, in Opzioni → Dati e documenti, «Carica file JSON» compila commessa, cliente, sito, città, indirizzo e dati del report, e aggiunge planimetrie e documenti da consultare. Si compilano solo i campi vuoti: quello che hai già scritto non cambia.',

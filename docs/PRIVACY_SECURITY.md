@@ -22,6 +22,7 @@ Dalla colonna «Dato personale» di [DATA_MODEL.md](DATA_MODEL.md).
 | Foto | luoghi; possono riprendere persone o targhe | store `blobs` | documentazione fotografica |
 | Coordinate GPS | aree REC (luoghi, non persone) | `recs[].lat/lon` | posizione delle aree |
 | Appunti, anche dettati | testo libero | campi `appunti`, note | promemoria del sopralluogo |
+| ToDo (v63): titolo, note, sottoattività | testo libero (possono citare persone, per esempio un referente da chiamare) | record `todo` sul dispositivo e in `_nembo/records/` | promemoria del lavoro; non vanno nelle cartelle leggibili di OneDrive né nei documenti generati |
 | Account Microsoft (nome, email) | utente | cache di MSAL in `localStorage` | accesso a OneDrive |
 
 Dove viaggiano: IndexedDB del dispositivo; OneDrive aziendale dell'utente (cartelle leggibili, `_nembo/`, configurazione, backup); file ZIP e PDF che l'utente condivide. Nessun invio ad altri servizi, tranne l'audio della dettatura (§ 4).

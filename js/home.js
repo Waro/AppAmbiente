@@ -106,7 +106,7 @@ function useCritOggi() {
   return n;
 }
 
-function Home({ records: allRecords, settings, open, newAct, syncBtn, avatar, tplOk, lastBackup, goList, goSettings, goBackup, goCerca, installEvt, onInstall }) {
+function Home({ records: allRecords, todos = [], saveRec, removeRec, settings, open, newAct, syncBtn, avatar, tplOk, lastBackup, goList, goSettings, goBackup, goCerca, installEvt, onInstall }) {
   const od = useOdSynced();
   const crit = useCritOggi();
   const [bu, setBu] = useState(settings.buDefault || 'ambiente');
@@ -225,10 +225,12 @@ function Home({ records: allRecords, settings, open, newAct, syncBtn, avatar, tp
       : html`<div class="card" style="padding:0">${(tutte || Sel.active ? sosp : sosp.slice(0, 3)).map(x => riga(x.ic, placeLabel(x.r), x.sub, () => open(x.r), { st: x.st, sel: x.r }))}</div>`}
 
     </div>
+    <div class="hg-t"><${HomeTodo} todos=${todos} records=${allRecords} saveRec=${saveRec} removeRec=${removeRec} goList=${goList} /></div>
     <div class="hg-s"><div class="sec-h home-h"><h2>Strumenti e dati</h2></div>
     <div class=${'card' + (stale ? ' stale' : '')} style="padding:0">
       ${riga('clock', 'Programmazione', agT.length ? `${agT.length} ${agT.length === 1 ? 'attività' : 'attività'} oggi${agT.map(it => it.ora).filter(Boolean).sort()[0] ? ' · la prima alle ' + agT.map(it => it.ora).filter(Boolean).sort()[0] : ''}` : 'Nessuna attività oggi', () => goList('agenda'))}
       ${riga('building', 'Clienti', _clienti.length ? _clienti.length + (_clienti.length === 1 ? ' cliente' : ' clienti') : 'Referenti e preferenze', () => goList('cliList'))}
+      ${bu === 'ambiente' && allRecords.some(r => r.type === 'radon') && riga('radon', 'Campagne radon', allRecords.filter(r => r.type === 'radon').length + ' campagne' + (rDays != null ? ' · prossimo ritiro ' + (rDays < 0 ? 'in ritardo' : 'tra ' + rDays + ' gg') : ''), () => goList('radonList'))}
       ${bu === 'ambiente' && allRecords.some(r => r.type === 'aria') && riga('air', 'Monitoraggio aria', allRecords.filter(r => r.type === 'aria').length + ' attività', () => goList('ariaList'))}
       ${allRecords.some(r => r.type === 'firme') && riga('sign', 'Fogli firme', allRecords.filter(r => r.type === 'firme').length + ' fuori dalle attività', () => goList('firmeList'))}
       ${riga('archive', 'Backup', giorni == null ? (records.length ? 'Mai fatto · fanne uno ora' : 'Copia dei dati su OneDrive') : giorni === 0 ? 'Fatto oggi' : `Ultimo ${giorni === 1 ? 'ieri' : giorni + ' giorni fa'}${stale ? ' · fanne uno ora' : ''}`, goBackup, { blu: stale })}
@@ -387,3 +389,19 @@ async function radonReminders(records) {
 }
 
 
+
+/* ToDo in Oggi (v63): scaduti e di oggi, con la spunta; «Tutti» apre ToDo */
+function HomeTodo({ todos, records, saveRec, removeRec, goList }) {
+  const A = useTodoAzioni(saveRec, removeRec);
+  const [fatti, setFatti] = useState(() => new Set());
+  const t0 = today();
+  const L = todos.filter(t => (todoAperto(t) || fatti.has(t.id)) && t.data && t.data <= t0)
+    .sort((a, b) => (a.data || '').localeCompare(b.data || '') || (a.prio || 4) - (b.prio || 4));
+  const byId = Object.fromEntries(records.map(r => [r.id, r]));
+  const aperti = L.filter(todoAperto).length;
+  return html`<div class="sec-h home-h"><h2>ToDo di oggi${aperti > 0 && html` <span class="n">${aperti}</span>`}</h2><button class="btn link" onClick=${() => goList('todo')}>Tutti</button></div>
+    ${!L.length ? html`<div class="card ok-card"><span class="t"><b>Niente da fare oggi</b><small>I ToDo con la data di oggi e quelli scaduti compaiono qui.</small></span><span class="ok-ic" aria-label="Niente da fare oggi"><${Icon} n="check" s=${20} w=${2.4} /></span></div>`
+      : html`<div class="card td-card">${L.slice(0, 5).map(t => html`<${TodoRiga} key=${t.id} t=${t} att=${byId[t.att]} onOpen=${() => goList('todo')} onSwipe=${() => {}}
+          onToggle=${x => { if (!x.fatto) setFatti(f => new Set([...f, x.id])); A.toggle(x); }} />`)}
+        ${L.length > 5 && html`<button class="prow td-altri" onClick=${() => goList('todo')}><span class="t"><b>e altri ${L.length - 5}</b></span><${Icon} n="right" s=${18} /></button>`}</div>`}`;
+}

@@ -10,6 +10,8 @@ const TIPS_KEY = 'nembo_tips';
 const tipsVisti = () => { try { return JSON.parse(localStorage.getItem(TIPS_KEY) || '[]'); } catch (e) { return []; } };
 const tipsReset = () => { try { localStorage.removeItem(TIPS_KEY); } catch (e) {} };
 const SUGGERIMENTI = {
+  attivita: { t: 'Attività', s: 'Tutte le attività in un elenco: cerca, filtra e clicca una riga per vedere a destra cosa è stato raccolto in campo. Con il selettore passi al Kanban e trascini le card per cambiare lo stato.' },
+  todo: { t: 'ToDo', s: 'Scrivi cosa c’è da fare: «domani 9», «#lista», «p1» e «@indirizzo» si riconoscono da soli. Sul telefono scorri a sinistra per rimandare o eliminare.' },
   programmazione: { t: 'Programmazione', s: 'Tocca una fascia vuota o + per programmare un sopralluogo o un appuntamento. In alto passi da Giorno a Settimana e Mese. La durata proposta per ogni tipo si cambia in Impostazioni → Programmazione.' },
   planimetrie: { t: 'Planimetrie', s: 'Apri una pianta per scriverci sopra: penna, evidenziatore, forme, testo e gomma sono nella barra degli strumenti. Con «Solo penna» il dito sposta la pianta e scrive solo la penna del tablet.' },
   campioni: { t: 'Campioni', s: 'I codici si assegnano da soli: A1, A2… per MCA e F1, F2… per FAV; nei terreni la sigla è S con il numero del sondaggio e la profondità, per esempio S1 0,5-1,0 m. I manufatti non campionati sono NC1, NC2…, ognuno con il campione di riferimento. Dopo la prima foto di un campione si apre la pianta del suo piano, con l’etichetta pronta; il tasto Planimetria la apre quando vuoi. Se elimini un campione per sbaglio, tocca «Annulla» nell’avviso in basso.' },
@@ -80,7 +82,7 @@ function BenvenutoSheet({ settings, setSettings, onClose }) {
 /* ---------------- primi passi in due fasi ---------------- */
 const onbHidden = () => { try { return localStorage.getItem('nembo_onb') === 'hide'; } catch (e) { return false; } };
 const onbReset = () => { try { localStorage.removeItem('nembo_onb'); } catch (e) {} };
-const isActivity = r => r.type !== 'cli' && r.type !== 'app' && !r._new;
+const isActivity = r => r.type !== 'cli' && r.type !== 'app' && r.type !== 'todo' && !r._new;
 function PrimiPassi({ settings, records = [], tplOk, hsTplOk, lastBackup, goSettings, goBackup, newAct, installEvt, onInstall }) {
   const [, force] = useState(0);
   const [hide, setHide] = useState(onbHidden);

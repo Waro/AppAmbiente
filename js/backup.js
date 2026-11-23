@@ -7,6 +7,7 @@ function recordTitle(r) {
 }
 function recordLabel(r) {
   if (r.type === 'app') return slug(['Appuntamento', r.data, r.titolo].filter(Boolean).join('_')) || r.id;
+  if (r.type === 'todo') return slug(['ToDo', r.titolo].filter(Boolean).join('_')) || r.id;
   return r.type === 'dda' || r.type === 'mappatura' || r.type === 'ra' || r.type === 'hs' || r.type === 'vs' || r.type === 'firme' || r.type === 'aria' ? slug([r.codice, r.cliente, r.sito || placeAddr(r)].filter(Boolean).join('_'))
     : slug(['Radon', r.commessa, r.cliente, r.citta].filter(Boolean).join('_')) || r.id;
 }
@@ -26,7 +27,7 @@ async function buildZip(records, settings, withSettings) {
     zip.file(full, b.blob); files[id] = { path: full, type: b.type, name: b.name, sha256: await sha256(b.blob) };
   };
   for (const r of records) {
-    if (r.type === 'cli') continue; // i clienti vanno solo nel manifest
+    if (r.type === 'cli' || r.type === 'todo') continue; // clienti e ToDo vanno solo nel manifest
     const dir = recordLabel(r) + '/';
     if (r.type === 'ra') {
       for (const m of r.manufatti) for (const [k, f] of m.foto.entries()) await addBlob(f, `${dir}foto/${slug(m.codice) || 'manufatto'}_${k + 1}.jpg`);
@@ -119,7 +120,7 @@ async function recordFiles(r, settings) {
     for (const d of r.rapporti) await add(d.blobId, d.nome.replace(/\.[^.]+$/, ''));
   } else if (r.type === 'vs') {
     for (const x of vsPhotos(r)) await add(x.id, x.name);
-  } else if (r.type === 'firme' || r.type === 'aria' || r.type === 'app') {
+  } else if (r.type === 'firme' || r.type === 'aria' || r.type === 'app' || r.type === 'todo') {
     // solo fogli firme / monitoraggio aria
   } else {
     for (const x of r.recs) for (const [k, f] of x.foto.entries()) await add(f, `${x.nome}_${k + 1}`);

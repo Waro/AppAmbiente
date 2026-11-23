@@ -34,6 +34,7 @@ const SET_PAGES = {
   dispositivo: { l: 'Dati su questo dispositivo', ic: 'archive' },
   campioni: { l: 'Scheda campioni', ic: 'pin', c: 'var(--t-map)' },
   hse: { l: 'Sopralluoghi HSE', sub: 'Valori proposti', t: 'Sopralluoghi HSE · valori proposti', ic: 'helmet', c: 'var(--t-hse)' },
+  todo: { l: 'ToDo predefiniti', sub: 'Per tipo e stato', t: 'ToDo predefiniti', ic: 'todo' },
   programmazione: { l: 'Programmazione', sub: 'Durate tipiche', t: 'Programmazione · durate tipiche', ic: 'today', c: 'var(--t-app)' },
   firme: { l: 'Fogli firme', ic: 'pen', c: 'var(--t-firme)' },
   aria: { l: 'Monitoraggio aria', ic: 'air', c: 'var(--t-aria)' },
@@ -45,7 +46,7 @@ const SET_PAGES = {
 const SET_GROUPS = [
   { h: 'Generali', items: ['aspetto', 'foto', 'novita'] },
   { h: 'Dati e OneDrive', items: ['config', 'onedrive', 'modelli', 'dispositivo'] },
-  { h: 'Attività', items: ['campioni', 'hse', 'programmazione', 'firme', 'aria', 'radon'] },
+  { h: 'Attività', items: ['campioni', 'hse', 'todo', 'programmazione', 'firme', 'aria', 'radon'] },
   { h: 'Supporto', items: ['guida', 'assistenza', 'info'] },
 ];
 
@@ -155,6 +156,7 @@ function Settings({ settings, setSettings, onTemplates, go, page, wide, unreadEr
         <select value=${String(durataBase(k, s))} onChange=${e => set({ durate: { ...(s.durate || {}), [k]: +e.target.value } })}>
           ${DUR_OPT.map(m => html`<option value=${m}>${fmtDur(m)}</option>`)}</select></label>`)}
     </div></div>`;
+      case 'todo': return html`<${TodoPredefCard} s=${s} set=${set} />`;
       case 'firme': return html`<${FirmeSettings} s=${s} set=${set} />`;
       case 'aria': return html`<${AriaSettings} s=${s} set=${set} />`;
       case 'radon': return html`<div class="card"><${Inp} label="Livello di riferimento (Bq/m³)" type="number" inputmode="numeric" value=${s.livelloRif} set=${v => set({ livelloRif: num(v) || 300 })} /></div>`;
@@ -250,7 +252,7 @@ const ARCH_MESI = [[6, '6 mesi'], [12, '1 anno'], [24, '2 anni']];
 async function archiviabili(records, mesi, od) {
   if (!Sync.enabled()) return [];
   const st = (await DB.get('sync_state')) || {}, lim = Date.now() - mesi * 30.44 * 86400000;
-  return records.filter(r => !r._new && r.type !== 'cli' && r.type !== 'app' && !attAperta(r, od) && (r.updatedAt || 0) < lim
+  return records.filter(r => !r._new && r.type !== 'cli' && r.type !== 'app' && r.type !== 'todo' && !attAperta(r, od) && (r.updatedAt || 0) < lim
     && st[r.id] && !st[r.id].deleted && (r.updatedAt || 0) <= (st[r.id].v || 0));
 }
 function ArchiviaCard() {

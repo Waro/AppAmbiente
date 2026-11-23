@@ -242,7 +242,7 @@ async function odRecordItems(r, settings) {
   } else if (r.type === 'vs') {
     vsPhotos(r).forEach(x => photo(x.id, 'note', x.name));
     Object.entries(r.img || {}).forEach(([k, v]) => v && photo(v, 'immagini', k));
-  } else if (r.type === 'firme' || r.type === 'aria' || r.type === 'app') {
+  } else if (r.type === 'firme' || r.type === 'aria' || r.type === 'app' || r.type === 'todo') {
     // solo fogli firme / monitoraggio aria: aggiunti sotto
   } else {
     r.recs.forEach(x => x.foto.forEach((f, k) => photo(f, 'foto', `${x.nome}_${k + 1}`)));

@@ -201,7 +201,9 @@ function useSwipe(fn) {
 
 function Agenda({ records, settings, saveRec, openRec, removeRec, bell }) {
   const [day, setDay] = useState(() => { try { return sessionStorage.getItem('nembo_ag') || today(); } catch (e) { return today(); } });
-  const [view, setView] = useState(() => { try { return localStorage.getItem('nembo_ag_v') || 'day'; } catch (e) { return 'day'; } });
+  const wideAg = useWide();
+  const [view0, setView] = useState(() => { try { return localStorage.getItem('nembo_ag_v') || 'day'; } catch (e) { return 'day'; } });
+  const view = view0 === 'tab' && !wideAg ? 'week' : view0; // la tabella è solo per PC e tablet in orizzontale
   const [sel, setSel] = useState(null);     // elemento toccato
   const [slot, setSlot] = useState(null);   // fascia vuota toccata { data, ora }
   const [add, setAdd] = useState(null);     // foglio "Nuovo": { data, ora, tab, rec }
@@ -315,10 +317,11 @@ function Agenda({ records, settings, saveRec, openRec, removeRec, bell }) {
     <${LargeTitle} top eye=${view === 'month' ? 'Mese' : view === 'week' ? 'Settimana' : new Date(day + 'T12:00:00').toLocaleDateString('it-IT', { weekday: 'long' })} title="Programmazione" acts=${html`${plusBtn}${bell}`} />
     <${Suggerimento} id="programmazione" />
     <div class="ag-bar">
-      <div class="seg ag-views">${VISTE.map(([k, l]) => html`<button key=${k} class=${view === k ? 'on' : ''} onClick=${() => setView(k)}>${l}</button>`)}</div>
+      <div class="seg ag-views">${(wideAg ? [...VISTE, ['tab', 'Tabella']] : VISTE).map(([k, l]) => html`<button key=${k} class=${view === k ? 'on' : ''} onClick=${() => setView(k)}>${l}</button>`)}</div>
       ${!(view === 'day' ? day === today() : view === 'week' ? week.includes(today()) : today() >= mFrom && today() < mTo) && html`<button class="chip-btn" onClick=${() => setDay(today())}>Oggi</button>`}
     </div>
-    <div class="ag-wrap"><div class="ag-main">
+    ${view === 'tab' ? html`<${AgTabella} items=${items} day=${day} setDay=${setDay} records=${records} settings=${settings} saveRec=${saveRec} put=${put} openIt=${openIt} onJson=${() => pickJson(null)} />
+      <input ref=${fileRef} type="file" accept=".json,application/json" hidden onChange=${loadJson} />` : html`<div class="ag-wrap"><div class="ag-main">
       <div class="ag-mon"><b>${meseL(view === 'week' || view === 'day' ? (week[0].slice(0, 7) === week[6].slice(0, 7) ? week[0] : day) : day)}</b>
         ${view !== 'day' && html`<div class="row" style="gap:var(--sp-2)"><button class="btn-icon" aria-label=${view === 'month' ? 'Mese precedente' : 'Settimana precedente'} onClick=${() => step(-1)}><${Icon} n="back" s=${18} /></button>
           <button class="btn-icon" aria-label=${view === 'month' ? 'Mese successivo' : 'Settimana successiva'} onClick=${() => step(1)}><${Icon} n="right" s=${18} /></button></div>`}</div>
@@ -346,7 +349,7 @@ function Agenda({ records, settings, saveRec, openRec, removeRec, bell }) {
       ${untimed.length ? html`<div class="ag-chips">${untimed.map(it => chip(it, view !== 'day'))}</div>` : html`<div class="ag-empty">Nessuna attività senza ora.</div>`}
       <div class="sec-h"><h3>Prossime senza ora</h3></div>
       ${daProgr.length ? html`<div class="ag-chips">${daProgr.map(it => chip(it, true))}</div>` : html`<div class="ag-empty">Niente da programmare più avanti.</div>`}
-    </aside></div>
+    </aside></div>`}
     ${sel && html`<${AgEvSheet} it=${items.find(x => x.key === sel.key) || sel} onClose=${() => setSel(null)} put=${put}
       onOpen=${() => { const it = items.find(x => x.key === sel.key) || sel; setSel(null); openIt(it); }} onMove=${() => { setPlace(sel); setSel(null); }}
       onDelete=${async () => { if (!confirm('Eliminare l\'appuntamento?')) return; await removeRec(sel.rec); setSel(null); toast('Appuntamento eliminato'); }} />`}
@@ -467,4 +470,62 @@ function AgAddSheet({ start, records, settings, onSave, onDelete, onJson, onClos
         ${!ed && tab === 'att' && html`<button class="btn block" onClick=${onJson}><${Icon} n="file" s=${18} /> Programma da un file JSON</button>`}
       </div>
     </div></div></div>`;
+}
+
+/* ---------------- Programmazione da PC: tabella (v63) ----------------
+   Quattro settimane da lunedì: ogni riga si modifica sul posto (data, ora, indirizzo, città, drone, stato) e si salva da sola.
+   «Duplica» copia la riga (giri con più immobili simili); in fondo una riga nuova per programmare un'attività. */
+const agTipoKey = r => r.type === 'dda' ? 'dda' + (r.fase || 1) : r.type === 'hs' ? (r.daScegliere === 'periodico' || Object.keys(r.base || {}).length ? 'hsPeriodico' : 'hsPrimo') : r.type;
+function AgTabella({ items, day, setDay, records, settings, saveRec, put, openIt, onJson }) {
+  const from = mondayOf(day), to = dayShift(from, 28);
+  const L = items.filter(it => it.data >= from && it.data < to).sort((a, b) => a.data.localeCompare(b.data) || (a.ora || '99').localeCompare(b.ora || '99'));
+  const vuota = { tipo: 'ra', data: dayShift(from, 7) > today() ? today() : from, ora: '', indirizzo: '', citta: '' };
+  const [n, setN] = useState(vuota);
+  const setRec = (it, p) => saveRec({ ...it.rec, ...p, updatedAt: Date.now() });
+  const duplica = async it => {
+    const r = it.rec; if (r.type === 'app') { await saveRec({ ...r, id: uid('ap'), createdAt: Date.now(), updatedAt: Date.now() }); toast('Riga duplicata'); return; }
+    const c = newOfType(agTipoKey(r), records, settings, { data: it.data, ora: it.ora, durata: it.durata, stato: it.stato, cliente: r.cliente, commessa: r.commessa, citta: r.citta, indirizzo: '', sito: '', drone: r.drone });
+    await saveRec(c); toast('Riga duplicata: indica l\'indirizzo');
+  };
+  const aggiungi = async () => {
+    if (!n.data) { toast('Indica la data'); return; }
+    const tipo = (PIANO_TIPI[n.tipo] || [n.tipo])[0];
+    const r = newOfType(n.tipo, records, settings, { data: n.data, ora: n.ora, durata: durataBase(tipo, settings), stato: '', indirizzo: n.indirizzo.trim(), citta: n.citta.trim() });
+    await saveRec(r); toast('Attività programmata · ' + fmtD(n.data)); setN({ ...vuota, tipo: n.tipo, data: n.data });
+  };
+  const giorni = [...new Set(L.map(it => it.data))];
+  return html`<div class="ag-tab">
+    <div class="ag-tab-bar"><button class="btn-icon" aria-label="Settimane precedenti" onClick=${() => setDay(dayShift(from, -28))}><${Icon} n="back" s=${18} /></button>
+      <b>${fmtD(from).slice(0, 5)} – ${fmtD(dayShift(to, -1))}</b>
+      <button class="btn-icon" aria-label="Settimane successive" onClick=${() => setDay(dayShift(from, 28))}><${Icon} n="right" s=${18} /></button>
+      <span class="att-n">${L.length} ${L.length === 1 ? 'impegno' : 'impegni'} · ${giorni.length} ${giorni.length === 1 ? 'giorno' : 'giorni'} · ${L.filter(it => it.drone).length} con drone</span>
+      <button class="chip-btn" onClick=${onJson}><${Icon} n="file" s=${15} /> Importa JSON</button></div>
+    <div class="card att-tab"><div class="att-scroll"><div class="ag-rows">
+      <div class="ag-th"><span>Data</span><span>Ora</span><span>Attività</span><span>Indirizzo</span><span>Città</span><span>Opzioni</span><span>Stato</span><span></span></div>
+      ${L.map(it => { const r = it.rec, app = it.tipo === 'app', mom = it.i != null;
+        return html`<div class="ag-tr" key=${it.key}>
+          <input class="inp" type="date" value=${it.data} aria-label="Data" onChange=${e => e.target.value && put(it, { data: e.target.value })} />
+          <input class="inp" type="time" value=${it.ora} aria-label="Ora" onChange=${e => put(it, { ora: e.target.value })} />
+          <button class="ag-tt" onClick=${() => openIt(it)} style=${'--c:' + TIPI_AG[it.tipo].c}><i></i><span>${it.titolo}</span></button>
+          ${app ? html`<input class="inp" value=${r.luogo || ''} placeholder="Luogo" aria-label="Luogo" onChange=${e => setRec(it, { luogo: e.target.value })} /><span></span>`
+            : html`<input class="inp" value=${r.indirizzo || ''} placeholder="Indirizzo" aria-label="Indirizzo" onChange=${e => setRec(it, { indirizzo: e.target.value })} />
+              <input class="inp" value=${r.citta || ''} placeholder="Città" aria-label="Città" onChange=${e => setRec(it, { citta: e.target.value })} />`}
+          <span class="ag-opt">${DRONE_TIPI.includes(it.tipo) && !mom ? html`<label class="ag-dr"><input type="checkbox" checked=${!!r.drone} onChange=${e => setRec(it, { drone: e.target.checked })} /><${DroneIc} s=${15} /> Drone</label>`
+            : it.tipo === 'hs' ? (agTipoKey(r) === 'hsPeriodico' ? 'Periodico' : 'Primo') : mom ? ['Posa', 'Ritiro F1', 'Ritiro F2'][it.i] : ''}</span>
+          <select class="inp" value=${it.stato} aria-label="Stato" onChange=${e => put(it, { stato: e.target.value })}>${PROG.map(([k, l]) => html`<option value=${k}>${l}</option>`)}</select>
+          <button class="btn-icon" aria-label="Duplica la riga" title="Duplica" onClick=${() => duplica(it)} disabled=${mom}><${Icon} n="copy" s=${18} /></button>
+        </div>`; })}
+      ${!L.length && html`<div class="empty"><b>Niente in queste quattro settimane</b>Aggiungi una riga qui sotto o importa un JSON.</div>`}
+      <div class="ag-tr ag-new">
+        <input class="inp" type="date" value=${n.data} aria-label="Data" onChange=${e => setN({ ...n, data: e.target.value })} />
+        <input class="inp" type="time" value=${n.ora} aria-label="Ora" onChange=${e => setN({ ...n, ora: e.target.value })} />
+        <select class="inp" value=${n.tipo} aria-label="Tipo di attività" onChange=${e => setN({ ...n, tipo: e.target.value })}>${AG_TIPI_NUOVI.map(([k, l]) => html`<option value=${k}>${l}</option>`)}</select>
+        <input class="inp" value=${n.indirizzo} placeholder="Indirizzo" aria-label="Indirizzo" onInput=${e => setN({ ...n, indirizzo: e.target.value })} onKeyDown=${e => e.key === 'Enter' && aggiungi()} />
+        <input class="inp" value=${n.citta} placeholder="Città" aria-label="Città" onInput=${e => setN({ ...n, citta: e.target.value })} onKeyDown=${e => e.key === 'Enter' && aggiungi()} />
+        <span></span><span></span>
+        <button class="btn-icon pri" aria-label="Aggiungi l'attività" onClick=${aggiungi}><${Icon} n="plus" s=${20} w=${2.4} /></button>
+      </div>
+    </div></div></div>
+    <p class="lead mt-2" style="font-size:var(--fs-sm)">Ogni riga diventa un'attività «Programmata». Le modifiche si salvano da sole; Invio nella riga nuova la aggiunge.</p>
+  </div>`;
 }
