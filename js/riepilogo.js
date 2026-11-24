@@ -140,7 +140,7 @@ function RiepilogoSheet({ r, settings, onClose }) {
       </div>
     </div></div>`;
 }
-function RpThumb({ id }) { const u = useBlobUrl(id); return u ? html`<img src=${u} alt="" />` : html`<i></i>`; }
+function RpThumb({ id }) { const u = useThumbUrl(id); return u ? html`<img src=${u} alt="" loading="lazy" decoding="async" />` : html`<i></i>`; }
 
 /* ---------------- Riepilogo del sopralluogo (v56) ----------------
    Pannello che sale dal basso, solo consultazione: per modificare si torna alla scheda.

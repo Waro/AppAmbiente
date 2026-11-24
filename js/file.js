@@ -80,8 +80,11 @@ async function fileUpload(r, d, e, blob) {
   toast('Caricato su OneDrive: ' + e.name);
 }
 async function fileMarkSent(blobId, res) {
-  const sent = (await DB.get('od_sent')) || {}; sent[blobId] = res.path; await DB.set('od_sent', sent);
-  const urls = (await DB.get('od_files')) || {}; urls[blobId] = res.item && res.item.webUrl || ''; await DB.set('od_files', urls);
+  // un aggiornamento alla volta (v64): gli invii su OneDrive possono finire insieme
+  await odInSerie(async () => {
+    const sent = (await DB.get('od_sent')) || {}; sent[blobId] = res.path; await DB.set('od_sent', sent);
+    const urls = (await DB.get('od_files')) || {}; urls[blobId] = res.item && res.item.webUrl || ''; await DB.set('od_files', urls);
+  });
   fileSubs.forEach(f => f());
 }
 const fileSubs = new Set();

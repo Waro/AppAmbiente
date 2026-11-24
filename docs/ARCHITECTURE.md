@@ -162,6 +162,8 @@ Stato `route = { v, id?, p?, from? }` in `App`; il tasto Indietro (Android e bro
 - Ogni scheda usa `useAutosave`: ogni modifica aggiorna `updatedAt`, salva dopo 500 ms (e subito se l'app va in background) con `saveRec` → `DB.put` → `Sync.schedule()`.
 - Attività aperta (v60): `useAutosave` registra l'attività in `_vDest` già al primo disegno; `vDest()` la restituisce ai componenti che non ricevono `up`, come il tasto Video (`VideoIn`), che salva in `r.video` con `ref` = punto in cui è stato fatto.
 - Le impostazioni si salvano a ogni modifica (`setSettings`); dalla v51 anche la configurazione su OneDrive, 5 s dopo.
+- Invii su OneDrive tre alla volta (`inParallelo`, `OD_INSIEME`, v64); i registri `od_sent`, `od_files`, `od_log` si scrivono uno alla volta (`odInSerie`). Ogni richiesta Graph ha un tempo massimo (`gFetch`, 30 s più il corpo a 32 KB/s).
+- Miniature delle foto negli elenchi create al momento a 256 px e tenute solo in memoria (`thumbUrl`, v64).
 - Store reattivi leggeri con `subscribe`: `Sync`, `OD`, `Sel` (selezione), notifiche, configurazione su OneDrive.
 
 ## 8. Librerie e offline

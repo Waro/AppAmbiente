@@ -3,6 +3,12 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
+  { v: 64, data: '2026-11-24', tipo: 'minore', titolo: 'Più veloce con tante foto',
+    voci: [
+      'Negli elenchi le foto si caricano in piccolo: con molti campioni le schermate scorrono meglio, soprattutto sul tablet.',
+      '«Invia a OneDrive» e il caricamento subito delle foto mandano tre file alla volta: a fine giornata finisci prima.',
+      'Se la rete non risponde, l’invio si ferma dopo un po’ con un errore in Notifiche, invece di restare in attesa senza fine.',
+      'In Cerca i risultati arrivano appena smetti di scrivere: la digitazione è più fluida.' ] },
   { v: 63, data: '2026-11-23', tipo: 'minore', titolo: 'Attività da PC, Kanban e ToDo',
     voci: [
       'Nel menu laterale c’è «Attività»: tutte le attività in una tabella, con ricerca e filtri per BU, tipo, stato e periodo. Cliccandone una vedi a destra cosa è stato raccolto in campo, senza generare il report; «Modifica» la apre con le sue schede.',

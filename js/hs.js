@@ -233,7 +233,7 @@ function HsGallery({ r, up, items, sezioni }) {
     ${view !== null && html`<${Viewer} ids=${ord.map(p => p.id)} index=${view} labelOf=${id => { const p = ord.find(x => x.id === id); return p && p.cap ? p.cap.slice(0, 40) : null; }} onClose=${() => setView(null)} />`}
   </div>`;
 }
-function HsThumb({ id }) { const u = useBlobUrl(id); return u ? html`<img src=${u} alt="" loading="lazy" />` : html`<span></span>`; }
+function HsThumb({ id }) { const u = useThumbUrl(id); return u ? html`<img src=${u} alt="" loading="lazy" decoding="async" />` : html`<span></span>`; }
 // foto rapida (barra azioni o voce della checklist)
 function HsCam({ up, r, refId, big, label = 'Scatta una foto' }) {
   const inp = useRef();

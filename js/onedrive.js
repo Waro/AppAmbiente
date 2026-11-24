@@ -101,6 +101,25 @@ const OD = (() => {
     return segs.map(encodeURIComponent).join('/');
   }
 
+  // Tempo massimo di una richiesta (v64): con poco campo una richiesta può restare appesa senza errore.
+  // 30 s per la risposta più il tempo per inviare il corpo a 32 KB/s (connessione molto lenta).
+  async function gFetch(url, opt = {}) {
+    const b = opt.body, size = b && b.size != null ? b.size : (typeof b === 'string' ? b.length : 0);
+    const ac = new AbortController(), tm = setTimeout(() => ac.abort(), 30000 + Math.ceil(size / 32768) * 1000);
+    try { return await fetch(url, { ...opt, signal: ac.signal }); }
+    catch (e) {
+      if (ac.signal.aborted) { const err = new Error('la rete non risponde, tempo scaduto'); err.code = 'TIMEOUT'; throw err; }
+      throw e;
+    } finally { clearTimeout(tm); }
+  }
+  // Con più invii insieme due file possono creare la stessa cartella nello stesso momento: Graph risponde 409, si riprova una volta.
+  async function gFetch409(url, opt) {
+    const r = await gFetch(url, opt);
+    if (r.status !== 409) return r;
+    await new Promise(res => setTimeout(res, 700));
+    return gFetch(url, opt);
+  }
+
   async function gErr(r) {
     let msg = r.status + ' ' + r.statusText, gcode = '';
     try { const j = await r.json(); if (j.error) { gcode = j.error.code || ''; msg = (j.error.message || msg); } } catch (e) {}
@@ -126,13 +145,13 @@ const OD = (() => {
     const conflict = replace ? 'replace' : 'rename';
     const t = await token();
     if (blob.size <= 4 * 1048576) {
-      const r = await fetch(`${ROOT}:/${path}:/content?@microsoft.graph.conflictBehavior=${conflict}`, {
+      const r = await gFetch409(`${ROOT}:/${path}:/content?@microsoft.graph.conflictBehavior=${conflict}`, {
         method: 'PUT', headers: { Authorization: 'Bearer ' + t, 'Content-Type': type }, body: blob,
       });
       if (!r.ok) throw await gErr(r);
       return { path: decodeURIComponent(path), item: await r.json() };
     }
-    const s = await fetch(`${ROOT}:/${path}:/createUploadSession`, {
+    const s = await gFetch409(`${ROOT}:/${path}:/createUploadSession`, {
       method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' },
       body: JSON.stringify({ item: { '@microsoft.graph.conflictBehavior': conflict } }),
     });
@@ -142,7 +161,7 @@ const OD = (() => {
     const CH = 10 * 327680; // multiplo di 320 KiB
     for (let o = 0; o < blob.size; o += CH) {
       const end = Math.min(o + CH, blob.size);
-      const r = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Range': `bytes ${o}-${end - 1}/${blob.size}` }, body: blob.slice(o, end) });
+      const r = await gFetch(uploadUrl, { method: 'PUT', headers: { 'Content-Range': `bytes ${o}-${end - 1}/${blob.size}` }, body: blob.slice(o, end) });
       if (!r.ok && r.status !== 202) throw await gErr(r);
       if (end === blob.size) return { path: decodeURIComponent(path), item: await r.json() };
     }
@@ -159,12 +178,12 @@ const OD = (() => {
     if (blob.size > max) throw new Error('file oltre ' + Math.round(max / 1048576) + ' MB');
     const t = await OD.token({ silent: true });
     if (blob.size <= 4 * 1048576) {
-      const r = await fetch(`${ROOT}:/${enc(path)}:/content?@microsoft.graph.conflictBehavior=replace`, {
+      const r = await gFetch409(`${ROOT}:/${enc(path)}:/content?@microsoft.graph.conflictBehavior=replace`, {
         method: 'PUT', headers: { Authorization: 'Bearer ' + t, 'Content-Type': type || 'application/octet-stream' }, body: blob });
       if (!r.ok) throw await gErr(r);
       return r.json();
     }
-    const s = await fetch(`${ROOT}:/${enc(path)}:/createUploadSession`, {
+    const s = await gFetch409(`${ROOT}:/${enc(path)}:/createUploadSession`, {
       method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' },
       body: JSON.stringify({ item: { '@microsoft.graph.conflictBehavior': 'replace' } }) });
     if (!s.ok) throw await gErr(s);
@@ -173,7 +192,7 @@ const OD = (() => {
     const CH = 10 * 327680;
     for (let o = 0; o < blob.size; o += CH) {
       const end = Math.min(o + CH, blob.size);
-      const r = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Range': `bytes ${o}-${end - 1}/${blob.size}` }, body: blob.slice(o, end) });
+      const r = await gFetch(uploadUrl, { method: 'PUT', headers: { 'Content-Range': `bytes ${o}-${end - 1}/${blob.size}` }, body: blob.slice(o, end) });
       if (!r.ok && r.status !== 202) throw await gErr(r);
       if (opt.onProgress) opt.onProgress(end, blob.size);
       if (end === blob.size) return r.json();
@@ -186,7 +205,7 @@ const OD = (() => {
     let url = `${ROOT}:/${enc(dir.replace(/\/$/, ''))}:/children?$select=name,size,lastModifiedDateTime&$top=999`;
     const out = [];
     while (url) {
-      const r = await fetch(url, { headers: { Authorization: 'Bearer ' + t } });
+      const r = await gFetch(url, { headers: { Authorization: 'Bearer ' + t } });
       if (r.status === 404) return out;
       if (!r.ok) throw await gErr(r);
       const j = await r.json(); out.push(...(j.value || []));
@@ -198,19 +217,19 @@ const OD = (() => {
   async function getRaw(path) {
     if (!okSync(path)) throw new Error('percorso non ammesso');
     const t = await OD.token({ silent: true });
-    const r = await fetch(`${ROOT}:/${enc(path)}`, { headers: { Authorization: 'Bearer ' + t } });
+    const r = await gFetch(`${ROOT}:/${enc(path)}`, { headers: { Authorization: 'Bearer ' + t } });
     if (r.status === 404) return null;
     if (!r.ok) throw await gErr(r);
     const meta = await r.json();
     const dl = meta['@microsoft.graph.downloadUrl'];
     if (!dl || !/^https:\/\/[a-z0-9.-]+\.(sharepoint\.com|microsoft\.com|live\.com|1drv\.com)\//i.test(dl)) throw new Error('indirizzo di scaricamento inatteso');
-    const d = await fetch(dl);
+    const d = await gFetch(dl);
     if (!d.ok) throw await gErr(d);
     return d.blob();
   }
 
   async function me() {
-    const r = await fetch('https://graph.microsoft.com/v1.0/me?$select=displayName,userPrincipalName', { headers: { Authorization: 'Bearer ' + await token() } });
+    const r = await gFetch('https://graph.microsoft.com/v1.0/me?$select=displayName,userPrincipalName', { headers: { Authorization: 'Bearer ' + await token() } });
     if (!r.ok) throw await gErr(r);
     return r.json();
   }
@@ -285,9 +304,18 @@ function Progress() {
   </div></div>`;
 }
 
-async function odLog(entry) {
-  const log = (await DB.get('od_log')) || [];
-  log.unshift({ t: Date.now(), ...entry }); await DB.set('od_log', log.slice(0, 300));
+// Con gli invii in parallelo (v64) i registri su IndexedDB (od_sent, od_files, od_log) si aggiornano uno alla volta:
+// due letture e scritture sovrapposte perderebbero una voce, e il file verrebbe ricaricato con un altro nome.
+let _odCatena = Promise.resolve();
+function odInSerie(fn) { const p = _odCatena.then(fn); _odCatena = p.catch(() => {}); return p; }
+function odSegnaInviato(blobId, path) {
+  return odInSerie(async () => { const s = (await DB.get('od_sent')) || {}; s[blobId] = path; await DB.set('od_sent', s); });
+}
+function odLog(entry) {
+  return odInSerie(async () => {
+    const log = (await DB.get('od_log')) || [];
+    log.unshift({ t: Date.now(), ...entry }); await DB.set('od_log', log.slice(0, 300));
+  });
 }
 
 /* stato di invio per attività: { [id]: { t, ok } } — t = momento dell'invio */
@@ -310,6 +338,22 @@ function OdBadge({ map, r }) {
   if (s === 'ok') return html`<div class="od-tag ok">✓ Su OneDrive · ${d}</div>`;
   if (s === 'stale') return html`<div class="od-tag stale">Modificata dopo l'invio del ${d}: da ricaricare</div>`;
   return html`<div class="od-tag err">Invio del ${d} incompleto: vedi Notifiche</div>`;
+}
+
+// Invii su OneDrive in parallelo (v64): fino a OD_INSIEME file alla volta invece di uno.
+// Con tante foto a fine giornata il tempo totale si riduce di molto; di più non conviene su rete mobile.
+const OD_INSIEME = 3;
+// esegue fn su ogni elemento, al massimo n alla volta; dopo un errore non ne parte nessun altro e l'errore arriva al chiamante
+async function inParallelo(items, n, fn) {
+  let i = 0, errore = null;
+  const lavora = async () => {
+    while (i < items.length && !errore) {
+      const x = items[i++];
+      try { await fn(x); } catch (e) { errore = errore || e; }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, lavora));
+  if (errore) throw errore;
 }
 
 async function odSync(records, settings) {
@@ -345,44 +389,44 @@ async function odSyncVai(records, settings) {
   }
   let done = 0, errors = [];
   const show = text => _progress({ title: 'Caricamento su OneDrive', text, done, total: plan.length, onStop: () => { stop = true; } });
-  for (const it of plan) {
-    if (stop) break;
+  await inParallelo(plan, OD_INSIEME, async it => {
+    if (stop) return;
     show(it.folder + ' / ' + it.segs[it.segs.length - 1]);
     try {
       let blob, type, replace;
       if (it.kind === 'blob') {
-        const b = await DB.getBlob(it.blobId); if (!b) { it._ok = true; done++; continue; }
+        const b = await DB.getBlob(it.blobId); if (!b) { it._ok = true; done++; return; }
         // foto e PDF riconosciuti dal contenuto; Word solo se il controllo degli allegati lo ammette
         type = await OD.sniff(b.blob) || await tipoFileArrivo(b.blob, b).then(t => t === MIME_DOCX ? t : null);
-        if (!type) { errors.push({ path: it.folder + '/' + it.segs.join('/'), msg: 'tipo di file non ammesso, saltato', code: 'TIPO' }); done++; continue; }
+        if (!type) { errors.push({ path: it.folder + '/' + it.segs.join('/'), msg: 'tipo di file non ammesso, saltato', code: 'TIPO' }); done++; return; }
         blob = b.blob; replace = false;
       } else if (it.kind === 'video') {
-        const b = await DB.getBlob(it.blobId); if (!b) { it._ok = true; done++; continue; }
+        const b = await DB.getBlob(it.blobId); if (!b) { it._ok = true; done++; return; }
         type = await OD.sniff(b.blob);
-        if (!type || !/^video\//.test(type)) { errors.push({ path: it.folder + '/' + it.segs.join('/'), msg: 'formato video non riconosciuto, saltato', code: 'TIPO' }); done++; continue; }
+        if (!type || !/^video\//.test(type)) { errors.push({ path: it.folder + '/' + it.segs.join('/'), msg: 'formato video non riconosciuto, saltato', code: 'TIPO' }); done++; return; }
         blob = b.blob; replace = false;
       } else if (it.kind === 'fileblob') {
-        const b = await DB.getBlob(it.blobId); if (!b) { it._ok = true; done++; continue; }
+        const b = await DB.getBlob(it.blobId); if (!b) { it._ok = true; done++; return; }
         blob = b.blob; type = it.type; replace = true;
       } else if (it.kind === 'pdfblob') {
-        const b = await DB.getBlob(it.blobId); if (!b) { it._ok = true; done++; continue; }
+        const b = await DB.getBlob(it.blobId); if (!b) { it._ok = true; done++; return; }
         blob = b.blob; type = 'application/pdf'; replace = true;
       } else if (it.kind === 'office') {
         blob = await it.make(); type = it.type; replace = true;
       } else if (it.kind === 'pdf') { blob = new Blob([await it.make()], { type: 'application/pdf' }); type = 'application/pdf'; replace = true; }
       else { blob = new Blob([await it.make()], { type: 'application/json' }); type = 'application/json'; replace = true; }
       const res = await OD.upload([it.folder, ...it.segs], blob, { type, replace });
-      if (it.kind === 'blob') { sent[it.blobId] = res.path; await DB.set('od_sent', sent); }
+      if (it.kind === 'blob') { sent[it.blobId] = res.path; await odSegnaInviato(it.blobId, res.path); }
       if (it.kind === 'fileblob') { await fileMarkSent(it.blobId, res); sent[it.blobId] = res.path; }
       if (it.kind === 'video') { await fileMarkSent(it.blobId, res); sent[it.blobId] = res.path; await removeBlob(it.blobId); }
       await odLog({ path: res.path, size: blob.size });
       it._ok = true;
     } catch (e) {
       errors.push({ path: it.folder + '/' + it.segs.join('/'), msg: e.message, code: errCode(e) });
-      if (/autorizzazione|accedi|negato/i.test(e.message)) break;
+      if (/autorizzazione|accedi|negato/i.test(e.message)) { stop = true; return; }
     }
     done++;
-  }
+  });
   _progress(null); fileSubs.forEach(f => f());
   try { if (wake) wake.release(); } catch (e) {}
   // esito per attività: caricata solo se tutti i suoi file sono andati a buon fine
@@ -434,17 +478,17 @@ const OdAuto = (() => {
     const folders = (await DB.get('od_folders')) || {};
     if (!folders[r.id]) { folders[r.id] = recordLabel(r) || r.id; await DB.set('od_folders', folders); }
     let nv = 0;
-    for (const it of items) {
-      if (!navigator.onLine || _odManuale) break;
-      const b = await DB.getBlob(it.blobId); if (!b) continue;
+    await inParallelo(items, OD_INSIEME, async it => {
+      if (!navigator.onLine || _odManuale) return;
+      const b = await DB.getBlob(it.blobId); if (!b) return;
       let type = await OD.sniff(b.blob);
       if (!type && it.kind === 'blob') type = await tipoFileArrivo(b.blob, b).then(t => t === MIME_DOCX ? t : null);
-      if (!type || (it.kind === 'video') !== /^video\//.test(type)) continue;
+      if (!type || (it.kind === 'video') !== /^video\//.test(type)) return;
       const res = await OD.upload([folders[r.id], ...it.segs], b.blob, { type, replace: false });
-      const s2 = (await DB.get('od_sent')) || {}; s2[it.blobId] = res.path; await DB.set('od_sent', s2);
+      await odSegnaInviato(it.blobId, res.path);
       await odLog({ path: res.path, size: b.blob.size }); fileSubs.forEach(f => f());
       if (it.kind === 'video') { await fileMarkSent(it.blobId, res); await removeBlob(it.blobId); nv++; }
-    }
+    });
     if (nv) toast(nv === 1 ? 'Video caricato su OneDrive: sul telefono non occupa più spazio' : nv + ' video caricati su OneDrive: sul telefono non occupano più spazio');
   }
   return { metti, vai, get corsa() { return corsa; } };
