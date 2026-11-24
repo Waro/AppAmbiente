@@ -8,7 +8,7 @@ if (window.top !== window.self) {
   try { window.top.location.replace(window.self.location.href); } catch (e) { /* riquadro isolato: la pagina resta vuota */ }
   throw new Error('Nembo aperto dentro un riquadro');
 }
-const APP_VERSION = 'nembo-v63b';
+const APP_VERSION = 'nembo-v64';
 
 /* ---------------- aspetto: stile ("essenziale" o "originale") × modo ("auto", "chiaro" o "scuro") ----------------
    Scelta personale, salvata solo su questo dispositivo. Applicata subito, prima del disegno.
@@ -157,12 +157,46 @@ function useBlobUrl(id) {
   useEffect(() => { let on = true; blobUrl(id).then(x => on && setU(x)); return () => { on = false; }; }, [id]);
   return u;
 }
+// Miniature (v64): negli elenchi le foto si mostrano ridotte a THUMB_LATO px, create al momento e tenute solo in memoria.
+// Una foto da 1600 px decodificata per un riquadro da 44 px occupa circa 10 MB: con decine di campioni il tablet rallenta.
+// Al massimo due miniature in preparazione insieme; se non si riesce a crearla si usa la foto intera.
+const THUMB_LATO = 256;
+const thumbCache = new Map(), _thumbP = new Map(), _thumbCoda = [];
+let _thumbAttivi = 0;
+function thumbUrl(id) {
+  if (!id) return Promise.resolve(null);
+  if (thumbCache.has(id)) return Promise.resolve(thumbCache.get(id));
+  if (_virtuali.has(id)) return blobUrl(id);
+  if (!_thumbP.has(id)) _thumbP.set(id, new Promise(res => { _thumbCoda.push({ id, res }); _thumbAvanti(); }));
+  return _thumbP.get(id);
+}
+function _thumbAvanti() {
+  while (_thumbAttivi < 2 && _thumbCoda.length) {
+    const { id, res } = _thumbCoda.shift(); _thumbAttivi++;
+    creaThumb(id).catch(() => null)
+      .then(u => u || blobUrl(id)).catch(() => null)
+      .then(u => { _thumbP.delete(id); res(u); _thumbAttivi--; _thumbAvanti(); });
+  }
+}
+async function creaThumb(id) {
+  const b = await DB.getBlob(id);
+  if (!b || !/^image\//.test(b.type || (b.blob && b.blob.type) || '')) return null;
+  const small = await shrinkImage(b.blob, THUMB_LATO);
+  if (!small) return null;
+  const u = URL.createObjectURL(small); thumbCache.set(id, u); return u;
+}
+function useThumbUrl(id) {
+  const [u, setU] = useState(thumbCache.get(id) || null);
+  useEffect(() => { let on = true; thumbUrl(id).then(x => on && setU(x)); return () => { on = false; }; }, [id]);
+  return u;
+}
 async function removeBlob(id) {
   if (_blobTrattenuti.has(id)) return; // eliminazione con «Annulla» in corso: la cancella eliminaConAnnulla alla scadenza
   await cancellaBlob(id);
 }
 async function cancellaBlob(id) {
   if (urlCache.has(id)) { URL.revokeObjectURL(urlCache.get(id)); urlCache.delete(id); }
+  if (thumbCache.has(id)) { URL.revokeObjectURL(thumbCache.get(id)); thumbCache.delete(id); }
   await DB.delBlob(id);
 }
 // inserisce x in posizione i (fuori dall'elenco: in fondo); serve a rimettere un elemento dov'era
@@ -508,8 +542,8 @@ function Area({ label, value, set, rows = 3, disabled, placeholder, cls = '', im
 
 /* ---------------- foto ---------------- */
 function Thumb({ id, onRemove, onOpen }) {
-  const u = useBlobUrl(id);
-  return html`<div class="ph">${u && html`<img src=${u} alt="Foto" onClick=${() => onOpen && onOpen()} />`}
+  const u = useThumbUrl(id);
+  return html`<div class="ph">${u && html`<img src=${u} alt="Foto" loading="lazy" decoding="async" onClick=${() => onOpen && onOpen()} />`}
     ${onRemove && html`<button class="x" aria-label="Elimina foto" onClick=${onRemove}>×</button>`}</div>`;
 }
 // onRestore(id, posizione): rimette la foto tolta con «Annulla» (v59). Senza onRestore resta la conferma.
@@ -1213,8 +1247,8 @@ function QuickPhoto({ onAdd, label = 'Scatta la foto' }) {
     <input ref=${inp} type="file" accept="image/*" capture="environment" hidden onClick=${e => e.stopPropagation()} onChange=${pick} /></button>`;
 }
 function Thumb44({ id, dot }) {
-  const u = useBlobUrl(id);
-  return html`<span class="thumb44">${u && html`<img src=${u} alt="" />`}${dot && html`<i class="md" style=${'background:' + dot}></i>`}</span>`;
+  const u = useThumbUrl(id);
+  return html`<span class="thumb44">${u && html`<img src=${u} alt="" loading="lazy" decoding="async" />`}${dot && html`<i class="md" style=${'background:' + dot}></i>`}</span>`;
 }
 
 

@@ -4,6 +4,14 @@ Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Nem
 
 ## [Non rilasciato]
 
+## [nembo-v64] — 2026-11-24
+
+### Modificato
+- **Miniature** (`thumbUrl`, `useThumbUrl` in `js/core.js`): `Thumb`, `Thumb44`, `HsThumb` e `RpThumb` mostrano la foto ridotta a 256 px (`THUMB_LATO`), creata al momento con `shrinkImage` e tenuta solo in memoria (`thumbCache`, liberata da `cancellaBlob`); due alla volta, con la foto intera se non si riesce. `loading="lazy"` e `decoding="async"` sulle miniature. Il visualizzatore resta a piena risoluzione. Nessun dato nuovo salvato.
+- **Invii su OneDrive in parallelo** (`inParallelo`, `OD_INSIEME = 3` in `js/onedrive.js`): «Invia a OneDrive» e il caricamento subito (`OdAuto`) mandano tre file alla volta. I registri `od_sent`, `od_files`, `od_log` si aggiornano uno alla volta (`odInSerie`, `odSegnaInviato`, anche in `fileMarkSent`) per non perdere voci.
+- **Tempo massimo delle richieste Graph** (`gFetch`): 30 s più il tempo per il corpo a 32 KB/s; poi errore `TIMEOUT` («la rete non risponde, tempo scaduto»). Su `content` e `createUploadSession` un 409 (cartella creata nello stesso momento da un altro invio) si riprova una volta (`gFetch409`).
+- **Cerca** (`js/cerca.js`): risultati calcolati 200 ms dopo l'ultima lettera (`qd`) e con `useMemo`; tag ricalcolati solo quando cambiano le attività.
+
 ## [nembo-v63b] — 2026-11-23
 
 ### Corretto

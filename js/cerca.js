@@ -99,24 +99,28 @@ function Cerca({ records, openRec, acts }) {
   const inp = useRef();
   useEffect(() => { try { sessionStorage.setItem('nembo_q', q); } catch (e) {} }, [q]);
   useEffect(() => { setTimeout(() => inp.current && inp.current.focus(), 50); }, []);
-  const cnt = collectTags(records), tutti = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a] || a.localeCompare(b, 'it'));
-  const res = cerca(records, q, ambito, tag);
+  // la ricerca parte 200 ms dopo l'ultima lettera (v64): con tante attività non si ricalcola tutto a ogni tasto
+  const [qd, setQd] = useState(q);
+  useEffect(() => { const t = setTimeout(() => setQd(q), 200); return () => clearTimeout(t); }, [q]);
+  const cnt = useMemo(() => collectTags(records), [records]);
+  const tutti = useMemo(() => Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a] || a.localeCompare(b, 'it')), [cnt]);
+  const res = useMemo(() => cerca(records, qd, ambito, tag), [records, qd, ambito, tag]);
   const nHit = res.reduce((a, x) => a + x.hits.length, 0);
   const apri = (r, anchor) => { openRec(r); if (anchor) cercaVai(anchor); };
   return html`<div class="content cerca">
     <${LargeTitle} top eye="Tutte le attività" title="Cerca" acts=${acts} />
     <div class="cerca-box"><${Icon} n="search" s=${19} />
       <input ref=${inp} class="inp" type="search" value=${q} placeholder="Indirizzo, città, titolo, testo…" onInput=${e => { setQ(e.target.value); setTag(null); }} aria-label="Cerca" />
-      ${(q || tag) && html`<button class="x" aria-label="Cancella" onClick=${() => { setQ(''); setTag(null); inp.current.focus(); }}>×</button>`}</div>
+      ${(q || tag) && html`<button class="x" aria-label="Cancella" onClick=${() => { setQ(''); setQd(''); setTag(null); inp.current.focus(); }}>×</button>`}</div>
     <div class="seg cerca-amb">${CERCA_AMBITI.map(([k, l]) => html`<button key=${k} class=${ambito === k && !tag ? 'on' : ''} onClick=${() => { setAmbito(k); setTag(null); }}>${l}</button>`)}</div>
     ${tutti.length > 0 && (ambito === 'tag' || tag || !q) && html`<div class="tags-row" style="margin:var(--sp-3) var(--sp-1) var(--sp-1)">${tutti.map(t => html`<button key=${t} class="tag" style=${tagStyle(t, tag === t)} onClick=${() => { setTag(tag === t ? null : t); setQ(''); }}>#${t} <small style="opacity:.7">${cnt[t]}</small></button>`)}</div>`}
-    ${(q.trim() || tag) && html`<div class="lead" style="margin:var(--sp-3) var(--sp-1)">${res.length ? `${res.length} attività · ${nHit} ${nHit === 1 ? 'risultato' : 'risultati'}` : 'Nessun risultato.'}</div>`}
+    ${(qd.trim() || tag) && html`<div class="lead" style="margin:var(--sp-3) var(--sp-1)">${res.length ? `${res.length} attività · ${nHit} ${nHit === 1 ? 'risultato' : 'risultati'}` : 'Nessun risultato.'}</div>`}
     ${!q.trim() && !tag && html`<div class="empty mt-4"><b>Cerca in tutte le attività</b>Scrivi un indirizzo, una città, il titolo o il testo di un'osservazione, oppure tocca un tag. La ricerca funziona anche offline.</div>`}
     <div class="list">${res.slice(0, 80).map(({ r, hits }) => html`<div class="cerca-res" key=${r.id}>
       <button class="cerca-h" onClick=${() => apri(r)}><span class="id">${r.codice || TIPO_NOME(r)}</span><span class="t">${TIPO_NOME(r)}</span><span class="dt">${fmtD(r.data)}</span></button>
       <div class="cerca-place">${[r.commessa, r.cliente, placeLabel(r) || r.luogo].filter(Boolean).join(' · ')}</div>
       ${hits.slice(0, 5).map((h, i) => html`<button key=${i} class="cerca-hit" onClick=${() => apri(r, h.anchor)}><small>${h.etichetta}</small>
-        <span>${h.ambito === 'tag' ? html`<span class="tag" style=${tagStyle(h.testo)}>#${h.testo}</span>` : html`<${Evid} testo=${h.testo} q=${q} />`}</span></button>`)}
+        <span>${h.ambito === 'tag' ? html`<span class="tag" style=${tagStyle(h.testo)}>#${h.testo}</span>` : html`<${Evid} testo=${h.testo} q=${qd} />`}</span></button>`)}
       ${hits.length > 5 && html`<div class="cerca-more">+${hits.length - 5} altri risultati</div>`}
     </div>`)}</div>
   </div>`;
