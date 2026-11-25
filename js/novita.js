@@ -3,6 +3,15 @@
    Testi generici, senza dati reali: il file è pubblico. */
 
 const NOVITA = [
+  { v: 65, data: '2026-11-25', tipo: 'minore', titolo: 'Verbale HSE: «Approvato da» in copertina',
+    voci: [
+      'Nel Verbale HSE, in Anagrafica → Dati del report, c’è il campo «Approvato da»: finisce nella copertina del Word, sotto «Verificato da».',
+      'Serve il nuovo modello Word del Verbale HSE. Vai in Impostazioni → Modelli, tocca «Sostituisci» accanto a «Modello Word Verbale HSE» e scegli il nuovo file .docx dal telefono o da OneDrive.',
+      'Finché il modello è quello vecchio, in Modelli e nell’Anagrafica del verbale un avviso te lo ricorda; il Word si genera lo stesso, ma senza «Approvato da».',
+      'Il modello resta solo su questo dispositivo: caricalo su ognuno che usi, oppure ricarica il file di configurazione dopo averlo aggiornato.' ],
+    slides: [
+      { t: 'Nuovo campo «Approvato da»', s: 'Nel Verbale HSE lo trovi in Anagrafica → Dati del report, sotto «Verificato da».', img: 'novita/v65-approvato.webp' },
+      { t: 'Carica il nuovo modello', s: 'Impostazioni → Modelli → «Modello Word Verbale HSE»: tocca Sostituisci e scegli il nuovo file .docx.', img: 'novita/v65-modelli.webp', vai: { v: 'settings', p: 'modelli' }, vaiL: 'Apri Modelli' } ] },
   { v: 64, data: '2026-11-24', tipo: 'minore', titolo: 'Più veloce con tante foto',
     voci: [
       'Negli elenchi le foto si caricano in piccolo: con molti campioni le schermate scorrono meglio, soprattutto sul tablet.',
@@ -260,7 +269,7 @@ function NovitaSheet({ list, onClose, go }) {
             <button class="btn-icon" aria-label="Precedente" disabled=${k === 0} onClick=${() => setK(k - 1)}><${Icon} n="back" s=${20} /></button>
             <div class="nv-dots">${slides.map((_, i) => html`<i key=${i} class=${i === k ? 'on' : ''} onClick=${() => setK(i)}></i>`)}</div>
             ${k < slides.length - 1 ? html`<button class="btn-icon" aria-label="Successiva" onClick=${() => setK(k + 1)}><${Icon} n="right" s=${20} /></button>`
-              : S.vai ? html`<button class="btn sm" onClick=${() => { onClose(); setTimeout(() => go({ v: S.vai }), 60); }}>Prova</button>` : html`<span style="width:var(--tap)"></span>`}
+              : S.vai ? html`<button class="btn sm" onClick=${() => { onClose(); setTimeout(() => go(typeof S.vai === 'string' ? { v: S.vai } : S.vai), 60); }}>${S.vaiL || 'Prova'}</button>` : html`<span style="width:var(--tap)"></span>`}
           </div></div>`}
         ${list.map(x => html`<div key=${x.v}>
           <div class="sec-h"><h3>v${vEt(x)} · ${x.titolo}</h3><span class="hint">${fmtD(x.data)}</span></div>

@@ -874,6 +874,7 @@
 "vsNoteWord": "readonly",
 "vsPhotos": "readonly",
 "vsSwapImg": "readonly",
+"vsTplStato": "readonly",
 "vsVisite": "readonly",
 "walkW": "readonly",
 "wBody": "readonly",
