@@ -297,7 +297,7 @@ Come la DDA per `campioni` (solo `mca`, `fav`), `nc`, `congelati`, `schede`, `pr
 | hs `noteSop` | `[{ id, titolo, testo, mig, tag[] }]` | possibile | Note del sopralluogo a note. Capitolo = primo tag uguale a un capitolo del formato (Esteso: le 13 schede; Sintetico: capitoli 3–7); sottosezione = primo tag uguale a una sottosezione (Esteso) o a una voce (Sintetico, «3.2 Recinzione deteriorata», riconosciuta dal numero). Foto in `foto` con `ref = n.<id>`; nel Word e nei file (OneDrive, ZIP, riepilogo) l'ordine è quello dei capitoli (`hsFotoOrd` → `hsNoteAOld`); le foto delle note senza capitolo restano fuori dal Word. In ingresso `pulisciRecord` riporta ogni nota alla forma: `id`, `titolo`, `testo`, `mig` testi, `tag` elenco di testi |
 | hs `daScegliere` | `primo` \| `periodico` | no | Sopralluogo programmato non ancora avviato (v55): `formato` è vuoto; all'apertura `HsDaAvviare` fa scegliere Esteso o Sintetico (primo) oppure il report di partenza (periodico), poi il campo sparisce |
 | hs `np` | `{ <capitolo>: true }` | no | Capitoli «Non pertinente» del sopralluogo a note (chiavi Esteso `agibilita`…, Sintetico `c3`…`c7`). Vale solo per i capitoli senza note: le note hanno sempre la precedenza (Check-list e Word) |
-| vs `meta` | object | sì | `{ titolo, fondo, dataReport, redatto, verificato, protocollo, procura, revisione, presenti, descrArea }` |
+| vs `meta` | object | sì | `{ titolo, fondo, dataReport, redatto, verificato, approvato, protocollo, procura, revisione, presenti, descrArea }`; `approvato` dalla v65 (assente nei verbali precedenti = vuoto, nessuna migrazione) |
 | vs `note` | `[{ id, titolo, testo, mig, foto[], tag[] }]` | possibile | Note del verbale |
 
 ### 4.10 Cliente (`type: 'cli'`) e appuntamento (`type: 'app'`)

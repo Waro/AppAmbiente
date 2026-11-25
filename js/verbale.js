@@ -6,7 +6,7 @@ function newVerbale(records, s) {
   return { id: uid('vs'), type: 'vs', codice: `VS-${y}-${String(n).padStart(3, '0')}`, createdAt: Date.now(), updatedAt: Date.now(),
     commessa: '', cliente: '', citta: '', sito: '', indirizzo: '', data: today(), tecnico: `${s.tecnicoNome} ${s.tecnicoCognome}`.trim(),
     note: [], appunti: '', fotoAppunti: [], documenti: [], visite: [], img: {},
-    meta: { titolo: '', fondo: '', dataReport: '', redatto: `${s.tecnicoNome} ${s.tecnicoCognome}`.trim(), verificato: '', protocollo: '', procura: '', revisione: '00', presenti: '', descrArea: '' } };
+    meta: { titolo: '', fondo: '', dataReport: '', redatto: `${s.tecnicoNome} ${s.tecnicoCognome}`.trim(), verificato: '', approvato: '', protocollo: '', procura: '', revisione: '00', presenti: '', descrArea: '' } };
 }
 /* ---------------- import da file (v62) ---------------- */
 const VS_TEMPLATE = {
@@ -106,7 +106,7 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
   useEffect(() => { if (T !== 'note') ns.setSel(null); }, [T]);
   const selNote = ns.sel ? vis.filter(n => ns.sel.has(n.id)) : [];
   const setNote = (ids, fn) => up(q => ({ ...q, note: (q.note || []).map(n => ids.includes(n.id) ? { ...n, ...fn(n) } : n) }));
-  useEffect(() => { DB.get(TEMPLATES['vs.docx'].key).then(b => setTplOk(!!b)); }, []);
+  useEffect(() => { vsTplStato().then(setTplOk); }, []);
   return html`<div class="content form">
     <${DetailHead} conclusa=${r.conclusa} eye="Verbale HSE" title=${r.codice} sub=${[r.commessa, r.cliente, placeAddr(r)].filter(Boolean).join(' · ')} saved=${saved} onClose=${embedded ? onClose : null} />
     <${Schede} value=${T} set=${setT} tabs=${[{ k: 'anag', l: 'Anagrafica' }, { k: 'note', l: 'Osservazioni', n: note.length }, { k: 'file', l: 'File' }]} />
@@ -127,9 +127,10 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
       <${Inp} label="Data report" value=${m.dataReport} set=${v => setM({ dataReport: v })} placeholder=${'automatica: ' + dataIT(r.data)} />
       <${Inp} label="Redatto da" value=${m.redatto} set=${v => setM({ redatto: v })} />
       <${Inp} label="Verificato da" value=${m.verificato} set=${v => setM({ verificato: v })} />
+      <${Inp} label="Approvato da" value=${m.approvato} set=${v => setM({ approvato: v })} />
       <${Inp} label="Protocollo" value=${m.protocollo} set=${v => setM({ protocollo: v })} />
       <${Inp} label="Revisione" value=${m.revisione} set=${v => setM({ revisione: v })} placeholder="00" />
-      <${Inp} cls="full" label="Procura" value=${m.procura} set=${v => setM({ procura: v })} />
+      <${Inp} label="Procura" value=${m.procura} set=${v => setM({ procura: v })} />
     </div><div class="divider"></div><${ImgSlot} label="Foto di copertina" id=${(r.img || {}).copertina} set=${id => setImg('copertina', id)} /></div>
     <div class="sec-h"><h3>Identificazione dell'asset</h3></div>
     <div class="card"><${HsText} label="Descrizione area" rows=${3} value=${m.descrArea} set=${v => setM({ descrArea: v })} />
@@ -140,7 +141,8 @@ function VerbaleForm({ rec: initial, records, settings, onSave, onDelete, embedd
         <label class="fld"><span>Data</span><input type="date" value=${v.data} onInput=${e => setV(i, { data: e.target.value })} /></label>
         <label class="fld"><span>Presenti</span><input placeholder=" " value=${v.presenti} onInput=${e => setV(i, { presenti: e.target.value })} /></label></div>`)}
       <button class="btn dashed" onClick=${() => up(q => ({ ...q, visite: [...(q.visite || []), { data: '', presenti: '' }] }))}>+ Aggiungi sopralluogo precedente</button></div>
-    ${tplOk === false && html`<div class="notice">Per il Word carica il «Modello Word Verbale HSE» in Impostazioni → Modelli.</div>`}
+    ${tplOk === 'manca' && html`<div class="notice">Per il Word carica il «Modello Word Verbale HSE» in Impostazioni → Modelli.</div>`}
+    ${tplOk === 'vecchio' && html`<div class="notice">Il modello del Verbale HSE su questo dispositivo non ha «Approvato da» in copertina: carica quello nuovo in Impostazioni → Modelli → Modello Word Verbale HSE → Sostituisci.</div>`}
 `}
     ${T === 'note' && html`
     ${ns.sel && html`<${NoteSelHead} n=${selNote.length} onStop=${() => ns.setSel(null)} onAll=${() => ns.setSel(s => vis.every(n => s.has(n.id)) ? new Set() : new Set(vis.map(n => n.id)))} />`}

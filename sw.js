@@ -1,5 +1,5 @@
 // Cache dell'app per l'uso offline. Aumenta VERSION a ogni aggiornamento dei file.
-const VERSION = 'nembo-v64';
+const VERSION = 'nembo-v65';
 const FILES = [
   './', 'index.html', 'styles.css', 'manifest.webmanifest', 'pdfgen.js',
   'js/core.js', 'js/capture.js', 'js/plan.js', 'js/office.js', 'js/campioni.js', 'js/dda.js', 'js/mappatura.js', 'js/radon.js', 'js/ra.js', 'js/hs-data.js', 'js/hs-word.js', 'js/hs-leggi.js', 'js/hs.js', 'js/hs-note.js', 'js/verbale.js', 'js/vs-word.js', 'js/clienti.js', 'js/novita.js', 'js/guida.js', 'js/riepilogo.js', 'js/cerca.js', 'js/firme.js', 'js/aria.js', 'js/file.js', 'js/controlli.js', 'js/selezione.js', 'js/agenda.js', 'js/onedrive.js', 'js/sync.js', 'js/todo.js', 'js/gestione.js', 'js/home.js', 'js/backup.js', 'js/config.js', 'js/impostazioni.js', 'js/app.js',
@@ -7,7 +7,7 @@ const FILES = [
   'vendor/jszip.min.js', 'vendor/signature_pad.umd.min.js', 'vendor/msal-browser.min.js', 'vendor/pdfjs.min.mjs', 'vendor/pdfjs.worker.min.mjs', 'vendor/exceljs.min.js', 'vendor/docx.umd.min.js',
   'fonts/ibm-plex-sans-latin-400-normal.woff2', 'fonts/ibm-plex-sans-latin-500-normal.woff2', 'fonts/ibm-plex-sans-latin-600-normal.woff2', 'fonts/ibm-plex-sans-latin-700-normal.woff2',
   'fonts/ibm-plex-mono-latin-500-normal.woff2', 'fonts/ibm-plex-mono-latin-600-normal.woff2',
-  'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png', 'splash/bg-desktop.webp', 'splash/bg-phone.webp', 'novita/v41-zoom.webp', 'novita/v41-lucchetto.webp', 'novita/v41-clienti.webp', 'novita/v42-opzioni.webp', 'novita/v42-riepilogo.webp', 'novita/v45-planimetrie.webp', 'novita/v45-foto.webp', 'novita/v46-file.webp', 'novita/v46-home.webp', 'novita/v46-tema.webp', 'README.md',
+  'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png', 'splash/bg-desktop.webp', 'splash/bg-phone.webp', 'novita/v41-zoom.webp', 'novita/v41-lucchetto.webp', 'novita/v41-clienti.webp', 'novita/v42-opzioni.webp', 'novita/v42-riepilogo.webp', 'novita/v45-planimetrie.webp', 'novita/v45-foto.webp', 'novita/v46-file.webp', 'novita/v46-home.webp', 'novita/v46-tema.webp', 'novita/v65-approvato.webp', 'novita/v65-modelli.webp', 'README.md',
 ];
 self.addEventListener('install', e => {
   // cache: 'reload' scarica ogni file dalla rete: niente copie vecchie prese dalla cache del browser

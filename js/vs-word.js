@@ -19,6 +19,12 @@ async function vsSwapImg(x, ctx, tag, id, crop) {
   return x.replace(m[0], run);
 }
 
+// modello caricato: 'manca', 'vecchio' (senza @@APPROVATO@@ in copertina, prima della v65) oppure 'ok'
+async function vsTplStato() {
+  const b = await DB.get(TEMPLATES['vs.docx'].key); if (!b) return 'manca';
+  try { const f = await hsUnzip(b); return /@@APPROVATO@@/.test(hsHeal(dec8(f['word/document.xml']))) ? 'ok' : 'vecchio'; } catch (e) { return 'ok'; }
+}
+
 async function vsBuildDocx(r, settings, opt = {}) {
   const t = TEMPLATES['vs.docx'];
   const tpl = await DB.get(t.key);
@@ -50,7 +56,7 @@ async function vsBuildDocx(r, settings, opt = {}) {
   x = hsFillBlock(x, 'DESCRAREA', m.descrArea || '', null, { grigio: false });
   x = hsCloneRows(x, 'V_DATA', vsVisite(r), (row, v) => hsFill(hsFill(row, 'V_DATA', v ? dataIT(v.data) : ''), 'V_PRESENTI', v ? v.presenti : ''));
   const T = { TITOLO: m.titolo || r.sito || 'Verbale di sopralluogo', INDIRIZZO: ind, COMMITTENTE: r.cliente, FONDO: m.fondo, DATAREPORT: m.dataReport || dataIT(r.data),
-    REDATTO: m.redatto || r.tecnico, VERIFICATO: m.verificato, PROTOCOLLO: m.protocollo, COMMESSA: r.commessa, PROCURA: m.procura, AN_INDIRIZZO: ind };
+    REDATTO: m.redatto || r.tecnico, VERIFICATO: m.verificato, APPROVATO: m.approvato, PROTOCOLLO: m.protocollo, COMMESSA: r.commessa, PROCURA: m.procura, AN_INDIRIZZO: ind };
   Object.entries(T).forEach(([k, v]) => { x = hsFill(x, k, v || ''); });
   x = await vsSwapImg(x, ctx, 'COPERTINA', (r.img || {}).copertina, true);
   x = await vsSwapImg(x, ctx, 'INQUADRAMENTO', (r.img || {}).inquadramento, false);

@@ -4,18 +4,20 @@
 const BUS = [['ambiente', 'Ambiente'], ['hs', 'HSE'], ['sicurezza', 'Sicurezza']];
 function TemplateRow({ name, t, onChange }) {
   const [has, setHas] = useState(null); const inp = useRef();
-  useEffect(() => { DB.get(t.key).then(b => setHas(!!b)); }, []);
+  // Verbale HSE: un modello senza «Approvato da» (prima della v65) è da sostituire
+  const stato = () => name === 'vs.docx' ? vsTplStato().then(x => setHas(x === 'manca' ? false : x === 'vecchio' ? 'vecchio' : true)) : DB.get(t.key).then(b => setHas(!!b));
+  useEffect(() => { stato(); }, []);
   const pick = async e => {
     const f = e.target.files[0]; e.target.value = ''; if (!f) return;
     try {
       const bytes = await f.arrayBuffer();
       await checkTemplate(name, bytes);
-      await DB.set(t.key, bytes); setHas(true); toast('Modello salvato'); onChange && onChange(); cfgOdSchedule();
+      await DB.set(t.key, bytes); stato(); toast('Modello salvato'); onChange && onChange(); cfgOdSchedule();
     } catch (err) { fail('Modello non valido', err); }
   };
   return html`<div class="row" style="padding:var(--sp-3) 0;border-top:.5px solid var(--sep)">
     <div class="tb-grow"><div style="font-size:var(--fs-base);font-weight:600;white-space:normal">${t.label}</div>
-      <div class=${'lock'} style=${has ? 'color:var(--ok)' : 'color:var(--danger)'}>${has === null ? '' : has ? 'Caricato su questo dispositivo' : 'Da caricare'}</div></div>
+      <div class=${'lock'} style=${has === 'vecchio' ? 'color:var(--warn)' : has ? 'color:var(--ok)' : 'color:var(--danger)'}>${has === null ? '' : has === 'vecchio' ? 'Da sostituire: manca «Approvato da»' : has ? 'Caricato su questo dispositivo' : 'Da caricare'}</div></div>
     <button class="btn sm" onClick=${() => inp.current.click()}>${has ? 'Sostituisci' : 'Carica'}</button>
     <input ref=${inp} type="file" accept=${t.docx ? '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document' : t.xlsx ? '.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'application/pdf'} hidden onChange=${pick} /></div>`;
 }

@@ -4,6 +4,13 @@ Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/). Nem
 
 ## [Non rilasciato]
 
+## [nembo-v65] — 2026-11-25
+
+### Aggiunto
+- **Verbale HSE, «Approvato da»**: campo `meta.approvato` in Anagrafica → Dati del report, sotto «Verificato da»; nel Word riempie il segnaposto `@@APPROVATO@@` della copertina (`vsBuildDocx`).
+- **Controllo del modello** (`vsTplStato` in `js/vs-word.js`): `manca`, `vecchio` (senza `@@APPROVATO@@`) o `ok`. Con il modello vecchio, Impostazioni → Modelli mostra «Da sostituire» in ambra e l'Anagrafica del verbale un avviso; il Word si genera comunque, senza il campo.
+- **Novità con presentazione**: due slide (campo nuovo e dove caricare il modello); una slide può avere `vai` come rotta completa (`{ v: 'settings', p: 'modelli' }`) e un'etichetta del tasto (`vaiL`, qui «Apri Modelli»).
+
 ## [nembo-v64] — 2026-11-24
 
 ### Modificato
